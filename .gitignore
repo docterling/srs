@@ -43,3 +43,6 @@ cmake-build-debug
 /trunk/ide/srs_clion/cmake_install.cmake
 /trunk/ide/srs_clion/srs
 /trunk/ide/srs_clion/Testing/
+
+/proxy
+/trunk/ide/vscode-build
