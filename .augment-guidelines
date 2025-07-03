@@ -112,3 +112,12 @@ code_review:
     - Example: For PR #4289, access https://patch-diff.githubusercontent.com/raw/ossrs/srs/pull/4289.diff
     - This provides the raw diff showing all changes made in the pull request
     - Use web-fetch tool to retrieve and analyze the diff content
+
+documentation:
+  location: "3rdparty/srs-docs"
+  description: |
+    SRS documentation source files are located in the 3rdparty/srs-docs directory
+  usage: |
+    When looking for documentation or need to update docs, check this directory for markdown 
+    files and documentation structure. Do not search ossrs.io or ossrs.net for documentation,
+    use the local files instead.
