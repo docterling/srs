@@ -814,16 +814,17 @@ std::vector<SrsRtcTrackDescription*> SrsRtcSource::get_track_desc(std::string ty
 
     if (type == "video") {
         std::vector<SrsRtcTrackDescription*>::iterator it = stream_desc_->video_track_descs_.begin();
-        while (it != stream_desc_->video_track_descs_.end() ){
+        for (; it != stream_desc_->video_track_descs_.end(); ++it){
+            SrsRtcTrackDescription* track_desc = *it;
+            
             if (media_name.empty()) {
-                track_descs.push_back(*it);
+                track_descs.push_back(track_desc);
             } else {
-                SrsVideoCodecId codec = SrsVideoCodecId((*it)->media_->codec(true));
+                SrsVideoCodecId codec = SrsVideoCodecId(track_desc->media_->codec(true));
                 if (codec == srs_video_codec_str2id(media_name)) {
-                    track_descs.push_back(*it);
+                    track_descs.push_back(track_desc);
                 }
             }
-            ++it;
         }
     }
 
@@ -862,7 +863,7 @@ SrsRtcRtpBuilder::SrsRtcRtpBuilder(SrsFrameToRtcBridge* bridge, SrsSharedPtr<Srs
 {
     bridge_ = bridge;
     source_ = source;
-    
+
     req = NULL;
     format = new SrsRtmpFormat();
     codec_ = new SrsAudioTranscoder();
@@ -1082,7 +1083,7 @@ srs_error_t SrsRtcRtpBuilder::init_codec(SrsAudioCodecId codec)
         srs_trace("RTMP2RTC: Init audio transcoder codec to %d(%s)", codec, srs_audio_codec_id2str(codec).c_str());
     } else {
         srs_trace("RTMP2RTC: Switch audio transcoder codec %d(%s) to %d(%s)", latest_codec_, srs_audio_codec_id2str(latest_codec_).c_str(),
-                codec, srs_audio_codec_id2str(codec).c_str());
+                  codec, srs_audio_codec_id2str(codec).c_str());
     }
     latest_codec_ = codec;
 
@@ -1311,12 +1312,13 @@ srs_error_t SrsRtcRtpBuilder::package_stap_a(SrsSharedPtrMessage* msg, SrsRtpPac
 
     if (format->vcodec->id == SrsVideoCodecIdHEVC) {
         for (size_t i = 0; i < format->vcodec->hevc_dec_conf_record_.nalu_vec.size(); i++) {
-            if (format->vcodec->hevc_dec_conf_record_.nalu_vec[i].nal_unit_type == SrsHevcNaluType_VPS
-                || format->vcodec->hevc_dec_conf_record_.nalu_vec[i].nal_unit_type == SrsHevcNaluType_SPS
-                || format->vcodec->hevc_dec_conf_record_.nalu_vec[i].nal_unit_type == SrsHevcNaluType_PPS) {
-                vector<char>& nalu = (vector<char>&)format->vcodec->hevc_dec_conf_record_.nalu_vec[i].nal_data_vec[0].nal_unit_data;
-                params.push_back(&nalu);
-                size += format->vcodec->hevc_dec_conf_record_.nalu_vec[i].nal_data_vec[0].nal_unit_length;
+            const SrsHevcHvccNalu& nalu = format->vcodec->hevc_dec_conf_record_.nalu_vec[i];
+            if (nalu.nal_unit_type == SrsHevcNaluType_VPS
+                || nalu.nal_unit_type == SrsHevcNaluType_SPS
+                || nalu.nal_unit_type == SrsHevcNaluType_PPS) {
+                const SrsHevcNalData& nal_data = nalu.nal_data_vec[0];
+                params.push_back(&(vector<char>&)nal_data.nal_unit_data);
+                size += nal_data.nal_unit_length;
             }
         }
 
@@ -2703,7 +2705,7 @@ srs_error_t SrsVideoPayload::set_h264_param_desc(std::string fmtp)
     return err;
 }
 
-// level-id=180;profile-id=1;tier-flag=0;tx-mode=SRST
+// level-id=156;profile-id=1;tier-flag=0;tx-mode=SRST
 srs_error_t SrsVideoPayload::set_h265_param_desc(std::string fmtp)
 {
     std::vector<std::string> attributes = split_str(fmtp, ";");

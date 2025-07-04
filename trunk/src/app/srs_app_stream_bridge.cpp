@@ -68,6 +68,7 @@ SrsFrameToRtcBridge::SrsFrameToRtcBridge(SrsSharedPtr<SrsRtcSource> source)
     source_ = source;
 
 #if defined(SRS_FFMPEG_FIT)
+    // Use lazy initialization - no need to determine codec/track parameters here
     rtp_builder_ = new SrsRtcRtpBuilder(this, source);
 #endif
 }
@@ -130,8 +131,6 @@ srs_error_t SrsFrameToRtcBridge::on_rtp(SrsRtpPacket* pkt)
 {
     return source_->on_rtp(pkt);
 }
-
-
 
 #endif
 
