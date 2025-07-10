@@ -7,6 +7,8 @@ The changelog for SRS.
 <a name="v5-changes"></a>
 
 ## SRS 5.0 Changelog
+* v5.0, 2025-07-10, Merge [#4414](https://github.com/ossrs/srs/pull/4414): Fix H.264 B-frame detection logic to comply with specification. v5.0.224 (#4414)
+* v5.0, 2025-03-21, Merge [#4303](https://github.com/ossrs/srs/pull/4303): replace values with enums. v5.0.223 (#4303)
 * v5.0, 2025-03-20, Merge [#4305](https://github.com/ossrs/srs/pull/4305): free sample to prevent memory leak. v5.0.222 (#4305)
 * v5.0, 2025-03-18, Merge [#4302](https://github.com/ossrs/srs/pull/4302): update geekyeggo/delete-artifact to 5.0.0. v5.0.221 (#4302)
 * v5.0, 2025-02-20, Merge [#4253](https://github.com/ossrs/srs/pull/4253): fix typo about heartbeat. v5.0.220 (#4253)
