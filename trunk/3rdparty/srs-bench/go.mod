@@ -3,6 +3,7 @@ module github.com/ossrs/srs-bench
 go 1.23.0
 
 require (
+	github.com/bluenviron/gortsplib/v4 v4.13.1
 	github.com/ghettovoice/gosip v0.0.0-20220929080231-de8ba881be83
 	github.com/google/gopacket v1.1.19
 	github.com/haivision/srtgo v0.0.0-20230627061225-a70d53fcd618
@@ -21,6 +22,7 @@ require (
 )
 
 require (
+	github.com/bluenviron/mediacommon/v2 v2.1.0 // indirect
 	github.com/gobwas/httphead v0.1.0 // indirect
 	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/gobwas/ws v1.1.0-rc.1 // indirect
