@@ -52,6 +52,13 @@ const int kVideoPayloadType = 102;
 // Chrome HEVC defaults as 49.
 const int KVideoPayloadTypeHevc = 49;
 
+// Audio jitter buffer size (in packets)
+const int AUDIO_JITTER_BUFFER_SIZE = 100;
+// Sliding window size for continuous processing
+const int SLIDING_WINDOW_SIZE = 10;
+// Maximum waiting time for out-of-order packets (in ms)
+const int MAX_AUDIO_WAIT_MS = 100;
+
 class SrsNtp
 {
 public:
@@ -378,6 +385,33 @@ public:
     bool is_lost_sn(uint16_t received);
 };
 
+// Audio packet cache for RTP packet jitter buffer management
+class SrsRtcFrameBuilderAudioPacketCache
+{
+private:
+    // Audio jitter buffer, map sequence number to packet
+    std::map<uint16_t, SrsRtpPacket*> audio_buffer_;
+    // Last processed sequence number
+    uint16_t last_audio_seq_num_;
+    // Last time we processed the jitter buffer
+    srs_utime_t last_audio_process_time_;
+    // Whether the cache has been initialized
+    bool initialized_;
+    // Timeout for waiting out-of-order packets (in microseconds)
+    srs_utime_t timeout_;
+public:
+    SrsRtcFrameBuilderAudioPacketCache();
+    virtual ~SrsRtcFrameBuilderAudioPacketCache();
+public:
+    // Set timeout for waiting out-of-order packets (in microseconds)
+    void set_timeout(srs_utime_t timeout);
+    // Process audio packet through jitter buffer
+    // Returns packets ready for transcoding in order
+    srs_error_t process_packet(SrsRtpPacket* src, std::vector<SrsRtpPacket*>& ready_packets);
+    // Clear all cached packets
+    void clear_all();
+};
+
 // Collect and build WebRTC RTP packets to AV frames.
 class SrsRtcFrameBuilder
 {
@@ -386,9 +420,9 @@ private:
 private:
     bool is_first_audio_;
     SrsAudioTranscoder *audio_transcoder_;
-
     SrsVideoCodecId video_codec_;
 private:
+    SrsRtcFrameBuilderAudioPacketCache* audio_cache_;
     SrsRtcFrameBuilderVideoPacketCache* video_cache_;
     SrsRtcFrameBuilderVideoFrameDetector* frame_detector_;
 private:
@@ -408,6 +442,7 @@ public:
     virtual void on_unpublish();
     virtual srs_error_t on_rtp(SrsRtpPacket *pkt);
 private:
+    srs_error_t packet_audio(SrsRtpPacket* pkt);
     srs_error_t transcode_audio(SrsRtpPacket *pkt);
     void packet_aac(SrsCommonMessage* audio, char* data, int len, uint32_t pts, bool is_header);
 private:
