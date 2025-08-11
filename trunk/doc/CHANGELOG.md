@@ -7,6 +7,7 @@ The changelog for SRS.
 <a name="v6-changes"></a>
 
 ## SRS 6.0 Changelog
+* v6.0, 2025-08-11, Merge [#4432](https://github.com/ossrs/srs/pull/4432): AI: HTTP-FLV: Fix heap-use-after-free crash during stream unmount. v6.0.171 (#4432)
 * v6.0, 2025-07-28, Merge [#4245](https://github.com/ossrs/srs/pull/4245): Allow Forward to be configured with Env Var. v6.0.170 (#4245)
 * v6.0, 2025-07-10, Merge [#4414](https://github.com/ossrs/srs/pull/4414): Fix H.264 B-frame detection logic to comply with specification. v6.0.169 (#4414)
 * v6.0, 2025-06-04, Merge [#4325](https://github.com/ossrs/srs/pull/4325): fix bug: loop transcoding #3516. v6.0.168 (#4325)
