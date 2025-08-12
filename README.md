@@ -112,15 +112,12 @@ To stay in touch and keep helping our community, please check out this [guide](h
 
 ## LICENSE
 
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fossrs%2Fsrs.svg?type=small)](https://app.fossa.com/projects/git%2Bgithub.com%2Fossrs%2Fsrs?ref=badge_small)
-
 SRS is licenced under [MIT](https://github.com/ossrs/srs/blob/develop/LICENSE), and some third-party libraries are 
 distributed under their [licenses](https://ossrs.io/lts/en-us/license).
 
-[![](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fossrs%2Fsrs.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fossrs%2Fsrs?ref=badge_large)
-
 ## Releases
 
+* 2025-08-12, [Release v6.0-b0](https://github.com/ossrs/srs/releases/tag/v6.0-b0), v6.0-b0, 6.0 beta0, v6.0.172, 170417 lines.
 * 2025-05-03, [Release v6.0-a2](https://github.com/ossrs/srs/releases/tag/v6.0-a2), v6.0-a2, 6.0 alpha2, v6.0.165, 169712 lines.
 * 2024-09-01, [Release v6.0-a1](https://github.com/ossrs/srs/releases/tag/v6.0-a1), v6.0-a1, 6.0 alpha1, v6.0.155, 169636 lines.
 * 2024-07-27, [Release v6.0-a0](https://github.com/ossrs/srs/releases/tag/v6.0-a0), v6.0-a0, 6.0 alpha0, v6.0.145, 169259 lines.
