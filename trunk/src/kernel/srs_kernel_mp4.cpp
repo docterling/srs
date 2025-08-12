@@ -4818,12 +4818,60 @@ uint32_t SrsMp4Sample::pts_ms()
     return (uint32_t)(pts * 1000 / tbn) + adjust;
 }
 
+SrsMp4DvrJitter::SrsMp4DvrJitter()
+{
+    reset();
+}
+
+SrsMp4DvrJitter::~SrsMp4DvrJitter()
+{
+}
+
+void SrsMp4DvrJitter::on_sample(SrsMp4Sample *sample)
+{
+    if (!has_first_audio_ && sample->type == SrsFrameTypeAudio) {
+        has_first_audio_ = true;
+        audio_start_dts_ = sample->dts;
+    }
+
+    if (!has_first_video_ && sample->type == SrsFrameTypeVideo) {
+        has_first_video_ = true;
+        video_start_dts_ = sample->dts;
+    }
+}
+
+uint32_t SrsMp4DvrJitter::get_first_sample_delta(SrsFrameType track)
+{
+    if (track == SrsFrameTypeVideo) {
+        return video_start_dts_ > audio_start_dts_ ? video_start_dts_ - audio_start_dts_ : 0;
+    } else if (track == SrsFrameTypeAudio) {
+        return audio_start_dts_ > video_start_dts_ ? audio_start_dts_ - video_start_dts_ : 0;
+    }
+    return 0;
+}
+
+void SrsMp4DvrJitter::reset()
+{
+    video_start_dts_ = 0;
+    audio_start_dts_ = 0;
+    has_first_video_ = false;
+    has_first_audio_ = false;
+}
+
+bool SrsMp4DvrJitter::is_initialized()
+{
+    return has_first_video_ && has_first_audio_;
+}
+
 SrsMp4SampleManager::SrsMp4SampleManager()
 {
+    jitter_ = new SrsMp4DvrJitter();
 }
 
 SrsMp4SampleManager::~SrsMp4SampleManager()
 {
+    srs_freep(jitter_);
+    
     vector<SrsMp4Sample*>::iterator it;
     for (it = samples.begin(); it != samples.end(); ++it) {
         SrsMp4Sample* sample = *it;
@@ -4900,6 +4948,7 @@ SrsMp4Sample* SrsMp4SampleManager::at(uint32_t index)
 
 void SrsMp4SampleManager::append(SrsMp4Sample* sample)
 {
+    jitter_->on_sample(sample);
     samples.push_back(sample);
 }
 
@@ -5077,6 +5126,7 @@ srs_error_t SrsMp4SampleManager::write_track(SrsFrameType track,
             } else {
                 // The first sample always in the STTS table.
                 stts_entry.sample_count++;
+                stts_entry.sample_delta = jitter_->get_first_sample_delta(track);
             }
         }
         
