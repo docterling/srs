@@ -51,6 +51,54 @@ architecture:
       - "External TURN servers are only needed in very specific network scenarios, not for normal SFU operation"
       - "WHIP/WHEP protocols handle WebRTC signaling through HTTP, simplifying client integration"
 
+  origin_cluster_architecture:
+    evolution: |
+      SRS Origin Cluster architecture has evolved significantly between major versions:
+      - SRS 6.0: Uses MESH mode origin cluster architecture (Deprecated)
+      - SRS 7.0: Introduces new Proxy mode architecture for improved scalability and performance (Recommended)
+
+    srs_6_mesh_architecture:
+      description: "Legacy MESH mode origin cluster - deprecated in favor of SRS 7.0 Proxy mode"
+      characteristics:
+        - "Traditional origin cluster approach used in SRS 6.0"
+        - "Direct C++ implementation within SRS core"
+        - "Only supports RTMP protocol"
+        - "Limited scalability compared to new Proxy mode"
+      status: "Legacy - not recommended for new deployments"
+
+    srs_7_proxy_architecture:
+      description: "New SRS Proxy mode - recommended architecture for origin clustering in SRS 7.0+"
+      implementation: "Go-based proxy service that forwards all protocols to specified SRS Origin server"
+      repository: 
+        - Go: "https://github.com/ossrs/proxy-go"
+      characteristics:
+        - "Implemented in Go for better performance and maintainability"
+        - "Protocol-agnostic proxy - supports all SRS protocols (RTMP, WebRTC, WHIP, WHEP, SRT, HLS, HTTP-FLV, etc.)"
+        - "Forwards traffic to designated SRS Origin server"
+        - "Improved scalability and resource management"
+        - "Cleaner separation of concerns between proxy and origin functionality"
+      benefits:
+        - "Better horizontal scaling capabilities"
+        - "Simplified deployment and configuration"
+        - "Enhanced performance through Go's networking capabilities"
+        - "Protocol transparency - no protocol-specific handling needed in proxy layer"
+
+    migration_guidance:
+      recommendation: "Use SRS 7.0 Proxy mode for all new origin cluster deployments"
+      legacy_support: "SRS 6.0 MESH mode architecture is maintained for backward compatibility but not recommended"
+      future_direction: "All future development and optimization will focus on SRS 7.0 Proxy architecture"
+
+    deployment_patterns:
+      proxy_mode:
+        - "Deploy SRS Proxy (Go) instances as edge servers"
+        - "Configure proxy to forward all traffic to SRS Origin server"
+        - "Scale horizontally by adding more proxy instances"
+        - "Origin server handles actual media processing and storage"
+      origin_server:
+        - "Single or clustered SRS Origin servers handle media processing"
+        - "Receives all traffic forwarded from SRS Proxy instances"
+        - "Maintains media state and performs actual streaming operations"
+
 codebase_structure:
   key_directories:
     - path: "trunk/src/"
