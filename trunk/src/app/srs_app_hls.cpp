@@ -1267,37 +1267,15 @@ srs_error_t SrsHlsMuxer::segment_open()
     srs_assert(!current);
 
     // load the default acodec from config.
-    SrsAudioCodecId default_acodec = SrsAudioCodecIdAAC;
-    if (true) {
-        std::string default_acodec_str = _srs_config->get_hls_acodec(req->vhost);
-        if (default_acodec_str == "mp3") {
-            default_acodec = SrsAudioCodecIdMP3;
-        } else if (default_acodec_str == "aac") {
-            default_acodec = SrsAudioCodecIdAAC;
-        } else if (default_acodec_str == "an") {
-            default_acodec = SrsAudioCodecIdDisabled;
-        } else {
-            srs_warn("hls: use aac for other codec=%s", default_acodec_str.c_str());
-        }
-    }
+    SrsAudioCodecId default_acodec = SrsAudioCodecIdDisabled;
+
     // Now that we know the latest audio codec in stream, use it.
     if (latest_acodec_ != SrsAudioCodecIdForbidden)
         default_acodec = latest_acodec_;
 
     // load the default vcodec from config.
-    SrsVideoCodecId default_vcodec = SrsVideoCodecIdAVC;
-    if (true) {
-        std::string default_vcodec_str = _srs_config->get_hls_vcodec(req->vhost);
-        if (default_vcodec_str == "h264") {
-            default_vcodec = SrsVideoCodecIdAVC;
-        } else if (default_vcodec_str == "h265") {
-            default_vcodec = SrsVideoCodecIdHEVC;
-        } else if (default_vcodec_str == "vn") {
-            default_vcodec = SrsVideoCodecIdDisabled;
-        } else {
-            srs_warn("hls: use h264 for other codec=%s", default_vcodec_str.c_str());
-        }
-    }
+    SrsVideoCodecId default_vcodec = SrsVideoCodecIdDisabled;
+
     // Now that we know the latest video codec in stream, use it.
     if (latest_vcodec_ != SrsVideoCodecIdForbidden)
         default_vcodec = latest_vcodec_;
@@ -2156,10 +2134,18 @@ srs_error_t SrsHlsMp4Controller::on_unpublish()
 srs_error_t SrsHlsMp4Controller::write_audio(SrsSharedPtrMessage *shared_audio, SrsFormat *format)
 {
     srs_error_t err = srs_success;
+    SrsAudioFrame *frame = format->audio;
 
     // Ignore audio sequence header
     if (format->is_aac_sequence_header() || format->is_mp3_sequence_header()) {
         return err;
+    }
+
+    // Refresh the codec ASAP.
+    if (muxer_->latest_acodec() != frame->acodec()->id) {
+        srs_trace("HLS: Switch audio codec %d(%s) to %d(%s)", muxer_->latest_acodec(), srs_audio_codec_id2str(muxer_->latest_acodec()).c_str(),
+                  frame->acodec()->id, srs_audio_codec_id2str(frame->acodec()->id).c_str());
+        muxer_->set_latest_acodec(frame->acodec()->id);
     }
 
     audio_dts_ = shared_audio->timestamp;
@@ -2178,7 +2164,7 @@ srs_error_t SrsHlsMp4Controller::write_video(SrsSharedPtrMessage *shared_video, 
 
     // Refresh the codec ASAP.
     if (muxer_->latest_vcodec() != frame->vcodec()->id) {
-        srs_trace("HLS: Switch video codec %d(%s) to %d(%s)", muxer_->latest_acodec(), srs_video_codec_id2str(muxer_->latest_vcodec()).c_str(),
+        srs_trace("HLS: Switch video codec %d(%s) to %d(%s)", muxer_->latest_vcodec(), srs_video_codec_id2str(muxer_->latest_vcodec()).c_str(),
                   frame->vcodec()->id, srs_video_codec_id2str(frame->vcodec()->id).c_str());
         muxer_->set_latest_vcodec(frame->vcodec()->id);
     }
