@@ -86,21 +86,20 @@ build high-quality streaming and RTC platforms for their businesses.
 
 ## Contributing
 
-The [authors](trunk/AUTHORS.md#authors), [TOC(Technical Oversight Committee)](trunk/AUTHORS.md#toc), 
-and [contributors](trunk/AUTHORS.md#contributors) are listed [here](trunk/AUTHORS.md). The TOC members 
-who made significant contributions and maintained parts of SRS are listed below:
+The [maintainers](trunk/AUTHORS.md#maintainers), and [contributors](trunk/AUTHORS.md#contributors) are listed [here](trunk/AUTHORS.md). The maintainers 
+who made significant contributions and maintained parts of SRS are listed below, ranked by the number of commits:
 
 * [Winlin](https://github.com/winlinvip): Founder of the project, focusing on ST and Issues/PR. Responsible for architecture and maintenance.
-* [ZhaoWenjie](https://github.com/wenjiegit): One of the earliest contributors, focusing on HDS and Windows. Has expertise in client technology.
-* [ShiWei](https://github.com/runner365): Specializes in SRT and H.265, maintaining SRT and FLV patches for FFmpeg. An expert in codecs and FFmpeg.
 * [XiaoZhihong](https://github.com/xiaozhihong): Concentrates on WebRTC/QUIC and SRT, with expertise in network QoS. Contributed to ARM on ST and was the original contributor for WebRTC.
-* [WuPengqiang](https://github.com/Bepartofyou): Focused on H.265, initially contributed to the FFmpeg module in SRS for transcoding AAC with OPUS for WebRTC.
-* [XiaLixin](https://github.com/xialixin): Specializes in GB28181, with expertise in live streaming and WebRTC.
-* [LiPeng](https://github.com/lipeng19811218): Concentrates on WebRTC and contributes to memory management and smart pointers.
-* [ChenGuanghua](https://github.com/chen-guanghua): Focused on WebRTC/QoS and introduced the Asan toolchain to SRS.
 * [ChenHaibo](https://github.com/duiniuluantanqin): Specializes in GB28181 and HTTP API, contributing to patches for FFmpeg with WHIP.
 * [ZhangJunqin](https://github.com/chundonglinlin): Focused on H.265, Prometheus Exporter, and API module.
+* [XiaLixin](https://github.com/xialixin): Specializes in GB28181, with expertise in live streaming and WebRTC.
 * [Jacob Su](https://github.com/suzp1984): Jacob Su has contributed to various modules of SRS.
+* [ShiWei](https://github.com/runner365): Specializes in SRT and H.265, maintaining SRT and FLV patches for FFmpeg. An expert in codecs and FFmpeg.
+* [ChenGuanghua](https://github.com/chen-guanghua): Focused on WebRTC/QoS and introduced the Asan toolchain to SRS.
+* [LiPeng](https://github.com/lipeng19811218): Concentrates on WebRTC and contributes to memory management and smart pointers.
+* [ZhaoWenjie](https://github.com/wenjiegit): One of the earliest contributors, focusing on HDS and Windows. Has expertise in client technology.
+* [WuPengqiang](https://github.com/Bepartofyou): Focused on H.265, initially contributed to the FFmpeg module in SRS for transcoding AAC with OPUS for WebRTC.
 
 A huge `THANK YOU` goes out to:
 

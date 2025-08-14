@@ -1,25 +1,18 @@
-## AUTHORS
+## Maintainers
 
-The authors and administrators of SRS, ordered by first contribution:
+The maintainers of SRS, ranked by the number of commits:
 
 - `Winlin<winlinvip@gmail.com>`
 - `XiaoZhihong<hondaxiao@tencent.com>`
-
-## TOC
-
-The TOC(Technical Oversight Committee), ordered by first contribution:
-
-- `Winlin<winlinvip@gmail.com>`
-- `ZhaoWenjie<zhaowenjie@tal.com>`
-- `ShiWei<xiaoq_bj@126.com>`
-- `XiaoZhihong<hondaxiao@tencent.com>`
-- `WuPengqiang<pengqiang.wpq@alibaba-inc.com>`
-- `XiaLixin<xialixin@kanzhun.com>`
-- `LiPeng<lipeng19811218@gmail.com>`
-- `ChenGuanghua<jinxue.cgh@alibaba-inc.com>`
 - `ChenHaibo<nmgchenhaibo@foxmail.com>`
 - `ZhangJunqin<chundonglinlin@126.com>`
+- `XiaLixin<xialixin@kanzhun.com>`
 - `JacobSu<suzp1984@gmail.com>`
+- `ShiWei<xiaoq_bj@126.com>`
+- `ChenGuanghua<chengh_math@126.com>`
+- `LiPeng<lipeng19811218@gmail.com>`
+- `ZhaoWenjie<zhaowenjie@tal.com>`
+- `WuPengqiang<309554135@qq.com>`
 
 ## CONTRIBUTORS
 
