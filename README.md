@@ -100,6 +100,7 @@ who made significant contributions and maintained parts of SRS are listed below:
 * [ChenGuanghua](https://github.com/chen-guanghua): Focused on WebRTC/QoS and introduced the Asan toolchain to SRS.
 * [ChenHaibo](https://github.com/duiniuluantanqin): Specializes in GB28181 and HTTP API, contributing to patches for FFmpeg with WHIP.
 * [ZhangJunqin](https://github.com/chundonglinlin): Focused on H.265, Prometheus Exporter, and API module.
+* [Jacob Su](https://github.com/suzp1984): Jacob Su has contributed to various modules of SRS.
 
 A huge `THANK YOU` goes out to:
 

@@ -19,6 +19,7 @@ The TOC(Technical Oversight Committee), ordered by first contribution:
 - `ChenGuanghua<jinxue.cgh@alibaba-inc.com>`
 - `ChenHaibo<nmgchenhaibo@foxmail.com>`
 - `ZhangJunqin<chundonglinlin@126.com>`
+- `JacobSu<suzp1984@gmail.com>`
 
 ## CONTRIBUTORS
 
