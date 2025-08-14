@@ -738,10 +738,6 @@ srs_error_t SrsDash::cycle()
 
 srs_utime_t SrsDash::cleanup_delay()
 {
-    if (!enabled) {
-        return 0;
-    }
-
     // We use larger timeout to cleanup the HLS, after disposed it if required.
     return _srs_config->get_dash_dispose(req->vhost) * 1.1;
 }
