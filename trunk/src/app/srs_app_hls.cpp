@@ -1254,6 +1254,152 @@ srs_error_t SrsHlsMuxer::update_config(SrsRequest *r, string entry_prefix,
     return err;
 }
 
+srs_error_t SrsHlsMuxer::recover_hls()
+{
+    srs_error_t err = srs_success;
+
+    // exist the m3u8 file.
+    if (!srs_path_exists(m3u8)) {
+        return err;
+    }
+
+    srs_trace("hls: recover stream m3u8=%s, m3u8_url=%s, hls_path=%s",
+              m3u8.c_str(), m3u8_url.c_str(), hls_path.c_str());
+
+    // read whole m3u8 file content as a string
+    SrsFileReader fr;
+    if ((err = fr.open(m3u8)) != srs_success) {
+        return srs_error_wrap(err, "open file");
+    }
+
+    std::string body;
+    if ((err = srs_ioutil_read_all(&fr, body)) != srs_success) {
+        return srs_error_wrap(err, "read data");
+    }
+    if (body.empty()) {
+        return srs_error_wrap(err, "read empty m3u8");
+    }
+
+    bool discon = false;
+
+    std::string ptl;
+    while (!body.empty()) {
+        size_t pos = string::npos;
+
+        std::string line;
+        if ((pos = body.find("\n")) != string::npos) {
+            line = body.substr(0, pos);
+            body = body.substr(pos + 1);
+        } else {
+            line = body;
+            body = "";
+        }
+
+        line = srs_string_replace(line, "\r", "");
+        line = srs_string_replace(line, " ", "");
+
+        // #EXT-X-VERSION:3
+        // the version must be 3.0
+        if (srs_string_starts_with(line, "#EXT-X-VERSION:")) {
+            if (!srs_string_ends_with(line, ":3")) {
+                srs_warn("m3u8 3.0 required, actual is %s", line.c_str());
+            }
+            continue;
+        }
+
+        // #EXT-X-PLAYLIST-TYPE:VOD
+        // the playlist type, vod or nothing.
+        if (srs_string_starts_with(line, "#EXT-X-PLAYLIST-TYPE:")) {
+            ptl = line;
+            continue;
+        }
+
+        // #EXT-X-MEDIA-SEQUENCE:4294967295
+        // the media sequence no.
+        if (srs_string_starts_with(line, "#EXT-X-MEDIA-SEQUENCE:")) {
+            _sequence_no = ::atof(line.substr(string("#EXT-X-MEDIA-SEQUENCE:").length()).c_str());
+        }
+
+        // #EXT-X-DISCONTINUITY
+        // the discontinuity tag.
+        if (srs_string_starts_with(line, "#EXT-X-DISCONTINUITY")) {
+            discon = true;
+        }
+
+        // #EXTINF:11.401,
+        // livestream-5.ts
+        // parse each ts entry, expect current line is inf.
+        if (!srs_string_starts_with(line, "#EXTINF:")) {
+            continue;
+        }
+
+        // expect next line is url.
+        std::string ts_url;
+        if ((pos = body.find("\n")) != string::npos) {
+            ts_url = body.substr(0, pos);
+            body = body.substr(pos + 1);
+        } else {
+            srs_warn("ts entry unexpected eof, inf=%s", line.c_str());
+            break;
+        }
+
+        // parse the ts duration.
+        line = line.substr(string("#EXTINF:").length());
+        if ((pos = line.find(",")) != string::npos) {
+            line = line.substr(0, pos);
+        }
+
+        double ts_duration = ::atof(line.c_str());
+
+        // Only create new segment if it doesn't already exist
+        if (!segment_exists(ts_url)) {
+            // load the default acodec, use the same logic as segment_open().
+            SrsAudioCodecId default_acodec = SrsAudioCodecIdDisabled;
+
+            // Now that we know the latest audio codec in stream, use it.
+            if (latest_acodec_ != SrsAudioCodecIdForbidden)
+                default_acodec = latest_acodec_;
+
+            // load the default vcodec, use the same logic as segment_open().
+            SrsVideoCodecId default_vcodec = SrsVideoCodecIdDisabled;
+
+            // Now that we know the latest video codec in stream, use it.
+            if (latest_vcodec_ != SrsVideoCodecIdForbidden)
+                default_vcodec = latest_vcodec_;
+
+            // new segment.
+            SrsHlsSegment *seg = new SrsHlsSegment(context, default_acodec, default_vcodec, writer);
+            seg->sequence_no = _sequence_no++;
+            seg->set_path(hls_path + "/" + req->app + "/" + ts_url);
+            seg->uri = ts_url;
+            seg->set_sequence_header(discon);
+
+            seg->append(0);
+            seg->append(ts_duration * 1000);
+
+            segments->append(seg);
+        } else {
+            // Segment already exists, just increment sequence number to maintain consistency
+            _sequence_no++;
+        }
+
+        discon = false;
+    }
+
+    return err;
+}
+
+bool SrsHlsMuxer::segment_exists(const std::string &ts_url)
+{
+    for (int i = 0; i < segments->size(); i++) {
+        SrsHlsSegment *existing_seg = dynamic_cast<SrsHlsSegment *>(segments->at(i));
+        if (existing_seg && existing_seg->uri == ts_url) {
+            return true;
+        }
+    }
+    return false;
+}
+
 srs_error_t SrsHlsMuxer::segment_open()
 {
     srs_error_t err = srs_success;
@@ -1822,8 +1968,9 @@ srs_error_t SrsHlsController::on_publish(SrsRequest *req)
     string hls_key_file_path = _srs_config->get_hls_key_file_path(vhost);
     string hls_key_url = _srs_config->get_hls_key_url(vhost);
 
-    // TODO: FIXME: support load exists m3u8, to continue publish stream.
+    // TODO: FIXME: support load exists m3u8, to recover publish stream.
     // for the HLS donot requires the EXT-X-MEDIA-SEQUENCE be monotonically increase.
+    bool recover = _srs_config->get_hls_recover(vhost);
 
     if ((err = muxer->on_publish(req)) != srs_success) {
         return srs_error_wrap(err, "muxer publish");
@@ -1833,6 +1980,10 @@ srs_error_t SrsHlsController::on_publish(SrsRequest *req)
                                     hls_window, ts_floor, hls_aof_ratio, cleanup, wait_keyframe, hls_keys, hls_fragments_per_key,
                                     hls_key_file, hls_key_file_path, hls_key_url)) != srs_success) {
         return srs_error_wrap(err, "hls: update config");
+    }
+
+    if (recover && (err = muxer->recover_hls()) != srs_success) {
+        return srs_error_wrap(err, "hls: recover stream");
     }
 
     if ((err = muxer->segment_open()) != srs_success) {
