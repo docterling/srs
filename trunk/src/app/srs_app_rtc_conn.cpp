@@ -19,6 +19,7 @@ using namespace std;
 #include <queue>
 #include <sstream>
 
+#include <srs_app_circuit_breaker.hpp>
 #include <srs_app_config.hpp>
 #include <srs_app_http_api.hpp>
 #include <srs_app_http_hooks.hpp>
@@ -32,7 +33,6 @@ using namespace std;
 #include <srs_app_source.hpp>
 #include <srs_app_srt_source.hpp>
 #include <srs_app_statistic.hpp>
-#include <srs_app_threads.hpp>
 #include <srs_app_utility.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_buffer.hpp>
