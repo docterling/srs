@@ -19,14 +19,12 @@
 #endif
 
 // For RTC/FFMPEG build.
-#if defined(SRS_RTC) && !defined(__STDC_CONSTANT_MACROS)
+#if !defined(__STDC_CONSTANT_MACROS)
 #define __STDC_CONSTANT_MACROS
 #endif
 
 // For srs-librtmp, @see https://github.com/ossrs/srs/issues/213
-#ifndef _WIN32
 #include <inttypes.h>
-#endif
 
 #include <stddef.h>
 #include <sys/types.h>

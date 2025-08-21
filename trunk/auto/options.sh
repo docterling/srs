@@ -10,7 +10,7 @@ SRS_RTSP=NO
 # SRS_H265 is always enabled, no longer configurable
 SRS_H265=RESERVED
 SRS_GB28181=NO
-SRS_CXX11=YES
+SRS_CXX11=NO
 SRS_CXX14=NO
 SRS_BACKTRACE=YES
 SRS_NGINX=NO
@@ -102,7 +102,6 @@ SRS_GPROF=NO # Performance test: gprof
 # Preset options
 SRS_GENERIC_LINUX= # Try to run as generic linux, not CentOS or Ubuntu.
 SRS_OSX= #For OSX/macOS/Darwin PC.
-SRS_CYGWIN64= # For Cygwin64 for Windows PC or servers.
 SRS_CROSS_BUILD= #For cross build, for example, on Ubuntu.
 # For cross build, the cpu, for example(FFmpeg), --cpu=24kc
 SRS_CROSS_BUILD_CPU=
@@ -139,7 +138,6 @@ SRS_DEBUG_NACK_DROP=NO
 function apply_system_options() {
     OS_IS_OSX=$(uname -s |grep -q Darwin && echo YES)
     OS_IS_LINUX=$(uname -s |grep -q Linux && echo YES)
-    OS_IS_CYGWIN=$(uname -s |grep -q CYGWIN && echo YES)
 
     OS_IS_CENTOS=$(yum --version >/dev/null 2>&1 && echo YES)
     # For Debian, we think it's ubuntu also.
@@ -158,15 +156,14 @@ function apply_system_options() {
     if [[ $OS_IS_OSX == YES ]]; then
         SRS_OSX=YES;
     fi
-    if [[ $OS_IS_CYGWIN == YES ]]; then SRS_CYGWIN64=YES; fi
 
     if [[ $OS_IS_OSX == YES ]]; then SRS_JOBS=$(sysctl -n hw.ncpu 2>/dev/null || echo 1); fi
-    if [[ $OS_IS_LINUX == YES || $OS_IS_CYGWIN == YES ]]; then
+    if [[ $OS_IS_LINUX == YES ]]; then
         SRS_JOBS=$(grep -c ^processor /proc/cpuinfo 2>/dev/null || echo 1)
     fi
 
-    if [[ $OS_IS_UBUNTU != YES && $OS_IS_CENTOS != YES && $OS_IS_OSX != YES && $SRS_CYGWIN64 != YES ]]; then
-        echo "Warning: Your OS is not Ubuntu(no apt-get), CentOS(no yum), maxOS(not Darwin), Windows(not CYGWIN)"
+    if [[ $OS_IS_UBUNTU != YES && $OS_IS_CENTOS != YES && $OS_IS_OSX != YES ]]; then
+        echo "Warning: Your OS is not Ubuntu(no apt-get), CentOS(no yum), or macOS(not Darwin)"
     fi
 }
 apply_system_options
@@ -184,15 +181,11 @@ Features:
   --https=on|off            Whether enable HTTPS client and server. Default: $(value2switch $SRS_HTTPS)
   --utest=on|off            Whether build the utest. Default: $(value2switch $SRS_UTEST)
   --srt=on|off              Whether build the SRT. Default: $(value2switch $SRS_SRT)
-  --rtc=on|off              Whether build the WebRTC. Default: $(value2switch $SRS_RTC)
   --rtsp=on|off             Whether build the RTSP (requires RTC). Default: $(value2switch $SRS_RTSP)
   --gb28181=on|off          Whether build the GB28181. Default: $(value2switch $SRS_GB28181)
-  --cxx11=on|off            Whether enable the C++11. Default: $(value2switch $SRS_CXX11)
-  --cxx14=on|off            Whether enable the C++14. Default: $(value2switch $SRS_CXX14)
   --ffmpeg-fit=on|off       Whether enable the FFmpeg fit(source code). Default: $(value2switch $SRS_FFMPEG_FIT)
   --ffmpeg-opus=on|off      Whether enable the FFmpeg native opus codec. Default: $(value2switch $SRS_FFMPEG_OPUS)
   --apm=on|off              Whether enable cloud logging and APM(Application Performance Monitor). Default: $(value2switch $SRS_APM)
-  --h265=on                 Whether build the HEVC(H.265) support. Always enabled.
 
   --prefix=<path>           The absolute installation path. Default: $SRS_PREFIX
   --jobs[=N]                Allow N jobs at once; infinite jobs with no arg. Default: $SRS_JOBS
@@ -257,15 +250,21 @@ Experts:
   --generic-linux=on|off    Whether run as generic linux, if not CentOS or Ubuntu. Default: $(value2switch $SRS_GENERIC_LINUX)
 
 Deprecated:
-  --single-thread=on|off    Whether force single thread mode. Default: $(value2switch $SRS_SINGLE_THREAD)
+  --h265=on                 Always enable the build for the HEVC(H.265) support.
+  --rtc=on                  Always enable WebRTC support. Default: $(value2switch $SRS_RTC)
+  --single-thread=on        Always force single thread mode. Default: $(value2switch $SRS_SINGLE_THREAD)
   --cross-build             Enable cross-build, please set bellow Toolchain also. Default: $(value2switch $SRS_CROSS_BUILD)
   --hds=on|off              Whether build the hds streaming, mux RTMP to F4M/F4V files. Default: $(value2switch $SRS_HDS)
   --osx                     Enable build for OSX/Darwin AppleOS. Deprecated for automatically detecting the OS.
   --x86-64                  Enable build for __x86_64 systems. Deprecated for automatically detecting the OS.
   --x86-x64                 Enable build for __x86_64 systems. Deprecated for automatically detecting the OS.
-  --cygwin64                Use cygwin64 to build for Windows. Deprecated for automatically detecting the OS.
   --nginx                   Build nginx tool. Deprecated for not depends on it.
   --ffmpeg                  Build FFmpeg tool. Deprecated for not build it, user should do it.
+
+Removed:
+  --cygwin64                No support cygwin64 anymore.
+  --cxx11=off               Always disable C++11, force C++98 compatibility. Default: $(value2switch $SRS_CXX11)
+  --cxx14=off               Always disable C++14, force C++98 compatibility. Default: $(value2switch $SRS_CXX14)
 
 For example:
     ./configure
@@ -439,7 +438,7 @@ function parse_user_option() {
 
         ##########################################################################################
         --osx)                          SRS_OSX=YES                 ;; # Deprecated, might be removed in future.
-        --cygwin64)                     SRS_CYGWIN64=YES            ;; # Deprecated, might be removed in future.
+
         --x86-x64)                      SRS_X86_X64=YES             ;; # Deprecated, might be removed in future.
         --x86-64)                       SRS_X86_X64=YES             ;; # Deprecated, might be removed in future.
         --with-nginx)                   SRS_NGINX=YES               ;; # Deprecated, might be removed in future.
@@ -505,9 +504,6 @@ fi
 # Apply auto options
 #####################################################################################
 function apply_auto_options() {
-    if [[ $OS_IS_CYGWIN == YES ]]; then
-        SRS_CYGWIN64=YES
-    fi
 
     if [[ $SRS_CROSS_BUILD == YES ]]; then
         if [[ $SRS_CROSS_BUILD_PREFIX != "" && $SRS_CROSS_BUILD_HOST == "" ]]; then
@@ -537,7 +533,7 @@ function apply_auto_options() {
     fi
 
     # Enable FFmpeg fit for RTC to transcode audio from AAC to OPUS, if user enabled it.
-    if [[ $SRS_RTC == YES && $SRS_FFMPEG_FIT == RESERVED ]]; then
+    if [[ $SRS_FFMPEG_FIT == RESERVED ]]; then
         SRS_FFMPEG_FIT=YES
     fi
 
@@ -573,9 +569,10 @@ function apply_auto_options() {
     if [[ $SRS_TRANSCODE == YES ]]; then SRS_FFMPEG_STUB=YES; fi
     if [[ $SRS_INGEST == YES ]]; then SRS_FFMPEG_STUB=YES; fi
 
-    if [[ $SRS_SRTP_ASM == YES && $SRS_RTC == NO ]]; then
-        echo "Disable SRTP-ASM, because RTC is disabled."
-        SRS_SRTP_ASM=NO
+    # Force enable RTC always - WebRTC support is required
+    if [[ $SRS_RTC != YES ]]; then
+        echo "Warning: WebRTC support is always enabled. Forcing RTC mode."
+        SRS_RTC=YES
     fi
 
     if [[ $SRS_SRTP_ASM == YES && $SRS_NASM == NO ]]; then
@@ -583,23 +580,24 @@ function apply_auto_options() {
         SRS_SRTP_ASM=NO
     fi
 
-    # TODO: FIXME: Should build address sanitizer for cygwin64.
-    # See https://github.com/ossrs/srs/issues/3252
-    if [[ $SRS_CYGWIN64 == YES && $SRS_SANITIZER == YES ]]; then
-        echo "Disable address sanitizer for cygwin64"
-        SRS_SANITIZER=NO
-    fi
-    # TODO: FIXME: Should fix bug for SRT for cygwin64. Build ok, but fail in SrsSrtSocket::accept.
-    # See https://github.com/ossrs/srs/issues/3251
-    if [[ $SRS_CYGWIN64 == YES && $SRS_SRT == YES ]]; then
-        echo "Disable SRT for cygwin64"
-        SRS_SRT=NO
-    fi
+
 
     # Force single thread mode always - multi-threading support has been removed
     if [[ $SRS_SINGLE_THREAD != YES ]]; then
         echo "Warning: Multi-threading support has been removed. Forcing single thread mode."
         SRS_SINGLE_THREAD=YES
+    fi
+
+    # Force disable C++11 always - C++98 compatibility is required
+    if [[ $SRS_CXX11 != NO ]]; then
+        echo "Warning: C++11 support has been disabled. Forcing C++98 compatibility mode."
+        SRS_CXX11=NO
+    fi
+
+    # Force disable C++14 always - C++98 compatibility is required
+    if [[ $SRS_CXX14 != NO ]]; then
+        echo "Warning: C++14 support has been disabled. Forcing C++98 compatibility mode."
+        SRS_CXX14=NO
     fi
 
     # parse the jobs for make
@@ -703,7 +701,7 @@ function regenerate_options() {
     SRS_AUTO_CONFIGURE="${SRS_AUTO_CONFIGURE} --sanitizer=$(value2switch $SRS_SANITIZER)"
     SRS_AUTO_CONFIGURE="${SRS_AUTO_CONFIGURE} --sanitizer-static=$(value2switch $SRS_SANITIZER_STATIC)"
     SRS_AUTO_CONFIGURE="${SRS_AUTO_CONFIGURE} --sanitizer-log=$(value2switch $SRS_SANITIZER_LOG)"
-    SRS_AUTO_CONFIGURE="${SRS_AUTO_CONFIGURE} --cygwin64=$(value2switch $SRS_CYGWIN64)"
+
     SRS_AUTO_CONFIGURE="${SRS_AUTO_CONFIGURE} --single-thread=$(value2switch $SRS_SINGLE_THREAD)"
     SRS_AUTO_CONFIGURE="${SRS_AUTO_CONFIGURE} --signal-api=$(value2switch $SRS_SIGNAL_API)"
     SRS_AUTO_CONFIGURE="${SRS_AUTO_CONFIGURE} --generic-linux=$(value2switch $SRS_GENERIC_LINUX)"

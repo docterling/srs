@@ -6,18 +6,16 @@
 
 #include <srs_kernel_utility.hpp>
 
-#ifndef _WIN32
 #include <arpa/inet.h>
-#include <netdb.h>
-#include <sys/time.h>
-#include <unistd.h>
-#endif
-
 #include <fcntl.h>
+#include <netdb.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
+#include <sys/time.h>
+#include <unistd.h>
 
 #include <algorithm>
 #include <vector>
@@ -593,12 +591,8 @@ int srs_do_create_dir_recursively(string dir)
     }
 
     // create curren dir.
-#ifdef _WIN32
-    if (::_mkdir(dir.c_str()) < 0) {
-#else
     mode_t mode = S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IXOTH;
     if (::mkdir(dir.c_str(), mode) < 0) {
-#endif
         if (errno == EEXIST) {
             return ERROR_SYSTEM_DIR_EXISTS;
         }

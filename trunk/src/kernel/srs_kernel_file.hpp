@@ -11,12 +11,11 @@
 
 #include <srs_kernel_io.hpp>
 
+#include <cstdio>
 #include <string>
 
 // for srs-librtmp, @see https://github.com/ossrs/srs/issues/213
-#ifndef _WIN32
 #include <sys/uio.h>
-#endif
 
 class SrsFileReader;
 
