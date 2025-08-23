@@ -151,39 +151,63 @@ srs_error_t SrsSrtSourceManager::notify(int event, srs_utime_t interval, srs_uti
     return err;
 }
 
-srs_error_t SrsSrtSourceManager::fetch_or_create(SrsRequest *r, SrsSharedPtr<SrsSrtSource> &pps)
+srs_error_t SrsSrtSourceManager::fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsSrtSource> &pps)
 {
     srs_error_t err = srs_success;
 
+    bool created = false;
+    // Should never invoke any function during the locking.
+    if (true) {
+        // Use lock to protect coroutine switch.
+        // @bug https://github.com/ossrs/srs/issues/1230
+        SrsLocker(lock);
+
+        string stream_url = r->get_stream_url();
+        std::map<std::string, SrsSharedPtr<SrsSrtSource> >::iterator it = pool.find(stream_url);
+        if (it != pool.end()) {
+            SrsSharedPtr<SrsSrtSource> source = it->second;
+            pps = source;
+        } else {
+            SrsSharedPtr<SrsSrtSource> source(new SrsSrtSource());
+            srs_trace("new srt source, stream_url=%s", stream_url.c_str());
+            pps = source;
+
+            pool[stream_url] = source;
+            created = true;
+        }
+    }
+
+    // Initialize source.
+    if (created && (err = pps->initialize(r)) != srs_success) {
+        return srs_error_wrap(err, "init source %s", r->get_stream_url().c_str());
+    }
+
+    // we always update the request of resource,
+    // for origin auth is on, the token in request maybe invalid,
+    // and we only need to update the token of request, it's simple.
+    if (!created) {
+        pps->update_auth(r);
+    }
+
+    return err;
+}
+
+SrsSharedPtr<SrsSrtSource> SrsSrtSourceManager::fetch(ISrsRequest *r)
+{
     // Use lock to protect coroutine switch.
     // @bug https://github.com/ossrs/srs/issues/1230
     SrsLocker(lock);
 
     string stream_url = r->get_stream_url();
     std::map<std::string, SrsSharedPtr<SrsSrtSource> >::iterator it = pool.find(stream_url);
-    if (it != pool.end()) {
-        SrsSharedPtr<SrsSrtSource> source = it->second;
 
-        // we always update the request of resource,
-        // for origin auth is on, the token in request maybe invalid,
-        // and we only need to update the token of request, it's simple.
-        source->update_auth(r);
-        pps = source;
-
-        return err;
+    SrsSharedPtr<SrsSrtSource> source;
+    if (it == pool.end()) {
+        return source;
     }
 
-    SrsSharedPtr<SrsSrtSource> source(new SrsSrtSource());
-    srs_trace("new srt source, stream_url=%s", stream_url.c_str());
-
-    if ((err = source->initialize(r)) != srs_success) {
-        return srs_error_wrap(err, "init source %s", r->get_stream_url().c_str());
-    }
-
-    pool[stream_url] = source;
-    pps = source;
-
-    return err;
+    source = it->second;
+    return source;
 }
 
 SrsSrtSourceManager *_srs_srt_sources = NULL;
@@ -326,7 +350,7 @@ void SrsSrtFrameBuilder::on_unpublish()
 {
 }
 
-srs_error_t SrsSrtFrameBuilder::initialize(SrsRequest *req)
+srs_error_t SrsSrtFrameBuilder::initialize(ISrsRequest *req)
 {
     srs_error_t err = srs_success;
 
@@ -927,7 +951,19 @@ SrsSrtSource::~SrsSrtSource()
     srs_trace("free srt source id=[%s]", cid.c_str());
 }
 
-srs_error_t SrsSrtSource::initialize(SrsRequest *r)
+// CRITICAL: This method is called AFTER the source has been added to the source pool
+// in the fetch_or_create pattern (see PR 4449).
+//
+// IMPORTANT: All field initialization in this method MUST NOT cause coroutine context switches
+// before completing the basic field setup.
+//
+// If context switches occur before all fields are properly initialized, other coroutines
+// accessing this source from the pool may encounter uninitialized state, leading to crashes
+// or undefined behavior.
+//
+// This prevents the race condition where multiple coroutines could create duplicate sources
+// for the same stream when context switches occurred during initialization.
+srs_error_t SrsSrtSource::initialize(ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 
@@ -990,7 +1026,7 @@ SrsContextId SrsSrtSource::pre_source_id()
     return _pre_source_id;
 }
 
-void SrsSrtSource::update_auth(SrsRequest *r)
+void SrsSrtSource::update_auth(ISrsRequest *r)
 {
     req->update_auth(r);
 }

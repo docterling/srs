@@ -290,43 +290,49 @@ srs_error_t SrsRtcSourceManager::notify(int event, srs_utime_t interval, srs_uti
     return err;
 }
 
-srs_error_t SrsRtcSourceManager::fetch_or_create(SrsRequest *r, SrsSharedPtr<SrsRtcSource> &pps)
+srs_error_t SrsRtcSourceManager::fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsRtcSource> &pps)
 {
     srs_error_t err = srs_success;
 
-    // Use lock to protect coroutine switch.
-    // @bug https://github.com/ossrs/srs/issues/1230
-    SrsLocker(lock);
+    bool created = false;
+    // Should never invoke any function during the locking.
+    if (true) {
+        // Use lock to protect coroutine switch.
+        // @bug https://github.com/ossrs/srs/issues/1230
+        SrsLocker(lock);
 
-    string stream_url = r->get_stream_url();
-    std::map<std::string, SrsSharedPtr<SrsRtcSource> >::iterator it = pool.find(stream_url);
+        string stream_url = r->get_stream_url();
+        std::map<std::string, SrsSharedPtr<SrsRtcSource> >::iterator it = pool.find(stream_url);
 
-    if (it != pool.end()) {
-        SrsSharedPtr<SrsRtcSource> source = it->second;
+        if (it != pool.end()) {
+            SrsSharedPtr<SrsRtcSource> source = it->second;
+            pps = source;
+        } else {
+            SrsSharedPtr<SrsRtcSource> source = SrsSharedPtr<SrsRtcSource>(new SrsRtcSource());
+            srs_trace("new rtc source, stream_url=%s", stream_url.c_str());
+            pps = source;
 
-        // we always update the request of resource,
-        // for origin auth is on, the token in request maybe invalid,
-        // and we only need to update the token of request, it's simple.
-        source->update_auth(r);
-        pps = source;
-
-        return err;
+            pool[stream_url] = source;
+            created = true;
+        }
     }
 
-    SrsSharedPtr<SrsRtcSource> source = SrsSharedPtr<SrsRtcSource>(new SrsRtcSource());
-    srs_trace("new rtc source, stream_url=%s", stream_url.c_str());
-
-    if ((err = source->initialize(r)) != srs_success) {
+    // Initialize source.
+    if (created && (err = pps->initialize(r)) != srs_success) {
         return srs_error_wrap(err, "init source %s", r->get_stream_url().c_str());
     }
 
-    pool[stream_url] = source;
-    pps = source;
+    // we always update the request of resource,
+    // for origin auth is on, the token in request maybe invalid,
+    // and we only need to update the token of request, it's simple.
+    if (!created) {
+        pps->update_auth(r);
+    }
 
     return err;
 }
 
-SrsSharedPtr<SrsRtcSource> SrsRtcSourceManager::fetch(SrsRequest *r)
+SrsSharedPtr<SrsRtcSource> SrsRtcSourceManager::fetch(ISrsRequest *r)
 {
     // Use lock to protect coroutine switch.
     // @bug https://github.com/ossrs/srs/issues/1230
@@ -399,7 +405,19 @@ SrsRtcSource::~SrsRtcSource()
     srs_trace("free rtc source id=[%s]", cid.c_str());
 }
 
-srs_error_t SrsRtcSource::initialize(SrsRequest *r)
+// CRITICAL: This method is called AFTER the source has been added to the source pool
+// in the fetch_or_create pattern (see PR 4449).
+//
+// IMPORTANT: All field initialization in this method MUST NOT cause coroutine context switches
+// before completing the basic field setup.
+//
+// If context switches occur before all fields are properly initialized, other coroutines
+// accessing this source from the pool may encounter uninitialized state, leading to crashes
+// or undefined behavior.
+//
+// This prevents the race condition where multiple coroutines could create duplicate sources
+// for the same stream when context switches occurred during initialization.
+srs_error_t SrsRtcSource::initialize(ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 
@@ -499,7 +517,7 @@ void SrsRtcSource::init_for_play_before_publishing()
     set_stream_desc(stream_desc.get());
 }
 
-void SrsRtcSource::update_auth(SrsRequest *r)
+void SrsRtcSource::update_auth(ISrsRequest *r)
 {
     req->update_auth(r);
 }
@@ -937,7 +955,7 @@ srs_error_t SrsRtcRtpBuilder::initialize_video_track(SrsVideoCodecId codec)
     return err;
 }
 
-srs_error_t SrsRtcRtpBuilder::initialize(SrsRequest *r)
+srs_error_t SrsRtcRtpBuilder::initialize(ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 
@@ -1733,7 +1751,7 @@ SrsRtcFrameBuilder::~SrsRtcFrameBuilder()
     srs_freep(obs_whip_pps_);
 }
 
-srs_error_t SrsRtcFrameBuilder::initialize(SrsRequest *r, SrsAudioCodecId audio_codec, SrsVideoCodecId video_codec)
+srs_error_t SrsRtcFrameBuilder::initialize(ISrsRequest *r, SrsAudioCodecId audio_codec, SrsVideoCodecId video_codec)
 {
     srs_error_t err = srs_success;
 

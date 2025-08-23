@@ -19,8 +19,10 @@ using namespace std;
 #include <srs_app_hds.hpp>
 #include <srs_app_hls.hpp>
 #include <srs_app_http_hooks.hpp>
+#include <srs_app_hybrid.hpp>
 #include <srs_app_ng_exec.hpp>
 #include <srs_app_rtc_source.hpp>
+#include <srs_app_server.hpp>
 #include <srs_app_statistic.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_buffer.hpp>
@@ -857,7 +859,7 @@ SrsOriginHub::~SrsOriginHub()
 #endif
 }
 
-srs_error_t SrsOriginHub::initialize(SrsSharedPtr<SrsLiveSource> s, SrsRequest *r)
+srs_error_t SrsOriginHub::initialize(SrsSharedPtr<SrsLiveSource> s, ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 
@@ -1524,7 +1526,7 @@ srs_error_t SrsOriginHub::create_backend_forwarders(bool &applied)
         std::string url = *it;
 
         // create temp Request by url
-        SrsUniquePtr<SrsRequest> req(new SrsRequest());
+        SrsUniquePtr<ISrsRequest> req(new SrsRequest());
         srs_parse_rtmp_url(url, req->tcUrl, req->stream);
         srs_discovery_tc_url(req->tcUrl, req->schema, req->host, req->vhost, req->app, req->stream, req->port, req->param);
 
@@ -1760,42 +1762,53 @@ srs_error_t SrsLiveSourceManager::initialize()
     return setup_ticks();
 }
 
-srs_error_t SrsLiveSourceManager::fetch_or_create(SrsRequest *r, ISrsLiveSourceHandler *h, SrsSharedPtr<SrsLiveSource> &pps)
+srs_error_t SrsLiveSourceManager::fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsLiveSource> &pps)
 {
     srs_error_t err = srs_success;
 
-    // Use lock to protect coroutine switch.
-    // @bug https://github.com/ossrs/srs/issues/1230
-    // TODO: FIXME: Use smaller scope lock.
-    SrsLocker(lock);
+    bool created = false;
+    // Should never invoke any function during the locking.
+    if (true) {
+        // Use lock to protect coroutine switch.
+        // @bug https://github.com/ossrs/srs/issues/1230
+        // TODO: FIXME: Use smaller scope lock.
+        SrsLocker(lock);
 
-    string stream_url = r->get_stream_url();
-    std::map<std::string, SrsSharedPtr<SrsLiveSource> >::iterator it = pool.find(stream_url);
+        string stream_url = r->get_stream_url();
+        std::map<std::string, SrsSharedPtr<SrsLiveSource> >::iterator it = pool.find(stream_url);
 
-    if (it != pool.end()) {
-        SrsSharedPtr<SrsLiveSource> &source = it->second;
+        if (it != pool.end()) {
+            SrsSharedPtr<SrsLiveSource> &source = it->second;
+            pps = source;
+        } else {
+            SrsSharedPtr<SrsLiveSource> source = new SrsLiveSource();
+            srs_trace("new live source, stream_url=%s", stream_url.c_str());
+            pps = source;
 
-        // we always update the request of resource,
-        // for origin auth is on, the token in request maybe invalid,
-        // and we only need to update the token of request, it's simple.
-        source->update_auth(r);
-        pps = source;
-        return err;
+            // Callback to notify request of source creation
+            r->on_source_created();
+
+            pool[stream_url] = source;
+            created = true;
+        }
     }
 
-    SrsSharedPtr<SrsLiveSource> source = new SrsLiveSource();
-    srs_trace("new live source, stream_url=%s", stream_url.c_str());
-
-    if ((err = source->initialize(source, r, h)) != srs_success) {
+    // Initialize source with the wrapper of itself.
+    if (created && (err = pps->initialize(pps, r)) != srs_success) {
         return srs_error_wrap(err, "init source %s", r->get_stream_url().c_str());
     }
 
-    pool[stream_url] = source;
-    pps = source;
+    // we always update the request of resource,
+    // for origin auth is on, the token in request maybe invalid,
+    // and we only need to update the token of request, it's simple.
+    if (!created) {
+        pps->update_auth(r);
+    }
+
     return err;
 }
 
-SrsSharedPtr<SrsLiveSource> SrsLiveSourceManager::fetch(SrsRequest *r)
+SrsSharedPtr<SrsLiveSource> SrsLiveSourceManager::fetch(ISrsRequest *r)
 {
     // Use lock to protect coroutine switch.
     // @bug https://github.com/ossrs/srs/issues/1230
@@ -1886,7 +1899,6 @@ SrsLiveSource::SrsLiveSource()
     stream_die_at_ = 0;
     publisher_idle_at_ = 0;
 
-    handler = NULL;
     bridge_ = NULL;
 
     play_edge = new SrsPlayEdge();
@@ -1985,16 +1997,29 @@ bool SrsLiveSource::publisher_is_idle_for(srs_utime_t timeout)
     return false;
 }
 
-srs_error_t SrsLiveSource::initialize(SrsSharedPtr<SrsLiveSource> wrapper, SrsRequest *r, ISrsLiveSourceHandler *h)
+// CRITICAL: This method is called AFTER the source has been added to the source pool
+// in the fetch_or_create pattern (see PR 4449).
+//
+// IMPORTANT: All field initialization in this method MUST NOT cause coroutine context switches
+// before completing the basic field setup.
+//
+// If context switches occur before all fields are properly initialized, other coroutines
+// accessing this source from the pool may encounter uninitialized state, leading to crashes
+// or undefined behavior.
+//
+// This prevents the race condition where multiple coroutines could create duplicate sources
+// for the same stream when context switches occurred during initialization.
+srs_error_t SrsLiveSource::initialize(SrsSharedPtr<SrsLiveSource> wrapper, ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 
-    srs_assert(h);
     srs_assert(!req);
 
-    handler = h;
     req = r->copy();
     atc = _srs_config->get_atc(req->vhost);
+
+    jitter_algorithm = (SrsRtmpJitterAlgorithm)_srs_config->get_time_jitter(req->vhost);
+    mix_correct = _srs_config->get_mix_correct(req->vhost);
 
     if ((err = format_->initialize()) != srs_success) {
         return srs_error_wrap(err, "format initialize");
@@ -2002,10 +2027,6 @@ srs_error_t SrsLiveSource::initialize(SrsSharedPtr<SrsLiveSource> wrapper, SrsRe
 
     // Setup the SPS/PPS parsing strategy.
     format_->try_annexb_first = _srs_config->try_annexb_first(r->vhost);
-
-    if ((err = hub->initialize(wrapper, req)) != srs_success) {
-        return srs_error_wrap(err, "hub");
-    }
 
     if ((err = play_edge->initialize(wrapper, req)) != srs_success) {
         return srs_error_wrap(err, "edge(play)");
@@ -2017,8 +2038,9 @@ srs_error_t SrsLiveSource::initialize(SrsSharedPtr<SrsLiveSource> wrapper, SrsRe
     srs_utime_t queue_size = _srs_config->get_queue_length(req->vhost);
     publish_edge->set_queue_size(queue_size);
 
-    jitter_algorithm = (SrsRtmpJitterAlgorithm)_srs_config->get_time_jitter(req->vhost);
-    mix_correct = _srs_config->get_mix_correct(req->vhost);
+    if ((err = hub->initialize(wrapper, req)) != srs_success) {
+        return srs_error_wrap(err, "hub");
+    }
 
     return err;
 }
@@ -2151,7 +2173,7 @@ bool SrsLiveSource::inactive()
     return can_publish_;
 }
 
-void SrsLiveSource::update_auth(SrsRequest *r)
+void SrsLiveSource::update_auth(ISrsRequest *r)
 {
     req->update_auth(r);
 }
@@ -2588,6 +2610,7 @@ srs_error_t SrsLiveSource::on_publish()
     }
 
     // notify the handler.
+    ISrsLiveSourceHandler *handler = _srs_hybrid->srs()->instance();
     srs_assert(handler);
     if ((err = handler->on_publish(req)) != srs_success) {
         return srs_error_wrap(err, "handle publish");
@@ -2636,7 +2659,9 @@ void SrsLiveSource::on_unpublish()
     _source_id = SrsContextId();
 
     // notify the handler.
+    ISrsLiveSourceHandler *handler = _srs_hybrid->srs()->instance();
     srs_assert(handler);
+
     SrsStatistic *stat = SrsStatistic::instance();
     stat->on_stream_close(req);
 
