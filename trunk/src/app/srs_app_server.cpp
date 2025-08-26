@@ -33,6 +33,7 @@ using namespace std;
 #include <srs_app_rtmp_conn.hpp>
 #include <srs_app_source.hpp>
 #include <srs_app_statistic.hpp>
+#include <srs_app_stream_token.hpp>
 #include <srs_app_utility.hpp>
 #include <srs_kernel_consts.hpp>
 #include <srs_kernel_error.hpp>

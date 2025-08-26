@@ -33,6 +33,7 @@ using namespace std;
 #include <srs_app_source.hpp>
 #include <srs_app_srt_source.hpp>
 #include <srs_app_statistic.hpp>
+#include <srs_app_stream_token.hpp>
 #include <srs_app_utility.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_buffer.hpp>
@@ -1192,6 +1193,16 @@ srs_error_t SrsRtcPublishStream::initialize(ISrsRequest *r, SrsRtcSourceDescript
     for (int i = 0; i < (int)video_tracks_.size(); i++) {
         SrsRtcVideoRecvTrack *track = video_tracks_.at(i);
         track->set_nack_no_copy(nack_no_copy_);
+    }
+
+    // Acquire stream publish token to prevent race conditions across all protocols.
+    SrsStreamPublishToken *publish_token_raw = NULL;
+    if ((err = _srs_stream_publish_tokens->acquire_token(req_, publish_token_raw)) != srs_success) {
+        return srs_error_wrap(err, "acquire stream publish token");
+    }
+    SrsUniquePtr<SrsStreamPublishToken> publish_token(publish_token_raw);
+    if (publish_token.get()) {
+        srs_trace("stream publish token acquired, type=rtc, url=%s", req_->get_stream_url().c_str());
     }
 
     // Setup the publish stream in source to enable PLI as such.
