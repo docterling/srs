@@ -7,6 +7,7 @@ The changelog for SRS.
 <a name="v7-changes"></a>
 
 ## SRS 7.0 Changelog
+* v7.0, 2025-08-26, Merge [#4451](https://github.com/ossrs/srs/pull/4451): RTC: Fix null pointer crash in RTC2RTMP when start packet is missing. v7.0.63 (#4451)
 * v7.0, 2025-08-25, Merge [#4452](https://github.com/ossrs/srs/pull/4452): AI: Implement stream publish token system to prevent race conditions across all protocols. v7.0.62 (#4452)
 * v7.0, 2025-08-22, Merge [#4449](https://github.com/ossrs/srs/pull/4449): Refine source lock. v7.0.61 (#4449)
 * v7.0, 2025-08-21, Merge [#4447](https://github.com/ossrs/srs/pull/4447): AI: Always enable WebRTC and enforce C++98 compatibility. v7.0.60 (#4447)
@@ -76,6 +77,7 @@ The changelog for SRS.
 <a name="v6-changes"></a>
 
 ## SRS 6.0 Changelog
+* v6.0, 2025-08-26, Merge [#4451](https://github.com/ossrs/srs/pull/4451): RTC: Fix null pointer crash in RTC2RTMP when start packet is missing. v6.0.175 (#4451)
 * v6.0, 2025-08-16, Merge [#4441](https://github.com/ossrs/srs/pull/4441): fix err memory leak in rtc to rtmp bridge. v6.0.174 (#4441)
 * v6.0, 2025-08-14, Merge [#4161](https://github.com/ossrs/srs/pull/4161): fix hls & dash segments cleanup. v6.0.173 (#4161)
 * v6.0, 2025-08-12, Merge [#4230](https://github.com/ossrs/srs/pull/4230): MP4 DVR: Fix audio/video synchronization issues in WebRTC recordings. v6.0.172 (#4230)
