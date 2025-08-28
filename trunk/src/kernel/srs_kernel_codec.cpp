@@ -18,6 +18,57 @@ using namespace std;
 #include <srs_kernel_rtc_rtp.hpp>
 #include <srs_kernel_utility.hpp>
 
+srs_error_t srs_avc_nalu_read_uev(SrsBitBuffer *stream, int32_t &v)
+{
+    srs_error_t err = srs_success;
+
+    if (stream->empty()) {
+        return srs_error_new(ERROR_AVC_NALU_UEV, "empty stream");
+    }
+
+    // ue(v) in 9.1 Parsing process for Exp-Golomb codes
+    // ISO_IEC_14496-10-AVC-2012.pdf, page 227.
+    // Syntax elements coded as ue(v), me(v), or se(v) are Exp-Golomb-coded.
+    //      leadingZeroBits = -1;
+    //      for( b = 0; !b; leadingZeroBits++ )
+    //          b = read_bits( 1 )
+    // The variable codeNum is then assigned as follows:
+    //      codeNum = (2<<leadingZeroBits) - 1 + read_bits( leadingZeroBits )
+    int leadingZeroBits = -1;
+    for (int8_t b = 0; !b && !stream->empty(); leadingZeroBits++) {
+        b = stream->read_bit();
+    }
+
+    if (leadingZeroBits >= 31) {
+        return srs_error_new(ERROR_AVC_NALU_UEV, "%dbits overflow 31bits", leadingZeroBits);
+    }
+
+    v = (1 << leadingZeroBits) - 1;
+    for (int i = 0; i < (int)leadingZeroBits; i++) {
+        if (stream->empty()) {
+            return srs_error_new(ERROR_AVC_NALU_UEV, "no bytes for leadingZeroBits=%d", leadingZeroBits);
+        }
+
+        int32_t b = stream->read_bit();
+        v += b << (leadingZeroBits - 1 - i);
+    }
+
+    return err;
+}
+
+srs_error_t srs_avc_nalu_read_bit(SrsBitBuffer *stream, int8_t &v)
+{
+    srs_error_t err = srs_success;
+
+    if (stream->empty()) {
+        return srs_error_new(ERROR_AVC_NALU_UEV, "empty stream");
+    }
+
+    v = stream->read_bit();
+
+    return err;
+}
+
 string srs_video_codec_id2str(SrsVideoCodecId codec)
 {
     switch (codec) {
@@ -3090,4 +3141,37 @@ srs_error_t SrsFormat::audio_aac_sequence_header_demux(char *data, int size)
     //}
 
     return err;
+}
+
+bool srs_avc_startswith_annexb(SrsBuffer *stream, int *pnb_start_code)
+{
+    if (!stream) {
+        return false;
+    }
+
+    char *bytes = stream->data() + stream->pos();
+    char *p = bytes;
+
+    for (;;) {
+        if (!stream->require((int)(p - bytes + 3))) {
+            return false;
+        }
+
+        // not match
+        if (p[0] != (char)0x00 || p[1] != (char)0x00) {
+            return false;
+        }
+
+        // match N[00] 00 00 01, where N>=0
+        if (p[2] == (char)0x01) {
+            if (pnb_start_code) {
+                *pnb_start_code = (int)(p - bytes) + 3;
+            }
+            return true;
+        }
+
+        p++;
+    }
+
+    return false;
 }

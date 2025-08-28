@@ -18,6 +18,7 @@
 #include <unistd.h>
 
 #include <algorithm>
+#include <sstream>
 #include <vector>
 using namespace std;
 
@@ -26,80 +27,33 @@ using namespace std;
 #include <srs_kernel_buffer.hpp>
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_flv.hpp>
+#include <srs_kernel_io.hpp>
 #include <srs_kernel_log.hpp>
+
+#include <climits>
+#include <cmath>
 
 // this value must:
 // equals to (SRS_SYS_CYCLE_INTERVAL*SRS_SYS_TIME_RESOLUTION_MS_TIMES)*1000
 // @see SRS_SYS_TIME_RESOLUTION_MS_TIMES
 #define SYS_TIME_RESOLUTION_US 300 * 1000
 
-srs_error_t srs_avc_nalu_read_uev(SrsBitBuffer *stream, int32_t &v)
-{
-    srs_error_t err = srs_success;
-
-    if (stream->empty()) {
-        return srs_error_new(ERROR_AVC_NALU_UEV, "empty stream");
-    }
-
-    // ue(v) in 9.1 Parsing process for Exp-Golomb codes
-    // ISO_IEC_14496-10-AVC-2012.pdf, page 227.
-    // Syntax elements coded as ue(v), me(v), or se(v) are Exp-Golomb-coded.
-    //      leadingZeroBits = -1;
-    //      for( b = 0; !b; leadingZeroBits++ )
-    //          b = read_bits( 1 )
-    // The variable codeNum is then assigned as follows:
-    //      codeNum = (2<<leadingZeroBits) - 1 + read_bits( leadingZeroBits )
-    int leadingZeroBits = -1;
-    for (int8_t b = 0; !b && !stream->empty(); leadingZeroBits++) {
-        b = stream->read_bit();
-    }
-
-    if (leadingZeroBits >= 31) {
-        return srs_error_new(ERROR_AVC_NALU_UEV, "%dbits overflow 31bits", leadingZeroBits);
-    }
-
-    v = (1 << leadingZeroBits) - 1;
-    for (int i = 0; i < (int)leadingZeroBits; i++) {
-        if (stream->empty()) {
-            return srs_error_new(ERROR_AVC_NALU_UEV, "no bytes for leadingZeroBits=%d", leadingZeroBits);
-        }
-
-        int32_t b = stream->read_bit();
-        v += b << (leadingZeroBits - 1 - i);
-    }
-
-    return err;
-}
-
-srs_error_t srs_avc_nalu_read_bit(SrsBitBuffer *stream, int8_t &v)
-{
-    srs_error_t err = srs_success;
-
-    if (stream->empty()) {
-        return srs_error_new(ERROR_AVC_NALU_UEV, "empty stream");
-    }
-
-    v = stream->read_bit();
-
-    return err;
-}
-
 srs_utime_t _srs_system_time_us_cache = 0;
 srs_utime_t _srs_system_time_startup_time = 0;
 
-srs_utime_t srs_get_system_time()
+srs_utime_t srs_time_now_cached()
 {
     if (_srs_system_time_us_cache <= 0) {
-        srs_update_system_time();
+        srs_time_now_realtime();
     }
 
     return _srs_system_time_us_cache;
 }
 
-srs_utime_t srs_get_system_startup_time()
+srs_utime_t srs_time_since_startup()
 {
     if (_srs_system_time_startup_time <= 0) {
-        srs_update_system_time();
+        srs_time_now_realtime();
     }
 
     return _srs_system_time_startup_time;
@@ -110,7 +64,7 @@ srs_utime_t srs_get_system_startup_time()
 srs_gettimeofday_t _srs_gettimeofday = (srs_gettimeofday_t)::gettimeofday;
 #endif
 
-srs_utime_t srs_update_system_time()
+srs_utime_t srs_time_now_realtime()
 {
     timeval now;
 
@@ -147,150 +101,6 @@ srs_utime_t srs_update_system_time()
     return _srs_system_time_us_cache;
 }
 
-// TODO: FIXME: Replace by ST dns resolve.
-string srs_dns_resolve(string host, int &family)
-{
-    addrinfo hints;
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = family;
-
-    addrinfo *r_raw = NULL;
-    if (getaddrinfo(host.c_str(), NULL, &hints, &r_raw)) {
-        return "";
-    }
-    SrsUniquePtr<addrinfo> r(r_raw, freeaddrinfo);
-
-    char shost[64];
-    memset(shost, 0, sizeof(shost));
-    if (getnameinfo(r->ai_addr, r->ai_addrlen, shost, sizeof(shost), NULL, 0, NI_NUMERICHOST)) {
-        return "";
-    }
-
-    family = r->ai_family;
-    return string(shost);
-}
-
-void srs_parse_hostport(string hostport, string &host, int &port)
-{
-    // No host or port.
-    if (hostport.empty()) {
-        return;
-    }
-
-    size_t pos = string::npos;
-
-    // Host only for ipv4.
-    if ((pos = hostport.rfind(":")) == string::npos) {
-        host = hostport;
-        return;
-    }
-
-    // For ipv4(only one colon), host:port.
-    if (hostport.find(":") == pos) {
-        host = hostport.substr(0, pos);
-        string p = hostport.substr(pos + 1);
-        if (!p.empty() && p != "0") {
-            port = ::atoi(p.c_str());
-        }
-        return;
-    }
-
-    // Host only for ipv6.
-    if (hostport.at(0) != '[' || (pos = hostport.rfind("]:")) == string::npos) {
-        host = hostport;
-        return;
-    }
-
-    // For ipv6, [host]:port.
-    host = hostport.substr(1, pos - 1);
-    string p = hostport.substr(pos + 2);
-    if (!p.empty() && p != "0") {
-        port = ::atoi(p.c_str());
-    }
-}
-
-string srs_any_address_for_listener()
-{
-    bool ipv4_active = false;
-    bool ipv6_active = false;
-
-    if (true) {
-        int fd = socket(AF_INET, SOCK_DGRAM, 0);
-        if (fd != -1) {
-            ipv4_active = true;
-            close(fd);
-        }
-    }
-    if (true) {
-        int fd = socket(AF_INET6, SOCK_DGRAM, 0);
-        if (fd != -1) {
-            ipv6_active = true;
-            close(fd);
-        }
-    }
-
-    if (ipv6_active && !ipv4_active) {
-        return SRS_CONSTS_LOOPBACK6;
-    }
-    return SRS_CONSTS_LOOPBACK;
-}
-
-void srs_parse_endpoint(string hostport, string &ip, int &port)
-{
-    const size_t pos = hostport.rfind(":"); // Look for ":" from the end, to work with IPv6.
-    if (pos != std::string::npos) {
-        if ((pos >= 1) && (hostport[0] == '[') && (hostport[pos - 1] == ']')) {
-            // Handle IPv6 in RFC 2732 format, e.g. [3ffe:dead:beef::1]:1935
-            ip = hostport.substr(1, pos - 2);
-        } else {
-            // Handle IP address
-            ip = hostport.substr(0, pos);
-        }
-
-        const string sport = hostport.substr(pos + 1);
-        port = ::atoi(sport.c_str());
-    } else {
-        ip = srs_any_address_for_listener();
-        port = ::atoi(hostport.c_str());
-    }
-}
-
-bool srs_check_ip_addr_valid(string ip)
-{
-    unsigned char buf[sizeof(struct in6_addr)];
-
-    // check ipv4
-    int ret = inet_pton(AF_INET, ip.data(), buf);
-    if (ret > 0) {
-        return true;
-    }
-
-    ret = inet_pton(AF_INET6, ip.data(), buf);
-    if (ret > 0) {
-        return true;
-    }
-
-    return false;
-}
-
-string srs_int2str(int64_t value)
-{
-    return srs_fmt("%" PRId64, value);
-}
-
-string srs_float2str(double value)
-{
-    // len(max int64_t) is 20, plus one "+-."
-    char tmp[21 + 1];
-    snprintf(tmp, sizeof(tmp), "%.2f", value);
-    return tmp;
-}
-
-string srs_bool2switch(bool v)
-{
-    return v ? "on" : "off";
-}
-
 bool srs_is_little_endian()
 {
     // convert to network(big-endian) order, if not equals,
@@ -310,7 +120,25 @@ bool srs_is_little_endian()
     return (little_endian_check == 1);
 }
 
-string srs_string_replace(string str, string old_str, string new_str)
+string srs_strconv_format_int(int64_t value)
+{
+    return srs_fmt_sprintf("%" PRId64, value);
+}
+
+string srs_strconv_format_float(double value)
+{
+    // len(max int64_t) is 20, plus one "+-."
+    char tmp[21 + 1];
+    snprintf(tmp, sizeof(tmp), "%.2f", value);
+    return tmp;
+}
+
+string srs_strconv_format_bool(bool v)
+{
+    return v ? "on" : "off";
+}
+
+string srs_strings_replace(string str, string old_str, string new_str)
 {
     std::string ret = str;
 
@@ -327,7 +155,7 @@ string srs_string_replace(string str, string old_str, string new_str)
     return ret;
 }
 
-string srs_string_trim_end(string str, string trim_chars)
+string srs_strings_trim_end(string str, string trim_chars)
 {
     std::string ret = str;
 
@@ -345,7 +173,7 @@ string srs_string_trim_end(string str, string trim_chars)
     return ret;
 }
 
-string srs_string_trim_start(string str, string trim_chars)
+string srs_strings_trim_start(string str, string trim_chars)
 {
     std::string ret = str;
 
@@ -363,7 +191,7 @@ string srs_string_trim_start(string str, string trim_chars)
     return ret;
 }
 
-string srs_string_remove(string str, string remove_chars)
+string srs_strings_remove(string str, string remove_chars)
 {
     std::string ret = str;
 
@@ -411,63 +239,63 @@ string srs_erase_last_substr(string str, string erase_string)
     return ret;
 }
 
-bool srs_string_ends_with(string str, string flag)
+bool srs_strings_ends_with(string str, string flag)
 {
     const size_t pos = str.rfind(flag);
     return (pos != string::npos) && (pos == str.length() - flag.length());
 }
 
-bool srs_string_ends_with(string str, string flag0, string flag1)
+bool srs_strings_ends_with(string str, string flag0, string flag1)
 {
-    return srs_string_ends_with(str, flag0) || srs_string_ends_with(str, flag1);
+    return srs_strings_ends_with(str, flag0) || srs_strings_ends_with(str, flag1);
 }
 
-bool srs_string_ends_with(string str, string flag0, string flag1, string flag2)
+bool srs_strings_ends_with(string str, string flag0, string flag1, string flag2)
 {
-    return srs_string_ends_with(str, flag0) || srs_string_ends_with(str, flag1) || srs_string_ends_with(str, flag2);
+    return srs_strings_ends_with(str, flag0) || srs_strings_ends_with(str, flag1) || srs_strings_ends_with(str, flag2);
 }
 
-bool srs_string_ends_with(string str, string flag0, string flag1, string flag2, string flag3)
+bool srs_strings_ends_with(string str, string flag0, string flag1, string flag2, string flag3)
 {
-    return srs_string_ends_with(str, flag0) || srs_string_ends_with(str, flag1) || srs_string_ends_with(str, flag2) || srs_string_ends_with(str, flag3);
+    return srs_strings_ends_with(str, flag0) || srs_strings_ends_with(str, flag1) || srs_strings_ends_with(str, flag2) || srs_strings_ends_with(str, flag3);
 }
 
-bool srs_string_starts_with(string str, string flag)
+bool srs_strings_starts_with(string str, string flag)
 {
     return str.find(flag) == 0;
 }
 
-bool srs_string_starts_with(string str, string flag0, string flag1)
+bool srs_strings_starts_with(string str, string flag0, string flag1)
 {
-    return srs_string_starts_with(str, flag0) || srs_string_starts_with(str, flag1);
+    return srs_strings_starts_with(str, flag0) || srs_strings_starts_with(str, flag1);
 }
 
-bool srs_string_starts_with(string str, string flag0, string flag1, string flag2)
+bool srs_strings_starts_with(string str, string flag0, string flag1, string flag2)
 {
-    return srs_string_starts_with(str, flag0, flag1) || srs_string_starts_with(str, flag2);
+    return srs_strings_starts_with(str, flag0, flag1) || srs_strings_starts_with(str, flag2);
 }
 
-bool srs_string_starts_with(string str, string flag0, string flag1, string flag2, string flag3)
+bool srs_strings_starts_with(string str, string flag0, string flag1, string flag2, string flag3)
 {
-    return srs_string_starts_with(str, flag0, flag1, flag2) || srs_string_starts_with(str, flag3);
+    return srs_strings_starts_with(str, flag0, flag1, flag2) || srs_strings_starts_with(str, flag3);
 }
 
-bool srs_string_contains(string str, string flag)
+bool srs_strings_contains(string str, string flag)
 {
     return str.find(flag) != string::npos;
 }
 
-bool srs_string_contains(string str, string flag0, string flag1)
+bool srs_strings_contains(string str, string flag0, string flag1)
 {
     return str.find(flag0) != string::npos || str.find(flag1) != string::npos;
 }
 
-bool srs_string_contains(string str, string flag0, string flag1, string flag2)
+bool srs_strings_contains(string str, string flag0, string flag1, string flag2)
 {
     return str.find(flag0) != string::npos || str.find(flag1) != string::npos || str.find(flag2) != string::npos;
 }
 
-int srs_string_count(string str, string flag)
+int srs_strings_count(string str, string flag)
 {
     int nn = 0;
     for (int i = 0; i < (int)flag.length(); i++) {
@@ -477,7 +305,7 @@ int srs_string_count(string str, string flag)
     return nn;
 }
 
-vector<string> srs_string_split(string s, string seperator)
+vector<string> srs_strings_split(string s, string seperator)
 {
     vector<string> result;
     if (seperator.empty()) {
@@ -497,7 +325,7 @@ vector<string> srs_string_split(string s, string seperator)
     return result;
 }
 
-string srs_string_min_match(string str, vector<string> seperators)
+string srs_strings_min_match(string str, vector<string> seperators)
 {
     string match;
 
@@ -523,7 +351,7 @@ string srs_string_min_match(string str, vector<string> seperators)
     return match;
 }
 
-vector<string> srs_string_split(string str, vector<string> seperators)
+vector<string> srs_strings_split(string str, vector<string> seperators)
 {
     vector<string> arr;
 
@@ -531,7 +359,7 @@ vector<string> srs_string_split(string str, vector<string> seperators)
     string s = str;
 
     while (true) {
-        string seperator = srs_string_min_match(s, seperators);
+        string seperator = srs_strings_min_match(s, seperators);
         if (seperator.empty()) {
             break;
         }
@@ -551,7 +379,7 @@ vector<string> srs_string_split(string str, vector<string> seperators)
     return arr;
 }
 
-std::string srs_fmt(const char *fmt, ...)
+std::string srs_fmt_sprintf(const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -607,7 +435,66 @@ int srs_do_create_dir_recursively(string dir)
     return ret;
 }
 
-bool srs_bytes_equals(void *pa, void *pb, int size)
+string srs_strings_dumps_hex(const std::string &str)
+{
+    return srs_strings_dumps_hex(str.c_str(), str.size());
+}
+
+string srs_strings_dumps_hex(const char *str, int length)
+{
+    return srs_strings_dumps_hex(str, length, INT_MAX);
+}
+
+string srs_strings_dumps_hex(const char *str, int length, int limit)
+{
+    return srs_strings_dumps_hex(str, length, limit, ' ', 128, '\n');
+}
+
+string srs_strings_dumps_hex(const char *str, int length, int limit, char seperator, int line_limit, char newline)
+{
+    // 1 byte trailing '\0'.
+    const int LIMIT = 1024 * 16 + 1;
+    static char buf[LIMIT];
+
+    int len = 0;
+    for (int i = 0; i < length && i < limit && len < LIMIT; ++i) {
+        int nb = snprintf(buf + len, LIMIT - len, "%02x", (uint8_t)str[i]);
+        if (nb <= 0 || nb >= LIMIT - len) {
+            break;
+        }
+        len += nb;
+
+        // Only append seperator and newline when not last byte.
+        if (i < length - 1 && i < limit - 1 && len < LIMIT) {
+            if (seperator) {
+                buf[len++] = seperator;
+            }
+
+            if (newline && line_limit && i > 0 && ((i + 1) % line_limit) == 0) {
+                buf[len++] = newline;
+            }
+        }
+    }
+
+    // Empty string.
+    if (len <= 0) {
+        return "";
+    }
+
+    // If overflow, cut the trailing newline.
+    if (newline && len >= LIMIT - 2 && buf[len - 1] == newline) {
+        len--;
+    }
+
+    // If overflow, cut the trailing seperator.
+    if (seperator && len >= LIMIT - 3 && buf[len - 1] == seperator) {
+        len--;
+    }
+
+    return string(buf, len);
+}
+
+bool srs_bytes_equal(void *pa, void *pb, int size)
 {
     uint8_t *a = (uint8_t *)pa;
     uint8_t *b = (uint8_t *)pb;
@@ -629,7 +516,7 @@ bool srs_bytes_equals(void *pa, void *pb, int size)
     return true;
 }
 
-srs_error_t srs_create_dir_recursively(string dir)
+srs_error_t srs_os_mkdir_all(string dir)
 {
     int ret = srs_do_create_dir_recursively(dir);
 
@@ -652,7 +539,7 @@ bool srs_path_exists(std::string path)
     return false;
 }
 
-string srs_path_dirname(string path)
+string srs_path_filepath_dir(string path)
 {
     std::string dirname = path;
 
@@ -672,7 +559,7 @@ string srs_path_dirname(string path)
     return dirname;
 }
 
-string srs_path_basename(string path)
+string srs_path_filepath_base(string path)
 {
     std::string dirname = path;
     size_t pos = string::npos;
@@ -688,7 +575,7 @@ string srs_path_basename(string path)
     return dirname;
 }
 
-string srs_path_filename(string path)
+string srs_path_filepath_filename(string path)
 {
     std::string filename = path;
     size_t pos = string::npos;
@@ -700,7 +587,7 @@ string srs_path_filename(string path)
     return filename;
 }
 
-string srs_path_filext(string path)
+string srs_path_filepath_ext(string path)
 {
     size_t pos = string::npos;
 
@@ -709,399 +596,6 @@ string srs_path_filext(string path)
     }
 
     return "";
-}
-
-bool srs_avc_startswith_annexb(SrsBuffer *stream, int *pnb_start_code)
-{
-    if (!stream) {
-        return false;
-    }
-
-    char *bytes = stream->data() + stream->pos();
-    char *p = bytes;
-
-    for (;;) {
-        if (!stream->require((int)(p - bytes + 3))) {
-            return false;
-        }
-
-        // not match
-        if (p[0] != (char)0x00 || p[1] != (char)0x00) {
-            return false;
-        }
-
-        // match N[00] 00 00 01, where N>=0
-        if (p[2] == (char)0x01) {
-            if (pnb_start_code) {
-                *pnb_start_code = (int)(p - bytes) + 3;
-            }
-            return true;
-        }
-
-        p++;
-    }
-
-    return false;
-}
-
-bool srs_aac_startswith_adts(SrsBuffer *stream)
-{
-    if (!stream) {
-        return false;
-    }
-
-    char *bytes = stream->data() + stream->pos();
-    char *p = bytes;
-
-    if (!stream->require((int)(p - bytes) + 2)) {
-        return false;
-    }
-
-    // matched 12bits 0xFFF,
-    // @remark, we must cast the 0xff to char to compare.
-    if (p[0] != (char)0xff || (char)(p[1] & 0xf0) != (char)0xf0) {
-        return false;
-    }
-
-    return true;
-}
-
-// @see pycrc reflect at https://github.com/winlinvip/pycrc/blob/master/pycrc/algorithms.py#L107
-uint64_t __crc32_reflect(uint64_t data, int width)
-{
-    uint64_t res = data & 0x01;
-
-    for (int i = 0; i < (int)width - 1; i++) {
-        data >>= 1;
-        res = (res << 1) | (data & 0x01);
-    }
-
-    return res;
-}
-
-// @see pycrc gen_table at https://github.com/winlinvip/pycrc/blob/master/pycrc/algorithms.py#L178
-void __crc32_make_table(uint32_t t[256], uint32_t poly, bool reflect_in)
-{
-    int width = 32; // 32bits checksum.
-    uint64_t msb_mask = (uint32_t)(0x01 << (width - 1));
-    uint64_t mask = (uint32_t)(((msb_mask - 1) << 1) | 1);
-
-    int tbl_idx_width = 8;                 // table index size.
-    int tbl_width = 0x01 << tbl_idx_width; // table size: 256
-
-    for (int i = 0; i < (int)tbl_width; i++) {
-        uint64_t reg = uint64_t(i);
-
-        if (reflect_in) {
-            reg = __crc32_reflect(reg, tbl_idx_width);
-        }
-
-        reg = reg << (width - tbl_idx_width);
-        for (int j = 0; j < tbl_idx_width; j++) {
-            if ((reg & msb_mask) != 0) {
-                reg = (reg << 1) ^ poly;
-            } else {
-                reg = reg << 1;
-            }
-        }
-
-        if (reflect_in) {
-            reg = __crc32_reflect(reg, width);
-        }
-
-        t[i] = (uint32_t)(reg & mask);
-    }
-}
-
-// @see pycrc table_driven at https://github.com/winlinvip/pycrc/blob/master/pycrc/algorithms.py#L207
-uint32_t __crc32_table_driven(uint32_t *t, const void *buf, int size, uint32_t previous, bool reflect_in, uint32_t xor_in, bool reflect_out, uint32_t xor_out)
-{
-    int width = 32; // 32bits checksum.
-    uint64_t msb_mask = (uint32_t)(0x01 << (width - 1));
-    uint64_t mask = (uint32_t)(((msb_mask - 1) << 1) | 1);
-
-    int tbl_idx_width = 8; // table index size.
-
-    uint8_t *p = (uint8_t *)buf;
-    uint64_t reg = 0;
-
-    if (!reflect_in) {
-        reg = xor_in;
-
-        for (int i = 0; i < (int)size; i++) {
-            uint8_t tblidx = (uint8_t)((reg >> (width - tbl_idx_width)) ^ p[i]);
-            reg = t[tblidx] ^ (reg << tbl_idx_width);
-        }
-    } else {
-        reg = previous ^ __crc32_reflect(xor_in, width);
-
-        for (int i = 0; i < (int)size; i++) {
-            uint8_t tblidx = (uint8_t)(reg ^ p[i]);
-            reg = t[tblidx] ^ (reg >> tbl_idx_width);
-        }
-
-        reg = __crc32_reflect(reg, width);
-    }
-
-    if (reflect_out) {
-        reg = __crc32_reflect(reg, width);
-    }
-
-    reg ^= xor_out;
-    return (uint32_t)(reg & mask);
-}
-
-// @see pycrc https://github.com/winlinvip/pycrc/blob/master/pycrc/algorithms.py#L207
-// IEEETable is the table for the IEEE polynomial.
-static uint32_t __crc32_IEEE_table[256];
-static bool __crc32_IEEE_table_initialized = false;
-
-// @see pycrc https://github.com/winlinvip/pycrc/blob/master/pycrc/models.py#L220
-//      crc32('123456789') = 0xcbf43926
-// where it's defined as model:
-//      'name':         'crc-32',
-//      'width':         32,
-//      'poly':          0x4c11db7,
-//      'reflect_in':    True,
-//      'xor_in':        0xffffffff,
-//      'reflect_out':   True,
-//      'xor_out':       0xffffffff,
-//      'check':         0xcbf43926,
-uint32_t srs_crc32_ieee(const void *buf, int size, uint32_t previous)
-{
-    // @see golang IEEE of hash/crc32/crc32.go
-    // IEEE is by far and away the most common CRC-32 polynomial.
-    // Used by ethernet (IEEE 802.3), v.42, fddi, gzip, zip, png, ...
-    // @remark The poly of CRC32 IEEE is 0x04C11DB7, its reverse is 0xEDB88320,
-    //      please read https://en.wikipedia.org/wiki/Cyclic_redundancy_check
-    uint32_t poly = 0x04C11DB7;
-
-    bool reflect_in = true;
-    uint32_t xor_in = 0xffffffff;
-    bool reflect_out = true;
-    uint32_t xor_out = 0xffffffff;
-
-    if (!__crc32_IEEE_table_initialized) {
-        __crc32_make_table(__crc32_IEEE_table, poly, reflect_in);
-        __crc32_IEEE_table_initialized = true;
-    }
-
-    return __crc32_table_driven(__crc32_IEEE_table, buf, size, previous, reflect_in, xor_in, reflect_out, xor_out);
-}
-
-// @see pycrc https://github.com/winlinvip/pycrc/blob/master/pycrc/algorithms.py#L238
-// IEEETable is the table for the MPEG polynomial.
-static uint32_t __crc32_MPEG_table[256];
-static bool __crc32_MPEG_table_initialized = false;
-
-// @see pycrc https://github.com/winlinvip/pycrc/blob/master/pycrc/models.py#L238
-//      crc32('123456789') = 0x0376e6e7
-// where it's defined as model:
-//      'name':         'crc-32',
-//      'width':         32,
-//      'poly':          0x4c11db7,
-//      'reflect_in':    False,
-//      'xor_in':        0xffffffff,
-//      'reflect_out':   False,
-//      'xor_out':       0x0,
-//      'check':         0x0376e6e7,
-uint32_t srs_crc32_mpegts(const void *buf, int size)
-{
-    // @see golang IEEE of hash/crc32/crc32.go
-    // IEEE is by far and away the most common CRC-32 polynomial.
-    // Used by ethernet (IEEE 802.3), v.42, fddi, gzip, zip, png, ...
-    // @remark The poly of CRC32 IEEE is 0x04C11DB7, its reverse is 0xEDB88320,
-    //      please read https://en.wikipedia.org/wiki/Cyclic_redundancy_check
-    uint32_t poly = 0x04C11DB7;
-
-    bool reflect_in = false;
-    uint32_t xor_in = 0xffffffff;
-    bool reflect_out = false;
-    uint32_t xor_out = 0x0;
-
-    if (!__crc32_MPEG_table_initialized) {
-        __crc32_make_table(__crc32_MPEG_table, poly, reflect_in);
-        __crc32_MPEG_table_initialized = true;
-    }
-
-    return __crc32_table_driven(__crc32_MPEG_table, buf, size, 0x00, reflect_in, xor_in, reflect_out, xor_out);
-}
-
-// We use the standard encoding:
-//      var StdEncoding = NewEncoding(encodeStd)
-// StdEncoding is the standard base64 encoding, as defined in RFC 4648.
-namespace
-{
-char padding = '=';
-string encoder = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-} // namespace
-// @see golang encoding/base64/base64.go
-srs_error_t srs_av_base64_decode(string cipher, string &plaintext)
-{
-    srs_error_t err = srs_success;
-
-    uint8_t decodeMap[256];
-    memset(decodeMap, 0xff, sizeof(decodeMap));
-
-    for (int i = 0; i < (int)encoder.length(); i++) {
-        decodeMap[(uint8_t)encoder.at(i)] = uint8_t(i);
-    }
-
-    // decode is like Decode but returns an additional 'end' value, which
-    // indicates if end-of-message padding or a partial quantum was encountered
-    // and thus any additional data is an error.
-    int si = 0;
-
-    // skip over newlines
-    for (; si < (int)cipher.length() && (cipher.at(si) == '\n' || cipher.at(si) == '\r'); si++) {
-    }
-
-    for (bool end = false; si < (int)cipher.length() && !end;) {
-        // Decode quantum using the base64 alphabet
-        uint8_t dbuf[4];
-        memset(dbuf, 0x00, sizeof(dbuf));
-
-        int dinc = 3;
-        int dlen = 4;
-        srs_assert(dinc > 0);
-
-        for (int j = 0; j < (int)sizeof(dbuf); j++) {
-            if (si == (int)cipher.length()) {
-                if (padding != -1 || j < 2) {
-                    return srs_error_new(ERROR_BASE64_DECODE, "corrupt input at %d", si);
-                }
-
-                dinc = j - 1;
-                dlen = j;
-                end = true;
-                break;
-            }
-
-            char in = cipher.at(si);
-
-            si++;
-            // skip over newlines
-            for (; si < (int)cipher.length() && (cipher.at(si) == '\n' || cipher.at(si) == '\r'); si++) {
-            }
-
-            if (in == padding) {
-                // We've reached the end and there's padding
-                switch (j) {
-                case 0:
-                case 1:
-                    // incorrect padding
-                    return srs_error_new(ERROR_BASE64_DECODE, "corrupt input at %d", si);
-                case 2:
-                    // "==" is expected, the first "=" is already consumed.
-                    if (si == (int)cipher.length()) {
-                        return srs_error_new(ERROR_BASE64_DECODE, "corrupt input at %d", si);
-                    }
-                    if (cipher.at(si) != padding) {
-                        // incorrect padding
-                        return srs_error_new(ERROR_BASE64_DECODE, "corrupt input at %d", si);
-                    }
-
-                    si++;
-                    // skip over newlines
-                    for (; si < (int)cipher.length() && (cipher.at(si) == '\n' || cipher.at(si) == '\r'); si++) {
-                    }
-                }
-
-                if (si < (int)cipher.length()) {
-                    // trailing garbage
-                    err = srs_error_new(ERROR_BASE64_DECODE, "corrupt input at %d", si);
-                }
-                dinc = 3;
-                dlen = j;
-                end = true;
-                break;
-            }
-
-            dbuf[j] = decodeMap[(uint8_t)in];
-            if (dbuf[j] == 0xff) {
-                return srs_error_new(ERROR_BASE64_DECODE, "corrupt input at %d", si);
-            }
-        }
-
-        // Convert 4x 6bit source bytes into 3 bytes
-        uint32_t val = uint32_t(dbuf[0]) << 18 | uint32_t(dbuf[1]) << 12 | uint32_t(dbuf[2]) << 6 | uint32_t(dbuf[3]);
-        if (dlen >= 2) {
-            plaintext.append(1, char(val >> 16));
-        }
-        if (dlen >= 3) {
-            plaintext.append(1, char(val >> 8));
-        }
-        if (dlen >= 4) {
-            plaintext.append(1, char(val));
-        }
-    }
-
-    return err;
-}
-
-// @see golang encoding/base64/base64.go
-srs_error_t srs_av_base64_encode(std::string plaintext, std::string &cipher)
-{
-    srs_error_t err = srs_success;
-    uint8_t decodeMap[256];
-    memset(decodeMap, 0xff, sizeof(decodeMap));
-
-    for (int i = 0; i < (int)encoder.length(); i++) {
-        decodeMap[(uint8_t)encoder.at(i)] = uint8_t(i);
-    }
-    cipher.clear();
-
-    uint32_t val = 0;
-    int si = 0;
-    int n = (plaintext.length() / 3) * 3;
-    uint8_t *p = (uint8_t *)plaintext.c_str();
-    while (si < n) {
-        // Convert 3x 8bit source bytes into 4 bytes
-        val = (uint32_t(p[si + 0]) << 16) | (uint32_t(p[si + 1]) << 8) | uint32_t(p[si + 2]);
-
-        cipher += encoder[val >> 18 & 0x3f];
-        cipher += encoder[val >> 12 & 0x3f];
-        cipher += encoder[val >> 6 & 0x3f];
-        cipher += encoder[val & 0x3f];
-
-        si += 3;
-    }
-
-    int remain = plaintext.length() - si;
-    if (0 == remain) {
-        return err;
-    }
-
-    val = uint32_t(p[si + 0]) << 16;
-    if (2 == remain) {
-        val |= uint32_t(p[si + 1]) << 8;
-    }
-
-    cipher += encoder[val >> 18 & 0x3f];
-    cipher += encoder[val >> 12 & 0x3f];
-
-    switch (remain) {
-    case 2:
-        cipher += encoder[val >> 6 & 0x3f];
-        cipher += padding;
-        break;
-    case 1:
-        cipher += padding;
-        cipher += padding;
-        break;
-    }
-
-    return err;
-}
-
-#define SPACE_CHARS " \t\r\n"
-
-int av_toupper(int c)
-{
-    if (c >= 'a' && c <= 'z') {
-        c ^= 0x20;
-    }
-    return c;
 }
 
 // fromHexChar converts a hex character into its value and a success flag.
@@ -1120,7 +614,7 @@ uint8_t srs_from_hex_char(uint8_t c)
     return -1;
 }
 
-char *srs_data_to_hex(char *des, const u_int8_t *src, int len)
+char *srs_hex_encode_to_string(char *des, const u_int8_t *src, int len)
 {
     if (src == NULL || len == 0 || des == NULL) {
         return NULL;
@@ -1136,7 +630,7 @@ char *srs_data_to_hex(char *des, const u_int8_t *src, int len)
     return des;
 }
 
-char *srs_data_to_hex_lowercase(char *des, const u_int8_t *src, int len)
+char *srs_hex_encode_to_string_lowercase(char *des, const u_int8_t *src, int len)
 {
     if (src == NULL || len == 0 || des == NULL) {
         return NULL;
@@ -1152,7 +646,7 @@ char *srs_data_to_hex_lowercase(char *des, const u_int8_t *src, int len)
     return des;
 }
 
-int srs_hex_to_data(uint8_t *data, const char *p, int size)
+int srs_hex_decode_string(uint8_t *data, const char *p, int size)
 {
     if (size <= 0 || (size % 2) == 1) {
         return -1;
@@ -1175,125 +669,355 @@ int srs_hex_to_data(uint8_t *data, const char *p, int size)
     return size / 2;
 }
 
-int srs_chunk_header_c0(int prefer_cid, uint32_t timestamp, int32_t payload_length, int8_t message_type, int32_t stream_id, char *cache, int nb_cache)
+void srs_rand_gen_bytes(char *bytes, int size)
 {
-    // to directly set the field.
-    char *pp = NULL;
-
-    // generate the header.
-    char *p = cache;
-
-    // no header.
-    if (nb_cache < SRS_CONSTS_RTMP_MAX_FMT0_HEADER_SIZE) {
-        return 0;
+    for (int i = 0; i < size; i++) {
+        // the common value in [0x0f, 0xf0]
+        bytes[i] = 0x0f + (srs_rand_integer() % (256 - 0x0f - 0x0f));
     }
-
-    // write new chunk stream header, fmt is 0
-    *p++ = 0x00 | (prefer_cid & 0x3F);
-
-    // chunk message header, 11 bytes
-    // timestamp, 3bytes, big-endian
-    if (timestamp < RTMP_EXTENDED_TIMESTAMP) {
-        pp = (char *)&timestamp;
-        *p++ = pp[2];
-        *p++ = pp[1];
-        *p++ = pp[0];
-    } else {
-        *p++ = (char)0xFF;
-        *p++ = (char)0xFF;
-        *p++ = (char)0xFF;
-    }
-
-    // message_length, 3bytes, big-endian
-    pp = (char *)&payload_length;
-    *p++ = pp[2];
-    *p++ = pp[1];
-    *p++ = pp[0];
-
-    // message_type, 1bytes
-    *p++ = message_type;
-
-    // stream_id, 4bytes, little-endian
-    pp = (char *)&stream_id;
-    *p++ = pp[0];
-    *p++ = pp[1];
-    *p++ = pp[2];
-    *p++ = pp[3];
-
-    // for c0
-    // chunk extended timestamp header, 0 or 4 bytes, big-endian
-    //
-    // for c3:
-    // chunk extended timestamp header, 0 or 4 bytes, big-endian
-    // 6.1.3. Extended Timestamp
-    // This field is transmitted only when the normal time stamp in the
-    // chunk message header is set to 0x00ffffff. If normal time stamp is
-    // set to any value less than 0x00ffffff, this field MUST NOT be
-    // present. This field MUST NOT be present if the timestamp field is not
-    // present. Type 3 chunks MUST NOT have this field.
-    // adobe changed for Type3 chunk:
-    //        FMLE always sendout the extended-timestamp,
-    //        must send the extended-timestamp to FMS,
-    //        must send the extended-timestamp to flash-player.
-    // @see: ngx_rtmp_prepare_message
-    // @see: http://blog.csdn.net/win_lin/article/details/13363699
-    // TODO: FIXME: extract to outer.
-    if (timestamp >= RTMP_EXTENDED_TIMESTAMP) {
-        pp = (char *)&timestamp;
-        *p++ = pp[3];
-        *p++ = pp[2];
-        *p++ = pp[1];
-        *p++ = pp[0];
-    }
-
-    // always has header
-    return (int)(p - cache);
 }
 
-int srs_chunk_header_c3(int prefer_cid, uint32_t timestamp, char *cache, int nb_cache)
+std::string srs_rand_gen_str(int len)
 {
-    // to directly set the field.
-    char *pp = NULL;
+    static string random_table = "01234567890123456789012345678901234567890123456789abcdefghijklmnopqrstuvwxyz";
 
-    // generate the header.
-    char *p = cache;
+    string ret;
+    ret.reserve(len);
+    for (int i = 0; i < len; ++i) {
+        ret.append(1, random_table[srs_rand_integer() % random_table.size()]);
+    }
 
-    // no header.
-    if (nb_cache < SRS_CONSTS_RTMP_MAX_FMT3_HEADER_SIZE) {
+    return ret;
+}
+
+long srs_rand_integer()
+{
+    static bool _random_initialized = false;
+    if (!_random_initialized) {
+        _random_initialized = true;
+        ::srandom((unsigned long)(srs_time_now_realtime() | (::getpid() << 13)));
+    }
+
+    return random();
+}
+
+bool srs_is_digit_number(string str)
+{
+    if (str.empty()) {
+        return false;
+    }
+
+    const char *p = str.c_str();
+    const char *p_end = str.data() + str.length();
+    for (; p < p_end; p++) {
+        if (*p != '0') {
+            break;
+        }
+    }
+    if (p == p_end) {
+        return true;
+    }
+
+    int64_t v = ::atoll(p);
+    int64_t powv = (int64_t)pow(10, p_end - p - 1);
+    return v / powv >= 1 && v / powv <= 9;
+}
+
+srs_error_t srs_io_readall(ISrsReader *in, std::string &content)
+{
+    srs_error_t err = srs_success;
+
+    const int SRS_HTTP_READ_CACHE_BYTES = 4096;
+
+    // Cache to read, it might cause coroutine switch, so we use local cache here.
+    SrsUniquePtr<char[]> buf(new char[SRS_HTTP_READ_CACHE_BYTES]);
+
+    // Whatever, read util EOF.
+    while (true) {
+        ssize_t nb_read = 0;
+        if ((err = in->read(buf.get(), SRS_HTTP_READ_CACHE_BYTES, &nb_read)) != srs_success) {
+            int code = srs_error_code(err);
+            if (code == ERROR_SYSTEM_FILE_EOF || code == ERROR_HTTP_RESPONSE_EOF || code == ERROR_HTTP_REQUEST_EOF || code == ERROR_HTTP_STREAM_EOF) {
+                srs_freep(err);
+                return err;
+            }
+            return srs_error_wrap(err, "read body");
+        }
+
+        if (nb_read > 0) {
+            content.append(buf.get(), nb_read);
+        }
+    }
+
+    return err;
+}
+
+void srs_net_split_hostport(string hostport, string &host, int &port)
+{
+    // No host or port.
+    if (hostport.empty()) {
+        return;
+    }
+
+    size_t pos = string::npos;
+
+    // Host only for ipv4.
+    if ((pos = hostport.rfind(":")) == string::npos) {
+        host = hostport;
+        return;
+    }
+
+    // For ipv4(only one colon), host:port.
+    if (hostport.find(":") == pos) {
+        host = hostport.substr(0, pos);
+        string p = hostport.substr(pos + 1);
+        if (!p.empty() && p != "0") {
+            port = ::atoi(p.c_str());
+        }
+        return;
+    }
+
+    // Host only for ipv6.
+    if (hostport.at(0) != '[' || (pos = hostport.rfind("]:")) == string::npos) {
+        host = hostport;
+        return;
+    }
+
+    // For ipv6, [host]:port.
+    host = hostport.substr(1, pos - 1);
+    string p = hostport.substr(pos + 2);
+    if (!p.empty() && p != "0") {
+        port = ::atoi(p.c_str());
+    }
+}
+
+void srs_net_split_for_listener(string hostport, string &ip, int &port)
+{
+    const size_t pos = hostport.rfind(":"); // Look for ":" from the end, to work with IPv6.
+    if (pos != std::string::npos) {
+        if ((pos >= 1) && (hostport[0] == '[') && (hostport[pos - 1] == ']')) {
+            // Handle IPv6 in RFC 2732 format, e.g. [3ffe:dead:beef::1]:1935
+            ip = hostport.substr(1, pos - 2);
+        } else {
+            // Handle IP address
+            ip = hostport.substr(0, pos);
+        }
+
+        const string sport = hostport.substr(pos + 1);
+        port = ::atoi(sport.c_str());
+    } else {
+        ip = srs_net_address_any();
+        port = ::atoi(hostport.c_str());
+    }
+}
+
+string srs_net_address_any()
+{
+    bool ipv4_active = false;
+    bool ipv6_active = false;
+
+    if (true) {
+        int fd = socket(AF_INET, SOCK_DGRAM, 0);
+        if (fd != -1) {
+            ipv4_active = true;
+            close(fd);
+        }
+    }
+    if (true) {
+        int fd = socket(AF_INET6, SOCK_DGRAM, 0);
+        if (fd != -1) {
+            ipv6_active = true;
+            close(fd);
+        }
+    }
+
+    if (ipv6_active && !ipv4_active) {
+        return SRS_CONSTS_LOOPBACK6;
+    }
+    return SRS_CONSTS_LOOPBACK;
+}
+
+bool srs_net_is_valid_ip(string ip)
+{
+    unsigned char buf[sizeof(struct in6_addr)];
+
+    // check ipv4
+    int ret = inet_pton(AF_INET, ip.data(), buf);
+    if (ret > 0) {
+        return true;
+    }
+
+    ret = inet_pton(AF_INET6, ip.data(), buf);
+    if (ret > 0) {
+        return true;
+    }
+
+    return false;
+}
+
+bool srs_net_is_ipv4(string domain)
+{
+    for (int i = 0; i < (int)domain.length(); i++) {
+        char ch = domain.at(i);
+        if (ch == '.') {
+            continue;
+        }
+        if (ch >= '0' && ch <= '9') {
+            continue;
+        }
+
+        return false;
+    }
+
+    return true;
+}
+
+uint32_t srs_net_ipv4_to_integer(string ip)
+{
+    uint32_t addr = 0;
+    if (inet_pton(AF_INET, ip.c_str(), &addr) <= 0) {
         return 0;
     }
 
-    // write no message header chunk stream, fmt is 3
-    // @remark, if prefer_cid > 0x3F, that is, use 2B/3B chunk header,
-    // SRS will rollback to 1B chunk header.
-    *p++ = 0xC0 | (prefer_cid & 0x3F);
+    return ntohl(addr);
+}
 
-    // for c0
-    // chunk extended timestamp header, 0 or 4 bytes, big-endian
-    //
-    // for c3:
-    // chunk extended timestamp header, 0 or 4 bytes, big-endian
-    // 6.1.3. Extended Timestamp
-    // This field is transmitted only when the normal time stamp in the
-    // chunk message header is set to 0x00ffffff. If normal time stamp is
-    // set to any value less than 0x00ffffff, this field MUST NOT be
-    // present. This field MUST NOT be present if the timestamp field is not
-    // present. Type 3 chunks MUST NOT have this field.
-    // adobe changed for Type3 chunk:
-    //        FMLE always sendout the extended-timestamp,
-    //        must send the extended-timestamp to FMS,
-    //        must send the extended-timestamp to flash-player.
-    // @see: ngx_rtmp_prepare_message
-    // @see: http://blog.csdn.net/win_lin/article/details/13363699
-    // TODO: FIXME: extract to outer.
-    if (timestamp >= RTMP_EXTENDED_TIMESTAMP) {
-        pp = (char *)&timestamp;
-        *p++ = pp[3];
-        *p++ = pp[2];
-        *p++ = pp[1];
-        *p++ = pp[0];
+bool srs_net_ipv4_within_mask(string ip, string network, string mask)
+{
+    uint32_t ip_addr = srs_net_ipv4_to_integer(ip);
+    uint32_t mask_addr = srs_net_ipv4_to_integer(mask);
+    uint32_t network_addr = srs_net_ipv4_to_integer(network);
+
+    return (ip_addr & mask_addr) == (network_addr & mask_addr);
+}
+
+static struct CIDR_VALUE {
+    size_t length;
+    std::string mask;
+} CIDR_VALUES[32] = {
+    {1, "128.0.0.0"},
+    {2, "192.0.0.0"},
+    {3, "224.0.0.0"},
+    {4, "240.0.0.0"},
+    {5, "248.0.0.0"},
+    {6, "252.0.0.0"},
+    {7, "254.0.0.0"},
+    {8, "255.0.0.0"},
+    {9, "255.128.0.0"},
+    {10, "255.192.0.0"},
+    {11, "255.224.0.0"},
+    {12, "255.240.0.0"},
+    {13, "255.248.0.0"},
+    {14, "255.252.0.0"},
+    {15, "255.254.0.0"},
+    {16, "255.255.0.0"},
+    {17, "255.255.128.0"},
+    {18, "255.255.192.0"},
+    {19, "255.255.224.0"},
+    {20, "255.255.240.0"},
+    {21, "255.255.248.0"},
+    {22, "255.255.252.0"},
+    {23, "255.255.254.0"},
+    {24, "255.255.255.0"},
+    {25, "255.255.255.128"},
+    {26, "255.255.255.192"},
+    {27, "255.255.255.224"},
+    {28, "255.255.255.240"},
+    {29, "255.255.255.248"},
+    {30, "255.255.255.252"},
+    {31, "255.255.255.254"},
+    {32, "255.255.255.255"},
+};
+
+string srs_net_get_cidr_mask(string network_address)
+{
+    string delimiter = "/";
+
+    size_t delimiter_position = network_address.find(delimiter);
+    if (delimiter_position == string::npos) {
+        // Even if it does not have "/N", it can be a valid IP, by default "/32".
+        if (srs_net_is_ipv4(network_address)) {
+            return CIDR_VALUES[32 - 1].mask;
+        }
+        return "";
     }
 
-    // always has header
-    return (int)(p - cache);
+    // Change here to include IPv6 support.
+    string is_ipv4_address = network_address.substr(0, delimiter_position);
+    if (!srs_net_is_ipv4(is_ipv4_address)) {
+        return "";
+    }
+
+    size_t cidr_length_position = delimiter_position + delimiter.length();
+    if (cidr_length_position >= network_address.length()) {
+        return "";
+    }
+
+    string cidr_length = network_address.substr(cidr_length_position, network_address.length());
+    if (cidr_length.length() <= 0) {
+        return "";
+    }
+
+    size_t cidr_length_num = 31;
+    try {
+        cidr_length_num = atoi(cidr_length.c_str());
+        if (cidr_length_num <= 0) {
+            return "";
+        }
+    } catch (...) {
+        return "";
+    }
+
+    return CIDR_VALUES[cidr_length_num - 1].mask;
+}
+
+string srs_net_get_cidr_ipv4(string network_address)
+{
+    string delimiter = "/";
+
+    size_t delimiter_position = network_address.find(delimiter);
+    if (delimiter_position == string::npos) {
+        // Even if it does not have "/N", it can be a valid IP, by default "/32".
+        if (srs_net_is_ipv4(network_address)) {
+            return network_address;
+        }
+        return "";
+    }
+
+    // Change here to include IPv6 support.
+    string ipv4_address = network_address.substr(0, delimiter_position);
+    if (!srs_net_is_ipv4(ipv4_address)) {
+        return "";
+    }
+
+    size_t cidr_length_position = delimiter_position + delimiter.length();
+    if (cidr_length_position >= network_address.length()) {
+        return "";
+    }
+
+    string cidr_length = network_address.substr(cidr_length_position, network_address.length());
+    if (cidr_length.length() <= 0) {
+        return "";
+    }
+
+    try {
+        size_t cidr_length_num = atoi(cidr_length.c_str());
+        if (cidr_length_num <= 0) {
+            return "";
+        }
+    } catch (...) {
+        return "";
+    }
+
+    return ipv4_address;
+}
+
+bool srs_net_url_is_http(string url)
+{
+    return srs_strings_starts_with(url, "http://", "https://");
+}
+
+bool srs_net_url_is_rtmp(string url)
+{
+    return srs_strings_starts_with(url, "rtmp://");
 }
