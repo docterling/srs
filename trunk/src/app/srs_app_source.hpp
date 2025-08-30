@@ -577,9 +577,6 @@ public:
     virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> wrapper, ISrsRequest *r);
     // Bridge to other source, forward packets to it.
     void set_bridge(ISrsStreamBridge *v);
-    // Interface ISrsReloadHandler
-public:
-    virtual srs_error_t on_reload_vhost_play(std::string vhost);
 
 public:
     // The source id changed.

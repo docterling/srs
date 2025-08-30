@@ -104,9 +104,6 @@ public:
 
 private:
     virtual srs_error_t mount_vhost(std::string vhost, std::string &pmount);
-    // Interface ISrsReloadHandler.
-public:
-    virtual srs_error_t on_reload_vhost_added(std::string vhost);
 };
 
 #endif

@@ -200,9 +200,6 @@ public:
 
 public:
     virtual srs_error_t serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r);
-    // Interface ISrsReloadHandler
-public:
-    virtual srs_error_t on_reload_http_api_raw_api();
 };
 
 class SrsGoApiClusters : public ISrsHttpHandler

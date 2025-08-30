@@ -36,9 +36,6 @@ public:
 public:
     virtual void elapse(srs_utime_t diff);
     virtual bool can_print();
-
-public:
-    virtual srs_error_t on_reload_pithy_print();
 };
 
 // The manager for stages, it's used for a single client stage.

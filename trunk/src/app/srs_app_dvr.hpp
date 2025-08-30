@@ -92,9 +92,6 @@ private:
     virtual std::string generate_path();
     // When update the duration of segment by rtmp msg.
     virtual srs_error_t on_update_duration(SrsSharedPtrMessage *msg);
-    // Interface ISrsReloadHandler
-public:
-    virtual srs_error_t on_reload_vhost_dvr(std::string vhost);
 };
 
 // The FLV segmenter to use FLV encoder to write file.
@@ -234,9 +231,6 @@ public:
 
 private:
     virtual srs_error_t update_duration(SrsSharedPtrMessage *msg);
-    // Interface ISrsReloadHandler
-public:
-    virtual srs_error_t on_reload_vhost_dvr(std::string vhost);
 };
 
 // DVR(Digital Video Recorder) to record RTMP stream to flv/mp4 file.

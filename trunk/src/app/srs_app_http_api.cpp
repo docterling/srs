@@ -962,16 +962,6 @@ srs_error_t SrsGoApiRaw::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *
     return err;
 }
 
-srs_error_t SrsGoApiRaw::on_reload_http_api_raw_api()
-{
-    raw_api = _srs_config->get_raw_api();
-    allow_reload = _srs_config->get_raw_api_allow_reload();
-    allow_query = _srs_config->get_raw_api_allow_query();
-    allow_update = _srs_config->get_raw_api_allow_update();
-
-    return srs_success;
-}
-
 SrsGoApiClusters::SrsGoApiClusters()
 {
 }

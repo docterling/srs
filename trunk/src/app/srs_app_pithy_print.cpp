@@ -54,12 +54,6 @@ bool SrsStageInfo::can_print()
     return can_print;
 }
 
-srs_error_t SrsStageInfo::on_reload_pithy_print()
-{
-    update_print_time();
-    return srs_success;
-}
-
 SrsStageManager::SrsStageManager()
 {
 }

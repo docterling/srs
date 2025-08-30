@@ -687,15 +687,3 @@ srs_error_t SrsHttpStaticServer::mount_vhost(string vhost, string &pmount)
 
     return err;
 }
-
-srs_error_t SrsHttpStaticServer::on_reload_vhost_added(string vhost)
-{
-    srs_error_t err = srs_success;
-
-    string pmount;
-    if ((err = mount_vhost(vhost, pmount)) != srs_success) {
-        return srs_error_wrap(err, "mount vhost");
-    }
-
-    return err;
-}

@@ -270,10 +270,7 @@ public:
     // Interface ISrsRtcSourceChangeCallback
 public:
     void on_stream_change(SrsRtcSourceDescription *desc);
-    // interface ISrsReloadHandler
 public:
-    virtual srs_error_t on_reload_vhost_play(std::string vhost);
-    virtual srs_error_t on_reload_vhost_realtime(std::string vhost);
     virtual const SrsContextId &context_id();
 
 public:

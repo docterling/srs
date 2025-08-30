@@ -580,25 +580,6 @@ void SrsRtcPlayStream::on_stream_change(SrsRtcSourceDescription *desc)
     }
 }
 
-srs_error_t SrsRtcPlayStream::on_reload_vhost_play(string vhost)
-{
-    if (req_->vhost != vhost) {
-        return srs_success;
-    }
-
-    realtime = _srs_config->get_realtime_enabled(req_->vhost, true);
-    mw_msgs = _srs_config->get_mw_msgs(req_->vhost, realtime, true);
-
-    srs_trace("Reload play realtime=%d, mw_msgs=%d", realtime, mw_msgs);
-
-    return srs_success;
-}
-
-srs_error_t SrsRtcPlayStream::on_reload_vhost_realtime(string vhost)
-{
-    return on_reload_vhost_play(vhost);
-}
-
 const SrsContextId &SrsRtcPlayStream::context_id()
 {
     return cid_;

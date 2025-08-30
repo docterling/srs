@@ -221,20 +221,6 @@ srs_error_t SrsDvrSegmenter::on_update_duration(SrsSharedPtrMessage *msg)
     return srs_success;
 }
 
-srs_error_t SrsDvrSegmenter::on_reload_vhost_dvr(std::string vhost)
-{
-    srs_error_t err = srs_success;
-
-    if (req->vhost != vhost) {
-        return err;
-    }
-
-    jitter_algorithm = (SrsRtmpJitterAlgorithm)_srs_config->get_dvr_time_jitter(req->vhost);
-    wait_keyframe = _srs_config->get_dvr_wait_keyframe(req->vhost);
-
-    return err;
-}
-
 SrsDvrFlvSegmenter::SrsDvrFlvSegmenter()
 {
     enc = new SrsFlvTransmuxer();
@@ -913,21 +899,6 @@ srs_error_t SrsDvrSegmentPlan::update_duration(SrsSharedPtrMessage *msg)
     if (err != srs_success) {
         return srs_error_wrap(err, "request sh");
     }
-
-    return err;
-}
-
-srs_error_t SrsDvrSegmentPlan::on_reload_vhost_dvr(string vhost)
-{
-    srs_error_t err = srs_success;
-
-    if (req->vhost != vhost) {
-        return err;
-    }
-
-    wait_keyframe = _srs_config->get_dvr_wait_keyframe(req->vhost);
-
-    cduration = _srs_config->get_dvr_duration(req->vhost);
 
     return err;
 }

@@ -95,9 +95,6 @@ public:
 
 public:
     virtual srs_error_t initialize();
-    // interface ISrsReloadHandler
-public:
-    virtual srs_error_t on_reload_rtc_server();
 
 public:
     srs_error_t exec_async_work(ISrsAsyncCallTask *t);

@@ -348,11 +348,6 @@ srs_error_t SrsRtcServer::initialize()
     return err;
 }
 
-srs_error_t SrsRtcServer::on_reload_rtc_server()
-{
-    return srs_success;
-}
-
 srs_error_t SrsRtcServer::exec_async_work(ISrsAsyncCallTask *t)
 {
     return async->execute(t);
