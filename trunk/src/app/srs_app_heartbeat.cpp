@@ -97,8 +97,10 @@ srs_error_t SrsHttpHeartbeat::do_heartbeat()
             SrsJsonArray *o = SrsJsonAny::array();
             obj->set("http", o);
 
-            string endpoint = _srs_config->get_http_stream_listen();
-            o->append(SrsJsonAny::str(endpoint.c_str()));
+            vector<string> endpoints = _srs_config->get_http_stream_listens();
+            for (int i = 0; i < (int)endpoints.size(); i++) {
+                o->append(SrsJsonAny::str(endpoints.at(i).c_str()));
+            }
         }
 
         // For HTTP API listen endpoints.
@@ -106,8 +108,10 @@ srs_error_t SrsHttpHeartbeat::do_heartbeat()
             SrsJsonArray *o = SrsJsonAny::array();
             obj->set("api", o);
 
-            string endpoint = _srs_config->get_http_api_listen();
-            o->append(SrsJsonAny::str(endpoint.c_str()));
+            vector<string> endpoints = _srs_config->get_http_api_listens();
+            for (int i = 0; i < (int)endpoints.size(); i++) {
+                o->append(SrsJsonAny::str(endpoints.at(i).c_str()));
+            }
         }
 
         // For SRT listen endpoints.
@@ -115,8 +119,10 @@ srs_error_t SrsHttpHeartbeat::do_heartbeat()
             SrsJsonArray *o = SrsJsonAny::array();
             obj->set("srt", o);
 
-            uint16_t endpoint = _srs_config->get_srt_listen_port();
-            o->append(SrsJsonAny::str(srs_fmt_sprintf("udp://0.0.0.0:%d", endpoint).c_str()));
+            vector<string> endpoints = _srs_config->get_srt_listens();
+            for (int i = 0; i < (int)endpoints.size(); i++) {
+                o->append(SrsJsonAny::str(endpoints.at(i).c_str()));
+            }
         }
 
         // For RTSP listen endpoints.
@@ -124,8 +130,10 @@ srs_error_t SrsHttpHeartbeat::do_heartbeat()
             SrsJsonArray *o = SrsJsonAny::array();
             obj->set("rtsp", o);
 
-            int endpoint = _srs_config->get_rtsp_server_listen();
-            o->append(SrsJsonAny::str(srs_fmt_sprintf("rtsp://0.0.0.0:%d", endpoint).c_str()));
+            vector<string> endpoints = _srs_config->get_rtsp_server_listens();
+            for (int i = 0; i < (int)endpoints.size(); i++) {
+                o->append(SrsJsonAny::str(endpoints.at(i).c_str()));
+            }
         }
 
         // For WebRTC listen endpoints.
@@ -133,12 +141,18 @@ srs_error_t SrsHttpHeartbeat::do_heartbeat()
             SrsJsonArray *o = SrsJsonAny::array();
             obj->set("rtc", o);
 
-            int endpoint = _srs_config->get_rtc_server_listen();
-            o->append(SrsJsonAny::str(srs_fmt_sprintf("udp://0.0.0.0:%d", endpoint).c_str()));
+            vector<string> endpoints = _srs_config->get_rtc_server_listens();
+            for (int i = 0; i < (int)endpoints.size(); i++) {
+                string endpoint = srs_fmt_sprintf("udp://%s", endpoints.at(i).c_str());
+                o->append(SrsJsonAny::str(endpoint.c_str()));
+            }
 
             if (_srs_config->get_rtc_server_tcp_enabled()) {
-                endpoint = _srs_config->get_rtc_server_tcp_listen();
-                o->append(SrsJsonAny::str(srs_fmt_sprintf("tcp://0.0.0.0:%d", endpoint).c_str()));
+                vector<string> endpoints = _srs_config->get_rtc_server_tcp_listens();
+                for (int i = 0; i < (int)endpoints.size(); i++) {
+                    string endpoint = srs_fmt_sprintf("tcp://%s", endpoints.at(i).c_str());
+                    o->append(SrsJsonAny::str(endpoint.c_str()));
+                }
             }
         }
     }

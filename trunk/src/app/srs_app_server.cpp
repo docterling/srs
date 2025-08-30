@@ -340,13 +340,13 @@ SrsServer::SrsServer()
 
     rtmp_listener_ = new SrsMultipleTcpListeners(this);
     rtmps_listener_ = new SrsMultipleTcpListeners(this);
-    api_listener_ = new SrsTcpListener(this);
-    apis_listener_ = new SrsTcpListener(this);
-    http_listener_ = new SrsTcpListener(this);
-    https_listener_ = new SrsTcpListener(this);
-    webrtc_listener_ = new SrsTcpListener(this);
+    api_listener_ = new SrsMultipleTcpListeners(this);
+    apis_listener_ = new SrsMultipleTcpListeners(this);
+    http_listener_ = new SrsMultipleTcpListeners(this);
+    https_listener_ = new SrsMultipleTcpListeners(this);
+    webrtc_listener_ = new SrsMultipleTcpListeners(this);
 #ifdef SRS_RTSP
-    rtsp_listener_ = new SrsTcpListener(this);
+    rtsp_listener_ = new SrsMultipleTcpListeners(this);
 #endif
     stream_caster_flv_listener_ = new SrsHttpFlvListener();
     stream_caster_mpegts_ = new SrsUdpCasterListener();
@@ -510,28 +510,28 @@ srs_error_t SrsServer::initialize()
     _srs_config->subscribe(this);
 
     bool stream = _srs_config->get_http_stream_enabled();
-    string http_listen = _srs_config->get_http_stream_listen();
-    string https_listen = _srs_config->get_https_stream_listen();
+    vector<string> http_listens = _srs_config->get_http_stream_listens();
+    vector<string> https_listens = _srs_config->get_https_stream_listens();
 
     bool rtc = _srs_config->get_rtc_server_enabled();
     bool rtc_tcp = _srs_config->get_rtc_server_tcp_enabled();
-    string rtc_listen = srs_strconv_format_int(_srs_config->get_rtc_server_tcp_listen());
+    vector<string> rtc_listens = _srs_config->get_rtc_server_tcp_listens();
     // If enabled and listen is the same value, resue port for WebRTC over TCP.
-    if (stream && rtc && rtc_tcp && http_listen == rtc_listen) {
-        srs_trace("WebRTC tcp=%s reuses http=%s server", rtc_listen.c_str(), http_listen.c_str());
+    if (stream && rtc && rtc_tcp && srs_strings_equal(http_listens, rtc_listens)) {
+        srs_trace("WebRTC tcp=%s reuses http=%s server", srs_strings_join(rtc_listens, ",").c_str(), srs_strings_join(http_listens, ",").c_str());
         reuse_rtc_over_server_ = true;
     }
-    if (stream && rtc && rtc_tcp && https_listen == rtc_listen) {
-        srs_trace("WebRTC tcp=%s reuses https=%s server", rtc_listen.c_str(), https_listen.c_str());
+    if (stream && rtc && rtc_tcp && srs_strings_equal(https_listens, rtc_listens)) {
+        srs_trace("WebRTC tcp=%s reuses https=%s server", srs_strings_join(rtc_listens, ",").c_str(), srs_strings_join(https_listens, ",").c_str());
         reuse_rtc_over_server_ = true;
     }
 
     // If enabled and the listen is the same value, reuse port.
     bool api = _srs_config->get_http_api_enabled();
-    string api_listen = _srs_config->get_http_api_listen();
-    string apis_listen = _srs_config->get_https_api_listen();
-    if (stream && api && api_listen == http_listen && apis_listen == https_listen) {
-        srs_trace("API reuses http=%s and https=%s server", http_listen.c_str(), https_listen.c_str());
+    vector<string> api_listens = _srs_config->get_http_api_listens();
+    vector<string> apis_listens = _srs_config->get_https_api_listens();
+    if (stream && api && srs_strings_equal(api_listens, http_listens) && srs_strings_equal(apis_listens, https_listens)) {
+        srs_trace("API reuses http=%s and https=%s server", srs_strings_join(http_listens, ",").c_str(), srs_strings_join(https_listens, ",").c_str());
         reuse_api_over_server_ = true;
     }
 
@@ -608,9 +608,10 @@ srs_error_t SrsServer::listen()
     // Create HTTP API listener.
     if (_srs_config->get_http_api_enabled()) {
         if (reuse_api_over_server_) {
-            srs_trace("HTTP-API: Reuse listen to http server %s", _srs_config->get_http_stream_listen().c_str());
+            vector<string> listens = _srs_config->get_http_stream_listens();
+            srs_trace("HTTP-API: Reuse listen to http server %s", srs_strings_join(listens, ",").c_str());
         } else {
-            api_listener_->set_endpoint(_srs_config->get_http_api_listen())->set_label("HTTP-API");
+            api_listener_->add(_srs_config->get_http_api_listens())->set_label("HTTP-API");
             if ((err = api_listener_->listen()) != srs_success) {
                 return srs_error_wrap(err, "http api listen");
             }
@@ -620,9 +621,10 @@ srs_error_t SrsServer::listen()
     // Create HTTPS API listener.
     if (_srs_config->get_https_api_enabled()) {
         if (reuse_api_over_server_) {
-            srs_trace("HTTPS-API: Reuse listen to http server %s", _srs_config->get_https_stream_listen().c_str());
+            vector<string> listens = _srs_config->get_https_stream_listens();
+            srs_trace("HTTPS-API: Reuse listen to http server %s", srs_strings_join(listens, ",").c_str());
         } else {
-            apis_listener_->set_endpoint(_srs_config->get_https_api_listen())->set_label("HTTPS-API");
+            apis_listener_->add(_srs_config->get_https_api_listens())->set_label("HTTPS-API");
             if ((err = apis_listener_->listen()) != srs_success) {
                 return srs_error_wrap(err, "https api listen");
             }
@@ -631,7 +633,7 @@ srs_error_t SrsServer::listen()
 
     // Create HTTP server listener.
     if (_srs_config->get_http_stream_enabled()) {
-        http_listener_->set_endpoint(_srs_config->get_http_stream_listen())->set_label("HTTP-Server");
+        http_listener_->add(_srs_config->get_http_stream_listens())->set_label("HTTP-Server");
         if ((err = http_listener_->listen()) != srs_success) {
             return srs_error_wrap(err, "http server listen");
         }
@@ -639,15 +641,16 @@ srs_error_t SrsServer::listen()
 
     // Create HTTPS server listener.
     if (_srs_config->get_https_stream_enabled()) {
-        https_listener_->set_endpoint(_srs_config->get_https_stream_listen())->set_label("HTTPS-Server");
+        https_listener_->add(_srs_config->get_https_stream_listens())->set_label("HTTPS-Server");
         if ((err = https_listener_->listen()) != srs_success) {
             return srs_error_wrap(err, "https server listen");
         }
     }
 
     // Start WebRTC over TCP listener.
-    if (!reuse_rtc_over_server_ && _srs_config->get_rtc_server_tcp_enabled()) {
-        webrtc_listener_->set_endpoint(srs_strconv_format_int(_srs_config->get_rtc_server_tcp_listen()))->set_label("WebRTC");
+    string protocol = _srs_config->get_rtc_server_protocol();
+    if (!reuse_rtc_over_server_ && protocol != "udp" && _srs_config->get_rtc_server_tcp_enabled()) {
+        webrtc_listener_->add(_srs_config->get_rtc_server_tcp_listens())->set_label("WebRTC");
         if ((err = webrtc_listener_->listen()) != srs_success) {
             return srs_error_wrap(err, "webrtc tcp listen");
         }
@@ -656,7 +659,7 @@ srs_error_t SrsServer::listen()
 #ifdef SRS_RTSP
     // Start RTSP listener. RTC is a critical dependency.
     if (_srs_config->get_rtsp_server_enabled()) {
-        rtsp_listener_->set_endpoint(srs_strconv_format_int(_srs_config->get_rtsp_server_listen()))->set_label("RTSP");
+        rtsp_listener_->add(_srs_config->get_rtsp_server_listens())->set_label("RTSP");
         if ((err = rtsp_listener_->listen()) != srs_success) {
             return srs_error_wrap(err, "rtsp listen");
         }

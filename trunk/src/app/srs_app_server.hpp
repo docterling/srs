@@ -131,20 +131,20 @@ private:
     // RTMPS stream listeners, over TCP.
     SrsMultipleTcpListeners *rtmps_listener_;
     // HTTP API listener, over TCP. Please note that it might reuse with stream listener.
-    SrsTcpListener *api_listener_;
+    SrsMultipleTcpListeners *api_listener_;
     // HTTPS API listener, over TCP. Please note that it might reuse with stream listener.
-    SrsTcpListener *apis_listener_;
+    SrsMultipleTcpListeners *apis_listener_;
     // HTTP server listener, over TCP. Please note that request of both HTTP static and stream are served by this
     // listener, and it might be reused by HTTP API and WebRTC TCP.
-    SrsTcpListener *http_listener_;
+    SrsMultipleTcpListeners *http_listener_;
     // HTTPS server listener, over TCP. Please note that request of both HTTP static and stream are served by this
     // listener, and it might be reused by HTTP API and WebRTC TCP.
-    SrsTcpListener *https_listener_;
+    SrsMultipleTcpListeners *https_listener_;
     // WebRTC over TCP listener. Please note that there is always a UDP listener by RTC server.
-    SrsTcpListener *webrtc_listener_;
+    SrsMultipleTcpListeners *webrtc_listener_;
 #ifdef SRS_RTSP
     // RTSP listener, over TCP.
-    SrsTcpListener *rtsp_listener_;
+    SrsMultipleTcpListeners *rtsp_listener_;
 #endif
     // Stream Caster for push over HTTP-FLV.
     SrsHttpFlvListener *stream_caster_flv_listener_;

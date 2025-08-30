@@ -513,7 +513,8 @@ public:
 public:
     virtual bool get_rtsp_server_enabled();
     virtual bool get_rtsp_server_enabled(SrsConfDirective *conf);
-    virtual int get_rtsp_server_listen();
+    // Get the rtsp server listen addresses, support IPv4 and IPv6.
+    virtual std::vector<std::string> get_rtsp_server_listens();
 
 public:
     SrsConfDirective *get_rtsp(std::string vhost);
@@ -524,14 +525,16 @@ public:
 public:
     virtual bool get_rtc_server_enabled();
     virtual bool get_rtc_server_enabled(SrsConfDirective *conf);
-    virtual int get_rtc_server_listen();
+    // Get the rtc server listen addresses, support IPv4 and IPv6.
+    virtual std::vector<std::string> get_rtc_server_listens();
     virtual std::string get_rtc_server_candidates();
     virtual bool get_api_as_candidates();
     virtual bool get_resolve_api_domain();
     virtual bool get_keep_api_domain();
     virtual bool get_use_auto_detect_network_ip();
     virtual bool get_rtc_server_tcp_enabled();
-    virtual int get_rtc_server_tcp_listen();
+    // Get the rtc server tcp listen addresses, support IPv4 and IPv6.
+    virtual std::vector<std::string> get_rtc_server_tcp_listens();
     virtual std::string get_rtc_server_protocol();
     virtual std::string get_rtc_server_ip_family();
     virtual bool get_rtc_server_ecdsa();
@@ -689,8 +692,8 @@ public:
 public:
     // Whether the srt sevice enabled
     virtual bool get_srt_enabled();
-    // Get the srt service listen port
-    virtual unsigned short get_srt_listen_port();
+    // Get the srt service listen addresses, support IPv4 and IPv6.
+    virtual std::vector<std::string> get_srt_listens();
     // Get the srt SRTO_MAXBW, max bandwith, default is -1.
     virtual int64_t get_srto_maxbw();
     // Get the srt SRTO_MSS, Maximum Segment Size, default is 1500.
@@ -1060,8 +1063,8 @@ private:
 public:
     // Whether http api enabled.
     virtual bool get_http_api_enabled();
-    // Get the http api listen port.
-    virtual std::string get_http_api_listen();
+    // Get the http api listen addresses, support IPv4 and IPv6.
+    virtual std::vector<std::string> get_http_api_listens();
     // Whether enable crossdomain for http api.
     virtual bool get_http_api_crossdomain();
     // Whether enable the HTTP RAW API.
@@ -1084,7 +1087,7 @@ private:
 
 public:
     virtual bool get_https_api_enabled();
-    virtual std::string get_https_api_listen();
+    virtual std::vector<std::string> get_https_api_listens();
     virtual std::string get_https_api_ssl_key();
     virtual std::string get_https_api_ssl_cert();
     // http stream section
@@ -1096,8 +1099,8 @@ public:
     // Whether http stream enabled.
     // TODO: FIXME: rename to http_static.
     virtual bool get_http_stream_enabled();
-    // Get the http stream listen port.
-    virtual std::string get_http_stream_listen();
+    // Get the http stream listen addresses, support IPv4 and IPv6.
+    virtual std::vector<std::string> get_http_stream_listens();
     // Get the http stream root dir.
     virtual std::string get_http_stream_dir();
     // Whether enable crossdomain for http static and stream server.
@@ -1108,7 +1111,8 @@ private:
 
 public:
     virtual bool get_https_stream_enabled();
-    virtual std::string get_https_stream_listen();
+    // Get the https stream listen addresses, support IPv4 and IPv6.
+    virtual std::vector<std::string> get_https_stream_listens();
     virtual std::string get_https_stream_ssl_key();
     virtual std::string get_https_stream_ssl_cert();
     // rtmps section

@@ -105,6 +105,23 @@ std::string srs_strings_join(std::vector<T> &vs, std::string separator)
     return ss.str();
 }
 
+// Compare two vector with string.
+template <typename T>
+bool srs_strings_equal(std::vector<T> &a, std::vector<T> &b)
+{
+    if (a.size() != b.size()) {
+        return false;
+    }
+
+    for (int i = 0; i < (int)a.size(); i++) {
+        if (a.at(i) != b.at(i)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 // Compare the memory in bytes.
 // @return true if completely equal; otherwise, false.
 extern bool srs_bytes_equal(void *pa, void *pb, int size);
@@ -173,6 +190,9 @@ extern std::string srs_net_address_any();
 
 // Check whether the ip is valid.
 extern bool srs_net_is_valid_ip(std::string ip);
+
+// Check whether the endpoint is valid.
+extern bool srs_net_is_valid_endpoint(std::string endpoint);
 
 // Whether domain is an IPv4 address.
 extern bool srs_net_is_ipv4(std::string domain);

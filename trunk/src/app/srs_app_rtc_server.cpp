@@ -366,25 +366,43 @@ srs_error_t SrsRtcServer::listen_udp()
         return err;
     }
 
-    int port = _srs_config->get_rtc_server_listen();
-    if (port <= 0) {
-        return srs_error_new(ERROR_RTC_PORT, "invalid port=%d", port);
+    // Check protocol setting - only create UDP listeners if protocol allows UDP
+    string protocol = _srs_config->get_rtc_server_protocol();
+    if (protocol == "tcp") {
+        // When protocol is "tcp", don't create UDP listeners
+        return err;
     }
 
-    string ip = srs_net_address_any();
+    vector<string> rtc_listens = _srs_config->get_rtc_server_listens();
+    if (rtc_listens.empty()) {
+        return srs_error_new(ERROR_RTC_PORT, "empty rtc listen");
+    }
+
+    // There should be no listeners before listening.
     srs_assert(listeners.empty());
 
+    // For each listen address, create multiple listeners based on reuseport setting
     int nn_listeners = _srs_config->get_rtc_server_reuseport();
-    for (int i = 0; i < nn_listeners; i++) {
-        SrsUdpMuxListener *listener = new SrsUdpMuxListener(this, ip, port);
+    for (int j = 0; j < (int)rtc_listens.size(); j++) {
+        string ip;
+        int port;
+        srs_net_split_for_listener(rtc_listens[j], ip, port);
 
-        if ((err = listener->listen()) != srs_success) {
-            srs_freep(listener);
-            return srs_error_wrap(err, "listen %s:%d", ip.c_str(), port);
+        if (port <= 0) {
+            return srs_error_new(ERROR_RTC_PORT, "invalid port=%d", port);
         }
 
-        srs_trace("rtc listen at udp://%s:%d, fd=%d", ip.c_str(), port, listener->fd());
-        listeners.push_back(listener);
+        for (int i = 0; i < nn_listeners; i++) {
+            SrsUdpMuxListener *listener = new SrsUdpMuxListener(this, ip, port);
+
+            if ((err = listener->listen()) != srs_success) {
+                srs_freep(listener);
+                return srs_error_wrap(err, "listen %s:%d", ip.c_str(), port);
+            }
+
+            srs_trace("WebRTC listen at udp://%s:%d, fd=%d", ip.c_str(), port, listener->fd());
+            listeners.push_back(listener);
+        }
     }
 
     return err;
@@ -589,8 +607,21 @@ srs_error_t SrsRtcServer::do_create_session(SrsRtcUserConfig *ruc, SrsSdp &local
 
     // We allows to mock the eip of server.
     if (true) {
-        int udp_port = _srs_config->get_rtc_server_listen();
-        int tcp_port = _srs_config->get_rtc_server_tcp_listen();
+        // TODO: Support multiple listen ports.
+        int udp_port = 0;
+        if (true) {
+            string udp_host;
+            string udp_hostport = _srs_config->get_rtc_server_listens().at(0);
+            srs_net_split_for_listener(udp_hostport, udp_host, udp_port);
+        }
+
+        int tcp_port = 0;
+        if (true) {
+            string tcp_host;
+            string tcp_hostport = _srs_config->get_rtc_server_tcp_listens().at(0);
+            srs_net_split_for_listener(tcp_hostport, tcp_host, tcp_port);
+        }
+
         string protocol = _srs_config->get_rtc_server_protocol();
 
         set<string> candidates = discover_candidates(ruc);
@@ -612,7 +643,8 @@ srs_error_t SrsRtcServer::do_create_session(SrsRtcUserConfig *ruc, SrsSdp &local
         }
 
         vector<string> v = vector<string>(candidates.begin(), candidates.end());
-        srs_trace("RTC: Use candidates %s, protocol=%s", srs_strings_join(v, ", ").c_str(), protocol.c_str());
+        srs_trace("RTC: Use candidates %s, protocol=%s, tcp_port=%d, udp_port=%d",
+                  srs_strings_join(v, ", ").c_str(), protocol.c_str(), tcp_port, udp_port);
     }
 
     // Setup the negotiate DTLS by config.

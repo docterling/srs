@@ -2107,7 +2107,7 @@ srs_error_t SrsConfig::raw_to_json(SrsJsonObject *obj)
     obj->set("http_api", sobj);
 
     sobj->set("enabled", SrsJsonAny::boolean(get_http_api_enabled()));
-    sobj->set("listen", SrsJsonAny::str(get_http_api_listen().c_str()));
+    sobj->set("listen", SrsJsonAny::str(get_http_api_listens().at(0).c_str()));
     sobj->set("crossdomain", SrsJsonAny::boolean(get_http_api_crossdomain()));
 
     SrsJsonObject *ssobj = SrsJsonAny::object();
@@ -2477,18 +2477,8 @@ srs_error_t SrsConfig::check_normal_config()
             return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "listen requires params");
         }
         for (int i = 0; i < (int)listens.size(); i++) {
-            int port;
-            string ip;
-            srs_net_split_for_listener(listens[i], ip, port);
-
-            // check ip
-            if (!srs_net_is_valid_ip(ip)) {
-                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "listen.ip=%s is invalid", ip.c_str());
-            }
-
-            // check port
-            if (port <= 0) {
-                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "listen.port=%d is invalid", port);
+            if (!srs_net_is_valid_endpoint(listens[i])) {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "rtmp.listen=%s is invalid", listens[i].c_str());
             }
         }
     }
@@ -2536,22 +2526,39 @@ srs_error_t SrsConfig::check_normal_config()
     // Check HTTP API and server.
     ////////////////////////////////////////////////////////////////////////
     if (true) {
-        string api = get_http_api_listen();
-        string server = get_http_stream_listen();
-        if (api.empty()) {
+        vector<string> apis = get_http_api_listens();
+        if (apis.empty()) {
             return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http_api.listen requires params");
         }
-        if (server.empty()) {
-            return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http_server.listen requires params");
+        for (int i = 0; i < (int)apis.size(); i++) {
+            if (!srs_net_is_valid_endpoint(apis[i])) {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http_api.listen=%s is invalid", apis[i].c_str());
+            }
         }
 
-        string apis = get_https_api_listen();
-        string servers = get_https_stream_listen();
-        if (api == server && apis != servers) {
-            return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "for same http, https api(%s) != server(%s)", apis.c_str(), servers.c_str());
+        vector<string> servers = get_http_stream_listens();
+        if (servers.empty()) {
+            return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http_server.listen requires params");
         }
-        if (apis == servers && api != server) {
-            return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "for same https, http api(%s) != server(%s)", api.c_str(), server.c_str());
+        for (int i = 0; i < (int)servers.size(); i++) {
+            if (!srs_net_is_valid_endpoint(servers[i])) {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http_server.listen=%s is invalid", servers[i].c_str());
+            }
+        }
+
+        vector<string> sapis = get_https_api_listens();
+        for (int i = 0; i < (int)sapis.size(); i++) {
+            if (!srs_net_is_valid_endpoint(sapis[i])) {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "http_api.https.listen=%s is invalid", sapis[i].c_str());
+            }
+        }
+
+        vector<string> sservers = get_https_stream_listens();
+        if (srs_strings_equal(apis, servers) && !srs_strings_equal(sapis, sservers)) {
+            return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "for same http, https api(%s) != server(%s)", srs_strings_join(sapis, ",").c_str(), srs_strings_join(sservers, ",").c_str());
+        }
+        if (srs_strings_equal(sapis, sservers) && !srs_strings_equal(apis, servers)) {
+            return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "for same https, http api(%s) != server(%s)", srs_strings_join(apis, ",").c_str(), srs_strings_join(servers, ",").c_str());
         }
 
         if (get_https_api_enabled() && !get_http_api_enabled()) {
@@ -2559,6 +2566,65 @@ srs_error_t SrsConfig::check_normal_config()
         }
         if (get_https_stream_enabled() && !get_http_stream_enabled()) {
             return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "https stream depends on http");
+        }
+
+        // Validate HTTPS stream listen addresses
+        if (get_https_stream_enabled()) {
+            vector<string> https_listens = get_https_stream_listens();
+            for (int i = 0; i < (int)https_listens.size(); i++) {
+                if (!srs_net_is_valid_endpoint(https_listens[i])) {
+                    return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "https_server.listen=%s is invalid", https_listens[i].c_str());
+                }
+            }
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // Check RTSP server.
+    ////////////////////////////////////////////////////////////////////////
+    if (get_rtsp_server_enabled()) {
+        // Validate RTSP server listen addresses
+        vector<string> rtsp_listens = get_rtsp_server_listens();
+        for (int i = 0; i < (int)rtsp_listens.size(); i++) {
+            if (!srs_net_is_valid_endpoint(rtsp_listens[i])) {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "rtsp_server.listen=%s is invalid", rtsp_listens[i].c_str());
+            }
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // Check RTC server.
+    ////////////////////////////////////////////////////////////////////////
+    if (get_rtc_server_enabled()) {
+        // Validate RTC server listen addresses
+        vector<string> rtc_listens = get_rtc_server_listens();
+        for (int i = 0; i < (int)rtc_listens.size(); i++) {
+            if (!srs_net_is_valid_endpoint(rtc_listens[i])) {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "rtc_server.listen=%s is invalid", rtc_listens[i].c_str());
+            }
+        }
+
+        // Validate RTC server TCP listen addresses
+        if (get_rtc_server_tcp_enabled()) {
+            vector<string> rtc_tcp_listens = get_rtc_server_tcp_listens();
+            for (int i = 0; i < (int)rtc_tcp_listens.size(); i++) {
+                if (!srs_net_is_valid_endpoint(rtc_tcp_listens[i])) {
+                    return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "rtc_server.tcp.listen=%s is invalid", rtc_tcp_listens[i].c_str());
+                }
+            }
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // Check SRT server.
+    ////////////////////////////////////////////////////////////////////////
+    if (get_srt_enabled()) {
+        // Validate SRT server listen addresses
+        vector<string> srt_listens = get_srt_listens();
+        for (int i = 0; i < (int)srt_listens.size(); i++) {
+            if (!srs_net_is_valid_endpoint(srt_listens[i])) {
+                return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "srt_server.listen=%s is invalid", srt_listens[i].c_str());
+            }
         }
     }
 
@@ -3735,24 +3801,38 @@ bool SrsConfig::get_rtsp_server_enabled(SrsConfDirective *conf)
     return SRS_CONF_PREFER_FALSE(conf->arg0());
 }
 
-int SrsConfig::get_rtsp_server_listen()
+vector<string> SrsConfig::get_rtsp_server_listens()
 {
-    SRS_OVERWRITE_BY_ENV_INT("srs.rtsp_server.listen"); // SRS_RTSP_SERVER_LISTEN
+    std::vector<string> listens;
+
+    if (!srs_getenv("srs.rtsp_server.listen").empty()) { // SRS_RTSP_SERVER_LISTEN
+        return srs_strings_split(srs_getenv("srs.rtsp_server.listen"), " ");
+    }
+
+    static string DEFAULT = "554";
 
     SrsConfDirective *conf = root->get("rtsp_server");
-
-    static int DEFAULT = 554;
-
     if (!conf) {
-        return DEFAULT;
+        listens.push_back(DEFAULT);
+        return listens;
     }
 
     conf = conf->get("listen");
-    if (!conf || conf->arg0().empty()) {
-        return DEFAULT;
+    if (!conf) {
+        listens.push_back(DEFAULT);
+        return listens;
     }
 
-    return ::atoi(conf->arg0().c_str());
+    for (int i = 0; i < (int)conf->args.size(); i++) {
+        listens.push_back(conf->args.at(i));
+    }
+
+    // If no arguments, use default
+    if (listens.empty()) {
+        listens.push_back(DEFAULT);
+    }
+
+    return listens;
 }
 
 SrsConfDirective *SrsConfig::get_rtsp(string vhost)
@@ -3825,23 +3905,36 @@ bool SrsConfig::get_rtc_server_enabled(SrsConfDirective *conf)
     return SRS_CONF_PREFER_FALSE(conf->arg0());
 }
 
-int SrsConfig::get_rtc_server_listen()
+vector<string> SrsConfig::get_rtc_server_listens()
 {
-    SRS_OVERWRITE_BY_ENV_INT("srs.rtc_server.listen"); // SRS_RTC_SERVER_LISTEN
+    std::vector<string> listens;
 
-    static int DEFAULT = 8000;
+    if (!srs_getenv("srs.rtc_server.listen").empty()) { // SRS_RTC_SERVER_LISTEN
+        return srs_strings_split(srs_getenv("srs.rtc_server.listen"), " ");
+    }
 
     SrsConfDirective *conf = root->get("rtc_server");
     if (!conf) {
-        return DEFAULT;
+        listens.push_back("8000");
+        return listens;
     }
 
     conf = conf->get("listen");
-    if (!conf || conf->arg0().empty()) {
-        return DEFAULT;
+    if (!conf) {
+        listens.push_back("8000");
+        return listens;
     }
 
-    return ::atoi(conf->arg0().c_str());
+    for (int i = 0; i < (int)conf->args.size(); i++) {
+        listens.push_back(conf->args.at(i));
+    }
+
+    // If no arguments, use default
+    if (listens.empty()) {
+        listens.push_back("8000");
+    }
+
+    return listens;
 }
 
 std::string SrsConfig::get_rtc_server_candidates()
@@ -3979,28 +4072,44 @@ bool SrsConfig::get_rtc_server_tcp_enabled()
     return SRS_CONF_PREFER_FALSE(conf->arg0());
 }
 
-int SrsConfig::get_rtc_server_tcp_listen()
+vector<string> SrsConfig::get_rtc_server_tcp_listens()
 {
-    SRS_OVERWRITE_BY_ENV_INT("srs.rtc_server.tcp.listen"); // SRS_RTC_SERVER_TCP_LISTEN
+    std::vector<string> listens;
 
-    static int DEFAULT = 8000;
+    if (!srs_getenv("srs.rtc_server.tcp.listen").empty()) { // SRS_RTC_SERVER_TCP_LISTEN
+        return srs_strings_split(srs_getenv("srs.rtc_server.tcp.listen"), " ");
+    }
+
+    static string DEFAULT = "8000";
 
     SrsConfDirective *conf = root->get("rtc_server");
     if (!conf) {
-        return DEFAULT;
+        listens.push_back(DEFAULT);
+        return listens;
     }
 
     conf = conf->get("tcp");
     if (!conf) {
-        return DEFAULT;
+        listens.push_back(DEFAULT);
+        return listens;
     }
 
     conf = conf->get("listen");
-    if (!conf || conf->arg0().empty()) {
-        return DEFAULT;
+    if (!conf) {
+        listens.push_back(DEFAULT);
+        return listens;
     }
 
-    return ::atoi(conf->arg0().c_str());
+    for (int i = 0; i < (int)conf->args.size(); i++) {
+        listens.push_back(conf->args.at(i));
+    }
+
+    // If no arguments, use default
+    if (listens.empty()) {
+        listens.push_back(DEFAULT);
+    }
+
+    return listens;
 }
 
 std::string SrsConfig::get_rtc_server_protocol()
@@ -7464,24 +7573,38 @@ bool SrsConfig::get_http_api_enabled(SrsConfDirective *conf)
     return SRS_CONF_PREFER_FALSE(conf->arg0());
 }
 
-string SrsConfig::get_http_api_listen()
+vector<string> SrsConfig::get_http_api_listens()
 {
-    SRS_OVERWRITE_BY_ENV_STRING("srs.http_api.listen"); // SRS_HTTP_API_LISTEN
+    std::vector<string> listens;
+
+    if (!srs_getenv("srs.http_api.listen").empty()) { // SRS_HTTP_API_LISTEN
+        return srs_strings_split(srs_getenv("srs.http_api.listen"), " ");
+    }
 
     static string DEFAULT = "1985";
 
     SrsConfDirective *conf = root->get("http_api");
-
     if (!conf) {
-        return DEFAULT;
+        listens.push_back(DEFAULT);
+        return listens;
     }
 
     conf = conf->get("listen");
-    if (!conf || conf->arg0().empty()) {
-        return DEFAULT;
+    if (!conf) {
+        listens.push_back(DEFAULT);
+        return listens;
     }
 
-    return conf->arg0();
+    for (int i = 0; i < (int)conf->args.size(); i++) {
+        listens.push_back(conf->args.at(i));
+    }
+
+    // If no arguments, use default
+    if (listens.empty()) {
+        listens.push_back(DEFAULT);
+    }
+
+    return listens;
 }
 
 bool SrsConfig::get_http_api_crossdomain()
@@ -7664,28 +7787,48 @@ bool SrsConfig::get_https_api_enabled()
     return SRS_CONF_PREFER_FALSE(conf->arg0());
 }
 
-string SrsConfig::get_https_api_listen()
+vector<string> SrsConfig::get_https_api_listens()
 {
-    SRS_OVERWRITE_BY_ENV_STRING("srs.http_api.https.listen"); // SRS_HTTP_API_HTTPS_LISTEN
+    std::vector<string> listens;
 
-    // We should not use static default, because we need to reset for different use scenarios.
-    string DEFAULT = "1990";
-    // Follow the HTTPS server if config HTTP API as the same of HTTP server.
-    if (get_http_api_listen() == get_http_stream_listen()) {
-        DEFAULT = get_https_stream_listen();
+    if (!srs_getenv("srs.http_api.https.listen").empty()) { // SRS_HTTP_API_HTTPS_LISTEN
+        return srs_strings_split(srs_getenv("srs.http_api.https.listen"), " ");
     }
+
+    // If HTTP API uses the same port to HTTP server, then HTTPS API should 
+    // always default to the same port to HTTPS server.
+    if (true) {
+        vector<string> apis = get_http_api_listens();
+        vector<string> servers = get_http_stream_listens();
+        if (srs_strings_equal(apis, servers)) {
+            return get_https_stream_listens();
+        }
+    }
+
+    static string DEFAULT = "1990";
 
     SrsConfDirective *conf = get_https_api();
     if (!conf) {
-        return DEFAULT;
+        listens.push_back(DEFAULT);
+        return listens;
     }
 
     conf = conf->get("listen");
     if (!conf) {
-        return DEFAULT;
+        listens.push_back(DEFAULT);
+        return listens;
     }
 
-    return conf->arg0();
+    for (int i = 0; i < (int)conf->args.size(); i++) {
+        listens.push_back(conf->args.at(i));
+    }
+
+    // If no arguments, use default
+    if (listens.empty()) {
+        listens.push_back(DEFAULT);
+    }
+
+    return listens;
 }
 
 string SrsConfig::get_https_api_ssl_key()
@@ -7745,21 +7888,38 @@ bool SrsConfig::get_srt_enabled()
     return SRS_CONF_PREFER_FALSE(conf->arg0());
 }
 
-unsigned short SrsConfig::get_srt_listen_port()
+vector<string> SrsConfig::get_srt_listens()
 {
-    SRS_OVERWRITE_BY_ENV_INT("srs.srt_server.listen"); // SRS_SRT_SERVER_LISTEN
+    std::vector<string> listens;
 
-    static unsigned short DEFAULT = 10080;
+    if (!srs_getenv("srs.srt_server.listen").empty()) { // SRS_SRT_SERVER_LISTEN
+        return srs_strings_split(srs_getenv("srs.srt_server.listen"), " ");
+    }
+
+    static string DEFAULT = "10080";
+
     SrsConfDirective *conf = root->get("srt_server");
     if (!conf) {
-        return DEFAULT;
+        listens.push_back(DEFAULT);
+        return listens;
     }
 
     conf = conf->get("listen");
-    if (!conf || conf->arg0().empty()) {
-        return DEFAULT;
+    if (!conf) {
+        listens.push_back(DEFAULT);
+        return listens;
     }
-    return (unsigned short)atoi(conf->arg0().c_str());
+
+    for (int i = 0; i < (int)conf->args.size(); i++) {
+        listens.push_back(conf->args.at(i));
+    }
+
+    // If no arguments, use default
+    if (listens.empty()) {
+        listens.push_back(DEFAULT);
+    }
+
+    return listens;
 }
 
 int64_t SrsConfig::get_srto_maxbw()
@@ -8104,23 +8264,38 @@ bool SrsConfig::get_http_stream_enabled(SrsConfDirective *conf)
     return SRS_CONF_PREFER_FALSE(conf->arg0());
 }
 
-string SrsConfig::get_http_stream_listen()
+vector<string> SrsConfig::get_http_stream_listens()
 {
-    SRS_OVERWRITE_BY_ENV_STRING("srs.http_server.listen"); // SRS_HTTP_SERVER_LISTEN
+    std::vector<string> listens;
+
+    if (!srs_getenv("srs.http_server.listen").empty()) { // SRS_HTTP_SERVER_LISTEN
+        return srs_strings_split(srs_getenv("srs.http_server.listen"), " ");
+    }
 
     static string DEFAULT = "8080";
 
     SrsConfDirective *conf = root->get("http_server");
     if (!conf) {
-        return DEFAULT;
+        listens.push_back(DEFAULT);
+        return listens;
     }
 
     conf = conf->get("listen");
-    if (!conf || conf->arg0().empty()) {
-        return DEFAULT;
+    if (!conf) {
+        listens.push_back(DEFAULT);
+        return listens;
     }
 
-    return conf->arg0();
+    for (int i = 0; i < (int)conf->args.size(); i++) {
+        listens.push_back(conf->args.at(i));
+    }
+
+    // If no arguments, use default
+    if (listens.empty()) {
+        listens.push_back(DEFAULT);
+    }
+
+    return listens;
 }
 
 string SrsConfig::get_http_stream_dir()
@@ -8190,23 +8365,38 @@ bool SrsConfig::get_https_stream_enabled()
     return SRS_CONF_PREFER_FALSE(conf->arg0());
 }
 
-string SrsConfig::get_https_stream_listen()
+vector<string> SrsConfig::get_https_stream_listens()
 {
-    SRS_OVERWRITE_BY_ENV_STRING("srs.http_server.https.listen"); // SRS_HTTP_SERVER_HTTPS_LISTEN
+    std::vector<string> listens;
+
+    if (!srs_getenv("srs.http_server.https.listen").empty()) { // SRS_HTTP_SERVER_HTTPS_LISTEN
+        return srs_strings_split(srs_getenv("srs.http_server.https.listen"), " ");
+    }
 
     static string DEFAULT = "8088";
 
     SrsConfDirective *conf = get_https_stream();
     if (!conf) {
-        return DEFAULT;
+        listens.push_back(DEFAULT);
+        return listens;
     }
 
     conf = conf->get("listen");
     if (!conf) {
-        return DEFAULT;
+        listens.push_back(DEFAULT);
+        return listens;
     }
 
-    return conf->arg0();
+    for (int i = 0; i < (int)conf->args.size(); i++) {
+        listens.push_back(conf->args.at(i));
+    }
+
+    // If no arguments, use default
+    if (listens.empty()) {
+        listens.push_back(DEFAULT);
+    }
+
+    return listens;
 }
 
 string SrsConfig::get_https_stream_ssl_key()
