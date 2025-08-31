@@ -33,7 +33,6 @@ using namespace std;
 
 #include <srs_app_circuit_breaker.hpp>
 #include <srs_app_config.hpp>
-#include <srs_app_hybrid.hpp>
 #include <srs_app_log.hpp>
 #include <srs_app_server.hpp>
 #include <srs_app_utility.hpp>
@@ -44,7 +43,6 @@ using namespace std;
 #include <srs_kernel_utility.hpp>
 
 #include <srs_app_rtc_conn.hpp>
-#include <srs_app_rtc_server.hpp>
 
 #ifdef SRS_SRT
 #include <srs_app_srt_server.hpp>
@@ -53,7 +51,7 @@ using namespace std;
 
 // pre-declare
 srs_error_t run_directly_or_daemon();
-srs_error_t run_hybrid_server();
+srs_error_t run_srs_server();
 void show_macro_features();
 
 // @global log and context.
@@ -65,9 +63,6 @@ SrsConfig *_srs_config = NULL;
 
 // @global version of srs, which can grep keyword "XCORE"
 extern const char *_srs_version;
-
-// @global main SRS server, for debugging
-SrsServer *_srs_server = NULL;
 
 // Whether setup config by environment variables, see https://github.com/ossrs/srs/issues/2277
 bool _srs_config_by_env = false;
@@ -409,7 +404,7 @@ srs_error_t run_directly_or_daemon()
 
     // If not daemon, directly run hybrid server.
     if (!run_as_daemon) {
-        if ((err = run_hybrid_server()) != srs_success) {
+        if ((err = run_srs_server()) != srs_success) {
             return srs_error_wrap(err, "run server");
         }
         return srs_success;
@@ -446,43 +441,31 @@ srs_error_t run_directly_or_daemon()
     // son
     srs_trace("son(daemon) process running.");
 
-    if ((err = run_hybrid_server()) != srs_success) {
+    if ((err = run_srs_server()) != srs_success) {
         return srs_error_wrap(err, "daemon run server");
     }
 
     return err;
 }
 
-srs_error_t run_hybrid_server()
+srs_error_t run_srs_server()
 {
     srs_error_t err = srs_success;
 
-    // Create servers and register them.
-    _srs_hybrid->register_server(new SrsServerAdapter());
-
-#ifdef SRS_SRT
-    _srs_hybrid->register_server(new SrsSrtServerAdapter());
-#endif
-
-    _srs_hybrid->register_server(new SrsRtcServerAdapter());
+    _srs_server = new SrsServer();
 
     // Do some system initialize.
-    if ((err = _srs_hybrid->initialize()) != srs_success) {
+    if ((err = _srs_server->initialize()) != srs_success) {
         return srs_error_wrap(err, "hybrid initialize");
     }
 
-    // Circuit breaker to protect server, which depends on hybrid.
-    if ((err = _srs_circuit_breaker->initialize()) != srs_success) {
-        return srs_error_wrap(err, "init circuit breaker");
-    }
-
     // Should run util hybrid servers all done.
-    if ((err = _srs_hybrid->run()) != srs_success) {
+    if ((err = _srs_server->run()) != srs_success) {
         return srs_error_wrap(err, "hybrid run");
     }
 
     // After all done, stop and cleanup.
-    _srs_hybrid->stop();
+    _srs_server->stop();
 
     return err;
 }

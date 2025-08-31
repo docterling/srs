@@ -15,12 +15,24 @@
 #include <srs_app_conn.hpp>
 #include <srs_app_hls.hpp>
 #include <srs_app_hourglass.hpp>
-#include <srs_app_hybrid.hpp>
 #include <srs_app_listener.hpp>
 #include <srs_app_reload.hpp>
 #include <srs_app_source.hpp>
 #include <srs_app_st.hpp>
 #include <srs_protocol_st.hpp>
+
+#ifdef SRS_SRT
+#include <srs_app_srt_listener.hpp>
+#include <srs_protocol_srt.hpp>
+#endif
+
+class SrsAsyncCallWorker;
+class SrsUdpMuxListener;
+class SrsUdpMuxSocket;
+class SrsRtcUserConfig;
+class SrsSdp;
+class SrsRtcConnection;
+class ISrsAsyncCallTask;
 
 class SrsServer;
 class ISrsHttpServeMux;
@@ -36,13 +48,28 @@ class SrsTcpListener;
 class SrsAppCasterFlv;
 class SrsResourceManager;
 class SrsLatestVersion;
-class SrsWaitGroup;
 class SrsMultipleTcpListeners;
 class SrsHttpFlvListener;
 class SrsUdpCasterListener;
 class SrsGbListener;
 class SrsRtmpTransport;
 class SrsRtmpsTransport;
+class SrsSrtAcceptor;
+class SrsSrtEventLoop;
+
+// Initialize global shared variables cross all threads.
+extern srs_error_t srs_global_initialize();
+
+// Interface for SRT client acceptance
+class ISrsSrtClientHandler
+{
+public:
+    ISrsSrtClientHandler();
+    virtual ~ISrsSrtClientHandler();
+
+public:
+    virtual srs_error_t accept_srt_client(srs_srt_t srt_fd);
+};
 
 // Convert signal to io,
 // @see: st-1.9/docs/notes.html
@@ -97,29 +124,39 @@ public:
     virtual srs_error_t cycle();
 };
 
-// TODO: FIXME: Rename to SrsLiveServer.
 // SRS RTMP server, initialize and listen, start connection service thread, destroy client.
-class SrsServer : public ISrsReloadHandler, public ISrsLiveSourceHandler, public ISrsTcpHandler, public ISrsResourceManager, public ISrsCoroutineHandler, public ISrsHourGlass
+class SrsServer : public ISrsReloadHandler, // Reload framework for permormance optimization.
+                  public ISrsLiveSourceHandler,
+                  public ISrsTcpHandler,
+                  public ISrsHourGlass,
+                  public ISrsSrtClientHandler,
+                  public ISrsUdpMuxHandler,
+                  public ISrsFastTimer
 {
 private:
     // TODO: FIXME: Extract an HttpApiServer.
-    ISrsHttpServeMux *http_api_mux;
-    SrsHttpServer *http_server;
+    ISrsHttpServeMux *http_api_mux_;
+    SrsHttpServer *http_server_;
 
 private:
-    SrsHttpHeartbeat *http_heartbeat;
-    SrsIngester *ingester;
-    SrsResourceManager *conn_manager;
-    SrsCoroutine *trd_;
+    SrsHttpHeartbeat *http_heartbeat_;
+    SrsIngester *ingester_;
     SrsHourGlass *timer_;
-    SrsWaitGroup *wg_;
+
+private:
+    // Global shared timers moved from SrsHybridServer
+    SrsFastTimer *timer20ms_;
+    SrsFastTimer *timer100ms_;
+    SrsFastTimer *timer1s_;
+    SrsFastTimer *timer5s_;
+    SrsClockWallMonitor *clock_monitor_;
 
 private:
     // The pid file fd, lock the file write when server is running.
     // @remark the init.d script should cleanup the pid file, when stop service,
     //       for the server never delete the file; when system startup, the pid in pid file
     //       maybe valid but the process is not SRS, the init.d script will never start server.
-    int pid_fd;
+    int pid_fd_;
 
 private:
     // If reusing, HTTP API use the same port of HTTP server.
@@ -157,19 +194,28 @@ private:
     // Stream Caster for GB28181.
     SrsGbListener *stream_caster_gb28181_;
 #endif
+#ifdef SRS_SRT
+    // SRT acceptors for MPEG-TS over SRT.
+    std::vector<SrsSrtAcceptor *> srt_acceptors_;
+#endif
+    // WebRTC UDP listeners for RTC server functionality.
+    std::vector<SrsUdpMuxListener *> rtc_listeners_;
+    // WebRTC async call worker for non-blocking operations.
+    SrsAsyncCallWorker *rtc_async_;
+
 private:
     // Signal manager which convert gignal to io message.
-    SrsSignalManager *signal_manager;
+    SrsSignalManager *signal_manager_;
     // To query the latest available version of SRS.
     SrsLatestVersion *latest_version_;
     // User send the signal, convert to variable.
-    bool signal_reload;
-    bool signal_persistence_config;
-    bool signal_gmc_stop;
-    bool signal_fast_quit;
-    bool signal_gracefully_quit;
+    bool signal_reload_;
+    bool signal_persistence_config_;
+    bool signal_gmc_stop_;
+    bool signal_fast_quit_;
+    bool signal_gracefully_quit_;
     // Parent pid for asprocess.
-    int ppid;
+    int ppid_;
 
 public:
     SrsServer();
@@ -186,11 +232,21 @@ private:
     // Close listener to stop accepting new connections,
     // then wait and quit when all connections finished.
     virtual void gracefully_dispose();
+
     // server startup workflow, @see run_master()
 public:
     // Initialize server with callback handler ch.
     // @remark user must free the handler.
     virtual srs_error_t initialize();
+
+private:
+    // Require the PID file for the whole process.
+    virtual srs_error_t acquire_pid_file();
+
+public:
+    srs_error_t run();
+
+private:
     virtual srs_error_t initialize_st();
     virtual srs_error_t initialize_signal();
     virtual srs_error_t listen();
@@ -199,11 +255,12 @@ public:
     virtual srs_error_t ingest();
 
 public:
-    virtual srs_error_t start(SrsWaitGroup *wg);
     void stop();
+
     // interface ISrsCoroutineHandler
-public:
+private:
     virtual srs_error_t cycle();
+
     // server utilities.
 public:
     // The callback for signal manager got a signal.
@@ -226,6 +283,7 @@ private:
     // update the global static data, for instance, the current time,
     // the cpu/mem/network statistic.
     virtual srs_error_t do_cycle();
+
     // interface ISrsHourGlass
 private:
     virtual srs_error_t setup_ticks();
@@ -234,48 +292,65 @@ private:
 private:
     // Resample the server kbs.
     virtual void resample_kbps();
-    // For internal only
+
+#ifdef SRS_SRT
+    // SRT-related methods
+    virtual srs_error_t listen_srt_mpegts();
+    virtual void close_srt_listeners();
+    virtual srs_error_t accept_srt_client(srs_srt_t srt_fd);
+    virtual srs_error_t srt_fd_to_resource(srs_srt_t srt_fd, ISrsResource **pr);
+#endif
+
+    // WebRTC-related methods
+    virtual srs_error_t listen_rtc_udp();
+
+    // Interface ISrsUdpMuxHandler
 public:
-    // TODO: FIXME: Fetch from hybrid server manager.
-    virtual ISrsHttpServeMux *api_server();
+    virtual srs_error_t on_udp_packet(SrsUdpMuxSocket *skt);
+
+private:
+    virtual srs_error_t listen_rtc_api();
+
+public:
+    virtual srs_error_t exec_rtc_async_work(ISrsAsyncCallTask *t);
+    virtual SrsRtcConnection *find_rtc_session_by_username(const std::string &ufrag);
+    virtual srs_error_t create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, SrsRtcConnection **psession);
+
+private:
+    virtual srs_error_t do_create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, SrsRtcConnection *session);
+
+private:
+    virtual srs_error_t srs_update_rtc_sessions();
+
     // Interface ISrsTcpHandler
 public:
     virtual srs_error_t on_tcp_client(ISrsListener *listener, srs_netfd_t stfd);
 
 private:
     virtual srs_error_t do_on_tcp_client(ISrsListener *listener, srs_netfd_t &stfd);
-    virtual srs_error_t on_before_connection(srs_netfd_t &stfd, const std::string &ip, int port);
-    // Interface ISrsResourceManager
-public:
-    // A callback for connection to remove itself.
-    // When connection thread cycle terminated, callback this to delete connection.
-    // @see SrsTcpConnection.on_thread_stop().
-    virtual void remove(ISrsResource *c);
-    // Interface ISrsReloadHandler.
-public:
+    virtual srs_error_t on_before_connection(const char *label, int fd, const std::string &ip, int port);
+
     // Interface ISrsLiveSourceHandler
 public:
     virtual srs_error_t on_publish(ISrsRequest *r);
     virtual void on_unpublish(ISrsRequest *r);
-};
 
-// The SRS server adapter, the master server.
-class SrsServerAdapter : public ISrsHybridServer
-{
+public:
+    // Access to global shared timers
+    SrsFastTimer *timer20ms();
+    SrsFastTimer *timer100ms();
+    SrsFastTimer *timer1s();
+    SrsFastTimer *timer5s();
+
+    // interface ISrsFastTimer for statistics reporting
 private:
-    SrsServer *srs;
-
-public:
-    SrsServerAdapter();
-    virtual ~SrsServerAdapter();
-
-public:
-    virtual srs_error_t initialize();
-    virtual srs_error_t run(SrsWaitGroup *wg);
-    virtual void stop();
-
-public:
-    virtual SrsServer *instance();
+    virtual srs_error_t on_timer(srs_utime_t interval);
 };
+
+// @global main SRS server, for debugging
+extern SrsServer *_srs_server;
+
+// Manager for RTC connections.
+extern SrsResourceManager *_srs_conn_manager;
 
 #endif

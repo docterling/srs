@@ -114,6 +114,9 @@ public:
     // Interface ISrsReusableThreadHandler.
 public:
     virtual srs_error_t cycle();
+
+private:
+    srs_error_t do_cycle();
 };
 
 // Bind and listen tcp port, use handler to process the client.
@@ -145,6 +148,9 @@ public:
     // Interface ISrsReusableThreadHandler.
 public:
     virtual srs_error_t cycle();
+
+private:
+    srs_error_t do_cycle();
 };
 
 // Bind and listen tcp port, use handler to process the client.

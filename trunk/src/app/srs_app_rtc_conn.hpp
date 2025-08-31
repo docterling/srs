@@ -10,7 +10,6 @@
 #include <srs_app_async_call.hpp>
 #include <srs_app_conn.hpp>
 #include <srs_app_hourglass.hpp>
-#include <srs_app_hybrid.hpp>
 #include <srs_app_listener.hpp>
 #include <srs_app_reload.hpp>
 #include <srs_app_rtc_dtls.hpp>
@@ -34,7 +33,7 @@
 class SrsUdpMuxSocket;
 class SrsLiveConsumer;
 class SrsStunPacket;
-class SrsRtcServer;
+class SrsServer;
 class SrsRtcConnection;
 class SrsSharedPtrMessage;
 class SrsRtcSource;
@@ -270,6 +269,7 @@ public:
     // Interface ISrsRtcSourceChangeCallback
 public:
     void on_stream_change(SrsRtcSourceDescription *desc);
+
 public:
     virtual const SrsContextId &context_id();
 
@@ -479,7 +479,7 @@ public:
     bool disposing_;
 
 private:
-    SrsRtcServer *server_;
+    SrsServer *server_;
 
 private:
     iovec *cache_iov_;
@@ -529,7 +529,7 @@ private:
     bool nack_enabled_;
 
 public:
-    SrsRtcConnection(SrsRtcServer *s, const SrsContextId &cid);
+    SrsRtcConnection(SrsServer *s, const SrsContextId &cid);
     virtual ~SrsRtcConnection();
     // interface ISrsDisposingHandler
 public:
