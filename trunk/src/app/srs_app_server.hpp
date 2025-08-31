@@ -18,11 +18,11 @@
 #include <srs_app_listener.hpp>
 #include <srs_app_reload.hpp>
 #include <srs_app_source.hpp>
-#include <srs_app_st.hpp>
-#include <srs_protocol_st.hpp>
-
 #include <srs_app_srt_listener.hpp>
+#include <srs_app_srt_server.hpp>
+#include <srs_app_st.hpp>
 #include <srs_protocol_srt.hpp>
+#include <srs_protocol_st.hpp>
 
 class SrsAsyncCallWorker;
 class SrsUdpMuxListener;
@@ -31,7 +31,7 @@ class SrsRtcUserConfig;
 class SrsSdp;
 class SrsRtcConnection;
 class ISrsAsyncCallTask;
-
+class SrsSignalManager;
 class SrsServer;
 class ISrsHttpServeMux;
 class SrsHttpServer;
@@ -54,73 +54,11 @@ class SrsRtmpTransport;
 class SrsRtmpsTransport;
 class SrsSrtAcceptor;
 class SrsSrtEventLoop;
+class SrsRtcSessionManager;
+class SrsPidFileLocker;
 
 // Initialize global shared variables cross all threads.
 extern srs_error_t srs_global_initialize();
-
-// Interface for SRT client acceptance
-class ISrsSrtClientHandler
-{
-public:
-    ISrsSrtClientHandler();
-    virtual ~ISrsSrtClientHandler();
-
-public:
-    virtual srs_error_t accept_srt_client(srs_srt_t srt_fd);
-};
-
-// Convert signal to io,
-// @see: st-1.9/docs/notes.html
-class SrsSignalManager : public ISrsCoroutineHandler
-{
-private:
-    // Per-process pipe which is used as a signal queue.
-    // Up to PIPE_BUF/sizeof(int) signals can be queued up.
-    int sig_pipe[2];
-    srs_netfd_t signal_read_stfd;
-
-private:
-    SrsServer *server;
-    SrsCoroutine *trd;
-
-public:
-    SrsSignalManager(SrsServer *s);
-    virtual ~SrsSignalManager();
-
-public:
-    virtual srs_error_t initialize();
-    virtual srs_error_t start();
-    // Interface ISrsEndlessThreadHandler.
-public:
-    virtual srs_error_t cycle();
-
-private:
-    // Global singleton instance
-    static SrsSignalManager *instance;
-    // Signal catching function.
-    // Converts signal event to I/O event.
-    static void sig_catcher(int signo);
-};
-
-// Auto reload by inotify.
-// @see https://github.com/ossrs/srs/issues/1635
-class SrsInotifyWorker : public ISrsCoroutineHandler
-{
-private:
-    SrsServer *server;
-    SrsCoroutine *trd;
-    srs_netfd_t inotify_fd;
-
-public:
-    SrsInotifyWorker(SrsServer *s);
-    virtual ~SrsInotifyWorker();
-
-public:
-    virtual srs_error_t start();
-    // Interface ISrsEndlessThreadHandler.
-public:
-    virtual srs_error_t cycle();
-};
 
 // SRS RTMP server, initialize and listen, start connection service thread, destroy client.
 class SrsServer : public ISrsReloadHandler, // Reload framework for permormance optimization.
@@ -128,8 +66,7 @@ class SrsServer : public ISrsReloadHandler, // Reload framework for permormance 
                   public ISrsTcpHandler,
                   public ISrsHourGlass,
                   public ISrsSrtClientHandler,
-                  public ISrsUdpMuxHandler,
-                  public ISrsFastTimer
+                  public ISrsUdpMuxHandler
 {
 private:
     // TODO: FIXME: Extract an HttpApiServer.
@@ -142,19 +79,8 @@ private:
     SrsHourGlass *timer_;
 
 private:
-    // Global shared timers moved from SrsHybridServer
-    SrsFastTimer *timer20ms_;
-    SrsFastTimer *timer100ms_;
-    SrsFastTimer *timer1s_;
-    SrsFastTimer *timer5s_;
-    SrsClockWallMonitor *clock_monitor_;
-
-private:
-    // The pid file fd, lock the file write when server is running.
-    // @remark the init.d script should cleanup the pid file, when stop service,
-    //       for the server never delete the file; when system startup, the pid in pid file
-    //       maybe valid but the process is not SRS, the init.d script will never start server.
-    int pid_fd_;
+    // PID file manager for process identification and locking.
+    SrsPidFileLocker *pid_file_locker_;
 
 private:
     // If reusing, HTTP API use the same port of HTTP server.
@@ -196,8 +122,8 @@ private:
     std::vector<SrsSrtAcceptor *> srt_acceptors_;
     // WebRTC UDP listeners for RTC server functionality.
     std::vector<SrsUdpMuxListener *> rtc_listeners_;
-    // WebRTC async call worker for non-blocking operations.
-    SrsAsyncCallWorker *rtc_async_;
+    // WebRTC session manager.
+    SrsRtcSessionManager *rtc_session_manager_;
 
 private:
     // Signal manager which convert gignal to io message.
@@ -218,10 +144,6 @@ public:
     virtual ~SrsServer();
 
 private:
-    // The destroy is for gmc to analysis the memory leak,
-    // if not destroy global/static data, the gmc will warning memory leak.
-    // In service, server never destroy, directly exit when restart.
-    virtual void destroy();
     // When SIGTERM, SRS should do cleanup, for example,
     // to stop all ingesters, cleanup HLS and dvr.
     virtual void dispose();
@@ -229,15 +151,15 @@ private:
     // then wait and quit when all connections finished.
     virtual void gracefully_dispose();
 
+public:
+    // Get the HTTP API server mux.
+    ISrsHttpServeMux *api_server();
+
     // server startup workflow, @see run_master()
 public:
     // Initialize server with callback handler ch.
     // @remark user must free the handler.
     virtual srs_error_t initialize();
-
-private:
-    // Require the PID file for the whole process.
-    virtual srs_error_t acquire_pid_file();
 
 public:
     srs_error_t run();
@@ -295,6 +217,7 @@ private:
     virtual srs_error_t accept_srt_client(srs_srt_t srt_fd);
     virtual srs_error_t srt_fd_to_resource(srs_srt_t srt_fd, ISrsResource **pr);
 
+private:
     // WebRTC-related methods
     virtual srs_error_t listen_rtc_udp();
 
@@ -306,15 +229,11 @@ private:
     virtual srs_error_t listen_rtc_api();
 
 public:
-    virtual srs_error_t exec_rtc_async_work(ISrsAsyncCallTask *t);
     virtual SrsRtcConnection *find_rtc_session_by_username(const std::string &ufrag);
     virtual srs_error_t create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, SrsRtcConnection **psession);
 
 private:
-    virtual srs_error_t do_create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, SrsRtcConnection *session);
-
-private:
-    virtual srs_error_t srs_update_rtc_sessions();
+    virtual srs_error_t srs_update_server_statistics();
 
     // Interface ISrsTcpHandler
 public:
@@ -328,23 +247,82 @@ private:
 public:
     virtual srs_error_t on_publish(ISrsRequest *r);
     virtual void on_unpublish(ISrsRequest *r);
-
-public:
-    // Access to global shared timers
-    SrsFastTimer *timer20ms();
-    SrsFastTimer *timer100ms();
-    SrsFastTimer *timer1s();
-    SrsFastTimer *timer5s();
-
-    // interface ISrsFastTimer for statistics reporting
-private:
-    virtual srs_error_t on_timer(srs_utime_t interval);
 };
 
 // @global main SRS server, for debugging
 extern SrsServer *_srs_server;
 
-// Manager for RTC connections.
-extern SrsResourceManager *_srs_conn_manager;
+// Convert signal to io,
+// @see: st-1.9/docs/notes.html
+class SrsSignalManager : public ISrsCoroutineHandler
+{
+private:
+    // Per-process pipe which is used as a signal queue.
+    // Up to PIPE_BUF/sizeof(int) signals can be queued up.
+    int sig_pipe[2];
+    srs_netfd_t signal_read_stfd;
+
+private:
+    SrsServer *server;
+    SrsCoroutine *trd;
+
+public:
+    SrsSignalManager(SrsServer *s);
+    virtual ~SrsSignalManager();
+
+public:
+    virtual srs_error_t initialize();
+    virtual srs_error_t start();
+    // Interface ISrsEndlessThreadHandler.
+public:
+    virtual srs_error_t cycle();
+
+private:
+    // Global singleton instance
+    static SrsSignalManager *instance;
+    // Signal catching function.
+    // Converts signal event to I/O event.
+    static void sig_catcher(int signo);
+};
+
+// Auto reload by inotify.
+// @see https://github.com/ossrs/srs/issues/1635
+class SrsInotifyWorker : public ISrsCoroutineHandler
+{
+private:
+    SrsServer *server;
+    SrsCoroutine *trd;
+    srs_netfd_t inotify_fd;
+
+public:
+    SrsInotifyWorker(SrsServer *s);
+    virtual ~SrsInotifyWorker();
+
+public:
+    virtual srs_error_t start();
+    // Interface ISrsEndlessThreadHandler.
+public:
+    virtual srs_error_t cycle();
+};
+
+// PID file manager for process identification and locking.
+class SrsPidFileLocker
+{
+private:
+    int pid_fd_;
+    std::string pid_file_;
+
+public:
+    SrsPidFileLocker();
+    virtual ~SrsPidFileLocker();
+
+public:
+    // Acquire the PID file for the whole process.
+    virtual srs_error_t acquire();
+
+private:
+    // Close the PID file descriptor.
+    virtual void close();
+};
 
 #endif

@@ -21,6 +21,7 @@ using namespace std;
 
 #include <srs_app_circuit_breaker.hpp>
 #include <srs_app_config.hpp>
+#include <srs_app_hourglass.hpp>
 #include <srs_app_http_api.hpp>
 #include <srs_app_http_hooks.hpp>
 #include <srs_app_log.hpp>
@@ -442,7 +443,7 @@ SrsRtcPlayStream::SrsRtcPlayStream(SrsRtcConnection *s, const SrsContextId &cid)
 SrsRtcPlayStream::~SrsRtcPlayStream()
 {
     if (req_) {
-        session_->server_->exec_rtc_async_work(new SrsRtcAsyncCallOnStop(cid_, req_));
+        session_->exec_->exec_rtc_async_work(new SrsRtcAsyncCallOnStop(cid_, req_));
     }
 
     _srs_config->unsubscribe(this);
@@ -927,12 +928,12 @@ srs_error_t SrsRtcPlayStream::do_request_keyframe(uint32_t ssrc, SrsContextId ci
 
 SrsRtcPublishRtcpTimer::SrsRtcPublishRtcpTimer(SrsRtcPublishStream *p) : p_(p)
 {
-    _srs_server->timer1s()->subscribe(this);
+    _srs_shared_timer->timer1s()->subscribe(this);
 }
 
 SrsRtcPublishRtcpTimer::~SrsRtcPublishRtcpTimer()
 {
-    _srs_server->timer1s()->unsubscribe(this);
+    _srs_shared_timer->timer1s()->unsubscribe(this);
 }
 
 srs_error_t SrsRtcPublishRtcpTimer::on_timer(srs_utime_t interval)
@@ -963,12 +964,12 @@ srs_error_t SrsRtcPublishRtcpTimer::on_timer(srs_utime_t interval)
 
 SrsRtcPublishTwccTimer::SrsRtcPublishTwccTimer(SrsRtcPublishStream *p) : p_(p)
 {
-    _srs_server->timer100ms()->subscribe(this);
+    _srs_shared_timer->timer100ms()->subscribe(this);
 }
 
 SrsRtcPublishTwccTimer::~SrsRtcPublishTwccTimer()
 {
-    _srs_server->timer100ms()->unsubscribe(this);
+    _srs_shared_timer->timer100ms()->unsubscribe(this);
 }
 
 srs_error_t SrsRtcPublishTwccTimer::on_timer(srs_utime_t interval)
@@ -1084,7 +1085,7 @@ SrsRtcPublishStream::SrsRtcPublishStream(SrsRtcConnection *session, const SrsCon
 SrsRtcPublishStream::~SrsRtcPublishStream()
 {
     if (req_) {
-        session_->server_->exec_rtc_async_work(new SrsRtcAsyncCallOnUnpublish(cid_, req_));
+        session_->exec_->exec_rtc_async_work(new SrsRtcAsyncCallOnUnpublish(cid_, req_));
     }
 
     srs_freep(timer_rtcp_);
@@ -1722,12 +1723,12 @@ void SrsRtcPublishStream::update_send_report_time(uint32_t ssrc, const SrsNtp &n
 
 SrsRtcConnectionNackTimer::SrsRtcConnectionNackTimer(SrsRtcConnection *p) : p_(p)
 {
-    _srs_server->timer20ms()->subscribe(this);
+    _srs_shared_timer->timer20ms()->subscribe(this);
 }
 
 SrsRtcConnectionNackTimer::~SrsRtcConnectionNackTimer()
 {
-    _srs_server->timer20ms()->unsubscribe(this);
+    _srs_shared_timer->timer20ms()->unsubscribe(this);
 }
 
 srs_error_t SrsRtcConnectionNackTimer::on_timer(srs_utime_t interval)
@@ -1759,12 +1760,20 @@ srs_error_t SrsRtcConnectionNackTimer::on_timer(srs_utime_t interval)
     return err;
 }
 
-SrsRtcConnection::SrsRtcConnection(SrsServer *s, const SrsContextId &cid)
+ISrsExecRtcAsyncTask::ISrsExecRtcAsyncTask()
+{
+}
+
+ISrsExecRtcAsyncTask::~ISrsExecRtcAsyncTask()
+{
+}
+
+SrsRtcConnection::SrsRtcConnection(ISrsExecRtcAsyncTask *exec, const SrsContextId &cid)
 {
     req_ = NULL;
     cid_ = cid;
 
-    server_ = s;
+    exec_ = exec;
     networks_ = new SrsRtcNetworks(this);
 
     cache_iov_ = new iovec();

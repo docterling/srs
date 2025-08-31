@@ -24,6 +24,7 @@ using namespace std;
 #include <srs_app_conn.hpp>
 #include <srs_app_coworkers.hpp>
 #include <srs_app_heartbeat.hpp>
+#include <srs_app_hourglass.hpp>
 #include <srs_app_http_api.hpp>
 #include <srs_app_http_conn.hpp>
 #include <srs_app_http_hooks.hpp>
@@ -46,6 +47,7 @@ using namespace std;
 #include <srs_app_utility.hpp>
 #include <srs_kernel_consts.hpp>
 #include <srs_kernel_error.hpp>
+#include <srs_kernel_kbps.hpp>
 #include <srs_kernel_log.hpp>
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_log.hpp>
@@ -65,199 +67,11 @@ SrsServer *_srs_server = NULL;
 
 SrsAsyncCallWorker *_srs_dvr_async = NULL;
 
-SrsPps *_srs_pps_recvfrom = NULL;
-SrsPps *_srs_pps_recvfrom_eagain = NULL;
-SrsPps *_srs_pps_sendto = NULL;
-SrsPps *_srs_pps_sendto_eagain = NULL;
-
-SrsPps *_srs_pps_read = NULL;
-SrsPps *_srs_pps_read_eagain = NULL;
-SrsPps *_srs_pps_readv = NULL;
-SrsPps *_srs_pps_readv_eagain = NULL;
-SrsPps *_srs_pps_writev = NULL;
-SrsPps *_srs_pps_writev_eagain = NULL;
-
-SrsPps *_srs_pps_recvmsg = NULL;
-SrsPps *_srs_pps_recvmsg_eagain = NULL;
-SrsPps *_srs_pps_sendmsg = NULL;
-SrsPps *_srs_pps_sendmsg_eagain = NULL;
-
-SrsPps *_srs_pps_clock_15ms = NULL;
-SrsPps *_srs_pps_clock_20ms = NULL;
-SrsPps *_srs_pps_clock_25ms = NULL;
-SrsPps *_srs_pps_clock_30ms = NULL;
-SrsPps *_srs_pps_clock_35ms = NULL;
-SrsPps *_srs_pps_clock_40ms = NULL;
-SrsPps *_srs_pps_clock_80ms = NULL;
-SrsPps *_srs_pps_clock_160ms = NULL;
-SrsPps *_srs_pps_timer_s = NULL;
-
-// External declarations for WebRTC functions and variables
-extern bool srs_is_stun(const uint8_t *data, size_t size);
-extern bool srs_is_dtls(const uint8_t *data, size_t len);
-extern bool srs_is_rtp_or_rtcp(const uint8_t *data, size_t len);
-extern bool srs_is_rtcp(const uint8_t *data, size_t len);
-
-extern SrsPps *_srs_pps_rpkts;
-SrsPps *_srs_pps_rstuns = NULL;
-SrsPps *_srs_pps_rrtps = NULL;
-SrsPps *_srs_pps_rrtcps = NULL;
-extern SrsPps *_srs_pps_addrs;
-extern SrsPps *_srs_pps_fast_addrs;
-
-extern SrsPps *_srs_pps_spkts;
-extern SrsPps *_srs_pps_sstuns;
-extern SrsPps *_srs_pps_srtcps;
-extern SrsPps *_srs_pps_srtps;
-
-extern SrsPps *_srs_pps_ids;
-extern SrsPps *_srs_pps_fids;
-extern SrsPps *_srs_pps_fids_level0;
-extern SrsPps *_srs_pps_dispose;
-
-extern SrsPps *_srs_pps_timer;
-extern SrsPps *_srs_pps_pub;
-extern SrsPps *_srs_pps_conn;
-
-extern SrsPps *_srs_pps_cids_get;
-extern SrsPps *_srs_pps_cids_set;
-
-extern SrsPps *_srs_pps_snack3;
-extern SrsPps *_srs_pps_snack4;
-extern SrsPps *_srs_pps_aloss2;
-
 extern SrsStageManager *_srs_stages;
 
 extern srs_error_t _srs_reload_err;
 extern SrsReloadState _srs_reload_state;
 extern std::string _srs_reload_id;
-
-// Clock and timing statistics
-extern SrsPps *_srs_pps_clock_15ms;
-extern SrsPps *_srs_pps_clock_20ms;
-extern SrsPps *_srs_pps_clock_25ms;
-extern SrsPps *_srs_pps_clock_30ms;
-extern SrsPps *_srs_pps_clock_35ms;
-extern SrsPps *_srs_pps_clock_40ms;
-extern SrsPps *_srs_pps_clock_80ms;
-extern SrsPps *_srs_pps_clock_160ms;
-extern SrsPps *_srs_pps_timer_s;
-
-// Object statistics
-extern SrsPps *_srs_pps_objs_rtps;
-extern SrsPps *_srs_pps_objs_rraw;
-extern SrsPps *_srs_pps_objs_rfua;
-extern SrsPps *_srs_pps_objs_rbuf;
-extern SrsPps *_srs_pps_objs_msgs;
-extern SrsPps *_srs_pps_objs_rothers;
-
-SrsPps *_srs_pps_aloss2 = NULL;
-
-#if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
-SrsPps *_srs_pps_thread_run = NULL;
-SrsPps *_srs_pps_thread_idle = NULL;
-SrsPps *_srs_pps_thread_yield = NULL;
-SrsPps *_srs_pps_thread_yield2 = NULL;
-
-// Debug statistics for I/O operations
-extern SrsPps *_srs_pps_recvfrom;
-extern SrsPps *_srs_pps_recvfrom_eagain;
-extern SrsPps *_srs_pps_sendto;
-extern SrsPps *_srs_pps_sendto_eagain;
-
-extern SrsPps *_srs_pps_read;
-extern SrsPps *_srs_pps_read_eagain;
-extern SrsPps *_srs_pps_readv;
-extern SrsPps *_srs_pps_readv_eagain;
-extern SrsPps *_srs_pps_writev;
-extern SrsPps *_srs_pps_writev_eagain;
-
-extern SrsPps *_srs_pps_recvmsg;
-extern SrsPps *_srs_pps_recvmsg_eagain;
-extern SrsPps *_srs_pps_sendmsg;
-extern SrsPps *_srs_pps_sendmsg_eagain;
-
-extern SrsPps *_srs_pps_epoll;
-extern SrsPps *_srs_pps_epoll_zero;
-extern SrsPps *_srs_pps_epoll_shake;
-extern SrsPps *_srs_pps_epoll_spin;
-
-extern SrsPps *_srs_pps_sched_160ms;
-extern SrsPps *_srs_pps_sched_s;
-extern SrsPps *_srs_pps_sched_15ms;
-extern SrsPps *_srs_pps_sched_20ms;
-extern SrsPps *_srs_pps_sched_25ms;
-extern SrsPps *_srs_pps_sched_30ms;
-extern SrsPps *_srs_pps_sched_35ms;
-extern SrsPps *_srs_pps_sched_40ms;
-extern SrsPps *_srs_pps_sched_80ms;
-
-extern SrsPps *_srs_pps_thread_run;
-extern SrsPps *_srs_pps_thread_idle;
-extern SrsPps *_srs_pps_thread_yield;
-extern SrsPps *_srs_pps_thread_yield2;
-
-// External ST statistics
-extern __thread unsigned long long _st_stat_recvfrom;
-extern __thread unsigned long long _st_stat_recvfrom_eagain;
-extern __thread unsigned long long _st_stat_sendto;
-extern __thread unsigned long long _st_stat_sendto_eagain;
-
-extern __thread unsigned long long _st_stat_read;
-extern __thread unsigned long long _st_stat_read_eagain;
-extern __thread unsigned long long _st_stat_readv;
-extern __thread unsigned long long _st_stat_readv_eagain;
-extern __thread unsigned long long _st_stat_writev;
-extern __thread unsigned long long _st_stat_writev_eagain;
-
-extern __thread unsigned long long _st_stat_recvmsg;
-extern __thread unsigned long long _st_stat_recvmsg_eagain;
-extern __thread unsigned long long _st_stat_sendmsg;
-extern __thread unsigned long long _st_stat_sendmsg_eagain;
-
-extern __thread unsigned long long _st_stat_epoll;
-extern __thread unsigned long long _st_stat_epoll_zero;
-extern __thread unsigned long long _st_stat_epoll_shake;
-extern __thread unsigned long long _st_stat_epoll_spin;
-
-extern __thread unsigned long long _st_stat_sched_15ms;
-extern __thread unsigned long long _st_stat_sched_20ms;
-extern __thread unsigned long long _st_stat_sched_25ms;
-extern __thread unsigned long long _st_stat_sched_30ms;
-extern __thread unsigned long long _st_stat_sched_35ms;
-extern __thread unsigned long long _st_stat_sched_40ms;
-extern __thread unsigned long long _st_stat_sched_80ms;
-extern __thread unsigned long long _st_stat_sched_160ms;
-extern __thread unsigned long long _st_stat_sched_s;
-
-extern __thread int _st_active_count;
-extern __thread int _st_num_free_stacks;
-
-extern __thread unsigned long long _st_stat_thread_run;
-extern __thread unsigned long long _st_stat_thread_idle;
-extern __thread unsigned long long _st_stat_thread_yield;
-extern __thread unsigned long long _st_stat_thread_yield2;
-#endif
-
-extern SrsPps *_srs_pps_pli;
-extern SrsPps *_srs_pps_twcc;
-extern SrsPps *_srs_pps_rr;
-
-extern SrsPps *_srs_pps_snack;
-extern SrsPps *_srs_pps_snack2;
-extern SrsPps *_srs_pps_sanack;
-extern SrsPps *_srs_pps_svnack;
-
-extern SrsPps *_srs_pps_rnack;
-extern SrsPps *_srs_pps_rnack2;
-extern SrsPps *_srs_pps_rhnack;
-extern SrsPps *_srs_pps_rmnack;
-
-extern SrsPps *_srs_pps_sstuns;
-extern SrsPps *_srs_pps_srtcps;
-extern SrsPps *_srs_pps_srtps;
-
-SrsResourceManager *_srs_conn_manager = NULL;
 
 // External WebRTC global variables
 extern SrsRtcBlackhole *_srs_blackhole;
@@ -272,16 +86,20 @@ srs_error_t srs_global_initialize()
     _srs_context = new SrsThreadContext();
     _srs_config = new SrsConfig();
 
-    // The clock wall object.
-    _srs_clock = new SrsWallClock();
-
-    // The pps cids depends by st init.
-    _srs_pps_cids_get = new SrsPps();
-    _srs_pps_cids_set = new SrsPps();
+    // Initialize the global kbps statistics variables
+    if ((err = srs_global_kbps_initialize()) != srs_success) {
+        return srs_error_wrap(err, "global kbps initialize");
+    }
 
     // Initialize ST, which depends on pps cids.
     if ((err = srs_st_init()) != srs_success) {
         return srs_error_wrap(err, "initialize st failed");
+    }
+
+    // Initialize global shared timer, which depends on ST
+    _srs_shared_timer = new SrsSharedTimer();
+    if ((err = _srs_shared_timer->initialize()) != srs_success) {
+        return srs_error_wrap(err, "initialize shared timer");
     }
 
     // The global objects which depends on ST.
@@ -309,398 +127,12 @@ srs_error_t srs_global_initialize()
     _srs_gb_manager = new SrsResourceManager("GB", true);
 #endif
 
-    // Initialize global pps, which depends on _srs_clock
-    _srs_pps_ids = new SrsPps();
-    _srs_pps_fids = new SrsPps();
-    _srs_pps_fids_level0 = new SrsPps();
-    _srs_pps_dispose = new SrsPps();
-
-    _srs_pps_timer = new SrsPps();
-    _srs_pps_conn = new SrsPps();
-    _srs_pps_pub = new SrsPps();
-
-    _srs_pps_snack = new SrsPps();
-    _srs_pps_snack2 = new SrsPps();
-    _srs_pps_snack3 = new SrsPps();
-    _srs_pps_snack4 = new SrsPps();
-    _srs_pps_sanack = new SrsPps();
-    _srs_pps_svnack = new SrsPps();
-
-    _srs_pps_rnack = new SrsPps();
-    _srs_pps_rnack2 = new SrsPps();
-    _srs_pps_rhnack = new SrsPps();
-    _srs_pps_rmnack = new SrsPps();
-
-#if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
-    _srs_pps_recvfrom = new SrsPps();
-    _srs_pps_recvfrom_eagain = new SrsPps();
-    _srs_pps_sendto = new SrsPps();
-    _srs_pps_sendto_eagain = new SrsPps();
-
-    _srs_pps_read = new SrsPps();
-    _srs_pps_read_eagain = new SrsPps();
-    _srs_pps_readv = new SrsPps();
-    _srs_pps_readv_eagain = new SrsPps();
-    _srs_pps_writev = new SrsPps();
-    _srs_pps_writev_eagain = new SrsPps();
-
-    _srs_pps_recvmsg = new SrsPps();
-    _srs_pps_recvmsg_eagain = new SrsPps();
-    _srs_pps_sendmsg = new SrsPps();
-    _srs_pps_sendmsg_eagain = new SrsPps();
-
-    _srs_pps_epoll = new SrsPps();
-    _srs_pps_epoll_zero = new SrsPps();
-    _srs_pps_epoll_shake = new SrsPps();
-    _srs_pps_epoll_spin = new SrsPps();
-
-    _srs_pps_sched_15ms = new SrsPps();
-    _srs_pps_sched_20ms = new SrsPps();
-    _srs_pps_sched_25ms = new SrsPps();
-    _srs_pps_sched_30ms = new SrsPps();
-    _srs_pps_sched_35ms = new SrsPps();
-    _srs_pps_sched_40ms = new SrsPps();
-    _srs_pps_sched_80ms = new SrsPps();
-    _srs_pps_sched_160ms = new SrsPps();
-    _srs_pps_sched_s = new SrsPps();
-#endif
-
-    _srs_pps_clock_15ms = new SrsPps();
-    _srs_pps_clock_20ms = new SrsPps();
-    _srs_pps_clock_25ms = new SrsPps();
-    _srs_pps_clock_30ms = new SrsPps();
-    _srs_pps_clock_35ms = new SrsPps();
-    _srs_pps_clock_40ms = new SrsPps();
-    _srs_pps_clock_80ms = new SrsPps();
-    _srs_pps_clock_160ms = new SrsPps();
-    _srs_pps_timer_s = new SrsPps();
-
-#if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
-    _srs_pps_thread_run = new SrsPps();
-    _srs_pps_thread_idle = new SrsPps();
-    _srs_pps_thread_yield = new SrsPps();
-    _srs_pps_thread_yield2 = new SrsPps();
-#endif
-
-    _srs_pps_rpkts = new SrsPps();
-    _srs_pps_addrs = new SrsPps();
-    _srs_pps_fast_addrs = new SrsPps();
-
-    _srs_pps_spkts = new SrsPps();
-    _srs_pps_objs_msgs = new SrsPps();
-
-    _srs_pps_sstuns = new SrsPps();
-    _srs_pps_srtcps = new SrsPps();
-    _srs_pps_srtps = new SrsPps();
-
-    _srs_pps_rstuns = new SrsPps();
-    _srs_pps_rrtps = new SrsPps();
-    _srs_pps_rrtcps = new SrsPps();
-
-    _srs_pps_aloss2 = new SrsPps();
-
-    _srs_pps_pli = new SrsPps();
-    _srs_pps_twcc = new SrsPps();
-    _srs_pps_rr = new SrsPps();
-
-    _srs_pps_objs_rtps = new SrsPps();
-    _srs_pps_objs_rraw = new SrsPps();
-    _srs_pps_objs_rfua = new SrsPps();
-    _srs_pps_objs_rbuf = new SrsPps();
-    _srs_pps_objs_rothers = new SrsPps();
-
     // Create global async worker for DVR.
     _srs_dvr_async = new SrsAsyncCallWorker();
 
     _srs_reload_err = srs_success;
     _srs_reload_state = SrsReloadStateInit;
     _srs_reload_id = srs_rand_gen_str(7);
-
-    return err;
-}
-
-ISrsSrtClientHandler::ISrsSrtClientHandler()
-{
-}
-
-ISrsSrtClientHandler::~ISrsSrtClientHandler()
-{
-}
-
-srs_error_t ISrsSrtClientHandler::accept_srt_client(srs_srt_t srt_fd)
-{
-    return srs_success;
-}
-
-SrsSignalManager *SrsSignalManager::instance = NULL;
-
-SrsSignalManager::SrsSignalManager(SrsServer *s)
-{
-    SrsSignalManager::instance = this;
-
-    server = s;
-    sig_pipe[0] = sig_pipe[1] = -1;
-    trd = new SrsSTCoroutine("signal", this, _srs_context->get_id());
-    signal_read_stfd = NULL;
-}
-
-SrsSignalManager::~SrsSignalManager()
-{
-    srs_freep(trd);
-
-    srs_close_stfd(signal_read_stfd);
-
-    if (sig_pipe[0] > 0) {
-        ::close(sig_pipe[0]);
-    }
-    if (sig_pipe[1] > 0) {
-        ::close(sig_pipe[1]);
-    }
-}
-
-srs_error_t SrsSignalManager::initialize()
-{
-    /* Create signal pipe */
-    if (pipe(sig_pipe) < 0) {
-        return srs_error_new(ERROR_SYSTEM_CREATE_PIPE, "create pipe");
-    }
-
-    if ((signal_read_stfd = srs_netfd_open(sig_pipe[0])) == NULL) {
-        return srs_error_new(ERROR_SYSTEM_CREATE_PIPE, "open pipe");
-    }
-
-    return srs_success;
-}
-
-srs_error_t SrsSignalManager::start()
-{
-    srs_error_t err = srs_success;
-
-    /**
-     * Note that if multiple processes are used (see below),
-     * the signal pipe should be initialized after the fork(2) call
-     * so that each process has its own private pipe.
-     */
-    struct sigaction sa;
-
-    /* Install sig_catcher() as a signal handler */
-    sa.sa_handler = SrsSignalManager::sig_catcher;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-    sigaction(SRS_SIGNAL_RELOAD, &sa, NULL);
-
-    sa.sa_handler = SrsSignalManager::sig_catcher;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-    sigaction(SRS_SIGNAL_FAST_QUIT, &sa, NULL);
-
-    sa.sa_handler = SrsSignalManager::sig_catcher;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-    sigaction(SRS_SIGNAL_GRACEFULLY_QUIT, &sa, NULL);
-
-    sa.sa_handler = SrsSignalManager::sig_catcher;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-    sigaction(SRS_SIGNAL_ASSERT_ABORT, &sa, NULL);
-
-    sa.sa_handler = SrsSignalManager::sig_catcher;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-    sigaction(SIGINT, &sa, NULL);
-
-    sa.sa_handler = SrsSignalManager::sig_catcher;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-    sigaction(SRS_SIGNAL_REOPEN_LOG, &sa, NULL);
-
-    srs_trace("signal installed, reload=%d, reopen=%d, fast_quit=%d, grace_quit=%d",
-              SRS_SIGNAL_RELOAD, SRS_SIGNAL_REOPEN_LOG, SRS_SIGNAL_FAST_QUIT, SRS_SIGNAL_GRACEFULLY_QUIT);
-
-    if ((err = trd->start()) != srs_success) {
-        return srs_error_wrap(err, "signal manager");
-    }
-
-    return err;
-}
-
-srs_error_t SrsSignalManager::cycle()
-{
-    srs_error_t err = srs_success;
-
-    while (true) {
-        if ((err = trd->pull()) != srs_success) {
-            return srs_error_wrap(err, "signal manager");
-        }
-
-        int signo;
-
-        /* Read the next signal from the pipe */
-        srs_read(signal_read_stfd, &signo, sizeof(int), SRS_UTIME_NO_TIMEOUT);
-
-        /* Process signal synchronously */
-        server->on_signal(signo);
-    }
-
-    return err;
-}
-
-void SrsSignalManager::sig_catcher(int signo)
-{
-    int err;
-
-    /* Save errno to restore it after the write() */
-    err = errno;
-
-    /* write() is reentrant/async-safe */
-    int fd = SrsSignalManager::instance->sig_pipe[1];
-    write(fd, &signo, sizeof(int));
-
-    errno = err;
-}
-
-// Whether we are in docker, defined in main module.
-extern bool _srs_in_docker;
-
-SrsInotifyWorker::SrsInotifyWorker(SrsServer *s)
-{
-    server = s;
-    trd = new SrsSTCoroutine("inotify", this);
-    inotify_fd = NULL;
-}
-
-SrsInotifyWorker::~SrsInotifyWorker()
-{
-    srs_freep(trd);
-    srs_close_stfd(inotify_fd);
-}
-
-srs_error_t SrsInotifyWorker::start()
-{
-    srs_error_t err = srs_success;
-
-#if !defined(SRS_OSX) && !defined(SRS_CYGWIN64)
-    // Whether enable auto reload config.
-    bool auto_reload = _srs_config->inotify_auto_reload();
-    if (!auto_reload && _srs_in_docker && _srs_config->auto_reload_for_docker()) {
-        srs_warn("enable auto reload for docker");
-        auto_reload = true;
-    }
-
-    if (!auto_reload) {
-        return err;
-    }
-
-    // Create inotify to watch config file.
-    int fd = ::inotify_init1(IN_NONBLOCK);
-    if (fd < 0) {
-        return srs_error_new(ERROR_INOTIFY_CREATE, "create inotify");
-    }
-
-    // Open as stfd to read by ST.
-    if ((inotify_fd = srs_netfd_open(fd)) == NULL) {
-        ::close(fd);
-        return srs_error_new(ERROR_INOTIFY_OPENFD, "open fd=%d", fd);
-    }
-
-    if (((err = srs_fd_closeexec(fd))) != srs_success) {
-        return srs_error_wrap(err, "closeexec fd=%d", fd);
-    }
-
-    // /* the following are legal, implemented events that user-space can watch for */
-    // #define IN_ACCESS               0x00000001      /* File was accessed */
-    // #define IN_MODIFY               0x00000002      /* File was modified */
-    // #define IN_ATTRIB               0x00000004      /* Metadata changed */
-    // #define IN_CLOSE_WRITE          0x00000008      /* Writtable file was closed */
-    // #define IN_CLOSE_NOWRITE        0x00000010      /* Unwrittable file closed */
-    // #define IN_OPEN                 0x00000020      /* File was opened */
-    // #define IN_MOVED_FROM           0x00000040      /* File was moved from X */
-    // #define IN_MOVED_TO             0x00000080      /* File was moved to Y */
-    // #define IN_CREATE               0x00000100      /* Subfile was created */
-    // #define IN_DELETE               0x00000200      /* Subfile was deleted */
-    // #define IN_DELETE_SELF          0x00000400      /* Self was deleted */
-    // #define IN_MOVE_SELF            0x00000800      /* Self was moved */
-    //
-    // /* the following are legal events.  they are sent as needed to any watch */
-    // #define IN_UNMOUNT              0x00002000      /* Backing fs was unmounted */
-    // #define IN_Q_OVERFLOW           0x00004000      /* Event queued overflowed */
-    // #define IN_IGNORED              0x00008000      /* File was ignored */
-    //
-    // /* helper events */
-    // #define IN_CLOSE                (IN_CLOSE_WRITE | IN_CLOSE_NOWRITE) /* close */
-    // #define IN_MOVE                 (IN_MOVED_FROM | IN_MOVED_TO) /* moves */
-    //
-    // /* special flags */
-    // #define IN_ONLYDIR              0x01000000      /* only watch the path if it is a directory */
-    // #define IN_DONT_FOLLOW          0x02000000      /* don't follow a sym link */
-    // #define IN_EXCL_UNLINK          0x04000000      /* exclude events on unlinked objects */
-    // #define IN_MASK_ADD             0x20000000      /* add to the mask of an already existing watch */
-    // #define IN_ISDIR                0x40000000      /* event occurred against dir */
-    // #define IN_ONESHOT              0x80000000      /* only send event once */
-
-    // Watch the config directory events.
-    string config_dir = srs_path_filepath_dir(_srs_config->config());
-    uint32_t mask = IN_MODIFY | IN_CREATE | IN_MOVED_TO;
-    int watch_conf = 0;
-    if ((watch_conf = ::inotify_add_watch(fd, config_dir.c_str(), mask)) < 0) {
-        return srs_error_new(ERROR_INOTIFY_WATCH, "watch file=%s, fd=%d, watch=%d, mask=%#x",
-                             config_dir.c_str(), fd, watch_conf, mask);
-    }
-    srs_trace("auto reload watching fd=%d, watch=%d, file=%s", fd, watch_conf, config_dir.c_str());
-
-    if ((err = trd->start()) != srs_success) {
-        return srs_error_wrap(err, "inotify");
-    }
-#endif
-
-    return err;
-}
-
-srs_error_t SrsInotifyWorker::cycle()
-{
-    srs_error_t err = srs_success;
-
-#if !defined(SRS_OSX) && !defined(SRS_CYGWIN64)
-    string config_path = _srs_config->config();
-    string config_file = srs_path_filepath_base(config_path);
-    string k8s_file = "..data";
-
-    while (true) {
-        char buf[4096];
-        ssize_t nn = srs_read(inotify_fd, buf, (size_t)sizeof(buf), SRS_UTIME_NO_TIMEOUT);
-        if (nn < 0) {
-            srs_warn("inotify ignore read failed, nn=%d", (int)nn);
-            break;
-        }
-
-        // Whether config file changed.
-        bool do_reload = false;
-
-        // Parse all inotify events.
-        inotify_event *ie = NULL;
-        for (char *ptr = buf; ptr < buf + nn; ptr += sizeof(inotify_event) + ie->len) {
-            ie = (inotify_event *)ptr;
-
-            if (!ie->len || !ie->name) {
-                continue;
-            }
-
-            string name = ie->name;
-            if ((name == k8s_file || name == config_file) && ie->mask & (IN_MODIFY | IN_CREATE | IN_MOVED_TO)) {
-                do_reload = true;
-            }
-
-            srs_trace("inotify event wd=%d, mask=%#x, len=%d, name=%s, reload=%d", ie->wd, ie->mask, ie->len, ie->name, do_reload);
-        }
-
-        // Notify server to do reload.
-        if (do_reload && srs_path_exists(config_path)) {
-            server->on_signal(SRS_SIGNAL_RELOAD);
-        }
-
-        srs_usleep(3000 * SRS_UTIME_MILLISECONDS);
-    }
-#endif
 
     return err;
 }
@@ -712,7 +144,8 @@ SrsServer::SrsServer()
     signal_gmc_stop_ = false;
     signal_fast_quit_ = false;
     signal_gracefully_quit_ = false;
-    pid_fd_ = -1;
+
+    pid_file_locker_ = new SrsPidFileLocker();
 
     signal_manager_ = new SrsSignalManager(this);
     latest_version_ = new SrsLatestVersion();
@@ -734,7 +167,7 @@ SrsServer::SrsServer()
     stream_caster_mpegts_ = new SrsUdpCasterListener();
     exporter_listener_ = new SrsTcpListener(this);
 #ifdef SRS_GB28181
-    stream_caster_gb28181_ = new SrsGbListener(http_api_mux_);
+    stream_caster_gb28181_ = new SrsGbListener();
 #endif
 
     http_server_ = new SrsHttpServer(this);
@@ -745,32 +178,13 @@ SrsServer::SrsServer()
     ingester_ = new SrsIngester();
     timer_ = NULL;
 
-    // Initialize global shared timers moved from SrsHybridServer
-    timer20ms_ = new SrsFastTimer("server", 20 * SRS_UTIME_MILLISECONDS);
-    timer100ms_ = new SrsFastTimer("server", 100 * SRS_UTIME_MILLISECONDS);
-    timer1s_ = new SrsFastTimer("server", 1 * SRS_UTIME_SECONDS);
-    timer5s_ = new SrsFastTimer("server", 5 * SRS_UTIME_SECONDS);
-    clock_monitor_ = new SrsClockWallMonitor();
-
     // Initialize WebRTC components
-    rtc_async_ = new SrsAsyncCallWorker();
+    rtc_session_manager_ = new SrsRtcSessionManager();
 }
 
 SrsServer::~SrsServer()
 {
-    destroy();
-}
-
-void SrsServer::destroy()
-{
     srs_freep(timer_);
-
-    // Free global shared timers
-    srs_freep(timer20ms_);
-    srs_freep(timer100ms_);
-    srs_freep(timer1s_);
-    srs_freep(timer5s_);
-    srs_freep(clock_monitor_);
 
     dispose();
 
@@ -783,10 +197,7 @@ void SrsServer::destroy()
     srs_freep(http_heartbeat_);
     srs_freep(ingester_);
 
-    if (pid_fd_ > 0) {
-        ::close(pid_fd_);
-        pid_fd_ = -1;
-    }
+    srs_freep(pid_file_locker_);
 
     srs_freep(signal_manager_);
     srs_freep(latest_version_);
@@ -818,10 +229,7 @@ void SrsServer::destroy()
         rtc_listeners_.clear();
     }
 
-    if (rtc_async_) {
-        rtc_async_->stop();
-        srs_freep(rtc_async_);
-    }
+    srs_freep(rtc_session_manager_);
 }
 
 void SrsServer::dispose()
@@ -908,6 +316,11 @@ void SrsServer::gracefully_dispose()
     srs_trace("final wait for %dms", srsu2msi(_srs_config->get_grace_final_wait()));
 }
 
+ISrsHttpServeMux *SrsServer::api_server()
+{
+    return http_api_mux_;
+}
+
 srs_error_t SrsServer::initialize()
 {
     srs_error_t err = srs_success;
@@ -915,7 +328,7 @@ srs_error_t SrsServer::initialize()
     srs_trace("SRS server initialized in single thread mode");
 
     // Initialize the server.
-    if ((err = acquire_pid_file()) != srs_success) {
+    if ((err = pid_file_locker_->acquire()) != srs_success) {
         return srs_error_wrap(err, "init server");
     }
 
@@ -998,88 +411,11 @@ srs_error_t SrsServer::initialize()
     }
 
     // Start WebRTC async worker
-    rtc_async_->start();
-
-    // Start global shared timers
-    if ((err = timer20ms_->start()) != srs_success) {
-        return srs_error_wrap(err, "start timer20ms");
+    if ((err = rtc_session_manager_->initialize()) != srs_success) {
+        return srs_error_wrap(err, "rtc session manager");
     }
-
-    if ((err = timer100ms_->start()) != srs_success) {
-        return srs_error_wrap(err, "start timer100ms");
-    }
-
-    if ((err = timer1s_->start()) != srs_success) {
-        return srs_error_wrap(err, "start timer1s");
-    }
-
-    if ((err = timer5s_->start()) != srs_success) {
-        return srs_error_wrap(err, "start timer5s");
-    }
-
-    // Register clock monitor to 20ms timer and statistics reporting to 5s timer
-    timer20ms_->subscribe(clock_monitor_);
-    timer5s_->subscribe(this);
 
     return err;
-}
-
-srs_error_t SrsServer::acquire_pid_file()
-{
-    std::string pid_file = _srs_config->get_pid_file();
-
-    // -rw-r--r--
-    // 644
-    int mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
-
-    int fd;
-    // open pid file
-    if ((fd = ::open(pid_file.c_str(), O_WRONLY | O_CREAT, mode)) == -1) {
-        return srs_error_new(ERROR_SYSTEM_PID_ACQUIRE, "open pid file=%s", pid_file.c_str());
-    }
-
-    // require write lock
-    struct flock lock;
-
-    lock.l_type = F_WRLCK;    // F_RDLCK, F_WRLCK, F_UNLCK
-    lock.l_start = 0;         // type offset, relative to l_whence
-    lock.l_whence = SEEK_SET; // SEEK_SET, SEEK_CUR, SEEK_END
-    lock.l_len = 0;
-
-    if (fcntl(fd, F_SETLK, &lock) == -1) {
-        if (errno == EACCES || errno == EAGAIN) {
-            ::close(fd);
-            srs_error("srs is already running!");
-            return srs_error_new(ERROR_SYSTEM_PID_ALREADY_RUNNING, "srs is already running");
-        }
-        return srs_error_new(ERROR_SYSTEM_PID_LOCK, "access to pid=%s", pid_file.c_str());
-    }
-
-    // truncate file
-    if (ftruncate(fd, 0) != 0) {
-        return srs_error_new(ERROR_SYSTEM_PID_TRUNCATE_FILE, "truncate pid file=%s", pid_file.c_str());
-    }
-
-    // write the pid
-    string pid = srs_strconv_format_int(getpid());
-    if (write(fd, pid.c_str(), pid.length()) != (int)pid.length()) {
-        return srs_error_new(ERROR_SYSTEM_PID_WRITE_FILE, "write pid=%s to file=%s", pid.c_str(), pid_file.c_str());
-    }
-
-    // auto close when fork child process.
-    int val;
-    if ((val = fcntl(fd, F_GETFD, 0)) < 0) {
-        return srs_error_new(ERROR_SYSTEM_PID_GET_FILE_INFO, "fcntl fd=%d", fd);
-    }
-    val |= FD_CLOEXEC;
-    if (fcntl(fd, F_SETFD, val) < 0) {
-        return srs_error_new(ERROR_SYSTEM_PID_SET_FILE_INFO, "lock file=%s fd=%d", pid_file.c_str(), fd);
-    }
-
-    srs_trace("write pid=%s to %s success!", pid.c_str(), pid_file.c_str());
-    pid_fd_ = fd;
-
-    return srs_success;
 }
 
 srs_error_t SrsServer::run()
@@ -1692,6 +1028,10 @@ srs_error_t SrsServer::setup_ticks()
         if ((err = timer_->tick(11, 5 * SRS_UTIME_SECONDS)) != srs_success) {
             return srs_error_wrap(err, "tick");
         }
+
+        if ((err = timer_->tick(12, 5 * SRS_UTIME_SECONDS)) != srs_success) {
+            return srs_error_wrap(err, "tick");
+        }
     }
 
     if (_srs_config->get_heartbeat_enabled()) {
@@ -1737,7 +1077,10 @@ srs_error_t SrsServer::notify(int event, srs_utime_t interval, srs_utime_t tick)
         srs_update_udp_snmp_statistic();
         break;
     case 11:
-        srs_update_rtc_sessions();
+        rtc_session_manager_->srs_update_rtc_sessions();
+        break;
+    case 12:
+        srs_update_server_statistics();
         break;
     }
 
@@ -1947,92 +1290,7 @@ srs_error_t SrsServer::listen_rtc_udp()
 
 srs_error_t SrsServer::on_udp_packet(SrsUdpMuxSocket *skt)
 {
-    srs_error_t err = srs_success;
-
-    SrsRtcConnection *session = NULL;
-    char *data = skt->data();
-    int size = skt->size();
-    bool is_rtp_or_rtcp = srs_is_rtp_or_rtcp((uint8_t *)data, size);
-    bool is_rtcp = srs_is_rtcp((uint8_t *)data, size);
-
-    uint64_t fast_id = skt->fast_id();
-    // Try fast id first, if not found, search by long peer id.
-    if (fast_id) {
-        session = (SrsRtcConnection *)_srs_conn_manager->find_by_fast_id(fast_id);
-    }
-    if (!session) {
-        string peer_id = skt->peer_id();
-        session = (SrsRtcConnection *)_srs_conn_manager->find_by_id(peer_id);
-    }
-
-    if (session) {
-        // When got any packet, the session is alive now.
-        session->alive();
-    }
-
-    // For STUN, the peer address may change.
-    if (!is_rtp_or_rtcp && srs_is_stun((uint8_t *)data, size)) {
-        ++_srs_pps_rstuns->sugar;
-        string peer_id = skt->peer_id();
-
-        // TODO: FIXME: Should support ICE renomination, to switch network between candidates.
-        SrsStunPacket ping;
-        if ((err = ping.decode(data, size)) != srs_success) {
-            return srs_error_wrap(err, "decode stun packet failed");
-        }
-        if (!session) {
-            session = find_rtc_session_by_username(ping.get_username());
-        }
-        if (session) {
-            session->switch_to_context();
-        }
-
-        srs_info("recv stun packet from %s, fast=%" PRId64 ", use-candidate=%d, ice-controlled=%d, ice-controlling=%d",
-                 peer_id.c_str(), fast_id, ping.get_use_candidate(), ping.get_ice_controlled(), ping.get_ice_controlling());
-
-        // TODO: FIXME: For ICE trickle, we may get STUN packets before SDP answer, so maybe should response it.
-        if (!session) {
-            return srs_error_new(ERROR_RTC_STUN, "no session, stun username=%s, peer_id=%s, fast=%" PRId64,
-                                 ping.get_username().c_str(), peer_id.c_str(), fast_id);
-        }
-
-        // For each binding request, update the UDP socket.
-        if (ping.is_binding_request()) {
-            session->udp()->update_sendonly_socket(skt);
-        }
-
-        return session->udp()->on_stun(&ping, data, size);
-    }
-
-    // For DTLS, RTCP or RTP, which does not support peer address changing.
-    if (!session) {
-        string peer_id = skt->peer_id();
-        return srs_error_new(ERROR_RTC_STUN, "no session, peer_id=%s, fast=%" PRId64, peer_id.c_str(), fast_id);
-    }
-
-    // Note that we don't(except error) switch to the context of session, for performance issue.
-    if (is_rtp_or_rtcp && !is_rtcp) {
-        ++_srs_pps_rrtps->sugar;
-
-        err = session->udp()->on_rtp(data, size);
-        if (err != srs_success) {
-            session->switch_to_context();
-        }
-        return err;
-    }
-
-    session->switch_to_context();
-    if (is_rtp_or_rtcp && is_rtcp) {
-        ++_srs_pps_rrtcps->sugar;
-
-        return session->udp()->on_rtcp(data, size);
-    }
-    if (srs_is_dtls((uint8_t *)data, size)) {
-        ++_srs_pps_rstuns->sugar;
-
-        return session->udp()->on_dtls(data, size);
-    }
-    return srs_error_new(ERROR_RTC_UDP, "unknown packet");
+    return rtc_session_manager_->on_udp_packet(skt);
 }
 
 srs_error_t SrsServer::listen_rtc_api()
@@ -2071,15 +1329,9 @@ srs_error_t SrsServer::listen_rtc_api()
     return err;
 }
 
-srs_error_t SrsServer::exec_rtc_async_work(ISrsAsyncCallTask *t)
-{
-    return rtc_async_->execute(t);
-}
-
 SrsRtcConnection *SrsServer::find_rtc_session_by_username(const std::string &username)
 {
-    ISrsResource *conn = _srs_conn_manager->find_by_name(username);
-    return dynamic_cast<SrsRtcConnection *>(conn);
+    return rtc_session_manager_->find_rtc_session_by_username(username);
 }
 
 srs_error_t SrsServer::create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, SrsRtcConnection **psession)
@@ -2094,260 +1346,27 @@ srs_error_t SrsServer::create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_s
         return srs_error_wrap(err, "check");
     }
 
-    // Acquire stream publish token to prevent race conditions across all protocols.
-    SrsStreamPublishToken *publish_token_raw = NULL;
-    if (ruc->publish_ && (err = _srs_stream_publish_tokens->acquire_token(req, publish_token_raw)) != srs_success) {
-        return srs_error_wrap(err, "acquire stream publish token");
-    }
-    SrsUniquePtr<SrsStreamPublishToken> publish_token(publish_token_raw);
-    if (publish_token.get()) {
-        srs_trace("stream publish token acquired, type=rtc, url=%s", req->get_stream_url().c_str());
-    }
-
-    SrsSharedPtr<SrsRtcSource> source;
-    if ((err = _srs_rtc_sources->fetch_or_create(req, source)) != srs_success) {
-        return srs_error_wrap(err, "create source");
-    }
-
-    if (ruc->publish_ && !source->can_publish()) {
-        return srs_error_new(ERROR_RTC_SOURCE_BUSY, "stream %s busy", req->get_stream_url().c_str());
-    }
-
-    // TODO: FIXME: add do_create_session to error process.
-    SrsContextId cid = _srs_context->get_id();
-    SrsRtcConnection *session = new SrsRtcConnection(this, cid);
-    if ((err = do_create_rtc_session(ruc, local_sdp, session)) != srs_success) {
-        srs_freep(session);
-        return srs_error_wrap(err, "create session");
-    }
-
-    *psession = session;
-
-    return err;
+    return rtc_session_manager_->create_rtc_session(ruc, local_sdp, psession);
 }
 
-srs_error_t SrsServer::do_create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, SrsRtcConnection *session)
+srs_error_t SrsServer::srs_update_server_statistics()
 {
     srs_error_t err = srs_success;
 
-    ISrsRequest *req = ruc->req_;
+    // Show statistics for RTC server.
+    SrsProcSelfStat *u = srs_get_self_proc_stat();
+    // Resident Set Size: number of pages the process has in real memory.
+    int memory = (int)(u->rss * 4 / 1024);
 
-    // first add publisher/player for negotiate sdp media info
-    if (ruc->publish_) {
-        if ((err = session->add_publisher(ruc, local_sdp)) != srs_success) {
-            return srs_error_wrap(err, "add publisher");
-        }
-    } else {
-        if ((err = session->add_player(ruc, local_sdp)) != srs_success) {
-            return srs_error_wrap(err, "add player");
-        }
-    }
+    SrsKbpsStats stats;
+    srs_global_kbps_update(&stats);
 
-    // All tracks default as inactive, so we must enable them.
-    session->set_all_tracks_status(req->get_stream_url(), ruc->publish_, true);
-
-    std::string local_pwd = ruc->req_->ice_pwd_.empty() ? srs_rand_gen_str(32) : ruc->req_->ice_pwd_;
-    std::string local_ufrag = ruc->req_->ice_ufrag_.empty() ? srs_rand_gen_str(8) : ruc->req_->ice_ufrag_;
-    // TODO: FIXME: Rename for a better name, it's not an username.
-    std::string username = "";
-    while (true) {
-        username = local_ufrag + ":" + ruc->remote_sdp_.get_ice_ufrag();
-        if (!_srs_conn_manager->find_by_name(username)) {
-            break;
-        }
-
-        // Username conflict, regenerate a new one.
-        local_ufrag = srs_rand_gen_str(8);
-    }
-
-    local_sdp.set_ice_ufrag(local_ufrag);
-    local_sdp.set_ice_pwd(local_pwd);
-    local_sdp.set_fingerprint_algo("sha-256");
-    local_sdp.set_fingerprint(_srs_rtc_dtls_certificate->get_fingerprint());
-
-    // We allows to mock the eip of server.
-    if (true) {
-        // TODO: Support multiple listen ports.
-        int udp_port = 0;
-        if (true) {
-            string udp_host;
-            string udp_hostport = _srs_config->get_rtc_server_listens().at(0);
-            srs_net_split_for_listener(udp_hostport, udp_host, udp_port);
-        }
-
-        int tcp_port = 0;
-        if (true) {
-            string tcp_host;
-            string tcp_hostport = _srs_config->get_rtc_server_tcp_listens().at(0);
-            srs_net_split_for_listener(tcp_hostport, tcp_host, tcp_port);
-        }
-
-        string protocol = _srs_config->get_rtc_server_protocol();
-
-        set<string> candidates = discover_candidates(ruc);
-        for (set<string>::iterator it = candidates.begin(); it != candidates.end(); ++it) {
-            string hostname;
-            int uport = udp_port;
-            srs_net_split_hostport(*it, hostname, uport);
-            int tport = tcp_port;
-            srs_net_split_hostport(*it, hostname, tport);
-
-            if (protocol == "udp") {
-                local_sdp.add_candidate("udp", hostname, uport, "host");
-            } else if (protocol == "tcp") {
-                local_sdp.add_candidate("tcp", hostname, tport, "host");
-            } else {
-                local_sdp.add_candidate("udp", hostname, uport, "host");
-                local_sdp.add_candidate("tcp", hostname, tport, "host");
-            }
-        }
-
-        vector<string> v = vector<string>(candidates.begin(), candidates.end());
-        srs_trace("RTC: Use candidates %s, protocol=%s, tcp_port=%d, udp_port=%d",
-                  srs_strings_join(v, ", ").c_str(), protocol.c_str(), tcp_port, udp_port);
-    }
-
-    // Setup the negotiate DTLS by config.
-    local_sdp.session_negotiate_ = local_sdp.session_config_;
-
-    // Setup the negotiate DTLS role.
-    if (ruc->remote_sdp_.get_dtls_role() == "active") {
-        local_sdp.session_negotiate_.dtls_role = "passive";
-    } else if (ruc->remote_sdp_.get_dtls_role() == "passive") {
-        local_sdp.session_negotiate_.dtls_role = "active";
-    } else if (ruc->remote_sdp_.get_dtls_role() == "actpass") {
-        local_sdp.session_negotiate_.dtls_role = local_sdp.session_config_.dtls_role;
-    } else {
-        // @see: https://tools.ietf.org/html/rfc4145#section-4.1
-        // The default value of the setup attribute in an offer/answer exchange
-        // is 'active' in the offer and 'passive' in the answer.
-        local_sdp.session_negotiate_.dtls_role = "passive";
-    }
-    local_sdp.set_dtls_role(local_sdp.session_negotiate_.dtls_role);
-
-    session->set_remote_sdp(ruc->remote_sdp_);
-    // We must setup the local SDP, then initialize the session object.
-    session->set_local_sdp(local_sdp);
-    session->set_state_as_waiting_stun();
-
-    // Before session initialize, we must setup the local SDP.
-    if ((err = session->initialize(req, ruc->dtls_, ruc->srtp_, username)) != srs_success) {
-        return srs_error_wrap(err, "init");
-    }
-
-    // We allows username is optional, but it never empty here.
-    _srs_conn_manager->add_with_name(username, session);
-
-    return err;
-}
-
-srs_error_t SrsServer::srs_update_rtc_sessions()
-{
-    srs_error_t err = srs_success;
-
-    // Alive RTC sessions, for stat.
-    int nn_rtc_conns = 0;
-
-    // Check all sessions and dispose the dead sessions.
-    for (int i = 0; i < (int)_srs_conn_manager->size(); i++) {
-        SrsRtcConnection *session = dynamic_cast<SrsRtcConnection *>(_srs_conn_manager->at(i));
-        // Ignore not session, or already disposing.
-        if (!session || session->disposing_) {
-            continue;
-        }
-
-        // Update stat if session is alive.
-        if (session->is_alive()) {
-            nn_rtc_conns++;
-            continue;
-        }
-
-        SrsContextRestore(_srs_context->get_id());
-        session->switch_to_context();
-
-        string username = session->username();
-        srs_trace("RTC: session destroy by timeout, username=%s", username.c_str());
-
-        // Use manager to free session and notify other objects.
-        _srs_conn_manager->remove(session);
-    }
-
-    // Ignore stats if no RTC connections.
-    if (!nn_rtc_conns) {
-        return err;
-    }
-    static char buf[128];
-
-    string rpkts_desc;
-    _srs_pps_rpkts->update();
-    _srs_pps_rrtps->update();
-    _srs_pps_rstuns->update();
-    _srs_pps_rrtcps->update();
-    if (_srs_pps_rpkts->r10s() || _srs_pps_rrtps->r10s() || _srs_pps_rstuns->r10s() || _srs_pps_rrtcps->r10s()) {
-        snprintf(buf, sizeof(buf), ", rpkts=(%d,rtp:%d,stun:%d,rtcp:%d)", _srs_pps_rpkts->r10s(), _srs_pps_rrtps->r10s(), _srs_pps_rstuns->r10s(), _srs_pps_rrtcps->r10s());
-        rpkts_desc = buf;
-    }
-
-    string spkts_desc;
-    _srs_pps_spkts->update();
-    _srs_pps_srtps->update();
-    _srs_pps_sstuns->update();
-    _srs_pps_srtcps->update();
-    if (_srs_pps_spkts->r10s() || _srs_pps_srtps->r10s() || _srs_pps_sstuns->r10s() || _srs_pps_srtcps->r10s()) {
-        snprintf(buf, sizeof(buf), ", spkts=(%d,rtp:%d,stun:%d,rtcp:%d)", _srs_pps_spkts->r10s(), _srs_pps_srtps->r10s(), _srs_pps_sstuns->r10s(), _srs_pps_srtcps->r10s());
-        spkts_desc = buf;
-    }
-
-    string rtcp_desc;
-    _srs_pps_pli->update();
-    _srs_pps_twcc->update();
-    _srs_pps_rr->update();
-    if (_srs_pps_pli->r10s() || _srs_pps_twcc->r10s() || _srs_pps_rr->r10s()) {
-        snprintf(buf, sizeof(buf), ", rtcp=(pli:%d,twcc:%d,rr:%d)", _srs_pps_pli->r10s(), _srs_pps_twcc->r10s(), _srs_pps_rr->r10s());
-        rtcp_desc = buf;
-    }
-
-    string snk_desc;
-    _srs_pps_snack->update();
-    _srs_pps_snack2->update();
-    _srs_pps_sanack->update();
-    _srs_pps_svnack->update();
-    if (_srs_pps_snack->r10s() || _srs_pps_sanack->r10s() || _srs_pps_svnack->r10s() || _srs_pps_snack2->r10s()) {
-        snprintf(buf, sizeof(buf), ", snk=(%d,a:%d,v:%d,h:%d)", _srs_pps_snack->r10s(), _srs_pps_sanack->r10s(), _srs_pps_svnack->r10s(), _srs_pps_snack2->r10s());
-        snk_desc = buf;
-    }
-
-    string rnk_desc;
-    _srs_pps_rnack->update();
-    _srs_pps_rnack2->update();
-    _srs_pps_rhnack->update();
-    _srs_pps_rmnack->update();
-    if (_srs_pps_rnack->r10s() || _srs_pps_rnack2->r10s() || _srs_pps_rhnack->r10s() || _srs_pps_rmnack->r10s()) {
-        snprintf(buf, sizeof(buf), ", rnk=(%d,%d,h:%d,m:%d)", _srs_pps_rnack->r10s(), _srs_pps_rnack2->r10s(), _srs_pps_rhnack->r10s(), _srs_pps_rmnack->r10s());
-        rnk_desc = buf;
-    }
-
-    string loss_desc;
-    SrsSnmpUdpStat *s = srs_get_udp_snmp_stat();
-    if (s->rcv_buf_errors_delta || s->snd_buf_errors_delta) {
-        snprintf(buf, sizeof(buf), ", loss=(r:%d,s:%d)", s->rcv_buf_errors_delta, s->snd_buf_errors_delta);
-        loss_desc = buf;
-    }
-
-    string fid_desc;
-    _srs_pps_ids->update();
-    _srs_pps_fids->update();
-    _srs_pps_fids_level0->update();
-    _srs_pps_addrs->update();
-    _srs_pps_fast_addrs->update();
-    if (_srs_pps_ids->r10s(), _srs_pps_fids->r10s(), _srs_pps_fids_level0->r10s(), _srs_pps_addrs->r10s(), _srs_pps_fast_addrs->r10s()) {
-        snprintf(buf, sizeof(buf), ", fid=(id:%d,fid:%d,ffid:%d,addr:%d,faddr:%d)", _srs_pps_ids->r10s(), _srs_pps_fids->r10s(), _srs_pps_fids_level0->r10s(), _srs_pps_addrs->r10s(), _srs_pps_fast_addrs->r10s());
-        fid_desc = buf;
-    }
-
-    srs_trace("RTC: Server conns=%u%s%s%s%s%s%s%s",
-              nn_rtc_conns,
-              rpkts_desc.c_str(), spkts_desc.c_str(), rtcp_desc.c_str(), snk_desc.c_str(), rnk_desc.c_str(), loss_desc.c_str(), fid_desc.c_str());
+    srs_trace("SRS: cpu=%.2f%%,%dMB%s%s%s%s%s%s%s%s%s%s%s",
+              u->percent * 100, memory,
+              stats.cid_desc.c_str(), stats.timer_desc.c_str(),
+              stats.recvfrom_desc.c_str(), stats.io_desc.c_str(), stats.msg_desc.c_str(),
+              stats.epoll_desc.c_str(), stats.sched_desc.c_str(), stats.clock_desc.c_str(),
+              stats.thread_desc.c_str(), stats.free_desc.c_str(), stats.objs_desc.c_str());
 
     return err;
 }
@@ -2534,174 +1553,353 @@ void SrsServer::on_unpublish(ISrsRequest *r)
     coworkers->on_unpublish(r);
 }
 
-SrsFastTimer *SrsServer::timer20ms()
+SrsSignalManager *SrsSignalManager::instance = NULL;
+
+SrsSignalManager::SrsSignalManager(SrsServer *s)
 {
-    return timer20ms_;
+    SrsSignalManager::instance = this;
+
+    server = s;
+    sig_pipe[0] = sig_pipe[1] = -1;
+    trd = new SrsSTCoroutine("signal", this, _srs_context->get_id());
+    signal_read_stfd = NULL;
 }
 
-SrsFastTimer *SrsServer::timer100ms()
+SrsSignalManager::~SrsSignalManager()
 {
-    return timer100ms_;
+    srs_freep(trd);
+
+    srs_close_stfd(signal_read_stfd);
+
+    if (sig_pipe[0] > 0) {
+        ::close(sig_pipe[0]);
+    }
+    if (sig_pipe[1] > 0) {
+        ::close(sig_pipe[1]);
+    }
 }
 
-SrsFastTimer *SrsServer::timer1s()
+srs_error_t SrsSignalManager::initialize()
 {
-    return timer1s_;
+    /* Create signal pipe */
+    if (pipe(sig_pipe) < 0) {
+        return srs_error_new(ERROR_SYSTEM_CREATE_PIPE, "create pipe");
+    }
+
+    if ((signal_read_stfd = srs_netfd_open(sig_pipe[0])) == NULL) {
+        return srs_error_new(ERROR_SYSTEM_CREATE_PIPE, "open pipe");
+    }
+
+    return srs_success;
 }
 
-SrsFastTimer *SrsServer::timer5s()
-{
-    return timer5s_;
-}
-
-srs_error_t SrsServer::on_timer(srs_utime_t interval)
+srs_error_t SrsSignalManager::start()
 {
     srs_error_t err = srs_success;
 
-    // Show statistics for RTC server.
-    SrsProcSelfStat *u = srs_get_self_proc_stat();
-    // Resident Set Size: number of pages the process has in real memory.
-    int memory = (int)(u->rss * 4 / 1024);
+    /**
+     * Note that if multiple processes are used (see below),
+     * the signal pipe should be initialized after the fork(2) call
+     * so that each process has its own private pipe.
+     */
+    struct sigaction sa;
 
-    static char buf[128];
+    /* Install sig_catcher() as a signal handler */
+    sa.sa_handler = SrsSignalManager::sig_catcher;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SRS_SIGNAL_RELOAD, &sa, NULL);
 
-    string cid_desc;
-    _srs_pps_cids_get->update();
-    _srs_pps_cids_set->update();
-    if (_srs_pps_cids_get->r10s() || _srs_pps_cids_set->r10s()) {
-        snprintf(buf, sizeof(buf), ", cid=%d,%d", _srs_pps_cids_get->r10s(), _srs_pps_cids_set->r10s());
-        cid_desc = buf;
+    sa.sa_handler = SrsSignalManager::sig_catcher;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SRS_SIGNAL_FAST_QUIT, &sa, NULL);
+
+    sa.sa_handler = SrsSignalManager::sig_catcher;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SRS_SIGNAL_GRACEFULLY_QUIT, &sa, NULL);
+
+    sa.sa_handler = SrsSignalManager::sig_catcher;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SRS_SIGNAL_ASSERT_ABORT, &sa, NULL);
+
+    sa.sa_handler = SrsSignalManager::sig_catcher;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SIGINT, &sa, NULL);
+
+    sa.sa_handler = SrsSignalManager::sig_catcher;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SRS_SIGNAL_REOPEN_LOG, &sa, NULL);
+
+    srs_trace("signal installed, reload=%d, reopen=%d, fast_quit=%d, grace_quit=%d",
+              SRS_SIGNAL_RELOAD, SRS_SIGNAL_REOPEN_LOG, SRS_SIGNAL_FAST_QUIT, SRS_SIGNAL_GRACEFULLY_QUIT);
+
+    if ((err = trd->start()) != srs_success) {
+        return srs_error_wrap(err, "signal manager");
     }
-    string timer_desc;
-    _srs_pps_timer->update();
-    _srs_pps_pub->update();
-    _srs_pps_conn->update();
-    if (_srs_pps_timer->r10s() || _srs_pps_pub->r10s() || _srs_pps_conn->r10s()) {
-        snprintf(buf, sizeof(buf), ", timer=%d,%d,%d", _srs_pps_timer->r10s(), _srs_pps_pub->r10s(), _srs_pps_conn->r10s());
-        timer_desc = buf;
-    }
-
-    string free_desc;
-    _srs_pps_dispose->update();
-    if (_srs_pps_dispose->r10s()) {
-        snprintf(buf, sizeof(buf), ", free=%d", _srs_pps_dispose->r10s());
-        free_desc = buf;
-    }
-
-    string recvfrom_desc;
-#if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
-    _srs_pps_recvfrom->update(_st_stat_recvfrom);
-    _srs_pps_recvfrom_eagain->update(_st_stat_recvfrom_eagain);
-    _srs_pps_sendto->update(_st_stat_sendto);
-    _srs_pps_sendto_eagain->update(_st_stat_sendto_eagain);
-    if (_srs_pps_recvfrom->r10s() || _srs_pps_recvfrom_eagain->r10s() || _srs_pps_sendto->r10s() || _srs_pps_sendto_eagain->r10s()) {
-        snprintf(buf, sizeof(buf), ", udp=%d,%d,%d,%d", _srs_pps_recvfrom->r10s(), _srs_pps_recvfrom_eagain->r10s(), _srs_pps_sendto->r10s(), _srs_pps_sendto_eagain->r10s());
-        recvfrom_desc = buf;
-    }
-#endif
-
-    string io_desc;
-#if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
-    _srs_pps_read->update(_st_stat_read);
-    _srs_pps_read_eagain->update(_st_stat_read_eagain);
-    _srs_pps_readv->update(_st_stat_readv);
-    _srs_pps_readv_eagain->update(_st_stat_readv_eagain);
-    _srs_pps_writev->update(_st_stat_writev);
-    _srs_pps_writev_eagain->update(_st_stat_writev_eagain);
-    if (_srs_pps_read->r10s() || _srs_pps_read_eagain->r10s() || _srs_pps_readv->r10s() || _srs_pps_readv_eagain->r10s() || _srs_pps_writev->r10s() || _srs_pps_writev_eagain->r10s()) {
-        snprintf(buf, sizeof(buf), ", io=%d,%d,%d,%d,%d,%d", _srs_pps_read->r10s(), _srs_pps_read_eagain->r10s(), _srs_pps_readv->r10s(), _srs_pps_readv_eagain->r10s(), _srs_pps_writev->r10s(), _srs_pps_writev_eagain->r10s());
-        io_desc = buf;
-    }
-#endif
-
-    string msg_desc;
-#if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
-    _srs_pps_recvmsg->update(_st_stat_recvmsg);
-    _srs_pps_recvmsg_eagain->update(_st_stat_recvmsg_eagain);
-    _srs_pps_sendmsg->update(_st_stat_sendmsg);
-    _srs_pps_sendmsg_eagain->update(_st_stat_sendmsg_eagain);
-    if (_srs_pps_recvmsg->r10s() || _srs_pps_recvmsg_eagain->r10s() || _srs_pps_sendmsg->r10s() || _srs_pps_sendmsg_eagain->r10s()) {
-        snprintf(buf, sizeof(buf), ", msg=%d,%d,%d,%d", _srs_pps_recvmsg->r10s(), _srs_pps_recvmsg_eagain->r10s(), _srs_pps_sendmsg->r10s(), _srs_pps_sendmsg_eagain->r10s());
-        msg_desc = buf;
-    }
-#endif
-
-    string epoll_desc;
-#if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
-    _srs_pps_epoll->update(_st_stat_epoll);
-    _srs_pps_epoll_zero->update(_st_stat_epoll_zero);
-    _srs_pps_epoll_shake->update(_st_stat_epoll_shake);
-    _srs_pps_epoll_spin->update(_st_stat_epoll_spin);
-    if (_srs_pps_epoll->r10s() || _srs_pps_epoll_zero->r10s() || _srs_pps_epoll_shake->r10s() || _srs_pps_epoll_spin->r10s()) {
-        snprintf(buf, sizeof(buf), ", epoll=%d,%d,%d,%d", _srs_pps_epoll->r10s(), _srs_pps_epoll_zero->r10s(), _srs_pps_epoll_shake->r10s(), _srs_pps_epoll_spin->r10s());
-        epoll_desc = buf;
-    }
-#endif
-
-    string sched_desc;
-#if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
-    _srs_pps_sched_160ms->update(_st_stat_sched_160ms);
-    _srs_pps_sched_s->update(_st_stat_sched_s);
-    _srs_pps_sched_15ms->update(_st_stat_sched_15ms);
-    _srs_pps_sched_20ms->update(_st_stat_sched_20ms);
-    _srs_pps_sched_25ms->update(_st_stat_sched_25ms);
-    _srs_pps_sched_30ms->update(_st_stat_sched_30ms);
-    _srs_pps_sched_35ms->update(_st_stat_sched_35ms);
-    _srs_pps_sched_40ms->update(_st_stat_sched_40ms);
-    _srs_pps_sched_80ms->update(_st_stat_sched_80ms);
-    if (_srs_pps_sched_160ms->r10s() || _srs_pps_sched_s->r10s() || _srs_pps_sched_15ms->r10s() || _srs_pps_sched_20ms->r10s() || _srs_pps_sched_25ms->r10s() || _srs_pps_sched_30ms->r10s() || _srs_pps_sched_35ms->r10s() || _srs_pps_sched_40ms->r10s() || _srs_pps_sched_80ms->r10s()) {
-        snprintf(buf, sizeof(buf), ", sched=%d,%d,%d,%d,%d,%d,%d,%d,%d", _srs_pps_sched_15ms->r10s(), _srs_pps_sched_20ms->r10s(), _srs_pps_sched_25ms->r10s(), _srs_pps_sched_30ms->r10s(), _srs_pps_sched_35ms->r10s(), _srs_pps_sched_40ms->r10s(), _srs_pps_sched_80ms->r10s(), _srs_pps_sched_160ms->r10s(), _srs_pps_sched_s->r10s());
-        sched_desc = buf;
-    }
-#endif
-
-    string clock_desc;
-    _srs_pps_clock_15ms->update();
-    _srs_pps_clock_20ms->update();
-    _srs_pps_clock_25ms->update();
-    _srs_pps_clock_30ms->update();
-    _srs_pps_clock_35ms->update();
-    _srs_pps_clock_40ms->update();
-    _srs_pps_clock_80ms->update();
-    _srs_pps_clock_160ms->update();
-    _srs_pps_timer_s->update();
-    if (_srs_pps_clock_15ms->r10s() || _srs_pps_timer_s->r10s() || _srs_pps_clock_20ms->r10s() || _srs_pps_clock_25ms->r10s() || _srs_pps_clock_30ms->r10s() || _srs_pps_clock_35ms->r10s() || _srs_pps_clock_40ms->r10s() || _srs_pps_clock_80ms->r10s() || _srs_pps_clock_160ms->r10s()) {
-        snprintf(buf, sizeof(buf), ", clock=%d,%d,%d,%d,%d,%d,%d,%d,%d", _srs_pps_clock_15ms->r10s(), _srs_pps_clock_20ms->r10s(), _srs_pps_clock_25ms->r10s(), _srs_pps_clock_30ms->r10s(), _srs_pps_clock_35ms->r10s(), _srs_pps_clock_40ms->r10s(), _srs_pps_clock_80ms->r10s(), _srs_pps_clock_160ms->r10s(), _srs_pps_timer_s->r10s());
-        clock_desc = buf;
-    }
-
-    string thread_desc;
-#if defined(SRS_DEBUG) && defined(SRS_DEBUG_STATS)
-    _srs_pps_thread_run->update(_st_stat_thread_run);
-    _srs_pps_thread_idle->update(_st_stat_thread_idle);
-    _srs_pps_thread_yield->update(_st_stat_thread_yield);
-    _srs_pps_thread_yield2->update(_st_stat_thread_yield2);
-    if (_st_active_count > 0 || _st_num_free_stacks > 0 || _srs_pps_thread_run->r10s() || _srs_pps_thread_idle->r10s() || _srs_pps_thread_yield->r10s() || _srs_pps_thread_yield2->r10s()) {
-        snprintf(buf, sizeof(buf), ", co=%d,%d,%d, stk=%d, yield=%d,%d", _st_active_count, _srs_pps_thread_run->r10s(), _srs_pps_thread_idle->r10s(), _st_num_free_stacks, _srs_pps_thread_yield->r10s(), _srs_pps_thread_yield2->r10s());
-        thread_desc = buf;
-    }
-#endif
-
-    string objs_desc;
-    _srs_pps_objs_rtps->update();
-    _srs_pps_objs_rraw->update();
-    _srs_pps_objs_rfua->update();
-    _srs_pps_objs_rbuf->update();
-    _srs_pps_objs_msgs->update();
-    _srs_pps_objs_rothers->update();
-    if (_srs_pps_objs_rtps->r10s() || _srs_pps_objs_rraw->r10s() || _srs_pps_objs_rfua->r10s() || _srs_pps_objs_rbuf->r10s() || _srs_pps_objs_msgs->r10s() || _srs_pps_objs_rothers->r10s()) {
-        snprintf(buf, sizeof(buf), ", objs=(pkt:%d,raw:%d,fua:%d,msg:%d,oth:%d,buf:%d)",
-                 _srs_pps_objs_rtps->r10s(), _srs_pps_objs_rraw->r10s(), _srs_pps_objs_rfua->r10s(),
-                 _srs_pps_objs_msgs->r10s(), _srs_pps_objs_rothers->r10s(), _srs_pps_objs_rbuf->r10s());
-        objs_desc = buf;
-    }
-
-    srs_trace("Hybrid cpu=%.2f%%,%dMB%s%s%s%s%s%s%s%s%s%s%s",
-              u->percent * 100, memory,
-              cid_desc.c_str(), timer_desc.c_str(),
-              recvfrom_desc.c_str(), io_desc.c_str(), msg_desc.c_str(),
-              epoll_desc.c_str(), sched_desc.c_str(), clock_desc.c_str(),
-              thread_desc.c_str(), free_desc.c_str(), objs_desc.c_str());
 
     return err;
+}
+
+srs_error_t SrsSignalManager::cycle()
+{
+    srs_error_t err = srs_success;
+
+    while (true) {
+        if ((err = trd->pull()) != srs_success) {
+            return srs_error_wrap(err, "signal manager");
+        }
+
+        int signo;
+
+        /* Read the next signal from the pipe */
+        srs_read(signal_read_stfd, &signo, sizeof(int), SRS_UTIME_NO_TIMEOUT);
+
+        /* Process signal synchronously */
+        server->on_signal(signo);
+    }
+
+    return err;
+}
+
+void SrsSignalManager::sig_catcher(int signo)
+{
+    int err;
+
+    /* Save errno to restore it after the write() */
+    err = errno;
+
+    /* write() is reentrant/async-safe */
+    int fd = SrsSignalManager::instance->sig_pipe[1];
+    write(fd, &signo, sizeof(int));
+
+    errno = err;
+}
+
+// Whether we are in docker, defined in main module.
+extern bool _srs_in_docker;
+
+SrsInotifyWorker::SrsInotifyWorker(SrsServer *s)
+{
+    server = s;
+    trd = new SrsSTCoroutine("inotify", this);
+    inotify_fd = NULL;
+}
+
+SrsInotifyWorker::~SrsInotifyWorker()
+{
+    srs_freep(trd);
+    srs_close_stfd(inotify_fd);
+}
+
+srs_error_t SrsInotifyWorker::start()
+{
+    srs_error_t err = srs_success;
+
+#if !defined(SRS_OSX) && !defined(SRS_CYGWIN64)
+    // Whether enable auto reload config.
+    bool auto_reload = _srs_config->inotify_auto_reload();
+    if (!auto_reload && _srs_in_docker && _srs_config->auto_reload_for_docker()) {
+        srs_warn("enable auto reload for docker");
+        auto_reload = true;
+    }
+
+    if (!auto_reload) {
+        return err;
+    }
+
+    // Create inotify to watch config file.
+    int fd = ::inotify_init1(IN_NONBLOCK);
+    if (fd < 0) {
+        return srs_error_new(ERROR_INOTIFY_CREATE, "create inotify");
+    }
+
+    // Open as stfd to read by ST.
+    if ((inotify_fd = srs_netfd_open(fd)) == NULL) {
+        ::close(fd);
+        return srs_error_new(ERROR_INOTIFY_OPENFD, "open fd=%d", fd);
+    }
+
+    if (((err = srs_fd_closeexec(fd))) != srs_success) {
+        return srs_error_wrap(err, "closeexec fd=%d", fd);
+    }
+
+    // /* the following are legal, implemented events that user-space can watch for */
+    // #define IN_ACCESS               0x00000001      /* File was accessed */
+    // #define IN_MODIFY               0x00000002      /* File was modified */
+    // #define IN_ATTRIB               0x00000004      /* Metadata changed */
+    // #define IN_CLOSE_WRITE          0x00000008      /* Writtable file was closed */
+    // #define IN_CLOSE_NOWRITE        0x00000010      /* Unwrittable file closed */
+    // #define IN_OPEN                 0x00000020      /* File was opened */
+    // #define IN_MOVED_FROM           0x00000040      /* File was moved from X */
+    // #define IN_MOVED_TO             0x00000080      /* File was moved to Y */
+    // #define IN_CREATE               0x00000100      /* Subfile was created */
+    // #define IN_DELETE               0x00000200      /* Subfile was deleted */
+    // #define IN_DELETE_SELF          0x00000400      /* Self was deleted */
+    // #define IN_MOVE_SELF            0x00000800      /* Self was moved */
+    //
+    // /* the following are legal events.  they are sent as needed to any watch */
+    // #define IN_UNMOUNT              0x00002000      /* Backing fs was unmounted */
+    // #define IN_Q_OVERFLOW           0x00004000      /* Event queued overflowed */
+    // #define IN_IGNORED              0x00008000      /* File was ignored */
+    //
+    // /* helper events */
+    // #define IN_CLOSE                (IN_CLOSE_WRITE | IN_CLOSE_NOWRITE) /* close */
+    // #define IN_MOVE                 (IN_MOVED_FROM | IN_MOVED_TO) /* moves */
+    //
+    // /* special flags */
+    // #define IN_ONLYDIR              0x01000000      /* only watch the path if it is a directory */
+    // #define IN_DONT_FOLLOW          0x02000000      /* don't follow a sym link */
+    // #define IN_EXCL_UNLINK          0x04000000      /* exclude events on unlinked objects */
+    // #define IN_MASK_ADD             0x20000000      /* add to the mask of an already existing watch */
+    // #define IN_ISDIR                0x40000000      /* event occurred against dir */
+    // #define IN_ONESHOT              0x80000000      /* only send event once */
+
+    // Watch the config directory events.
+    string config_dir = srs_path_filepath_dir(_srs_config->config());
+    uint32_t mask = IN_MODIFY | IN_CREATE | IN_MOVED_TO;
+    int watch_conf = 0;
+    if ((watch_conf = ::inotify_add_watch(fd, config_dir.c_str(), mask)) < 0) {
+        return srs_error_new(ERROR_INOTIFY_WATCH, "watch file=%s, fd=%d, watch=%d, mask=%#x",
+                             config_dir.c_str(), fd, watch_conf, mask);
+    }
+    srs_trace("auto reload watching fd=%d, watch=%d, file=%s", fd, watch_conf, config_dir.c_str());
+
+    if ((err = trd->start()) != srs_success) {
+        return srs_error_wrap(err, "inotify");
+    }
+#endif
+
+    return err;
+}
+
+srs_error_t SrsInotifyWorker::cycle()
+{
+    srs_error_t err = srs_success;
+
+#if !defined(SRS_OSX) && !defined(SRS_CYGWIN64)
+    string config_path = _srs_config->config();
+    string config_file = srs_path_filepath_base(config_path);
+    string k8s_file = "..data";
+
+    while (true) {
+        char buf[4096];
+        ssize_t nn = srs_read(inotify_fd, buf, (size_t)sizeof(buf), SRS_UTIME_NO_TIMEOUT);
+        if (nn < 0) {
+            srs_warn("inotify ignore read failed, nn=%d", (int)nn);
+            break;
+        }
+
+        // Whether config file changed.
+        bool do_reload = false;
+
+        // Parse all inotify events.
+        inotify_event *ie = NULL;
+        for (char *ptr = buf; ptr < buf + nn; ptr += sizeof(inotify_event) + ie->len) {
+            ie = (inotify_event *)ptr;
+
+            if (!ie->len || !ie->name) {
+                continue;
+            }
+
+            string name = ie->name;
+            if ((name == k8s_file || name == config_file) && ie->mask & (IN_MODIFY | IN_CREATE | IN_MOVED_TO)) {
+                do_reload = true;
+            }
+
+            srs_trace("inotify event wd=%d, mask=%#x, len=%d, name=%s, reload=%d", ie->wd, ie->mask, ie->len, ie->name, do_reload);
+        }
+
+        // Notify server to do reload.
+        if (do_reload && srs_path_exists(config_path)) {
+            server->on_signal(SRS_SIGNAL_RELOAD);
+        }
+
+        srs_usleep(3000 * SRS_UTIME_MILLISECONDS);
+    }
+#endif
+
+    return err;
+}
+
+SrsPidFileLocker::SrsPidFileLocker()
+{
+    pid_fd_ = -1;
+}
+
+SrsPidFileLocker::~SrsPidFileLocker()
+{
+    close();
+}
+
+srs_error_t SrsPidFileLocker::acquire()
+{
+    srs_error_t err = srs_success;
+
+    pid_file_ = _srs_config->get_pid_file();
+
+    // -rw-r--r--
+    // 644
+    int mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
+
+    int fd;
+    // open pid file
+    if ((fd = ::open(pid_file_.c_str(), O_WRONLY | O_CREAT, mode)) == -1) {
+        return srs_error_new(ERROR_SYSTEM_PID_ACQUIRE, "open pid file=%s", pid_file_.c_str());
+    }
+
+    // require write lock
+    struct flock lock;
+
+    lock.l_type = F_WRLCK;    // F_RDLCK, F_WRLCK, F_UNLCK
+    lock.l_start = 0;         // type offset, relative to l_whence
+    lock.l_whence = SEEK_SET; // SEEK_SET, SEEK_CUR, SEEK_END
+    lock.l_len = 0;
+
+    if (fcntl(fd, F_SETLK, &lock) == -1) {
+        if (errno == EACCES || errno == EAGAIN) {
+            ::close(fd);
+            srs_error("srs is already running!");
+            return srs_error_new(ERROR_SYSTEM_PID_ALREADY_RUNNING, "srs is already running");
+        }
+        return srs_error_new(ERROR_SYSTEM_PID_LOCK, "access to pid=%s", pid_file_.c_str());
+    }
+
+    // truncate file
+    if (ftruncate(fd, 0) != 0) {
+        return srs_error_new(ERROR_SYSTEM_PID_TRUNCATE_FILE, "truncate pid file=%s", pid_file_.c_str());
+    }
+
+    // write the pid
+    std::string pid = srs_strconv_format_int(getpid());
+    if (write(fd, pid.c_str(), pid.length()) != (int)pid.length()) {
+        return srs_error_new(ERROR_SYSTEM_PID_WRITE_FILE, "write pid=%s to file=%s", pid.c_str(), pid_file_.c_str());
+    }
+
+    // auto close when fork child process.
+    int val;
+    if ((val = fcntl(fd, F_GETFD, 0)) < 0) {
+        return srs_error_new(ERROR_SYSTEM_PID_GET_FILE_INFO, "fcntl fd=%d", fd);
+    }
+    val |= FD_CLOEXEC;
+    if (fcntl(fd, F_SETFD, val) < 0) {
+        return srs_error_new(ERROR_SYSTEM_PID_SET_FILE_INFO, "lock file=%s fd=%d", pid_file_.c_str(), fd);
+    }
+
+    srs_trace("write pid=%s to %s success!", pid.c_str(), pid_file_.c_str());
+    pid_fd_ = fd;
+
+    return err;
+}
+
+void SrsPidFileLocker::close()
+{
+    if (pid_fd_ > 0) {
+        ::close(pid_fd_);
+        pid_fd_ = -1;
+    }
 }
