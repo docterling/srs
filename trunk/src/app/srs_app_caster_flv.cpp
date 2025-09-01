@@ -279,7 +279,7 @@ srs_error_t SrsDynamicHttpConn::do_proxy(ISrsHttpResponseReader *rr, SrsFlvDecod
             return srs_error_wrap(err, "read tag data");
         }
 
-        SrsCommonMessage *cmsg = NULL;
+        SrsRtmpCommonMessage *cmsg = NULL;
         if ((err = srs_rtmp_create_msg(type, time, data, size, sdk->sid(), &cmsg)) != srs_success) {
             return srs_error_wrap(err, "create message");
         }

@@ -274,7 +274,7 @@ srs_error_t SrsForwarder::forward()
 
         // read from client.
         if (true) {
-            SrsCommonMessage *msg = NULL;
+            SrsRtmpCommonMessage *msg = NULL;
             err = sdk->recv_message(&msg);
 
             if (err != srs_success && srs_error_code(err) != ERROR_SOCKET_TIMEOUT) {

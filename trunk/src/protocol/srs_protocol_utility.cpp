@@ -283,18 +283,18 @@ string srs_net_url_encode_rtmp_url(string server, int port, string host, string 
     return url;
 }
 
-srs_error_t srs_do_rtmp_create_msg(char type, uint32_t timestamp, char *data, int size, int stream_id, SrsCommonMessage **ppmsg)
+srs_error_t srs_do_rtmp_create_msg(char type, uint32_t timestamp, char *data, int size, int stream_id, SrsRtmpCommonMessage **ppmsg)
 {
     srs_error_t err = srs_success;
 
     *ppmsg = NULL;
-    SrsCommonMessage *msg = NULL;
+    SrsRtmpCommonMessage *msg = NULL;
 
     if (type == SrsFrameTypeAudio) {
         SrsMessageHeader header;
         header.initialize_audio(size, timestamp, stream_id);
 
-        msg = new SrsCommonMessage();
+        msg = new SrsRtmpCommonMessage();
         if ((err = msg->create(&header, data, size)) != srs_success) {
             srs_freep(msg);
             return srs_error_wrap(err, "create message");
@@ -303,7 +303,7 @@ srs_error_t srs_do_rtmp_create_msg(char type, uint32_t timestamp, char *data, in
         SrsMessageHeader header;
         header.initialize_video(size, timestamp, stream_id);
 
-        msg = new SrsCommonMessage();
+        msg = new SrsRtmpCommonMessage();
         if ((err = msg->create(&header, data, size)) != srs_success) {
             srs_freep(msg);
             return srs_error_wrap(err, "create message");
@@ -312,7 +312,7 @@ srs_error_t srs_do_rtmp_create_msg(char type, uint32_t timestamp, char *data, in
         SrsMessageHeader header;
         header.initialize_amf0_script(size, stream_id);
 
-        msg = new SrsCommonMessage();
+        msg = new SrsRtmpCommonMessage();
         if ((err = msg->create(&header, data, size)) != srs_success) {
             srs_freep(msg);
             return srs_error_wrap(err, "create message");
@@ -326,7 +326,7 @@ srs_error_t srs_do_rtmp_create_msg(char type, uint32_t timestamp, char *data, in
     return err;
 }
 
-srs_error_t srs_rtmp_create_msg(char type, uint32_t timestamp, char *data, int size, int stream_id, SrsCommonMessage **ppmsg)
+srs_error_t srs_rtmp_create_msg(char type, uint32_t timestamp, char *data, int size, int stream_id, SrsRtmpCommonMessage **ppmsg)
 {
     srs_error_t err = srs_success;
 

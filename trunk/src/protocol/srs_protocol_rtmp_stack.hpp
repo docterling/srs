@@ -38,7 +38,7 @@ class SrsFMLEStartPacket;
 class SrsPublishPacket;
 class SrsOnMetaDataPacket;
 class SrsPlayPacket;
-class SrsCommonMessage;
+class SrsRtmpCommonMessage;
 class SrsRtmpCommand;
 class SrsAmf0Object;
 class IMergeReadHandler;
@@ -100,7 +100,7 @@ public:
 
 public:
     // Covert packet to common message.
-    virtual srs_error_t to_msg(SrsCommonMessage *msg, int stream_id);
+    virtual srs_error_t to_msg(SrsRtmpCommonMessage *msg, int stream_id);
 
 public:
     // The subpacket can override this encode,
@@ -256,12 +256,12 @@ public:
     //       NULL for unknown packet but return success.
     //       never NULL if decode success.
     // @remark, drop message when msg is empty or payload length is empty.
-    virtual srs_error_t recv_message(SrsCommonMessage **pmsg);
+    virtual srs_error_t recv_message(SrsRtmpCommonMessage **pmsg);
     // Decode bytes oriented RTMP message to RTMP packet,
     // @param ppacket, output decoded packet,
     //       always NULL if error, never NULL if success.
     // @return error when unknown packet, error when decode failed.
-    virtual srs_error_t decode_message(SrsCommonMessage *msg, SrsRtmpCommand **ppacket);
+    virtual srs_error_t decode_message(SrsRtmpCommonMessage *msg, SrsRtmpCommand **ppacket);
     // Send the RTMP message and always free it.
     // user must never free or use the msg after this method,
     // For it will always free the msg.
@@ -288,7 +288,7 @@ public:
     // @ppacket, user must free it, which decode from payload of message. NULL if not success.
     // @remark, only when success, user can use and must free the pmsg and ppacket.
     // For example:
-    //          SrsCommonMessage* msg = NULL;
+    //          SrsRtmpCommonMessage* msg = NULL;
     //          SrsConnectAppResPacket* pkt = NULL;
     //          if ((ret = protocol->expect_message<SrsConnectAppResPacket>(protocol, &msg, &pkt)) != ERROR_SUCCESS) {
     //              return ret;
@@ -299,7 +299,7 @@ public:
     // user should never recv message and convert it, use this method instead.
     // if need to set timeout, use set timeout of SrsProtocol.
     template <class T>
-    srs_error_t expect_message(SrsCommonMessage **pmsg, T **ppacket)
+    srs_error_t expect_message(SrsRtmpCommonMessage **pmsg, T **ppacket)
     {
         *pmsg = NULL;
         *ppacket = NULL;
@@ -307,7 +307,7 @@ public:
         srs_error_t err = srs_success;
 
         while (true) {
-            SrsCommonMessage *msg = NULL;
+            SrsRtmpCommonMessage *msg = NULL;
             if ((err = recv_message(&msg)) != srs_success) {
                 return srs_error_wrap(err, "recv message");
             }
@@ -348,7 +348,7 @@ private:
     // return error if error occur and nerver set the pmsg,
     // return success and pmsg set to NULL if no entire message got,
     // return success and pmsg set to entire message if got one.
-    virtual srs_error_t recv_interlaced_message(SrsCommonMessage **pmsg);
+    virtual srs_error_t recv_interlaced_message(SrsRtmpCommonMessage **pmsg);
     // Read the chunk basic header(fmt, cid) from chunk stream.
     // user can discovery a SrsChunkStream by cid.
     virtual srs_error_t read_basic_header(char &fmt, int &cid);
@@ -357,9 +357,9 @@ private:
     virtual srs_error_t read_message_header(SrsChunkStream *chunk, char fmt);
     // Read the chunk payload, remove the used bytes in buffer,
     // if got entire message, set the pmsg.
-    virtual srs_error_t read_message_payload(SrsChunkStream *chunk, SrsCommonMessage **pmsg);
+    virtual srs_error_t read_message_payload(SrsChunkStream *chunk, SrsRtmpCommonMessage **pmsg);
     // When recv message, update the context.
-    virtual srs_error_t on_recv_message(SrsCommonMessage *msg);
+    virtual srs_error_t on_recv_message(SrsRtmpCommonMessage *msg);
     // When message sentout, update the context.
     virtual srs_error_t on_send_packet(SrsMessageHeader *mh, SrsRtmpCommand *packet);
 
@@ -389,7 +389,7 @@ public:
     // Whether the chunk message header has extended timestamp.
     bool has_extended_timestamp;
     // The partially read message.
-    SrsCommonMessage *msg;
+    SrsRtmpCommonMessage *msg;
     // Current writing position of message.
     char *writing_pos_;
     // Decoded msg count, to identify whether the chunk stream is fresh.
@@ -598,8 +598,8 @@ public:
     virtual void set_send_timeout(srs_utime_t tm);
     virtual int64_t get_recv_bytes();
     virtual int64_t get_send_bytes();
-    virtual srs_error_t recv_message(SrsCommonMessage **pmsg);
-    virtual srs_error_t decode_message(SrsCommonMessage *msg, SrsRtmpCommand **ppacket);
+    virtual srs_error_t recv_message(SrsRtmpCommonMessage **pmsg);
+    virtual srs_error_t decode_message(SrsRtmpCommonMessage *msg, SrsRtmpCommand **ppacket);
     virtual srs_error_t send_and_free_message(SrsMediaPacket *msg, int stream_id);
     virtual srs_error_t send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs, int stream_id);
     virtual srs_error_t send_and_free_packet(SrsRtmpCommand *packet, int stream_id);
@@ -636,7 +636,7 @@ public:
     // @ppacket, user must free it, which decode from payload of message. NULL if not success.
     // @remark, only when success, user can use and must free the pmsg and ppacket.
     // For example:
-    //          SrsCommonMessage* msg = NULL;
+    //          SrsRtmpCommonMessage* msg = NULL;
     //          SrsConnectAppResPacket* pkt = NULL;
     //          if ((ret = client->expect_message<SrsConnectAppResPacket>(protocol, &msg, &pkt)) != ERROR_SUCCESS) {
     //              return ret;
@@ -647,7 +647,7 @@ public:
     // user should never recv message and convert it, use this method instead.
     // if need to set timeout, use set timeout of SrsProtocol.
     template <class T>
-    srs_error_t expect_message(SrsCommonMessage **pmsg, T **ppacket)
+    srs_error_t expect_message(SrsRtmpCommonMessage **pmsg, T **ppacket)
     {
         return protocol->expect_message<T>(pmsg, ppacket);
     }
@@ -707,12 +707,12 @@ public:
     //       NULL for unknown packet but return success.
     //       never NULL if decode success.
     // @remark, drop message when msg is empty or payload length is empty.
-    virtual srs_error_t recv_message(SrsCommonMessage **pmsg);
+    virtual srs_error_t recv_message(SrsRtmpCommonMessage **pmsg);
     // Decode bytes oriented RTMP message to RTMP packet,
     // @param ppacket, output decoded packet,
     //       always NULL if error, never NULL if success.
     // @return error when unknown packet, error when decode failed.
-    virtual srs_error_t decode_message(SrsCommonMessage *msg, SrsRtmpCommand **ppacket);
+    virtual srs_error_t decode_message(SrsRtmpCommonMessage *msg, SrsRtmpCommand **ppacket);
     // Send the RTMP message and always free it.
     // user must never free or use the msg after this method,
     // For it will always free the msg.
@@ -808,7 +808,7 @@ public:
     // @ppacket, user must free it, which decode from payload of message. NULL if not success.
     // @remark, only when success, user can use and must free the pmsg and ppacket.
     // For example:
-    //          SrsCommonMessage* msg = NULL;
+    //          SrsRtmpCommonMessage* msg = NULL;
     //          SrsConnectAppResPacket* pkt = NULL;
     //          if ((ret = server->expect_message<SrsConnectAppResPacket>(&msg, &pkt)) != ERROR_SUCCESS) {
     //              return ret;
@@ -819,7 +819,7 @@ public:
     // user should never recv message and convert it, use this method instead.
     // if need to set timeout, use set timeout of SrsProtocol.
     template <class T>
-    srs_error_t expect_message(SrsCommonMessage **pmsg, T **ppacket)
+    srs_error_t expect_message(SrsRtmpCommonMessage **pmsg, T **ppacket)
     {
         return protocol->expect_message<T>(pmsg, ppacket);
     }
@@ -1308,7 +1308,7 @@ protected:
 };
 
 // onStatus command, AMF0 Call
-// @remark, user must set the stream_id by SrsCommonMessage.set_packet().
+// @remark, user must set the stream_id by SrsRtmpCommonMessage.set_packet().
 class SrsOnStatusCallPacket : public SrsRtmpCommand
 {
 public:
@@ -1341,7 +1341,7 @@ protected:
 };
 
 // onStatus data, AMF0 Data
-// @remark, user must set the stream_id by SrsCommonMessage.set_packet().
+// @remark, user must set the stream_id by SrsRtmpCommonMessage.set_packet().
 class SrsOnStatusDataPacket : public SrsRtmpCommand
 {
 public:
@@ -1369,7 +1369,7 @@ protected:
 };
 
 // AMF0Data RtmpSampleAccess
-// @remark, user must set the stream_id by SrsCommonMessage.set_packet().
+// @remark, user must set the stream_id by SrsRtmpCommonMessage.set_packet().
 class SrsNaluSampleAccessPacket : public SrsRtmpCommand
 {
 public:

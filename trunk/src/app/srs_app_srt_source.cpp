@@ -502,7 +502,7 @@ srs_error_t SrsSrtFrameBuilder::check_sps_pps_change(SrsTsMessage *msg)
 
     SrsMessageHeader header;
     header.initialize_video(nb_flv, dts, video_streamid_);
-    SrsCommonMessage rtmp;
+    SrsRtmpCommonMessage rtmp;
     if ((err = rtmp.create(&header, flv, nb_flv)) != srs_success) {
         return srs_error_wrap(err, "create rtmp");
     }
@@ -541,7 +541,7 @@ srs_error_t SrsSrtFrameBuilder::on_h264_frame(SrsTsMessage *msg, vector<pair<cha
         }
     }
 
-    SrsCommonMessage rtmp;
+    SrsRtmpCommonMessage rtmp;
     rtmp.header.initialize_video(frame_size, dts, video_streamid_);
     rtmp.create_payload(frame_size);
     SrsBuffer payload(rtmp.payload(), rtmp.size());
@@ -688,7 +688,7 @@ srs_error_t SrsSrtFrameBuilder::check_vps_sps_pps_change(SrsTsMessage *msg)
 
     SrsMessageHeader header;
     header.initialize_video(nb_flv, dts, video_streamid_);
-    SrsCommonMessage rtmp;
+    SrsRtmpCommonMessage rtmp;
     if ((err = rtmp.create(&header, flv, nb_flv)) != srs_success) {
         return srs_error_wrap(err, "create rtmp");
     }
@@ -730,7 +730,7 @@ srs_error_t SrsSrtFrameBuilder::on_hevc_frame(SrsTsMessage *msg, vector<pair<cha
         }
     }
 
-    SrsCommonMessage rtmp;
+    SrsRtmpCommonMessage rtmp;
     rtmp.header.initialize_video(frame_size, dts, video_streamid_);
     rtmp.create_payload(frame_size);
     SrsBuffer payload(rtmp.payload(), rtmp.size());
@@ -862,7 +862,7 @@ srs_error_t SrsSrtFrameBuilder::check_audio_sh_change(SrsTsMessage *msg, uint32_
 
     int rtmp_len = audio_sh_.size() + 2;
 
-    SrsCommonMessage rtmp;
+    SrsRtmpCommonMessage rtmp;
     rtmp.header.initialize_audio(rtmp_len, pts, audio_streamid_);
     rtmp.create_payload(rtmp_len);
 
@@ -888,7 +888,7 @@ srs_error_t SrsSrtFrameBuilder::on_aac_frame(SrsTsMessage *msg, uint32_t pts, ch
 
     int rtmp_len = data_size + 2 /* 2 bytes of flv audio tag header*/;
 
-    SrsCommonMessage rtmp;
+    SrsRtmpCommonMessage rtmp;
     rtmp.header.initialize_audio(rtmp_len, pts, audio_streamid_);
     rtmp.create_payload(rtmp_len);
 

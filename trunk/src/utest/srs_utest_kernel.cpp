@@ -967,7 +967,7 @@ VOID TEST(KernelFLVTest, CoverWriterErrorCase)
         SrsMessageHeader h;
         h.initialize_video(10, 30, 20);
         SrsMediaPacket msg;
-        SrsCommonMessage common_msg;
+        SrsRtmpCommonMessage common_msg;
         HELPER_EXPECT_SUCCESS(common_msg.create(&h, new char[1], 1));
         common_msg.to_msg(&msg);
 
@@ -986,7 +986,7 @@ VOID TEST(KernelFLVTest, CoverWriterErrorCase)
         SrsMessageHeader h;
         h.initialize_audio(10, 30, 20);
         SrsMediaPacket msg;
-        SrsCommonMessage common_msg;
+        SrsRtmpCommonMessage common_msg;
         HELPER_EXPECT_SUCCESS(common_msg.create(&h, new char[1], 1));
         common_msg.to_msg(&msg);
 
@@ -1005,7 +1005,7 @@ VOID TEST(KernelFLVTest, CoverWriterErrorCase)
         SrsMessageHeader h;
         h.initialize_amf0_script(10, 20);
         SrsMediaPacket msg;
-        SrsCommonMessage common_msg;
+        SrsRtmpCommonMessage common_msg;
         HELPER_EXPECT_SUCCESS(common_msg.create(&h, new char[1], 1));
         common_msg.to_msg(&msg);
 
@@ -5287,7 +5287,7 @@ VOID TEST(KernelFLVTest, CoverAll)
         SrsMessageHeader h;
         h.initialize_video(10, 30, 20);
 
-        SrsCommonMessage m;
+        SrsRtmpCommonMessage m;
         HELPER_EXPECT_SUCCESS(m.create(&h, NULL, 0));
         EXPECT_EQ(RTMP_MSG_VideoMessage, m.header.message_type);
         EXPECT_EQ(10, m.header.payload_length);
@@ -5311,7 +5311,7 @@ VOID TEST(KernelFLVTest, CoverAll)
         h.initialize_video(10, 30, 20);
 
         SrsMediaPacket m;
-        SrsCommonMessage common_msg;
+        SrsRtmpCommonMessage common_msg;
         HELPER_EXPECT_SUCCESS(common_msg.create(&h, new char[1], 1));
         common_msg.to_msg(&m);
 
@@ -5329,7 +5329,7 @@ VOID TEST(KernelFLVTest, CoverSharedPtrMessage)
     if (true) {
         SrsMessageHeader h;
         SrsMediaPacket m;
-        SrsCommonMessage common_msg;
+        SrsRtmpCommonMessage common_msg;
         HELPER_EXPECT_SUCCESS(common_msg.create(&h, new char[1], 1));
         common_msg.to_msg(&m);
     }
@@ -5337,7 +5337,7 @@ VOID TEST(KernelFLVTest, CoverSharedPtrMessage)
     if (true) {
         SrsMessageHeader h;
         SrsMediaPacket m;
-        SrsCommonMessage common_msg;
+        SrsRtmpCommonMessage common_msg;
         HELPER_EXPECT_SUCCESS(common_msg.create(&h, NULL, 0));
         common_msg.to_msg(&m);
     }
@@ -5345,7 +5345,7 @@ VOID TEST(KernelFLVTest, CoverSharedPtrMessage)
     if (true) {
         SrsMessageHeader h;
         SrsMediaPacket m;
-        SrsCommonMessage common_msg;
+        SrsRtmpCommonMessage common_msg;
         HELPER_EXPECT_FAILED(common_msg.create(&h, NULL, -1));
     }
 
@@ -5353,7 +5353,7 @@ VOID TEST(KernelFLVTest, CoverSharedPtrMessage)
         SrsMessageHeader h;
 
         SrsMediaPacket m;
-        SrsCommonMessage common_msg;
+        SrsRtmpCommonMessage common_msg;
         HELPER_EXPECT_SUCCESS(common_msg.create(&h, NULL, 0));
         common_msg.to_msg(&m);
 

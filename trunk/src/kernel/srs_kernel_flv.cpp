@@ -287,24 +287,24 @@ void SrsMessageHeader::initialize_video(int size, uint32_t time, int stream)
     stream_id = (int32_t)stream;
 }
 
-SrsCommonMessage::SrsCommonMessage()
+SrsRtmpCommonMessage::SrsRtmpCommonMessage()
 {
     payload_ = SrsSharedPtr<SrsMemoryBlock>(NULL);
 }
 
-SrsCommonMessage::~SrsCommonMessage()
+SrsRtmpCommonMessage::~SrsRtmpCommonMessage()
 {
     // payload_ automatically cleaned up by SrsSharedPtr
 }
 
-void SrsCommonMessage::create_payload(int size)
+void SrsRtmpCommonMessage::create_payload(int size)
 {
     payload_ = SrsSharedPtr<SrsMemoryBlock>(new SrsMemoryBlock());
     payload_->create(size);
     srs_verbose("create payload for RTMP message. size=%d", size);
 }
 
-srs_error_t SrsCommonMessage::create(SrsMessageHeader *pheader, char *body, int size)
+srs_error_t SrsRtmpCommonMessage::create(SrsMessageHeader *pheader, char *body, int size)
 {
     srs_error_t err = srs_success;
 
@@ -323,7 +323,7 @@ srs_error_t SrsCommonMessage::create(SrsMessageHeader *pheader, char *body, int 
     return err;
 }
 
-void SrsCommonMessage::to_msg(SrsMediaPacket *msg)
+void SrsRtmpCommonMessage::to_msg(SrsMediaPacket *msg)
 {
     msg->payload_ = payload_;
     msg->timestamp = header.timestamp;

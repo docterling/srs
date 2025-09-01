@@ -27,7 +27,7 @@ class SrsLiveConsumer;
 class SrsPlayEdge;
 class SrsPublishEdge;
 class SrsLiveSource;
-class SrsCommonMessage;
+class SrsRtmpCommonMessage;
 class SrsOnMetaDataPacket;
 class SrsMediaPacket;
 class SrsForwarder;
@@ -592,11 +592,11 @@ public:
 
 public:
     virtual bool can_publish(bool is_edge);
-    virtual srs_error_t on_meta_data(SrsCommonMessage *msg, SrsOnMetaDataPacket *metadata);
+    virtual srs_error_t on_meta_data(SrsRtmpCommonMessage *msg, SrsOnMetaDataPacket *metadata);
 
 public:
     // TODO: FIXME: Use SrsMediaPacket instead.
-    virtual srs_error_t on_audio(SrsCommonMessage *audio);
+    virtual srs_error_t on_audio(SrsRtmpCommonMessage *audio);
     srs_error_t on_frame(SrsMediaPacket *msg);
 
 private:
@@ -604,13 +604,13 @@ private:
 
 public:
     // TODO: FIXME: Use SrsMediaPacket instead.
-    virtual srs_error_t on_video(SrsCommonMessage *video);
+    virtual srs_error_t on_video(SrsRtmpCommonMessage *video);
 
 private:
     virtual srs_error_t on_video_imp(SrsMediaPacket *video);
 
 public:
-    virtual srs_error_t on_aggregate(SrsCommonMessage *msg);
+    virtual srs_error_t on_aggregate(SrsRtmpCommonMessage *msg);
     // Publish stream event notify.
     // @param _req the request from client, the source will deep copy it,
     //         for when reload the request of client maybe invalid.
@@ -635,7 +635,7 @@ public:
     // For edge, when publish edge stream, check the state
     virtual srs_error_t on_edge_start_publish();
     // For edge, proxy the publish
-    virtual srs_error_t on_edge_proxy_publish(SrsCommonMessage *msg);
+    virtual srs_error_t on_edge_proxy_publish(SrsRtmpCommonMessage *msg);
     // For edge, proxy stop publish
     virtual void on_edge_proxy_unpublish();
 

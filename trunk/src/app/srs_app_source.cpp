@@ -1525,7 +1525,7 @@ srs_error_t SrsMetaCache::update_data(SrsMessageHeader *header, SrsOnMetaDataPac
 
     // dump message to shared ptr message.
     // the payload/size managed by cache_metadata, user should not free it.
-    SrsCommonMessage common_msg;
+    SrsRtmpCommonMessage common_msg;
     if ((err = common_msg.create(header, payload, size)) != srs_success) {
         return srs_error_wrap(err, "create metadata");
     }
@@ -1912,7 +1912,7 @@ bool SrsLiveSource::can_publish(bool is_edge)
     return can_publish_;
 }
 
-srs_error_t SrsLiveSource::on_meta_data(SrsCommonMessage *msg, SrsOnMetaDataPacket *metadata)
+srs_error_t SrsLiveSource::on_meta_data(SrsRtmpCommonMessage *msg, SrsOnMetaDataPacket *metadata)
 {
     srs_error_t err = srs_success;
 
@@ -1962,7 +1962,7 @@ srs_error_t SrsLiveSource::on_meta_data(SrsCommonMessage *msg, SrsOnMetaDataPack
     return hub->on_meta_data(meta->data(), metadata);
 }
 
-srs_error_t SrsLiveSource::on_audio(SrsCommonMessage *shared_audio)
+srs_error_t SrsLiveSource::on_audio(SrsRtmpCommonMessage *shared_audio)
 {
 
     // Detect where stream is monotonically increasing.
@@ -2093,7 +2093,7 @@ srs_error_t SrsLiveSource::on_audio_imp(SrsMediaPacket *msg)
     return err;
 }
 
-srs_error_t SrsLiveSource::on_video(SrsCommonMessage *shared_video)
+srs_error_t SrsLiveSource::on_video(SrsRtmpCommonMessage *shared_video)
 {
     srs_error_t err = srs_success;
 
@@ -2207,7 +2207,7 @@ srs_error_t SrsLiveSource::on_video_imp(SrsMediaPacket *msg)
     return err;
 }
 
-srs_error_t SrsLiveSource::on_aggregate(SrsCommonMessage *msg)
+srs_error_t SrsLiveSource::on_aggregate(SrsRtmpCommonMessage *msg)
 {
     srs_error_t err = srs_success;
 
@@ -2261,7 +2261,7 @@ srs_error_t SrsLiveSource::on_aggregate(SrsCommonMessage *msg)
         }
 
         // to common message.
-        SrsCommonMessage o;
+        SrsRtmpCommonMessage o;
 
         o.header.message_type = type;
         o.header.payload_length = data_size;
@@ -2512,7 +2512,7 @@ srs_error_t SrsLiveSource::on_edge_start_publish()
 }
 
 // TODO: FIXME: Use edge strategy pattern.
-srs_error_t SrsLiveSource::on_edge_proxy_publish(SrsCommonMessage *msg)
+srs_error_t SrsLiveSource::on_edge_proxy_publish(SrsRtmpCommonMessage *msg)
 {
     return publish_edge->on_proxy_publish(msg);
 }

@@ -201,12 +201,12 @@ int SrsBasicRtmpClient::sid()
     return stream_id;
 }
 
-srs_error_t SrsBasicRtmpClient::recv_message(SrsCommonMessage **pmsg)
+srs_error_t SrsBasicRtmpClient::recv_message(SrsRtmpCommonMessage **pmsg)
 {
     return client->recv_message(pmsg);
 }
 
-srs_error_t SrsBasicRtmpClient::decode_message(SrsCommonMessage *msg, SrsRtmpCommand **ppacket)
+srs_error_t SrsBasicRtmpClient::decode_message(SrsRtmpCommonMessage *msg, SrsRtmpCommand **ppacket)
 {
     return client->decode_message(msg, ppacket);
 }

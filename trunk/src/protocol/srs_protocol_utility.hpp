@@ -33,7 +33,7 @@ class ISrsHttpMessage;
 
 class SrsMessageHeader;
 class SrsMediaPacket;
-class SrsCommonMessage;
+class SrsRtmpCommonMessage;
 class ISrsProtocolReadWriter;
 class ISrsReader;
 
@@ -101,7 +101,7 @@ extern std::string srs_net_url_encode_rtmp_url(std::string server, int port, std
  * @param data the packet bytes. user should never free it.
  * @param ppmsg output the shared ptr message. user should free it.
  */
-extern srs_error_t srs_rtmp_create_msg(char type, uint32_t timestamp, char *data, int size, int stream_id, SrsCommonMessage **ppmsg);
+extern srs_error_t srs_rtmp_create_msg(char type, uint32_t timestamp, char *data, int size, int stream_id, SrsRtmpCommonMessage **ppmsg);
 
 // write large numbers of iovs.
 extern srs_error_t srs_write_large_iovs(ISrsProtocolReadWriter *skt, iovec *iovs, int size, ssize_t *pnwrite = NULL);

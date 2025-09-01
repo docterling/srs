@@ -1864,7 +1864,7 @@ srs_error_t SrsRtcFrameBuilder::transcode_audio(SrsRtpPacket *pkt)
         uint8_t *header = NULL;
         audio_transcoder_->aac_codec_header(&header, &header_len);
 
-        SrsCommonMessage out_rtmp;
+        SrsRtmpCommonMessage out_rtmp;
         packet_aac(&out_rtmp, (char *)header, header_len, ts, is_first_audio_);
 
         SrsMediaPacket msg;
@@ -1892,7 +1892,7 @@ srs_error_t SrsRtcFrameBuilder::transcode_audio(SrsRtpPacket *pkt)
     }
 
     for (std::vector<SrsParsedAudioPacket *>::iterator it = out_pkts.begin(); it != out_pkts.end(); ++it) {
-        SrsCommonMessage out_rtmp;
+        SrsRtmpCommonMessage out_rtmp;
         // TODO: FIXME: Should never directly use it, please define a variable with class name.
         out_rtmp.header.timestamp = (*it)->dts;
         packet_aac(&out_rtmp, (*it)->samples[0].bytes, (*it)->samples[0].size, ts, is_first_audio_);
@@ -1910,7 +1910,7 @@ srs_error_t SrsRtcFrameBuilder::transcode_audio(SrsRtpPacket *pkt)
     return err;
 }
 
-void SrsRtcFrameBuilder::packet_aac(SrsCommonMessage *audio, char *data, int len, uint32_t pts, bool is_header)
+void SrsRtcFrameBuilder::packet_aac(SrsRtmpCommonMessage *audio, char *data, int len, uint32_t pts, bool is_header)
 {
     int rtmp_len = len + 2;
     audio->header.initialize_audio(rtmp_len, pts, 1);
@@ -2069,7 +2069,7 @@ srs_error_t SrsRtcFrameBuilder::do_packet_sequence_header_avc(SrsRtpPacket *pkt,
 
     SrsMessageHeader header;
     header.initialize_video(nb_flv, pkt->get_avsync_time(), 1);
-    SrsCommonMessage rtmp;
+    SrsRtmpCommonMessage rtmp;
     if ((err = rtmp.create(&header, flv, nb_flv)) != srs_success) {
         return srs_error_wrap(err, "create rtmp");
     }
@@ -2166,7 +2166,7 @@ srs_error_t SrsRtcFrameBuilder::do_packet_sequence_header_hevc(SrsRtpPacket *pkt
 
     SrsMessageHeader header;
     header.initialize_video(nb_flv, pkt->get_avsync_time(), 1);
-    SrsCommonMessage rtmp;
+    SrsRtmpCommonMessage rtmp;
     if ((err = rtmp.create(&header, flv, nb_flv)) != srs_success) {
         return srs_error_wrap(err, "create rtmp");
     }
@@ -2394,7 +2394,7 @@ srs_error_t SrsRtcFrameBuilder::packet_video_rtmp(const uint16_t start, const ui
         frame_type = SrsVideoAvcFrameTypeKeyFrame;
     }
 
-    SrsCommonMessage rtmp;
+    SrsRtmpCommonMessage rtmp;
     rtmp.header.initialize_video(nb_payload, pkt->get_avsync_time(), 1);
     rtmp.create_payload(nb_payload);
     SrsBuffer payload(rtmp.payload(), rtmp.size());

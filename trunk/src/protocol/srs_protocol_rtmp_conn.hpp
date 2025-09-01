@@ -14,7 +14,7 @@
 class ISrsRequest;
 class SrsTcpClient;
 class SrsRtmpClient;
-class SrsCommonMessage;
+class SrsRtmpCommonMessage;
 class SrsMediaPacket;
 class SrsRtmpCommand;
 class SrsNetworkKbps;
@@ -74,8 +74,8 @@ public:
     virtual int sid();
 
 public:
-    virtual srs_error_t recv_message(SrsCommonMessage **pmsg);
-    virtual srs_error_t decode_message(SrsCommonMessage *msg, SrsRtmpCommand **ppacket);
+    virtual srs_error_t recv_message(SrsRtmpCommonMessage **pmsg);
+    virtual srs_error_t decode_message(SrsRtmpCommonMessage *msg, SrsRtmpCommand **ppacket);
     virtual srs_error_t send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs);
     virtual srs_error_t send_and_free_message(SrsMediaPacket *msg);
 

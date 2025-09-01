@@ -774,7 +774,7 @@ srs_error_t SrsRtmpConn::do_playing(SrsSharedPtr<SrsLiveSource> source, SrsLiveC
 
         // to use isolate thread to recv, can improve about 33% performance.
         while (!rtrd->empty()) {
-            SrsCommonMessage *msg = rtrd->pump();
+            SrsRtmpCommonMessage *msg = rtrd->pump();
             if ((err = process_play_control_msg(consumer, msg)) != srs_success) {
                 return srs_error_wrap(err, "rtmp: play control message");
             }
@@ -1103,7 +1103,7 @@ void SrsRtmpConn::release_publish(SrsSharedPtr<SrsLiveSource> source)
     }
 }
 
-srs_error_t SrsRtmpConn::handle_publish_message(SrsSharedPtr<SrsLiveSource> &source, SrsCommonMessage *msg)
+srs_error_t SrsRtmpConn::handle_publish_message(SrsSharedPtr<SrsLiveSource> &source, SrsRtmpCommonMessage *msg)
 {
     srs_error_t err = srs_success;
 
@@ -1144,7 +1144,7 @@ srs_error_t SrsRtmpConn::handle_publish_message(SrsSharedPtr<SrsLiveSource> &sou
     return err;
 }
 
-srs_error_t SrsRtmpConn::process_publish_message(SrsSharedPtr<SrsLiveSource> &source, SrsCommonMessage *msg)
+srs_error_t SrsRtmpConn::process_publish_message(SrsSharedPtr<SrsLiveSource> &source, SrsRtmpCommonMessage *msg)
 {
     srs_error_t err = srs_success;
 
@@ -1200,14 +1200,14 @@ srs_error_t SrsRtmpConn::process_publish_message(SrsSharedPtr<SrsLiveSource> &so
     return err;
 }
 
-srs_error_t SrsRtmpConn::process_play_control_msg(SrsLiveConsumer *consumer, SrsCommonMessage *msg_raw)
+srs_error_t SrsRtmpConn::process_play_control_msg(SrsLiveConsumer *consumer, SrsRtmpCommonMessage *msg_raw)
 {
     srs_error_t err = srs_success;
 
     if (!msg_raw) {
         return err;
     }
-    SrsUniquePtr<SrsCommonMessage> msg(msg_raw);
+    SrsUniquePtr<SrsRtmpCommonMessage> msg(msg_raw);
 
     if (!msg->header.is_amf0_command() && !msg->header.is_amf3_command()) {
         return err;

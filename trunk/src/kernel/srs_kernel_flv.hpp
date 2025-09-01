@@ -189,7 +189,7 @@ public:
 // protcol always recv RTMP message, and can send RTMP message or RTMP packet.
 // The common message is read from underlay protocol sdk.
 // while the shared ptr message used to copy and send.
-class SrsCommonMessage
+class SrsRtmpCommonMessage
 {
 public:
     // 4.1. Message Header
@@ -200,8 +200,8 @@ public:
     SrsSharedPtr<SrsMemoryBlock> payload_;
 
 public:
-    SrsCommonMessage();
-    virtual ~SrsCommonMessage();
+    SrsRtmpCommonMessage();
+    virtual ~SrsRtmpCommonMessage();
 
 public:
     // Backward compatibility accessors

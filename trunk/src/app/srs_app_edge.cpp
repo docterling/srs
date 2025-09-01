@@ -125,12 +125,12 @@ srs_error_t SrsEdgeRtmpUpstream::connect(ISrsRequest *r, SrsLbRoundRobin *lb)
     return err;
 }
 
-srs_error_t SrsEdgeRtmpUpstream::recv_message(SrsCommonMessage **pmsg)
+srs_error_t SrsEdgeRtmpUpstream::recv_message(SrsRtmpCommonMessage **pmsg)
 {
     return sdk->recv_message(pmsg);
 }
 
-srs_error_t SrsEdgeRtmpUpstream::decode_message(SrsCommonMessage *msg, SrsRtmpCommand **ppacket)
+srs_error_t SrsEdgeRtmpUpstream::decode_message(SrsRtmpCommonMessage *msg, SrsRtmpCommand **ppacket)
 {
     return sdk->decode_message(msg, ppacket);
 }
@@ -300,7 +300,7 @@ srs_error_t SrsEdgeFlvUpstream::do_connect(ISrsRequest *r, SrsLbRoundRobin *lb, 
     return err;
 }
 
-srs_error_t SrsEdgeFlvUpstream::recv_message(SrsCommonMessage **pmsg)
+srs_error_t SrsEdgeFlvUpstream::recv_message(SrsRtmpCommonMessage **pmsg)
 {
     srs_error_t err = srs_success;
 
@@ -323,7 +323,7 @@ srs_error_t SrsEdgeFlvUpstream::recv_message(SrsCommonMessage **pmsg)
     }
 
     int stream_id = 1;
-    SrsCommonMessage *msg = NULL;
+    SrsRtmpCommonMessage *msg = NULL;
     if ((err = srs_rtmp_create_msg(type, time, data, size, stream_id, &msg)) != srs_success) {
         return srs_error_wrap(err, "create message");
     }
@@ -333,7 +333,7 @@ srs_error_t SrsEdgeFlvUpstream::recv_message(SrsCommonMessage **pmsg)
     return err;
 }
 
-srs_error_t SrsEdgeFlvUpstream::decode_message(SrsCommonMessage *msg, SrsRtmpCommand **ppacket)
+srs_error_t SrsEdgeFlvUpstream::decode_message(SrsRtmpCommonMessage *msg, SrsRtmpCommand **ppacket)
 {
     srs_error_t err = srs_success;
 
@@ -603,13 +603,13 @@ srs_error_t SrsEdgeIngester::ingest(string &redirect)
         }
 
         // read from client.
-        SrsCommonMessage *msg_raw = NULL;
+        SrsRtmpCommonMessage *msg_raw = NULL;
         if ((err = upstream->recv_message(&msg_raw)) != srs_success) {
             return srs_error_wrap(err, "recv message");
         }
 
         srs_assert(msg_raw);
-        SrsUniquePtr<SrsCommonMessage> msg(msg_raw);
+        SrsUniquePtr<SrsRtmpCommonMessage> msg(msg_raw);
 
         if ((err = process_publish_message(msg.get(), redirect)) != srs_success) {
             return srs_error_wrap(err, "process message");
@@ -619,7 +619,7 @@ srs_error_t SrsEdgeIngester::ingest(string &redirect)
     return err;
 }
 
-srs_error_t SrsEdgeIngester::process_publish_message(SrsCommonMessage *msg, string &redirect)
+srs_error_t SrsEdgeIngester::process_publish_message(SrsRtmpCommonMessage *msg, string &redirect)
 {
     srs_error_t err = srs_success;
 
@@ -871,7 +871,7 @@ srs_error_t SrsEdgeForwarder::do_cycle()
 
         // read from client.
         if (true) {
-            SrsCommonMessage *msg = NULL;
+            SrsRtmpCommonMessage *msg = NULL;
             err = sdk->recv_message(&msg);
 
             if (err != srs_success && srs_error_code(err) != ERROR_SOCKET_TIMEOUT) {
@@ -914,7 +914,7 @@ srs_error_t SrsEdgeForwarder::do_cycle()
     return err;
 }
 
-srs_error_t SrsEdgeForwarder::proxy(SrsCommonMessage *msg)
+srs_error_t SrsEdgeForwarder::proxy(SrsRtmpCommonMessage *msg)
 {
     srs_error_t err = srs_success;
 
@@ -1090,7 +1090,7 @@ srs_error_t SrsPublishEdge::on_client_publish()
     return err;
 }
 
-srs_error_t SrsPublishEdge::on_proxy_publish(SrsCommonMessage *msg)
+srs_error_t SrsPublishEdge::on_proxy_publish(SrsRtmpCommonMessage *msg)
 {
     return forwarder->proxy(msg);
 }

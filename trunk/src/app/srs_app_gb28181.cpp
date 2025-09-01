@@ -2107,7 +2107,7 @@ srs_error_t SrsGbMuxer::rtmp_write_packet(char type, uint32_t timestamp, char *d
         return srs_error_wrap(err, "connect");
     }
 
-    SrsCommonMessage *cmsg = NULL;
+    SrsRtmpCommonMessage *cmsg = NULL;
     if ((err = srs_rtmp_create_msg(type, timestamp, data, size, sdk_->sid(), &cmsg)) != srs_success) {
         return srs_error_wrap(err, "create message");
     }
