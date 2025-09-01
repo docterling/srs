@@ -20,13 +20,48 @@ using namespace std;
 #include <srs_kernel_codec.hpp>
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_file.hpp>
+#include <srs_kernel_kbps.hpp>
 #include <srs_kernel_log.hpp>
 #include <srs_kernel_rtc_rtp.hpp>
 #include <srs_kernel_utility.hpp>
 
-#include <srs_kernel_kbps.hpp>
+int srs_rtmp_prefer_cid(SrsFrameType message_type)
+{
+    if (message_type == SrsFrameTypeVideo) {
+        return RTMP_CID_Video;
+    } else if (message_type == SrsFrameTypeAudio) {
+        return RTMP_CID_Audio;
+    } else if (message_type == SrsFrameTypeCommand || message_type == SrsFrameTypeScript) {
+        return RTMP_CID_OverStream;
+    } else if (message_type == (SrsFrameType)RTMP_MSG_AMF0CommandMessage) {
+        return RTMP_CID_OverStream;
+    } else if (message_type == (SrsFrameType)RTMP_MSG_AMF3DataMessage) {
+        return RTMP_CID_OverStream;
+    } else {
+        return RTMP_CID_OverConnection;
+    }
+}
 
-SrsPps *_srs_pps_objs_msgs = NULL;
+int srs_rtmp_write_chunk_header(SrsMediaPacket *msg, char *cache, int nb_cache, bool c0)
+{
+    int payload_length = msg->payload_.get() ? msg->payload_->size() : 0;
+    int chunk_id = srs_rtmp_prefer_cid(msg->message_type);
+
+    if (c0) {
+        return srs_chunk_header_c0(chunk_id,
+                                   (uint32_t)msg->timestamp,
+                                   payload_length,
+                                   msg->message_type,
+                                   msg->stream_id,
+                                   cache,
+                                   nb_cache);
+    } else {
+        return srs_chunk_header_c3(chunk_id,
+                                   (uint32_t)msg->timestamp,
+                                   cache,
+                                   nb_cache);
+    }
+}
 
 int srs_chunk_header_c0(int prefer_cid, uint32_t timestamp, int32_t payload_length, int8_t message_type, int32_t stream_id, char *cache, int nb_cache)
 {
@@ -159,8 +194,6 @@ SrsMessageHeader::SrsMessageHeader()
     stream_id = 0;
 
     timestamp = 0;
-    // we always use the connection chunk-id
-    prefer_cid = RTMP_CID_OverConnection;
 }
 
 SrsMessageHeader::~SrsMessageHeader()
@@ -234,9 +267,6 @@ void SrsMessageHeader::initialize_amf0_script(int size, int stream)
     timestamp_delta = (int32_t)0;
     timestamp = (int64_t)0;
     stream_id = (int32_t)stream;
-
-    // amf0 script use connection2 chunk-id
-    prefer_cid = RTMP_CID_OverConnection2;
 }
 
 void SrsMessageHeader::initialize_audio(int size, uint32_t time, int stream)
@@ -246,9 +276,6 @@ void SrsMessageHeader::initialize_audio(int size, uint32_t time, int stream)
     timestamp_delta = (int32_t)time;
     timestamp = (int64_t)time;
     stream_id = (int32_t)stream;
-
-    // audio chunk-id
-    prefer_cid = RTMP_CID_Audio;
 }
 
 void SrsMessageHeader::initialize_video(int size, uint32_t time, int stream)
@@ -258,9 +285,6 @@ void SrsMessageHeader::initialize_video(int size, uint32_t time, int stream)
     timestamp_delta = (int32_t)time;
     timestamp = (int64_t)time;
     stream_id = (int32_t)stream;
-
-    // video chunk-id
-    prefer_cid = RTMP_CID_Video;
 }
 
 SrsCommonMessage::SrsCommonMessage()
@@ -299,126 +323,12 @@ srs_error_t SrsCommonMessage::create(SrsMessageHeader *pheader, char *body, int 
     return err;
 }
 
-SrsSharedPtrMessage::SrsSharedPtrMessage() : timestamp(0), stream_id(0), message_type(0), prefer_cid(RTMP_CID_OverConnection)
+void SrsCommonMessage::to_msg(SrsMediaPacket *msg)
 {
-    payload_ = SrsSharedPtr<SrsMemoryBlock>(NULL);
-
-    ++_srs_pps_objs_msgs->sugar;
-}
-
-SrsSharedPtrMessage::~SrsSharedPtrMessage()
-{
-    // payload_ automatically cleaned up by SrsSharedPtr
-}
-
-srs_error_t SrsSharedPtrMessage::create(SrsCommonMessage *msg)
-{
-    srs_error_t err = srs_success;
-
-    // Share the memory block from the common message
-    payload_ = msg->payload_;
-    this->timestamp = msg->header.timestamp;
-    this->stream_id = msg->header.stream_id;
-    this->message_type = msg->header.message_type;
-    this->prefer_cid = msg->header.prefer_cid;
-
-    return err;
-}
-
-srs_error_t SrsSharedPtrMessage::create(SrsMessageHeader *pheader, char *payload, int size)
-{
-    srs_error_t err = srs_success;
-
-    if (size < 0) {
-        return srs_error_new(ERROR_RTMP_MESSAGE_CREATE, "create message size=%d", size);
-    }
-
-    // Create new memory block and attach the payload
-    payload_ = SrsSharedPtr<SrsMemoryBlock>(new SrsMemoryBlock());
-    payload_->attach(payload, size);
-
-    // Set header information
-    if (pheader) {
-        this->timestamp = pheader->timestamp;
-        this->stream_id = pheader->stream_id;
-        this->message_type = pheader->message_type;
-        this->prefer_cid = pheader->prefer_cid;
-    }
-
-    return err;
-}
-
-void SrsSharedPtrMessage::wrap(char *payload, int size)
-{
-    // Create new memory block and wrap the payload
-    payload_ = SrsSharedPtr<SrsMemoryBlock>(new SrsMemoryBlock());
-    payload_->attach(payload, size);
-}
-
-bool SrsSharedPtrMessage::check(int stream_id)
-{
-    // Ignore error when message has no payload.
-    if (!payload_.get()) {
-        return true;
-    }
-
-    // we assume that the stream_id in a group must be the same.
-    if (this->stream_id == stream_id) {
-        return true;
-    }
-    this->stream_id = stream_id;
-
-    return false;
-}
-
-bool SrsSharedPtrMessage::is_av()
-{
-    return message_type == RTMP_MSG_AudioMessage || message_type == RTMP_MSG_VideoMessage;
-}
-
-bool SrsSharedPtrMessage::is_audio()
-{
-    return message_type == RTMP_MSG_AudioMessage;
-}
-
-bool SrsSharedPtrMessage::is_video()
-{
-    return message_type == RTMP_MSG_VideoMessage;
-}
-
-int SrsSharedPtrMessage::chunk_header(char *cache, int nb_cache, bool c0)
-{
-    int payload_length = payload_.get() ? payload_->size() : 0;
-
-    if (c0) {
-        return srs_chunk_header_c0(prefer_cid, (uint32_t)timestamp,
-                                   payload_length, message_type, stream_id, cache, nb_cache);
-    } else {
-        return srs_chunk_header_c3(prefer_cid, (uint32_t)timestamp,
-                                   cache, nb_cache);
-    }
-}
-
-SrsSharedPtrMessage *SrsSharedPtrMessage::copy()
-{
-    SrsSharedPtrMessage *copy = copy2();
-
-    copy->timestamp = timestamp;
-    copy->stream_id = stream_id;
-    copy->message_type = message_type;
-    copy->prefer_cid = prefer_cid;
-
-    return copy;
-}
-
-SrsSharedPtrMessage *SrsSharedPtrMessage::copy2()
-{
-    SrsSharedPtrMessage *copy = new SrsSharedPtrMessage();
-
-    // Share the memory block
-    copy->payload_ = payload_;
-
-    return copy;
+    msg->payload_ = payload_;
+    msg->timestamp = header.timestamp;
+    msg->stream_id = header.stream_id;
+    msg->message_type = (SrsFrameType)header.message_type;
 }
 
 SrsFlvTransmuxer::SrsFlvTransmuxer()
@@ -566,7 +476,7 @@ int SrsFlvTransmuxer::size_tag(int data_size)
     return SRS_FLV_TAG_HEADER_SIZE + data_size + SRS_FLV_PREVIOUS_TAG_SIZE;
 }
 
-srs_error_t SrsFlvTransmuxer::write_tags(SrsSharedPtrMessage **msgs, int count)
+srs_error_t SrsFlvTransmuxer::write_tags(SrsMediaPacket **msgs, int count)
 {
     srs_error_t err = srs_success;
 
@@ -604,7 +514,7 @@ srs_error_t SrsFlvTransmuxer::write_tags(SrsSharedPtrMessage **msgs, int count)
     iovec *iovs = iovss;
     int nn_real_iovss = 0;
     for (int i = 0; i < count; i++) {
-        SrsSharedPtrMessage *msg = msgs[i];
+        SrsMediaPacket *msg = msgs[i];
 
         // Cache FLV packet header.
         if (msg->is_audio()) {

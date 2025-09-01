@@ -14,6 +14,8 @@
 
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_buffer.hpp>
+#include <srs_kernel_codec.hpp>
+#include <srs_kernel_packet.hpp>
 
 // For srs-librtmp, @see https://github.com/ossrs/srs/issues/213
 #ifndef _WIN32
@@ -24,8 +26,8 @@ class SrsBuffer;
 class ISrsWriter;
 class ISrsReader;
 class SrsFileReader;
-class SrsPacket;
-class SrsSample;
+class SrsRtmpCommand;
+class SrsNaluSample;
 
 #define SRS_FLV_TAG_HEADER_SIZE 11
 #define SRS_FLV_PREVIOUS_TAG_SIZE 4
@@ -157,12 +159,6 @@ public:
     int64_t timestamp;
 
 public:
-    // Get the prefered cid(chunk stream id) which sendout over.
-    // set at decoding, and canbe used for directly send message,
-    // For example, dispatch to all connections.
-    int prefer_cid;
-
-public:
     SrsMessageHeader();
     virtual ~SrsMessageHeader();
 
@@ -222,80 +218,9 @@ public:
     // @remark user should never free the body.
     // @param pheader, the header to copy to the message. NULL to ignore.
     virtual srs_error_t create(SrsMessageHeader *pheader, char *body, int size);
-};
 
-// The shared ptr message.
-// For audio/video/data message that need less memory copy.
-// and only for output.
-//
-// Create first object by constructor and create(),
-// use copy if need reference count message.
-class SrsSharedPtrMessage
-{
-    // 4.1. Message Header
-public:
-    // Four-byte field that contains a timestamp of the message.
-    // The 4 bytes are packed in the big-endian order.
-    // @remark, used as calc timestamp when decode and encode time.
-    // @remark, we use 64bits for large time for jitter detect and hls.
-    int64_t timestamp;
-    // 4bytes.
-    // Four-byte field that identifies the stream of the message. These
-    // bytes are set in big-endian format.
-    int32_t stream_id;
-    // Message type for determining audio/video/data
-    int8_t message_type;
-    // Preferred chunk ID for RTMP chunking
-    int prefer_cid;
-
-public:
-    // 4.2. Message Payload
-    SrsSharedPtr<SrsMemoryBlock> payload_;
-
-public:
-    SrsSharedPtrMessage();
-    virtual ~SrsSharedPtrMessage();
-
-public:
-    // Backward compatibility accessors
-    char *payload() { return payload_.get() ? payload_->payload() : NULL; }
-    int size() { return payload_.get() ? payload_->size() : 0; }
-
-public:
-    // Create shared ptr message,
-    // copy header, manage the payload of msg,
-    // set the payload to NULL to prevent double free.
-    // @remark payload of msg set to NULL if success.
-    // @remark User should free the msg.
-    virtual srs_error_t create(SrsCommonMessage *msg);
-    // Create shared ptr message,
-    // from the header and payload.
-    // @remark user should never free the payload.
-    // @param pheader, the header to copy to the message. NULL to ignore.
-    virtual srs_error_t create(SrsMessageHeader *pheader, char *payload, int size);
-    // Create shared ptr message from RAW payload.
-    // @remark Note that the header is set to zero.
-    virtual void wrap(char *payload, int size);
-    // check prefer cid and stream id.
-    // @return whether stream id already set.
-    virtual bool check(int stream_id);
-
-public:
-    virtual bool is_av();
-    virtual bool is_audio();
-    virtual bool is_video();
-
-public:
-    // generate the chunk header to cache.
-    // @return the size of header.
-    virtual int chunk_header(char *cache, int nb_cache, bool c0);
-
-public:
-    // copy current shared ptr message, use ref-count.
-    // @remark, assert object is created.
-    virtual SrsSharedPtrMessage *copy();
-    // Only copy the buffer, without header fields.
-    virtual SrsSharedPtrMessage *copy2();
+    // Convert to shared ptr message.
+    void to_msg(SrsMediaPacket *msg);
 };
 
 // Transmux RTMP packets to FLV stream.
@@ -363,7 +288,7 @@ private:
 
 public:
     // Write the tags in a time.
-    virtual srs_error_t write_tags(SrsSharedPtrMessage **msgs, int count);
+    virtual srs_error_t write_tags(SrsMediaPacket **msgs, int count);
 
 private:
     virtual void cache_metadata(char type, char *data, int size, char *cache);
@@ -438,6 +363,17 @@ public:
     // For start offset, seed to this position and response flv stream.
     virtual srs_error_t seek2(int64_t offset);
 };
+
+// Get the prefer cid for message type.
+extern int srs_rtmp_prefer_cid(SrsFrameType message_type);
+
+// Generate the RTMP chunk header for shared ptr message.
+// @param msg, the shared ptr message to generate header for.
+// @param cache, the cache to write header.
+// @param nb_cache, the size of cache.
+// @param c0, whether to use c0 format (true) or c3 format (false).
+// @return the size of header. 0 if cache not enough.
+extern int srs_rtmp_write_chunk_header(SrsMediaPacket *msg, char *cache, int nb_cache, bool c0);
 
 // Generate the c0 chunk header for msg.
 // @param cache, the cache to write header.
