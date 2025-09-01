@@ -12,6 +12,9 @@
 #include <string>
 #include <vector>
 
+#include <srs_core_autofree.hpp>
+#include <srs_kernel_buffer.hpp>
+
 // For srs-librtmp, @see https://github.com/ossrs/srs/issues/213
 #ifndef _WIN32
 #include <sys/uio.h>
@@ -192,24 +195,22 @@ public:
 // while the shared ptr message used to copy and send.
 class SrsCommonMessage
 {
+public:
     // 4.1. Message Header
-public:
     SrsMessageHeader header;
-    // 4.2. Message Payload
+
 public:
-    // The current message parsed size,
-    //       size <= header.payload_length
-    // For the payload maybe sent in multiple chunks.
-    int size;
-    // The payload of message, the SrsCommonMessage never know about the detail of payload,
-    // user must use SrsProtocol.decode_message to get concrete packet.
-    // @remark, not all message payload can be decoded to packet. for example,
-    //       video/audio packet use raw bytes, no video/audio packet.
-    char *payload;
+    // 4.2. Message Payload
+    SrsSharedPtr<SrsMemoryBlock> payload_;
 
 public:
     SrsCommonMessage();
     virtual ~SrsCommonMessage();
+
+public:
+    // Backward compatibility accessors
+    char *payload() { return payload_.get() ? payload_->payload() : NULL; }
+    int size() { return payload_.get() ? payload_->size() : 0; }
 
 public:
     // Alloc the payload to specified size of bytes.
@@ -223,30 +224,6 @@ public:
     virtual srs_error_t create(SrsMessageHeader *pheader, char *body, int size);
 };
 
-// The message header for shared ptr message.
-// only the message for all msgs are same.
-class SrsSharedMessageHeader
-{
-public:
-    // 3bytes.
-    // Three-byte field that represents the size of the payload in bytes.
-    // It is set in big-endian format.
-    int32_t payload_length;
-    // 1byte.
-    // One byte field to represent the message type. A range of type IDs
-    // (1-7) are reserved for protocol control messages.
-    // For example, RTMP_MSG_AudioMessage or RTMP_MSG_VideoMessage.
-    int8_t message_type;
-    // Get the prefered cid(chunk stream id) which sendout over.
-    // set at decoding, and canbe used for directly send message,
-    // For example, dispatch to all connections.
-    int prefer_cid;
-
-public:
-    SrsSharedMessageHeader();
-    virtual ~SrsSharedMessageHeader();
-};
-
 // The shared ptr message.
 // For audio/video/data message that need less memory copy.
 // and only for output.
@@ -257,8 +234,6 @@ class SrsSharedPtrMessage
 {
     // 4.1. Message Header
 public:
-    // The header can shared, only set the timestamp and stream id.
-    // SrsSharedMessageHeader header;
     // Four-byte field that contains a timestamp of the message.
     // The 4 bytes are packed in the big-endian order.
     // @remark, used as calc timestamp when decode and encode time.
@@ -268,40 +243,23 @@ public:
     // Four-byte field that identifies the stream of the message. These
     // bytes are set in big-endian format.
     int32_t stream_id;
-    // 4.2. Message Payload
+    // Message type for determining audio/video/data
+    int8_t message_type;
+    // Preferred chunk ID for RTMP chunking
+    int prefer_cid;
+
 public:
-    // The current message parsed size,
-    //       size <= header.payload_length
-    // For the payload maybe sent in multiple chunks.
-    int size;
-    // The payload of message, the SrsCommonMessage never know about the detail of payload,
-    // user must use SrsProtocol.decode_message to get concrete packet.
-    // @remark, not all message payload can be decoded to packet. for example,
-    //       video/audio packet use raw bytes, no video/audio packet.
-    char *payload;
-
-private:
-    class SrsSharedPtrPayload
-    {
-    public:
-        // The shared message header.
-        SrsSharedMessageHeader header;
-        // The actual shared payload.
-        char *payload;
-        // The size of payload.
-        int size;
-        // The reference count
-        int shared_count;
-
-    public:
-        SrsSharedPtrPayload();
-        virtual ~SrsSharedPtrPayload();
-    };
-    SrsSharedPtrPayload *ptr;
+    // 4.2. Message Payload
+    SrsSharedPtr<SrsMemoryBlock> payload_;
 
 public:
     SrsSharedPtrMessage();
     virtual ~SrsSharedPtrMessage();
+
+public:
+    // Backward compatibility accessors
+    char *payload() { return payload_.get() ? payload_->payload() : NULL; }
+    int size() { return payload_.get() ? payload_->size() : 0; }
 
 public:
     // Create shared ptr message,
@@ -318,12 +276,6 @@ public:
     // Create shared ptr message from RAW payload.
     // @remark Note that the header is set to zero.
     virtual void wrap(char *payload, int size);
-    // Get current reference count.
-    // when this object created, count set to 0.
-    // if copy() this object, count increase 1.
-    // if this or copy deleted, free payload when count is 0, or count--.
-    // @remark, assert object is created.
-    virtual int count();
     // check prefer cid and stream id.
     // @return whether stream id already set.
     virtual bool check(int stream_id);
