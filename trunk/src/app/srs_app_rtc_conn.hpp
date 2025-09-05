@@ -283,6 +283,7 @@ class SrsRtcPublishRtcpTimer : public ISrsFastTimer
 {
 private:
     SrsRtcPublishStream* p_;
+    srs_mutex_t lock_;
 public:
     SrsRtcPublishRtcpTimer(SrsRtcPublishStream* p);
     virtual ~SrsRtcPublishRtcpTimer();
@@ -296,6 +297,7 @@ class SrsRtcPublishTwccTimer : public ISrsFastTimer
 {
 private:
     SrsRtcPublishStream* p_;
+    srs_mutex_t lock_;
 public:
     SrsRtcPublishTwccTimer(SrsRtcPublishStream* p);
     virtual ~SrsRtcPublishTwccTimer();
@@ -406,6 +408,7 @@ class SrsRtcConnectionNackTimer : public ISrsFastTimer
 {
 private:
     SrsRtcConnection* p_;
+    srs_mutex_t lock_;
 public:
     SrsRtcConnectionNackTimer(SrsRtcConnection* p);
     virtual ~SrsRtcConnectionNackTimer();
