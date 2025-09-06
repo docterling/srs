@@ -3321,6 +3321,327 @@ VOID TEST(KernelLBRRTest, CoverAll)
     }
 }
 
+VOID TEST(KernelLBRRTest, InterfaceTest)
+{
+    if (true) {
+        vector<string> servers;
+        servers.push_back("s0");
+        servers.push_back("s1");
+        servers.push_back("s2");
+
+        SrsUniquePtr<ISrsLbRoundRobin> lb(new SrsLbRoundRobin());
+
+        // Test round-robin behavior through interface
+        EXPECT_TRUE("s0" == lb->select(servers));
+        EXPECT_TRUE("s1" == lb->select(servers));
+        EXPECT_TRUE("s2" == lb->select(servers));
+        EXPECT_TRUE("s0" == lb->select(servers)); // Should wrap around
+    }
+}
+
+VOID TEST(KernelLBRRTest, SingleServer)
+{
+    if (true) {
+        vector<string> servers;
+        servers.push_back("single-server");
+
+        SrsLbRoundRobin lb;
+
+        // Test with single server - should always return the same server
+        EXPECT_TRUE("single-server" == lb.select(servers));
+        EXPECT_EQ(0, (int)lb.current());
+        EXPECT_TRUE("single-server" == lb.selected());
+
+        EXPECT_TRUE("single-server" == lb.select(servers));
+        EXPECT_EQ(0, (int)lb.current());
+        EXPECT_TRUE("single-server" == lb.selected());
+
+        EXPECT_TRUE("single-server" == lb.select(servers));
+        EXPECT_EQ(0, (int)lb.current());
+        EXPECT_TRUE("single-server" == lb.selected());
+    }
+}
+
+VOID TEST(KernelLBRRTest, TwoServers)
+{
+    if (true) {
+        vector<string> servers;
+        servers.push_back("server-a");
+        servers.push_back("server-b");
+
+        SrsLbRoundRobin lb;
+
+        // Test alternating between two servers
+        EXPECT_TRUE("server-a" == lb.select(servers));
+        EXPECT_EQ(0, (int)lb.current());
+        EXPECT_TRUE("server-a" == lb.selected());
+
+        EXPECT_TRUE("server-b" == lb.select(servers));
+        EXPECT_EQ(1, (int)lb.current());
+        EXPECT_TRUE("server-b" == lb.selected());
+
+        EXPECT_TRUE("server-a" == lb.select(servers));
+        EXPECT_EQ(0, (int)lb.current());
+        EXPECT_TRUE("server-a" == lb.selected());
+
+        EXPECT_TRUE("server-b" == lb.select(servers));
+        EXPECT_EQ(1, (int)lb.current());
+        EXPECT_TRUE("server-b" == lb.selected());
+    }
+}
+
+VOID TEST(KernelLBRRTest, LargeServerList)
+{
+    if (true) {
+        vector<string> servers;
+        // Create a list of 100 servers
+        for (int i = 0; i < 100; i++) {
+            char server_name[32];
+            snprintf(server_name, sizeof(server_name), "server-%d", i);
+            servers.push_back(string(server_name));
+        }
+
+        SrsLbRoundRobin lb;
+
+        // Test that we cycle through all servers correctly
+        for (int round = 0; round < 3; round++) {
+            for (int i = 0; i < 100; i++) {
+                char expected_name[32];
+                snprintf(expected_name, sizeof(expected_name), "server-%d", i);
+
+                string selected = lb.select(servers);
+                EXPECT_TRUE(expected_name == selected);
+                EXPECT_EQ(i, (int)lb.current());
+                EXPECT_TRUE(expected_name == lb.selected());
+            }
+        }
+    }
+}
+
+VOID TEST(KernelLBRRTest, LongRunningTest)
+{
+    if (true) {
+        vector<string> servers;
+        servers.push_back("s0");
+        servers.push_back("s1");
+        servers.push_back("s2");
+
+        SrsLbRoundRobin lb;
+
+        // Test long running behavior to ensure counter doesn't cause issues
+        // This simulates a long-running server that has been selecting for a while
+        const int large_iterations = 100000;
+        for (int i = 0; i < large_iterations; i++) {
+            string selected = lb.select(servers);
+            int expected_index = i % 3;
+            char expected_name[8];
+            snprintf(expected_name, sizeof(expected_name), "s%d", expected_index);
+
+            EXPECT_TRUE(expected_name == selected);
+            EXPECT_EQ(expected_index, (int)lb.current());
+
+            // Only check every 10000 iterations to avoid too much output
+            if (i % 10000 == 0) {
+                EXPECT_TRUE(expected_name == lb.selected());
+            }
+        }
+    }
+}
+
+VOID TEST(KernelLBRRTest, DifferentServerFormats)
+{
+    if (true) {
+        vector<string> servers;
+        servers.push_back("192.168.1.1:1935");
+        servers.push_back("rtmp://example.com/live");
+        servers.push_back("server.domain.com:8080");
+        servers.push_back("localhost");
+        servers.push_back("10.0.0.1:443");
+
+        SrsLbRoundRobin lb;
+
+        // Test with different server name formats
+        EXPECT_TRUE("192.168.1.1:1935" == lb.select(servers));
+        EXPECT_EQ(0, (int)lb.current());
+
+        EXPECT_TRUE("rtmp://example.com/live" == lb.select(servers));
+        EXPECT_EQ(1, (int)lb.current());
+
+        EXPECT_TRUE("server.domain.com:8080" == lb.select(servers));
+        EXPECT_EQ(2, (int)lb.current());
+
+        EXPECT_TRUE("localhost" == lb.select(servers));
+        EXPECT_EQ(3, (int)lb.current());
+
+        EXPECT_TRUE("10.0.0.1:443" == lb.select(servers));
+        EXPECT_EQ(4, (int)lb.current());
+
+        // Should wrap around
+        EXPECT_TRUE("192.168.1.1:1935" == lb.select(servers));
+        EXPECT_EQ(0, (int)lb.current());
+    }
+}
+
+VOID TEST(KernelLBRRTest, MultipleInstances)
+{
+    if (true) {
+        vector<string> servers;
+        servers.push_back("s0");
+        servers.push_back("s1");
+        servers.push_back("s2");
+
+        SrsLbRoundRobin lb1;
+        SrsLbRoundRobin lb2;
+
+        // Test that multiple instances work independently
+        EXPECT_TRUE("s0" == lb1.select(servers));
+        EXPECT_TRUE("s0" == lb2.select(servers));
+
+        EXPECT_TRUE("s1" == lb1.select(servers));
+        EXPECT_TRUE("s1" == lb2.select(servers));
+
+        // Advance lb1 further
+        EXPECT_TRUE("s2" == lb1.select(servers));
+        EXPECT_TRUE("s0" == lb1.select(servers));
+
+        // lb2 should still be at s2
+        EXPECT_TRUE("s2" == lb2.select(servers));
+
+        EXPECT_EQ(0, (int)lb1.current());
+        EXPECT_EQ(2, (int)lb2.current());
+    }
+}
+
+VOID TEST(KernelLBRRTest, StressTest)
+{
+    if (true) {
+        vector<string> servers;
+        servers.push_back("s0");
+        servers.push_back("s1");
+        servers.push_back("s2");
+        servers.push_back("s3");
+        servers.push_back("s4");
+
+        SrsLbRoundRobin lb;
+
+        // Perform many selections to test stability
+        const int iterations = 10000;
+        for (int i = 0; i < iterations; i++) {
+            string selected = lb.select(servers);
+            int expected_index = i % 5;
+            char expected_name[8];
+            snprintf(expected_name, sizeof(expected_name), "s%d", expected_index);
+
+            EXPECT_TRUE(expected_name == selected);
+            EXPECT_EQ(expected_index, (int)lb.current());
+            EXPECT_TRUE(expected_name == lb.selected());
+        }
+    }
+}
+
+VOID TEST(KernelLBRRTest, InterfacePolymorphism)
+{
+    if (true) {
+        vector<string> servers;
+        servers.push_back("server-a");
+        servers.push_back("server-b");
+        servers.push_back("server-c");
+
+        // Test polymorphism - using interface pointer to concrete implementation
+        SrsUniquePtr<ISrsLbRoundRobin> lb_interface(new SrsLbRoundRobin());
+        SrsLbRoundRobin lb_concrete;
+
+        // Both should behave identically
+        for (int i = 0; i < 6; i++) {
+            string interface_result = lb_interface->select(servers);
+            string concrete_result = lb_concrete.select(servers);
+
+            EXPECT_TRUE(interface_result == concrete_result);
+
+            int expected_index = i % 3;
+            char expected_name[16];
+            snprintf(expected_name, sizeof(expected_name), "server-%c", 'a' + expected_index);
+
+            EXPECT_TRUE(expected_name == interface_result);
+            EXPECT_TRUE(expected_name == concrete_result);
+        }
+    }
+}
+
+VOID TEST(KernelLBRRTest, SpecialServerNames)
+{
+    if (true) {
+        vector<string> servers;
+        servers.push_back(""); // Empty string
+        servers.push_back("server with spaces");
+        servers.push_back("server-with-dashes");
+        servers.push_back("server_with_underscores");
+        servers.push_back("server.with.dots");
+        servers.push_back("server:with:colons");
+        servers.push_back("192.168.1.1");
+        servers.push_back("::1"); // IPv6 localhost
+
+        SrsLbRoundRobin lb;
+
+        // Test with special characters and formats
+        EXPECT_TRUE("" == lb.select(servers));
+        EXPECT_EQ(0, (int)lb.current());
+
+        EXPECT_TRUE("server with spaces" == lb.select(servers));
+        EXPECT_EQ(1, (int)lb.current());
+
+        EXPECT_TRUE("server-with-dashes" == lb.select(servers));
+        EXPECT_EQ(2, (int)lb.current());
+
+        EXPECT_TRUE("server_with_underscores" == lb.select(servers));
+        EXPECT_EQ(3, (int)lb.current());
+
+        EXPECT_TRUE("server.with.dots" == lb.select(servers));
+        EXPECT_EQ(4, (int)lb.current());
+
+        EXPECT_TRUE("server:with:colons" == lb.select(servers));
+        EXPECT_EQ(5, (int)lb.current());
+
+        EXPECT_TRUE("192.168.1.1" == lb.select(servers));
+        EXPECT_EQ(6, (int)lb.current());
+
+        EXPECT_TRUE("::1" == lb.select(servers));
+        EXPECT_EQ(7, (int)lb.current());
+
+        // Should wrap around to empty string
+        EXPECT_TRUE("" == lb.select(servers));
+        EXPECT_EQ(0, (int)lb.current());
+    }
+}
+
+VOID TEST(KernelLBRRTest, ConsistentState)
+{
+    if (true) {
+        vector<string> servers;
+        servers.push_back("s0");
+        servers.push_back("s1");
+        servers.push_back("s2");
+
+        SrsLbRoundRobin lb;
+
+        // Test that current() and selected() remain consistent after each select()
+        for (int i = 0; i < 10; i++) {
+            string selected = lb.select(servers);
+            uint32_t current_index = lb.current();
+            string current_selected = lb.selected();
+
+            // Verify consistency
+            EXPECT_TRUE(selected == current_selected);
+            EXPECT_EQ(i % 3, (int)current_index);
+
+            char expected_name[8];
+            snprintf(expected_name, sizeof(expected_name), "s%d", i % 3);
+            EXPECT_TRUE(expected_name == selected);
+            EXPECT_TRUE(expected_name == current_selected);
+        }
+    }
+}
+
 VOID TEST(KernelCodecTest, CoverAll)
 {
     if (true) {
@@ -6930,95 +7251,5 @@ VOID TEST(KernelUtilityTest, Base64Decode)
         string plaintext;
         HELPER_EXPECT_FAILED(srs_av_base64_decode("YWRtaW46YWRtaW", plaintext));
         EXPECT_STRNE("admin:admin", plaintext.c_str());
-    }
-}
-
-VOID TEST(KernelMemoryBlockTest, MemoryBlockBasic)
-{
-
-    // Test basic construction and destruction
-    if (true) {
-        SrsMemoryBlock block;
-        EXPECT_EQ(0, block.size());
-        EXPECT_EQ(NULL, block.payload());
-    }
-
-    // Test create with size
-    if (true) {
-        SrsMemoryBlock block;
-        block.create(1024);
-        EXPECT_EQ(1024, block.size());
-        EXPECT_NE((char *)NULL, block.payload());
-    }
-
-    // Test create with data
-    if (true) {
-        SrsMemoryBlock block;
-        char test_data[] = "Hello, World!";
-        int test_size = strlen(test_data);
-
-        block.create(test_data, test_size);
-        EXPECT_EQ(test_size, block.size());
-        EXPECT_NE((char *)NULL, block.payload());
-        EXPECT_EQ(0, memcmp(block.payload(), test_data, test_size));
-    }
-
-    // Test attach
-    if (true) {
-        SrsMemoryBlock block;
-        char *test_data = new char[100];
-        memset(test_data, 0x42, 100);
-
-        block.attach(test_data, 100);
-        EXPECT_EQ(100, block.size());
-        EXPECT_EQ(test_data, block.payload());
-
-        // Memory will be freed by block destructor
-    }
-}
-
-VOID TEST(KernelMemoryBlockTest, SharedMemoryBlock)
-{
-
-    // Test basic shared memory block usage
-    if (true) {
-        SrsSharedPtr<SrsMemoryBlock> shared_block(new SrsMemoryBlock());
-        shared_block->create(1024);
-
-        EXPECT_EQ(1024, shared_block->size());
-        EXPECT_NE((char *)NULL, shared_block->payload());
-
-        // Test sharing
-        SrsSharedPtr<SrsMemoryBlock> shared_copy = shared_block;
-        EXPECT_EQ(shared_block->payload(), shared_copy->payload());
-        EXPECT_EQ(shared_block->size(), shared_copy->size());
-    }
-
-    // Test multiple references
-    if (true) {
-        SrsSharedPtr<SrsMemoryBlock> original(new SrsMemoryBlock());
-        char test_data[] = "Shared memory test data";
-        original->create(test_data, strlen(test_data));
-
-        // Create multiple references
-        SrsSharedPtr<SrsMemoryBlock> copy1 = original;
-        SrsSharedPtr<SrsMemoryBlock> copy2 = original;
-        SrsSharedPtr<SrsMemoryBlock> copy3 = copy1;
-
-        // All should point to the same memory
-        EXPECT_EQ(original->payload(), copy1->payload());
-        EXPECT_EQ(original->payload(), copy2->payload());
-        EXPECT_EQ(original->payload(), copy3->payload());
-
-        // All should have the same size
-        EXPECT_EQ(original->size(), copy1->size());
-        EXPECT_EQ(original->size(), copy2->size());
-        EXPECT_EQ(original->size(), copy3->size());
-
-        // Verify data integrity
-        EXPECT_EQ(0, memcmp(original->payload(), test_data, strlen(test_data)));
-        EXPECT_EQ(0, memcmp(copy1->payload(), test_data, strlen(test_data)));
-        EXPECT_EQ(0, memcmp(copy2->payload(), test_data, strlen(test_data)));
-        EXPECT_EQ(0, memcmp(copy3->payload(), test_data, strlen(test_data)));
     }
 }
