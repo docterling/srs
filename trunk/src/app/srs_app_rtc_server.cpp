@@ -88,29 +88,29 @@ string srs_dns_resolve(string host, int &family)
 
 SrsRtcBlackhole::SrsRtcBlackhole()
 {
-    blackhole = false;
-    blackhole_addr = NULL;
-    blackhole_stfd = NULL;
+    blackhole_ = false;
+    blackhole_addr_ = NULL;
+    blackhole_stfd_ = NULL;
 }
 
 SrsRtcBlackhole::~SrsRtcBlackhole()
 {
-    srs_close_stfd(blackhole_stfd);
-    srs_freep(blackhole_addr);
+    srs_close_stfd(blackhole_stfd_);
+    srs_freep(blackhole_addr_);
 }
 
 srs_error_t SrsRtcBlackhole::initialize()
 {
     srs_error_t err = srs_success;
 
-    blackhole = _srs_config->get_rtc_server_black_hole();
-    if (!blackhole) {
+    blackhole_ = _srs_config->get_rtc_server_black_hole();
+    if (!blackhole_) {
         return err;
     }
 
     string blackhole_ep = _srs_config->get_rtc_server_black_hole_addr();
     if (blackhole_ep.empty()) {
-        blackhole = false;
+        blackhole_ = false;
         srs_warn("disable black hole for no endpoint");
         return err;
     }
@@ -119,15 +119,15 @@ srs_error_t SrsRtcBlackhole::initialize()
     int port;
     srs_net_split_hostport(blackhole_ep, host, port);
 
-    srs_freep(blackhole_addr);
-    blackhole_addr = new sockaddr_in();
-    blackhole_addr->sin_family = AF_INET;
-    blackhole_addr->sin_addr.s_addr = inet_addr(host.c_str());
-    blackhole_addr->sin_port = htons(port);
+    srs_freep(blackhole_addr_);
+    blackhole_addr_ = new sockaddr_in();
+    blackhole_addr_->sin_family = AF_INET;
+    blackhole_addr_->sin_addr.s_addr = inet_addr(host.c_str());
+    blackhole_addr_->sin_port = htons(port);
 
     int fd = socket(AF_INET, SOCK_DGRAM, 0);
-    blackhole_stfd = srs_netfd_open_socket(fd);
-    srs_assert(blackhole_stfd);
+    blackhole_stfd_ = srs_netfd_open_socket(fd);
+    srs_assert(blackhole_stfd_);
 
     srs_trace("RTC blackhole %s:%d, fd=%d", host.c_str(), port, fd);
 
@@ -136,12 +136,12 @@ srs_error_t SrsRtcBlackhole::initialize()
 
 void SrsRtcBlackhole::sendto(void *data, int len)
 {
-    if (!blackhole) {
+    if (!blackhole_) {
         return;
     }
 
     // For blackhole, we ignore any error.
-    srs_sendto(blackhole_stfd, data, len, (sockaddr *)blackhole_addr, sizeof(sockaddr_in), SRS_UTIME_NO_TIMEOUT);
+    srs_sendto(blackhole_stfd_, data, len, (sockaddr *)blackhole_addr_, sizeof(sockaddr_in), SRS_UTIME_NO_TIMEOUT);
 }
 
 SrsRtcBlackhole *_srs_blackhole = NULL;
@@ -253,19 +253,19 @@ set<string> discover_candidates(SrsRtcUserConfig *ruc)
         string family = _srs_config->get_rtc_server_ip_family();
         for (int i = 0; i < (int)ips.size(); ++i) {
             SrsIPAddress *ip = ips[i];
-            if (ip->is_loopback) {
+            if (ip->is_loopback_) {
                 continue;
             }
 
-            if (family == "ipv4" && !ip->is_ipv4) {
+            if (family == "ipv4" && !ip->is_ipv4_) {
                 continue;
             }
-            if (family == "ipv6" && ip->is_ipv4) {
+            if (family == "ipv6" && ip->is_ipv4_) {
                 continue;
             }
 
-            candidate_ips.insert(ip->ip);
-            srs_trace("Best matched ip=%s, ifname=%s", ip->ip.c_str(), ip->ifname.c_str());
+            candidate_ips.insert(ip->ip_);
+            srs_trace("Best matched ip=%s, ifname=%s", ip->ip_.c_str(), ip->ifname_.c_str());
         }
     }
 
@@ -276,20 +276,20 @@ set<string> discover_candidates(SrsRtcUserConfig *ruc)
     // Then, we use the ipv4 address.
     for (int i = 0; i < (int)ips.size(); ++i) {
         SrsIPAddress *ip = ips[i];
-        if (!ip->is_ipv4) {
+        if (!ip->is_ipv4_) {
             continue;
         }
 
-        candidate_ips.insert(ip->ip);
-        srs_trace("No best matched, use first ip=%s, ifname=%s", ip->ip.c_str(), ip->ifname.c_str());
+        candidate_ips.insert(ip->ip_);
+        srs_trace("No best matched, use first ip=%s, ifname=%s", ip->ip_.c_str(), ip->ifname_.c_str());
         return candidate_ips;
     }
 
     // We use the first one, to make sure there will be at least one CANDIDATE.
     if (candidate_ips.empty()) {
         SrsIPAddress *ip = ips[0];
-        candidate_ips.insert(ip->ip);
-        srs_warn("No best matched, use first ip=%s, ifname=%s", ip->ip.c_str(), ip->ifname.c_str());
+        candidate_ips.insert(ip->ip_);
+        srs_warn("No best matched, use first ip=%s, ifname=%s", ip->ip_.c_str(), ip->ifname_.c_str());
         return candidate_ips;
     }
 
@@ -461,18 +461,18 @@ srs_error_t SrsRtcSessionManager::do_create_rtc_session(SrsRtcUserConfig *ruc, S
 
     // Setup the negotiate DTLS role.
     if (ruc->remote_sdp_.get_dtls_role() == "active") {
-        local_sdp.session_negotiate_.dtls_role = "passive";
+        local_sdp.session_negotiate_.dtls_role_ = "passive";
     } else if (ruc->remote_sdp_.get_dtls_role() == "passive") {
-        local_sdp.session_negotiate_.dtls_role = "active";
+        local_sdp.session_negotiate_.dtls_role_ = "active";
     } else if (ruc->remote_sdp_.get_dtls_role() == "actpass") {
-        local_sdp.session_negotiate_.dtls_role = local_sdp.session_config_.dtls_role;
+        local_sdp.session_negotiate_.dtls_role_ = local_sdp.session_config_.dtls_role_;
     } else {
         // @see: https://tools.ietf.org/html/rfc4145#section-4.1
         // The default value of the setup attribute in an offer/answer exchange
         // is 'active' in the offer and 'passive' in the answer.
-        local_sdp.session_negotiate_.dtls_role = "passive";
+        local_sdp.session_negotiate_.dtls_role_ = "passive";
     }
-    local_sdp.set_dtls_role(local_sdp.session_negotiate_.dtls_role);
+    local_sdp.set_dtls_role(local_sdp.session_negotiate_.dtls_role_);
 
     session->set_remote_sdp(ruc->remote_sdp_);
     // We must setup the local SDP, then initialize the session object.
@@ -528,8 +528,8 @@ void SrsRtcSessionManager::srs_update_rtc_sessions()
 
     string loss_desc;
     SrsSnmpUdpStat *s = srs_get_udp_snmp_stat();
-    if (s->rcv_buf_errors_delta || s->snd_buf_errors_delta) {
-        snprintf(buf, sizeof(buf), ", loss=(r:%d,s:%d)", s->rcv_buf_errors_delta, s->snd_buf_errors_delta);
+    if (s->rcv_buf_errors_delta_ || s->snd_buf_errors_delta_) {
+        snprintf(buf, sizeof(buf), ", loss=(r:%d,s:%d)", s->rcv_buf_errors_delta_, s->snd_buf_errors_delta_);
         loss_desc = buf;
     }
 
