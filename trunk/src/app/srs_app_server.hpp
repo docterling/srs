@@ -12,15 +12,15 @@
 #include <string>
 #include <vector>
 
-#include <srs_app_conn.hpp>
 #include <srs_app_hls.hpp>
-#include <srs_app_hourglass.hpp>
 #include <srs_app_listener.hpp>
 #include <srs_app_reload.hpp>
-#include <srs_app_source.hpp>
+#include <srs_app_rtmp_source.hpp>
 #include <srs_app_srt_listener.hpp>
 #include <srs_app_srt_server.hpp>
 #include <srs_app_st.hpp>
+#include <srs_kernel_hourglass.hpp>
+#include <srs_protocol_conn.hpp>
 #include <srs_protocol_srt.hpp>
 #include <srs_protocol_st.hpp>
 
@@ -269,7 +269,7 @@ private:
 
 private:
     SrsServer *server_;
-    SrsCoroutine *trd_;
+    ISrsCoroutine *trd_;
 
 public:
     SrsSignalManager(SrsServer *s);
@@ -296,7 +296,7 @@ class SrsInotifyWorker : public ISrsCoroutineHandler
 {
 private:
     SrsServer *server_;
-    SrsCoroutine *trd_;
+    ISrsCoroutine *trd_;
     srs_netfd_t inotify_fd_;
 
 public:

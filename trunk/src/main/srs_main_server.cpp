@@ -33,6 +33,7 @@ using namespace std;
 
 #include <srs_app_circuit_breaker.hpp>
 #include <srs_app_config.hpp>
+#include <srs_app_factory.hpp>
 #include <srs_app_log.hpp>
 #include <srs_app_rtc_conn.hpp>
 #include <srs_app_server.hpp>
@@ -57,6 +58,9 @@ ISrsLog *_srs_log = NULL;
 ISrsContext *_srs_context = NULL;
 // @global config object for app module.
 SrsConfig *_srs_config = NULL;
+
+// @global kernel factory.
+ISrsKernelFactory *_srs_kernel_factory = new SrsFinalFactory();
 
 // @global version of srs, which can grep keyword "XCORE"
 extern const char *_srs_version;

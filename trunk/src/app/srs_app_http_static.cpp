@@ -15,11 +15,9 @@
 using namespace std;
 
 #include <srs_app_config.hpp>
-#include <srs_app_hourglass.hpp>
 #include <srs_app_http_hooks.hpp>
-#include <srs_app_pithy_print.hpp>
+#include <srs_app_rtmp_source.hpp>
 #include <srs_app_server.hpp>
-#include <srs_app_source.hpp>
 #include <srs_app_st.hpp>
 #include <srs_app_statistic.hpp>
 #include <srs_core_autofree.hpp>
@@ -27,8 +25,10 @@ using namespace std;
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_file.hpp>
 #include <srs_kernel_flv.hpp>
+#include <srs_kernel_hourglass.hpp>
 #include <srs_kernel_log.hpp>
 #include <srs_kernel_mp3.hpp>
+#include <srs_kernel_pithy_print.hpp>
 #include <srs_kernel_ts.hpp>
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_log.hpp>

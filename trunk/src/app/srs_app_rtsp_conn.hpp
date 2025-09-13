@@ -7,7 +7,6 @@
 #ifndef SRS_APP_RTSP_CONN_HPP
 #define SRS_APP_RTSP_CONN_HPP
 
-#include <srs_app_conn.hpp>
 #include <srs_app_rtc_source.hpp>
 #include <srs_core.hpp>
 #include <srs_core_autofree.hpp>
@@ -38,7 +37,7 @@ class SrsRtspPlayStream : public ISrsCoroutineHandler, public ISrsRtcSourceChang
 {
 private:
     SrsContextId cid_;
-    SrsFastCoroutine *trd_;
+    ISrsCoroutine *trd_;
     SrsRtspConnection *session_;
 
 private:
@@ -106,7 +105,7 @@ private:
     ISrsResourceManager *manager_;
     // Each connection start a green thread,
     // when thread stop, the connection will be delete by server.
-    SrsCoroutine *trd_;
+    ISrsCoroutine *trd_;
     // The ip and port of client.
     std::string ip_;
     int port_;

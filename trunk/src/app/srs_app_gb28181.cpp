@@ -7,23 +7,23 @@
 #include <srs_app_gb28181.hpp>
 
 #include <srs_app_config.hpp>
-#include <srs_app_conn.hpp>
 #include <srs_app_http_api.hpp>
 #include <srs_app_listener.hpp>
-#include <srs_app_pithy_print.hpp>
-#include <srs_app_rtc_sdp.hpp>
 #include <srs_app_rtmp_conn.hpp>
 #include <srs_app_server.hpp>
 #include <srs_app_statistic.hpp>
 #include <srs_app_utility.hpp>
 #include <srs_core_autofree.hpp>
+#include <srs_kernel_pithy_print.hpp>
 #include <srs_kernel_ps.hpp>
 #include <srs_kernel_rtc_rtp.hpp>
 #include <srs_kernel_stream.hpp>
 #include <srs_kernel_utility.hpp>
+#include <srs_protocol_conn.hpp>
 #include <srs_protocol_http_conn.hpp>
 #include <srs_protocol_json.hpp>
 #include <srs_protocol_raw_avc.hpp>
+#include <srs_protocol_sdp.hpp>
 #include <srs_protocol_utility.hpp>
 
 #include <sstream>

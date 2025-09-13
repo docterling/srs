@@ -11,14 +11,13 @@
 using namespace std;
 
 #include <srs_app_config.hpp>
-#include <srs_app_conn.hpp>
+#include <srs_protocol_conn.hpp>
 
 #include <srs_app_utility.hpp>
 #include <srs_kernel_kbps.hpp>
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_amf0.hpp>
 #include <srs_protocol_json.hpp>
-#include <srs_protocol_kbps.hpp>
 #include <srs_protocol_rtmp_stack.hpp>
 #include <srs_protocol_utility.hpp>
 

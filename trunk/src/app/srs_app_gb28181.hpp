@@ -9,7 +9,6 @@
 
 #include <srs_core.hpp>
 
-#include <srs_app_conn.hpp>
 #include <srs_app_listener.hpp>
 #include <srs_app_st.hpp>
 #include <srs_kernel_ps.hpp>
@@ -22,7 +21,7 @@ class SrsConfDirective;
 class SrsTcpListener;
 class SrsResourceManager;
 class SrsTcpConnection;
-class SrsCoroutine;
+class ISrsCoroutine;
 class SrsPackContext;
 class SrsBuffer;
 

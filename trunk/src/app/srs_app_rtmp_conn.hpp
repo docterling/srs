@@ -11,10 +11,10 @@
 
 #include <string>
 
-#include <srs_app_conn.hpp>
 #include <srs_app_reload.hpp>
 #include <srs_app_st.hpp>
 #include <srs_core_autofree.hpp>
+#include <srs_protocol_conn.hpp>
 #include <srs_protocol_rtmp_conn.hpp>
 #include <srs_protocol_rtmp_stack.hpp>
 
@@ -157,7 +157,7 @@ private:
     SrsRtmpTransport *transport_;
     // Each connection start a green thread,
     // when thread stop, the connection will be delete by server.
-    SrsCoroutine *trd_;
+    ISrsCoroutine *trd_;
     // The manager object to manage the connection.
     ISrsResourceManager *manager_;
     // The ip and port of client.

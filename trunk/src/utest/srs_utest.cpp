@@ -21,6 +21,7 @@ using namespace std;
 #include <sys/mman.h>
 #include <sys/types.h>
 
+#include <srs_app_factory.hpp>
 #include <srs_app_srt_server.hpp>
 #include <srt/srt.h>
 
@@ -38,6 +39,9 @@ ISrsContext *_srs_context = NULL;
 SrsConfig *_srs_config = NULL;
 bool _srs_in_docker = false;
 bool _srs_config_by_env = false;
+
+// @global kernel factory.
+ISrsKernelFactory *_srs_kernel_factory = new SrsFinalFactory();
 
 // The binary name of SRS.
 const char *_srs_binary = NULL;

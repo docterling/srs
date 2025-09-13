@@ -4,26 +4,20 @@
 // SPDX-License-Identifier: MIT
 //
 
-#ifndef SRS_APP_CONN_HPP
-#define SRS_APP_CONN_HPP
+#ifndef SRS_KERNEL_RESOURCE_HPP
+#define SRS_KERNEL_RESOURCE_HPP
 
 #include <srs_core.hpp>
+
+#include <srs_core_autofree.hpp>
+#include <srs_kernel_st.hpp>
 
 #include <map>
 #include <string>
 #include <vector>
 
-#include <openssl/err.h>
-#include <openssl/ssl.h>
-
-#include <srs_app_reload.hpp>
-#include <srs_app_st.hpp>
-#include <srs_core_autofree.hpp>
-#include <srs_protocol_conn.hpp>
-#include <srs_protocol_kbps.hpp>
-
-class SrsWallClock;
-class SrsBuffer;
+class ISrsResource;
+class ISrsCond;
 
 // Hooks for connection manager, to handle the event when disposing connections.
 class ISrsDisposingHandler
@@ -65,6 +59,36 @@ public:
     }
 };
 
+// The resource managed by ISrsResourceManager.
+class ISrsResource
+{
+public:
+    ISrsResource();
+    virtual ~ISrsResource();
+
+public:
+    // Get the context id of connection.
+    virtual const SrsContextId &get_id() = 0;
+
+public:
+    // The resource description, optional.
+    virtual std::string desc();
+};
+
+// The manager for resource.
+class ISrsResourceManager
+{
+public:
+    ISrsResourceManager();
+    virtual ~ISrsResourceManager();
+
+public:
+    // Remove then free the specified connection. Note that the manager always free c resource,
+    // in the same coroutine or another coroutine. Some manager may support add c to a map, it
+    // should always free it even if it's in the map.
+    virtual void remove(ISrsResource *c) = 0;
+};
+
 // The resource manager remove resource and delete it asynchronously.
 class SrsResourceManager : public ISrsCoroutineHandler, public ISrsResourceManager
 {
@@ -74,8 +98,8 @@ private:
     bool verbose_;
 
 private:
-    SrsCoroutine *trd_;
-    srs_cond_t cond_;
+    ISrsCoroutine *trd_;
+    ISrsCond *cond_;
     // Callback handlers.
     std::vector<ISrsDisposingHandler *> handlers_;
     // Unsubscribing handlers, skip it for notifying.
@@ -210,122 +234,6 @@ public:
     {
         return ptr_->desc();
     }
-};
-
-// If a connection is able be expired, user can use HTTP-API to kick-off it.
-class ISrsExpire
-{
-public:
-    ISrsExpire();
-    virtual ~ISrsExpire();
-
-public:
-    // Set connection to expired to kick-off it.
-    virtual void expire() = 0;
-};
-
-// The basic connection of SRS, for TCP based protocols,
-// all connections accept from listener must extends from this base class,
-// server will add the connection to manager, and delete it when remove.
-class SrsTcpConnection : public ISrsProtocolReadWriter
-{
-private:
-    // The underlayer st fd handler.
-    srs_netfd_t stfd_;
-    // The underlayer socket.
-    SrsStSocket *skt_;
-
-public:
-    SrsTcpConnection(srs_netfd_t c);
-    virtual ~SrsTcpConnection();
-
-public:
-    // Set socket option TCP_NODELAY.
-    virtual srs_error_t set_tcp_nodelay(bool v);
-    // Set socket option SO_SNDBUF in srs_utime_t.
-    virtual srs_error_t set_socket_buffer(srs_utime_t buffer_v);
-    // Interface ISrsProtocolReadWriter
-public:
-    virtual void set_recv_timeout(srs_utime_t tm);
-    virtual srs_utime_t get_recv_timeout();
-    virtual srs_error_t read_fully(void *buf, size_t size, ssize_t *nread);
-    virtual int64_t get_recv_bytes();
-    virtual int64_t get_send_bytes();
-    virtual srs_error_t read(void *buf, size_t size, ssize_t *nread);
-    virtual void set_send_timeout(srs_utime_t tm);
-    virtual srs_utime_t get_send_timeout();
-    virtual srs_error_t write(void *buf, size_t size, ssize_t *nwrite);
-    virtual srs_error_t writev(const iovec *iov, int iov_size, ssize_t *nwrite);
-};
-
-// With a small fast read buffer, to support peek for protocol detecting. Note that directly write to io without any
-// cache or buffer.
-class SrsBufferedReadWriter : public ISrsProtocolReadWriter
-{
-private:
-    // The under-layer transport.
-    ISrsProtocolReadWriter *io_;
-    // Fixed, small and fast buffer. Note that it must be very small piece of cache, make sure matches all protocols,
-    // because we will full fill it when peeking.
-    char cache_[16];
-    // Current reading position.
-    SrsBuffer *buf_;
-
-public:
-    SrsBufferedReadWriter(ISrsProtocolReadWriter *io);
-    virtual ~SrsBufferedReadWriter();
-
-public:
-    // Peek the head of cache to buf in size of bytes.
-    srs_error_t peek(char *buf, int *size);
-
-private:
-    srs_error_t reload_buffer();
-    // Interface ISrsProtocolReadWriter
-public:
-    virtual srs_error_t read(void *buf, size_t size, ssize_t *nread);
-    virtual srs_error_t read_fully(void *buf, size_t size, ssize_t *nread);
-    virtual void set_recv_timeout(srs_utime_t tm);
-    virtual srs_utime_t get_recv_timeout();
-    virtual int64_t get_recv_bytes();
-    virtual int64_t get_send_bytes();
-    virtual void set_send_timeout(srs_utime_t tm);
-    virtual srs_utime_t get_send_timeout();
-    virtual srs_error_t write(void *buf, size_t size, ssize_t *nwrite);
-    virtual srs_error_t writev(const iovec *iov, int iov_size, ssize_t *nwrite);
-};
-
-// The SSL connection over TCP transport, in server mode.
-class SrsSslConnection : public ISrsProtocolReadWriter
-{
-private:
-    // The under-layer plaintext transport.
-    ISrsProtocolReadWriter *transport_;
-
-private:
-    SSL_CTX *ssl_ctx_;
-    SSL *ssl_;
-    BIO *bio_in_;
-    BIO *bio_out_;
-
-public:
-    SrsSslConnection(ISrsProtocolReadWriter *c);
-    virtual ~SrsSslConnection();
-
-public:
-    virtual srs_error_t handshake(std::string key_file, std::string crt_file);
-    // Interface ISrsProtocolReadWriter
-public:
-    virtual void set_recv_timeout(srs_utime_t tm);
-    virtual srs_utime_t get_recv_timeout();
-    virtual srs_error_t read_fully(void *buf, size_t size, ssize_t *nread);
-    virtual int64_t get_recv_bytes();
-    virtual int64_t get_send_bytes();
-    virtual srs_error_t read(void *buf, size_t size, ssize_t *nread);
-    virtual void set_send_timeout(srs_utime_t tm);
-    virtual srs_utime_t get_send_timeout();
-    virtual srs_error_t write(void *buf, size_t size, ssize_t *nwrite);
-    virtual srs_error_t writev(const iovec *iov, int iov_size, ssize_t *nwrite);
 };
 
 // Manager for RTC connections.

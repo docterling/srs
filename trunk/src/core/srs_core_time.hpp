@@ -43,4 +43,15 @@ extern srs_utime_t srs_time_since_startup();
 // A daemon st-thread updates it.
 extern srs_utime_t srs_time_now_realtime();
 
+// The time interface.
+class ISrsTime
+{
+public:
+    ISrsTime();
+    virtual ~ISrsTime();
+
+public:
+    virtual void usleep(srs_utime_t duration) = 0;
+};
+
 #endif

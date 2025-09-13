@@ -4,17 +4,17 @@
 // SPDX-License-Identifier: MIT
 //
 
-#ifndef SRS_APP_PITHY_PRINT_HPP
-#define SRS_APP_PITHY_PRINT_HPP
+#ifndef SRS_KERNEL_PITHY_PRINT_HPP
+#define SRS_KERNEL_PITHY_PRINT_HPP
 
 #include <srs_core.hpp>
 
 #include <map>
 
-#include <srs_app_reload.hpp>
+class ISrsConfig;
 
 // The stage info to calc the age.
-class SrsStageInfo : public ISrsReloadHandler
+class SrsStageInfo
 {
 public:
     int stage_id_;
@@ -24,6 +24,7 @@ public:
     uint32_t nn_count_;
     // The ratio for interval, 1.0 means no change.
     double interval_ratio_;
+    ISrsConfig *config_;
 
 public:
     srs_utime_t age_;
@@ -157,5 +158,8 @@ public:
     // Get the elapsed time in srs_utime_t.
     virtual srs_utime_t age();
 };
+
+// Global stage manager for pithy print, multiple stages.
+extern SrsStageManager *_srs_stages;
 
 #endif
