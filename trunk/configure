@@ -251,7 +251,7 @@ MODULE_FILES=("srs_kernel_error" "srs_kernel_log" "srs_kernel_buffer"
         "srs_kernel_consts" "srs_kernel_aac" "srs_kernel_mp3" "srs_kernel_ts" "srs_kernel_ps"
         "srs_kernel_stream" "srs_kernel_balance" "srs_kernel_mp4" "srs_kernel_file"
         "srs_kernel_kbps" "srs_kernel_rtc_rtp" "srs_kernel_rtc_rtcp" "srs_kernel_packet"
-        "srs_kernel_uuid" "srs_kernel_st" "srs_kernel_factory" "srs_kernel_hourglass"
+        "srs_kernel_st" "srs_kernel_factory" "srs_kernel_hourglass"
         "srs_kernel_pithy_print" "srs_kernel_rtc_queue" "srs_kernel_resource")
 KERNEL_INCS="src/kernel"; MODULE_DIR=${KERNEL_INCS} . $SRS_WORKDIR/auto/modules.sh
 KERNEL_OBJS="${MODULE_OBJS[@]}"
@@ -381,7 +381,7 @@ if [[ $SRS_UTEST == YES ]]; then
         "srs_utest_protocol" "srs_utest_protocol2" "srs_utest_kernel2" "srs_utest_protocol3"
         "srs_utest_st" "srs_utest_rtc2" "srs_utest_rtc3" "srs_utest_fmp4" "srs_utest_source_lock"
         "srs_utest_stream_token" "srs_utest_rtc_recv_track" "srs_utest_st2" "srs_utest_hevc_structs"
-        "srs_utest_coworkers" "srs_utest_pithy_print")
+        "srs_utest_coworkers" "srs_utest_pithy_print" "srs_utest_kernel3")
     # Always include SRT utest
     MODULE_FILES+=("srs_utest_srt")
     if [[ $SRS_GB28181 == YES ]]; then
