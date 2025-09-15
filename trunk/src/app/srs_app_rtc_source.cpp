@@ -1498,7 +1498,12 @@ int32_t SrsRtcFrameBuilderVideoPacketCache::find_next_lost_sn(uint16_t current_s
 bool SrsRtcFrameBuilderVideoPacketCache::check_frame_complete(const uint16_t start, const uint16_t end)
 {
     int16_t cnt = srs_rtp_seq_distance(start, end) + 1;
-    srs_assert(cnt >= 1);
+
+    // If the sequence range is invalid (end before start), return false
+    if (cnt <= 0) {
+        srs_warn("invalid sequence range start=%u, end=%u, cnt=%d", start, end, cnt);
+        return false;
+    }
 
     uint16_t nn_fu_start = 0;
     uint16_t nn_fu_end = 0;

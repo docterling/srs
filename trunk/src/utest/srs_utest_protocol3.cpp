@@ -1021,7 +1021,7 @@ VOID TEST(ProtocolRtpTest, SrsRtpVideoBuilderPackageStapA)
     EXPECT_EQ(ssrc, pkt->header.get_ssrc());
     EXPECT_EQ(SrsFrameTypeVideo, pkt->frame_type_);
     EXPECT_EQ(1000 * 90, pkt->header.get_timestamp()); // timestamp * 90
-    EXPECT_FALSE(pkt->header.get_marker()); // STAP-A should not have marker bit set
+    EXPECT_FALSE(pkt->header.get_marker());            // STAP-A should not have marker bit set
 
     // Verify STAP-A payload was created
     EXPECT_TRUE(pkt->payload() != NULL);

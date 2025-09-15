@@ -1631,3 +1631,32 @@ VOID TEST(KernelRTC2Test, SrsRtcFrameBuilderPacketVideoRtmpNullPointerCrash)
         EXPECT_EQ(1, bridge.frame_count);
     }
 }
+
+VOID TEST(KernelRTC2Test, SrsRtcFrameBuilderSequenceWrapAroundFix)
+{
+    // Test for the sequence number wraparound assertion fix
+    //
+    // ISSUE BACKGROUND:
+    // The check_frame_complete() used srs_rtp_seq_distance(start, end) + 1
+    // and asserted that the result >= 1. However, when sequence numbers wrap around (e.g., end < start),
+    // srs_rtp_seq_distance can return negative values, causing the assertion to fail and crash the server.
+    //
+    // THE CRASH:
+    // For example, if start=5 and end=3, then srs_rtp_seq_distance(5, 3) = (int16_t)(3 - 5) = -2
+    // So cnt = -2 + 1 = -1, which fails the assertion cnt >= 1
+    //
+    // THE FIX:
+    // Added validation to check if cnt <= 0 and handle it gracefully:
+    // - check_frame_complete() returns false for invalid ranges
+
+    SrsRtcFrameBuilderVideoPacketCache frame_builder;
+
+    // Test check_frame_complete with wraparound sequence numbers
+    // This should not crash and should return false for invalid ranges
+    EXPECT_FALSE(frame_builder.check_frame_complete(5, 3));    // end < start
+    EXPECT_FALSE(frame_builder.check_frame_complete(100, 99)); // end < start
+
+    // Valid cases should still work
+    EXPECT_TRUE(frame_builder.check_frame_complete(3, 3)); // same sequence
+    EXPECT_TRUE(frame_builder.check_frame_complete(3, 5)); // normal case
+}
