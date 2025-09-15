@@ -1957,7 +1957,12 @@ void SrsRtcFrameBuilder::clear_cached_video()
 bool SrsRtcFrameBuilder::check_frame_complete(const uint16_t start, const uint16_t end)
 {
     int16_t cnt = srs_rtp_seq_distance(start, end) + 1;
-    srs_assert(cnt >= 1);
+
+    // If the sequence range is invalid (end before start), return false
+    if (cnt <= 0) {
+        srs_warn("invalid sequence range start=%u, end=%u, cnt=%d", start, end, cnt);
+        return false;
+    }
 
     uint16_t fu_s_c = 0;
     uint16_t fu_e_c = 0;
