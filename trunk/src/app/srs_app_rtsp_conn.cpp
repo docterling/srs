@@ -564,7 +564,7 @@ srs_error_t SrsRtspConnection::do_cycle()
                     res->status_ = SRS_CONSTS_RTSP_Forbidden;
                 }
                 srs_warn("RTSP: DESCRIBE failed: %s", srs_error_desc(err).c_str());
-                srs_error_reset(err);
+                srs_freep(err);
             }
 
             res->sdp_ = sdp;
@@ -590,7 +590,7 @@ srs_error_t SrsRtspConnection::do_cycle()
                     res->status_ = SRS_CONSTS_RTSP_InternalServerError;
                     srs_warn("RTSP: SETUP failed: %s", srs_error_desc(err).c_str());
                 }
-                srs_error_reset(err);
+                srs_freep(err);
             }
 
             res->transport_->copy(req->transport_);

@@ -479,7 +479,7 @@ srs_error_t SrsRtspStack::do_recv_message(SrsRtspRequest *req)
         std::string token;
         if ((err = recv_token_normal(token)) != srs_success) {
             if (srs_error_code(err) == ERROR_RTSP_REQUEST_HEADER_EOF) {
-                srs_error_reset(err);
+                srs_freep(err);
                 break; // End of headers reached (empty line)
             }
             return srs_error_wrap(err, "recv token");

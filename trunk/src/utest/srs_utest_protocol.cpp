@@ -5553,7 +5553,7 @@ VOID TEST(ProtocolRTSPTest, RTSPInvalidRequest)
         err = stack.recv_message(&req);
         EXPECT_TRUE(err != srs_success);
         srs_freep(req);
-        srs_error_reset(err);
+        srs_freep(err);
 
         bio.in_buffer.erase(bio.in_buffer.length());
     }
@@ -5569,7 +5569,7 @@ VOID TEST(ProtocolRTSPTest, RTSPInvalidRequest)
         err = stack.recv_message(&req);
         EXPECT_TRUE(err != srs_success);
         srs_freep(req);
-        srs_error_reset(err);
+        srs_freep(err);
 
         bio.in_buffer.erase(bio.in_buffer.length());
     }
@@ -5585,7 +5585,7 @@ VOID TEST(ProtocolRTSPTest, RTSPInvalidRequest)
         err = stack.recv_message(&req);
         EXPECT_TRUE(err != srs_success);
         srs_freep(req);
-        srs_error_reset(err);
+        srs_freep(err);
 
         bio.in_buffer.erase(bio.in_buffer.length());
     }

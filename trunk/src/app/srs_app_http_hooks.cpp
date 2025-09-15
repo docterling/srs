@@ -462,7 +462,7 @@ srs_error_t SrsHttpHooks::on_hls_notify(SrsContextId c, std::string url, ISrsReq
               cid.c_str(), url.c_str(), msg->status_code(), spenttime, nb_read, srs_error_desc(err).c_str());
 
     // ignore any error for on_hls_notify.
-    srs_error_reset(err);
+    srs_freep(err);
     return srs_success;
 }
 

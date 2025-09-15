@@ -332,7 +332,7 @@ srs_error_t SrsRtmpConn::do_cycle()
 
     // If client is redirect to other servers, we already logged the event.
     if (srs_error_code(err) == ERROR_CONTROL_REDIRECT) {
-        srs_error_reset(err);
+        srs_freep(err);
     }
 
     return err;
@@ -690,7 +690,7 @@ srs_error_t SrsRtmpConn::playing(SrsSharedPtr<SrsLiveSource> source)
 
             bool accepted = false;
             if ((err = rtmp_->redirect(req, rurl, accepted)) != srs_success) {
-                srs_error_reset(err);
+                srs_freep(err);
             } else {
                 return srs_error_new(ERROR_CONTROL_REDIRECT, "redirected");
             }

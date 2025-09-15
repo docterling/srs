@@ -203,7 +203,7 @@ srs_error_t SrsSrtEventLoop::cycle()
         int n_fds = 0;
         if ((err = srt_poller_->wait(0, &n_fds)) != srs_success) {
             srs_warn("srt poll wait failed, n_fds=%d, err=%s", n_fds, srs_error_desc(err).c_str());
-            srs_error_reset(err);
+            srs_freep(err);
         }
 
         // We use sleep to switch to other coroutines, because the SRT poller is not possible to do this.

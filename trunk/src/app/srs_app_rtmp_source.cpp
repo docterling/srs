@@ -982,10 +982,10 @@ srs_error_t SrsOriginHub::on_audio(SrsMediaPacket *shared_audio)
         if (srs_config_hls_is_on_error_ignore(hls_error_strategy)) {
             srs_warn("hls: ignore audio error %s", srs_error_desc(err).c_str());
             hls_->on_unpublish();
-            srs_error_reset(err);
+            srs_freep(err);
         } else if (srs_config_hls_is_on_error_continue(hls_error_strategy)) {
             if (srs_hls_can_continue(srs_error_code(err), source_->meta_->ash(), msg)) {
-                srs_error_reset(err);
+                srs_freep(err);
             } else {
                 return srs_error_wrap(err, "hls: audio");
             }
@@ -996,20 +996,20 @@ srs_error_t SrsOriginHub::on_audio(SrsMediaPacket *shared_audio)
 
     if ((err = dash_->on_audio(msg, format)) != srs_success) {
         srs_warn("dash: ignore audio error %s", srs_error_desc(err).c_str());
-        srs_error_reset(err);
+        srs_freep(err);
         dash_->on_unpublish();
     }
 
     if ((err = dvr_->on_audio(msg, format)) != srs_success) {
         srs_warn("dvr: ignore audio error %s", srs_error_desc(err).c_str());
-        srs_error_reset(err);
+        srs_freep(err);
         dvr_->on_unpublish();
     }
 
 #ifdef SRS_HDS
     if ((err = hds_->on_audio(msg)) != srs_success) {
         srs_warn("hds: ignore audio error %s", srs_error_desc(err).c_str());
-        srs_error_reset(err);
+        srs_freep(err);
         hds_->on_unpublish();
     }
 #endif
@@ -1073,10 +1073,10 @@ srs_error_t SrsOriginHub::on_video(SrsMediaPacket *shared_video, bool is_sequenc
         if (srs_config_hls_is_on_error_ignore(hls_error_strategy)) {
             srs_warn("hls: ignore video error %s", srs_error_desc(err).c_str());
             hls_->on_unpublish();
-            srs_error_reset(err);
+            srs_freep(err);
         } else if (srs_config_hls_is_on_error_continue(hls_error_strategy)) {
             if (srs_hls_can_continue(srs_error_code(err), source_->meta_->vsh(), msg)) {
-                srs_error_reset(err);
+                srs_freep(err);
             } else {
                 return srs_error_wrap(err, "hls: video");
             }
@@ -1087,20 +1087,20 @@ srs_error_t SrsOriginHub::on_video(SrsMediaPacket *shared_video, bool is_sequenc
 
     if ((err = dash_->on_video(msg, format)) != srs_success) {
         srs_warn("dash: ignore video error %s", srs_error_desc(err).c_str());
-        srs_error_reset(err);
+        srs_freep(err);
         dash_->on_unpublish();
     }
 
     if ((err = dvr_->on_video(msg, format)) != srs_success) {
         srs_warn("dvr: ignore video error %s", srs_error_desc(err).c_str());
-        srs_error_reset(err);
+        srs_freep(err);
         dvr_->on_unpublish();
     }
 
 #ifdef SRS_HDS
     if ((err = hds_->on_video(msg)) != srs_success) {
         srs_warn("hds: ignore video error %s", srs_error_desc(err).c_str());
-        srs_error_reset(err);
+        srs_freep(err);
         hds_->on_unpublish();
     }
 #endif

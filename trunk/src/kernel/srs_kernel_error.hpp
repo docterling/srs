@@ -467,7 +467,7 @@ public:
     static std::string summary(SrsCplxError *err);
     static int error_code(SrsCplxError *err);
     static std::string error_code_str(SrsCplxError *err);
-    static std::string error_code_longstr(SrsCplxError *err);
+    static std::string error_code_strlong(SrsCplxError *err);
 
 public:
     static void srs_assert(bool expression);
@@ -482,10 +482,7 @@ public:
 #define srs_error_summary(err) SrsCplxError::summary(err)
 #define srs_error_code(err) SrsCplxError::error_code(err)
 #define srs_error_code_str(err) SrsCplxError::error_code_str(err)
-#define srs_error_code_longstr(err) SrsCplxError::error_code_longstr(err)
-#define srs_error_reset(err) \
-    srs_freep(err);          \
-    err = srs_success
+#define srs_error_code_strlong(err) SrsCplxError::error_code_strlong(err)
 
 #ifndef srs_assert
 #define srs_assert(expression) SrsCplxError::srs_assert(expression)

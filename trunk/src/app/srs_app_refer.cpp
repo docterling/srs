@@ -31,7 +31,7 @@ srs_error_t SrsRefer::check(std::string page_url, SrsConfDirective *refer)
             return srs_success;
         }
 
-        srs_error_reset(err);
+        srs_freep(err);
     }
 
     return srs_error_new(ERROR_RTMP_ACCESS_DENIED, "access denied");

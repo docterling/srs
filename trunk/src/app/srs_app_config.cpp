@@ -1614,7 +1614,7 @@ srs_error_t SrsConfig::parse_options(int argc, char **argv)
 
     // Ignore any error while detecting docker.
     if ((err = srs_detect_docker()) != srs_success) {
-        srs_error_reset(err);
+        srs_freep(err);
     }
 
     // Try to load the config if docker detect failed.

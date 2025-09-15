@@ -102,7 +102,7 @@ SrsSrtRecvThread::SrsSrtRecvThread(SrsSrtConnection *srt_conn)
 SrsSrtRecvThread::~SrsSrtRecvThread()
 {
     srs_freep(trd_);
-    srs_error_reset(recv_err_);
+    srs_freep(recv_err_);
 }
 
 srs_error_t SrsSrtRecvThread::cycle()

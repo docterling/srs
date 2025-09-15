@@ -11,7 +11,7 @@
 [![](https://codecov.io/gh/ossrs/srs/graph/badge.svg?token=Zx2LhdtA39)](https://codecov.io/gh/ossrs/srs)
 
 SRS/7.0 ([Kai](https://ossrs.io/lts/en-us/product#release-70)) is a simple, high-efficiency, and real-time video server, 
-supporting RTMP/WebRTC/HLS/HTTP-FLV/SRT/MPEG-DASH/GB28181, Linux/Windows/macOS, X86_64/ARMv7/AARCH64/M1/RISCV/LOONGARCH/MIPS, 
+supporting RTMP/WebRTC/HLS/HTTP-FLV/SRT/MPEG-DASH/GB28181, Linux/macOS, X86_64/ARMv7/AARCH64/M1/RISCV/LOONGARCH/MIPS, 
 and essential [features](trunk/doc/Features.md#features).
 
 [![SRS Overview](https://ossrs.net/wiki/images/SRS-SingleNode-4.0-sd.png?v=114)](https://ossrs.net/wiki/images/SRS-SingleNode-4.0-hd.png)
@@ -62,7 +62,7 @@ To learn more about RTMP, HLS, HTTP-FLV, SRT, MPEG-DASH, WebRTC protocols, clust
 HTTP API, DVR, and transcoding, please check the documents in [English](https://ossrs.io) 
 or [Chinese](https://ossrs.net).
 
-If you want to use an IDE, VSCode is recommanded. VSCode supports macOS, Linux, and Windows 
+If you want to use an IDE, VSCode is recommanded. VSCode supports macOS, and Linux 
 platforms. The settings are ready. All you need to do is open the folder with VSCode and 
 enjoy the efficiency brought by the IDE. See [VSCode README](.vscode/README.md) for details.
 
@@ -99,7 +99,7 @@ who made significant contributions and maintained parts of SRS are listed below,
 * [ShiWei](https://github.com/runner365): Specializes in SRT and H.265, maintaining SRT and FLV patches for FFmpeg. An expert in codecs and FFmpeg.
 * [ChenGuanghua](https://github.com/chen-guanghua): Focused on WebRTC/QoS and introduced the Asan toolchain to SRS.
 * [LiPeng](https://github.com/lipeng19811218): Concentrates on WebRTC and contributes to memory management and smart pointers.
-* [ZhaoWenjie](https://github.com/wenjiegit): One of the earliest contributors, focusing on HDS and Windows. Has expertise in client technology.
+* [ZhaoWenjie](https://github.com/wenjiegit): One of the earliest contributors, focusing on HDS. Has expertise in client technology.
 * [WuPengqiang](https://github.com/Bepartofyou): Focused on H.265, initially contributed to the FFmpeg module in SRS for transcoding AAC with OPUS for WebRTC.
 
 A huge `THANK YOU` goes out to:
@@ -118,6 +118,7 @@ distributed under their [licenses](https://ossrs.io/lts/en-us/license).
 
 ## Releases
 
+* 2025-09-15, [Release v6.0-b1](https://github.com/ossrs/srs/releases/tag/v6.0-b1), v6.0-b1, 6.0 beta1, v6.0.177, 170611 lines.
 * 2025-08-12, [Release v6.0-b0](https://github.com/ossrs/srs/releases/tag/v6.0-b0), v6.0-b0, 6.0 beta0, v6.0.172, 170417 lines.
 * 2025-05-03, [Release v6.0-a2](https://github.com/ossrs/srs/releases/tag/v6.0-a2), v6.0-a2, 6.0 alpha2, v6.0.165, 169712 lines.
 * 2024-09-01, [Release v6.0-a1](https://github.com/ossrs/srs/releases/tag/v6.0-a1), v6.0-a1, 6.0 alpha1, v6.0.155, 169636 lines.

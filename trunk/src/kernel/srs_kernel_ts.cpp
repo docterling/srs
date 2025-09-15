@@ -2896,7 +2896,7 @@ void SrsEncFileWriter::close()
         srs_error_t err = srs_success;
         if ((err = SrsFileWriter::write(cipher.get(), nb_buf + nb_padding, NULL)) != srs_success) {
             srs_warn("ignore err %s", srs_error_desc(err).c_str());
-            srs_error_reset(err);
+            srs_freep(err);
         }
 
         nb_buf = 0;

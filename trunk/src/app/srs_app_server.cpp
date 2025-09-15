@@ -1164,7 +1164,7 @@ srs_error_t SrsServer::listen_srt_mpegts()
         if ((err = acceptor->listen(ip, port)) != srs_success) {
             srs_freep(acceptor);
             srs_warn("srt listen %s:%d failed, err=%s", ip.c_str(), port, srs_error_desc(err).c_str());
-            srs_error_reset(err);
+            srs_freep(err);
             continue;
         }
 

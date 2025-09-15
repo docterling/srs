@@ -269,7 +269,7 @@ srs_error_t SrsMpegtsOverUdp::on_udp_bytes(string host, int port, char *buf, int
         // process each ts packet
         if ((err = context_->decode(stream.get(), this)) != srs_success) {
             srs_info("parse ts packet err=%s", srs_error_desc(err).c_str());
-            srs_error_reset(err);
+            srs_freep(err);
             continue;
         }
     }

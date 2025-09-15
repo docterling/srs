@@ -355,7 +355,7 @@ srs_error_t SrsRtcPLIWorker::cycle()
 
                 if ((err = handler_->do_request_keyframe(ssrc, cid)) != srs_success) {
                     srs_warn("PLI error, %s", srs_error_desc(err).c_str());
-                    srs_error_reset(err);
+                    srs_freep(err);
                 }
             }
         }
@@ -1385,7 +1385,7 @@ srs_error_t SrsRtcPublishStream::on_rtp_cipher(char *data, int nb_data)
                 return srs_error_wrap(err, "on twcc");
             }
         } else {
-            srs_error_reset(err);
+            srs_freep(err);
         }
     }
 
@@ -2591,7 +2591,7 @@ bool srs_sdp_has_h264_profile(const SrsMediaPayloadType &payload_type, const str
 
     H264SpecificParam h264_param;
     if ((err = srs_parse_h264_fmtp(payload_type.format_specific_param_, h264_param)) != srs_success) {
-        srs_error_reset(err);
+        srs_freep(err);
         return false;
     }
 
@@ -2637,7 +2637,7 @@ bool srs_sdp_has_h265_profile(const SrsMediaPayloadType &payload_type, const str
 
     H265SpecificParam h265_param;
     if ((err = srs_parse_h265_fmtp(payload_type.format_specific_param_, h265_param)) != srs_success) {
-        srs_error_reset(err);
+        srs_freep(err);
         return false;
     }
 
@@ -2842,7 +2842,7 @@ srs_error_t SrsRtcConnection::negotiate_publish_capability(SrsRtcUserConfig *ruc
                 }
                 H264SpecificParam h264_param;
                 if ((err = srs_parse_h264_fmtp(payload.format_specific_param_, h264_param)) != srs_success) {
-                    srs_error_reset(err);
+                    srs_freep(err);
                     continue;
                 }
 

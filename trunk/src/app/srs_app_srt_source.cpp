@@ -338,7 +338,7 @@ srs_error_t SrsSrtFrameBuilder::on_packet(SrsSrtPacket *pkt)
         // don't handle it because SRT will, see tlpktdrop at https://ossrs.io/lts/en-us/docs/v7/doc/srt
         if ((err = ts_ctx_->decode(stream.get(), this)) != srs_success) {
             srs_warn("parse ts packet err=%s", srs_error_desc(err).c_str());
-            srs_error_reset(err);
+            srs_freep(err);
             continue;
         }
     }

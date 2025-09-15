@@ -1045,7 +1045,7 @@ VOID TEST(KernelErrorTest, SrsCplxErrorCodeStrings)
 
     // Test error code long string lookup
     err = srs_error_new(ERROR_SOCKET_READ, "read error");
-    std::string code_longstr = srs_error_code_longstr(err);
+    std::string code_longstr = srs_error_code_strlong(err);
     EXPECT_FALSE(code_longstr.empty());
     EXPECT_EQ("Socket read data failed", code_longstr);
     srs_freep(err);
@@ -1055,7 +1055,7 @@ VOID TEST(KernelErrorTest, SrsCplxErrorCodeStrings)
     EXPECT_FALSE(code_str.empty());
     EXPECT_EQ("Success", code_str);
 
-    code_longstr = srs_error_code_longstr(srs_success);
+    code_longstr = srs_error_code_strlong(srs_success);
     EXPECT_FALSE(code_longstr.empty());
     EXPECT_EQ("Success", code_longstr);
 
@@ -1067,11 +1067,11 @@ VOID TEST(KernelErrorTest, ErrorMacros)
 {
     srs_error_t err;
 
-    // Test srs_error_reset macro
+    // Test srs_freep macro
     err = srs_error_new(ERROR_SOCKET_CONNECT, "connect failed");
     EXPECT_TRUE(err != srs_success);
 
-    srs_error_reset(err);
+    srs_freep(err);
     EXPECT_EQ(srs_success, err);
 
     // Test error creation and manipulation macros

@@ -46,7 +46,7 @@ srs_error_t SrsEncoder::on_publish(ISrsRequest *req)
     // if got a loop, donot transcode the whole stream.
     if (srs_error_code(err) == ERROR_ENCODER_LOOP) {
         clear_engines();
-        srs_error_reset(err);
+        srs_freep(err);
     }
 
     // return for error or no engine.
@@ -87,7 +87,7 @@ srs_error_t SrsEncoder::cycle()
 
         if ((err = do_cycle()) != srs_success) {
             srs_warn("Encoder: Ignore error, %s", srs_error_desc(err).c_str());
-            srs_error_reset(err);
+            srs_freep(err);
         }
 
         srs_usleep(SRS_RTMP_ENCODER_CIMS);

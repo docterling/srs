@@ -720,7 +720,7 @@ SrsSrtSocket::~SrsSrtSocket()
     srs_error_t err = srt_poller_->del_socket(this);
     if (err != srs_success) {
         srs_error("srt poller remove socket failed, err=%s", srs_error_desc(err).c_str());
-        srs_error_reset(err);
+        srs_freep(err);
     }
 
     srs_cond_destroy(read_cond_);

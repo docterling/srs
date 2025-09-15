@@ -558,13 +558,13 @@ srs_error_t SrsEdgeIngester::do_cycle()
             string url = req_->get_stream_url();
             srs_warn("RTMP redirect %s from %s:%d to %s", url.c_str(), server.c_str(), port, redirect.c_str());
 
-            srs_error_reset(err);
+            srs_freep(err);
             continue;
         }
 
         if (srs_is_client_gracefully_close(err)) {
             srs_warn("origin disconnected, retry, error %s", srs_error_desc(err).c_str());
-            srs_error_reset(err);
+            srs_freep(err);
         }
         break;
     }
@@ -869,11 +869,11 @@ srs_error_t SrsEdgeForwarder::do_cycle()
             if (err != srs_success && srs_error_code(err) != ERROR_SOCKET_TIMEOUT) {
                 srs_error("edge push get server control message failed. err=%s", srs_error_desc(err).c_str());
                 send_error_code_ = srs_error_code(err);
-                srs_error_reset(err);
+                srs_freep(err);
                 continue;
             }
 
-            srs_error_reset(err);
+            srs_freep(err);
             srs_freep(msg);
         }
 

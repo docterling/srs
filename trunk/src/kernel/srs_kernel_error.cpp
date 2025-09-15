@@ -234,7 +234,7 @@ std::string SrsCplxError::description()
         if (!code_str.empty())
             ss << "(" << code_str << ")";
 
-        string code_longstr = srs_error_code_longstr(this);
+        string code_longstr = srs_error_code_strlong(this);
         if (!code_longstr.empty())
             ss << "(" << code_longstr << ")";
 
@@ -426,7 +426,7 @@ std::string SrsCplxError::error_code_str(SrsCplxError *err)
     return it->second;
 }
 
-std::string SrsCplxError::error_code_longstr(SrsCplxError *err)
+std::string SrsCplxError::error_code_strlong(SrsCplxError *err)
 {
     static string not_found = "";
     static std::map<SrsErrorCode, string> error_map;

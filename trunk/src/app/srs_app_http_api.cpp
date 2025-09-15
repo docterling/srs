@@ -728,7 +728,7 @@ srs_error_t SrsGoApiVhosts::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessag
 
             if ((err = stat->dumps_vhosts(data)) != srs_success) {
                 int code = srs_error_code(err);
-                srs_error_reset(err);
+                srs_freep(err);
                 return srs_api_response_code(w, r, code);
             }
         } else {
@@ -738,7 +738,7 @@ srs_error_t SrsGoApiVhosts::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessag
 
             if ((err = vhost->dumps(data)) != srs_success) {
                 int code = srs_error_code(err);
-                srs_error_reset(err);
+                srs_freep(err);
                 return srs_api_response_code(w, r, code);
             }
         }
@@ -790,7 +790,7 @@ srs_error_t SrsGoApiStreams::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessa
             int count = srs_max(10, atoi(rcount.c_str()));
             if ((err = stat->dumps_streams(data, start, count)) != srs_success) {
                 int code = srs_error_code(err);
-                srs_error_reset(err);
+                srs_freep(err);
                 return srs_api_response_code(w, r, code);
             }
         } else {
@@ -800,7 +800,7 @@ srs_error_t SrsGoApiStreams::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessa
 
             if ((err = stream->dumps(data)) != srs_success) {
                 int code = srs_error_code(err);
-                srs_error_reset(err);
+                srs_freep(err);
                 return srs_api_response_code(w, r, code);
             }
         }
@@ -852,7 +852,7 @@ srs_error_t SrsGoApiClients::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessa
             int count = srs_max(10, atoi(rcount.c_str()));
             if ((err = stat->dumps_clients(data, start, count)) != srs_success) {
                 int code = srs_error_code(err);
-                srs_error_reset(err);
+                srs_freep(err);
                 return srs_api_response_code(w, r, code);
             }
         } else {
@@ -861,7 +861,7 @@ srs_error_t SrsGoApiClients::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessa
 
             if ((err = client->dumps(data)) != srs_success) {
                 int code = srs_error_code(err);
-                srs_error_reset(err);
+                srs_freep(err);
                 return srs_api_response_code(w, r, code);
             }
         }
@@ -920,7 +920,7 @@ srs_error_t SrsGoApiRaw::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *
         // query global scope.
         if ((err = _srs_config->raw_to_json(obj.get())) != srs_success) {
             int code = srs_error_code(err);
-            srs_error_reset(err);
+            srs_freep(err);
             return srs_api_response_code(w, r, code);
         }
 

@@ -476,7 +476,7 @@ void SrsDashController::on_unpublish()
 
     if ((err = refresh_mpd(format_)) != srs_success) {
         srs_warn("Refresh the MPD failed, err=%s", srs_error_desc(err).c_str());
-        srs_error_reset(err);
+        srs_freep(err);
     }
 }
 

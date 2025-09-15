@@ -280,7 +280,7 @@ srs_error_t SrsForwarder::forward()
             if (err != srs_success && srs_error_code(err) != ERROR_SOCKET_TIMEOUT) {
                 return srs_error_wrap(err, "receive control message");
             }
-            srs_error_reset(err);
+            srs_freep(err);
 
             srs_freep(msg);
         }
