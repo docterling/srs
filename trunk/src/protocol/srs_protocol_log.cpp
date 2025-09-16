@@ -93,65 +93,6 @@ const SrsContextId &srs_context_set_cid_of(srs_thread_t trd, const SrsContextId 
     return v;
 }
 
-// LCOV_EXCL_START
-SrsConsoleLog::SrsConsoleLog(SrsLogLevel l, bool u)
-{
-    level_ = l;
-    utc_ = u;
-
-    buffer_ = new char[SRS_BASIC_LOG_SIZE];
-}
-
-SrsConsoleLog::~SrsConsoleLog()
-{
-    srs_freepa(buffer_);
-}
-
-srs_error_t SrsConsoleLog::initialize()
-{
-    return srs_success;
-}
-
-void SrsConsoleLog::reopen()
-{
-}
-
-void SrsConsoleLog::log(SrsLogLevel level, const char *tag, const SrsContextId &context_id, const char *fmt, va_list args)
-{
-    if (level < level_ || level >= SrsLogLevelDisabled) {
-        return;
-    }
-
-    int size = 0;
-    if (!srs_log_header(buffer_, SRS_BASIC_LOG_SIZE, utc_, level >= SrsLogLevelWarn, tag, context_id, srs_log_level_strings[level], &size)) {
-        return;
-    }
-
-    // Something not expected, drop the log.
-    int r0 = vsnprintf(buffer_ + size, SRS_BASIC_LOG_SIZE - size, fmt, args);
-    if (r0 <= 0 || r0 >= SRS_BASIC_LOG_SIZE - size) {
-        return;
-    }
-    size += r0;
-
-    // Add errno and strerror() if error.
-    if (level == SrsLogLevelError && errno != 0) {
-        r0 = snprintf(buffer_ + size, SRS_BASIC_LOG_SIZE - size, "(%s)", strerror(errno));
-
-        // Something not expected, drop the log.
-        if (r0 <= 0 || r0 >= SRS_BASIC_LOG_SIZE - size) {
-            return;
-        }
-        size += r0;
-    }
-
-    if (level >= SrsLogLevelWarn) {
-        fprintf(stderr, "%s\n", buffer_);
-    } else {
-        fprintf(stdout, "%s\n", buffer_);
-    }
-}
-
 bool srs_log_header(char *buffer, int size, bool utc, bool dangerous, const char *tag, SrsContextId cid, const char *level, int *psize)
 {
     // clock time

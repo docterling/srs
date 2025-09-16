@@ -11,6 +11,7 @@ using namespace std;
 #include <srs_app_st.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_buffer.hpp>
+#include <srs_kernel_codec.hpp>
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_amf0.hpp>
@@ -400,21 +401,668 @@ VOID TEST(ProtocolRawAvcTest, SrsRawHEVCStreamBasic)
     (void)is_pps3;
 }
 
-VOID TEST(ProtocolHttpClientTest, SrsHttpClientBasic)
+VOID TEST(ProtocolRawAvcTest, SrsRawHEVCStreamVpsDemux)
 {
-    SrsHttpClient client;
+    srs_error_t err = srs_success;
 
-    // Test basic initialization - should not crash
-    // We can't easily test actual HTTP requests without a server
+    SrsRawHEVCStream hevc;
 
-    // Test header setting
-    SrsHttpClient *result = client.set_header("User-Agent", "SRS-Test");
-    EXPECT_TRUE(result != NULL);
-    EXPECT_EQ(&client, result); // Should return self for chaining
+    // Test VPS demux with valid VPS data
+    if (true) {
+        // Create VPS NALU data (NALU type 32 = 0x40)
+        unsigned char vps_data[] = {0x40, 0x01, 0x0c, 0x01, 0xff, 0xff, 0x01, 0x60, 0x00, 0x00, 0x03, 0x00, 0x90, 0x00, 0x00, 0x03, 0x00, 0x00, 0x03, 0x00, 0x5d, 0xac, 0x09};
+        std::string vps_output;
 
-    // Test multiple headers
-    client.set_header("Content-Type", "application/json");
-    client.set_header("Accept", "application/json");
+        HELPER_EXPECT_SUCCESS(hevc.vps_demux((char *)vps_data, sizeof(vps_data), vps_output));
+
+        // Should copy the VPS data
+        EXPECT_EQ(sizeof(vps_data), vps_output.length());
+        EXPECT_EQ(0, memcmp(vps_data, vps_output.data(), sizeof(vps_data)));
+    }
+
+    // Test VPS demux with empty data - should fail
+    if (true) {
+        std::string vps_output;
+        HELPER_EXPECT_FAILED(hevc.vps_demux(NULL, 0, vps_output));
+    }
+
+    // Test VPS demux with minimal data
+    if (true) {
+        unsigned char minimal_vps[] = {0x40};
+        std::string vps_output;
+
+        HELPER_EXPECT_SUCCESS(hevc.vps_demux((char *)minimal_vps, sizeof(minimal_vps), vps_output));
+        EXPECT_EQ(sizeof(minimal_vps), vps_output.length());
+    }
+}
+
+VOID TEST(ProtocolRawAvcTest, SrsRawHEVCStreamSpsDemux)
+{
+    srs_error_t err = srs_success;
+
+    SrsRawHEVCStream hevc;
+
+    // Test SPS demux with valid SPS data
+    if (true) {
+        // Create SPS NALU data (NALU type 33 = 0x42)
+        unsigned char sps_data[] = {0x42, 0x01, 0x01, 0x01, 0x60, 0x00, 0x00, 0x03, 0x00, 0x90, 0x00, 0x00, 0x03, 0x00, 0x00, 0x03, 0x00, 0x5d, 0xa0, 0x02, 0x80, 0x80, 0x2d, 0x16, 0x59, 0x59, 0xa4, 0x93, 0x2b, 0xc0, 0x5a, 0x70, 0x80, 0x00, 0x01, 0xf4, 0x80, 0x00, 0x5d, 0xc0, 0x47, 0xe1, 0x81, 0x65, 0x80};
+        std::string sps_output;
+
+        HELPER_EXPECT_SUCCESS(hevc.sps_demux((char *)sps_data, sizeof(sps_data), sps_output));
+
+        // Should copy the SPS data
+        EXPECT_EQ(sizeof(sps_data), sps_output.length());
+        EXPECT_EQ(0, memcmp(sps_data, sps_output.data(), sizeof(sps_data)));
+    }
+
+    // Test SPS demux with insufficient data (less than 4 bytes) - should succeed but return empty
+    if (true) {
+        unsigned char short_sps[] = {0x42, 0x01, 0x01};
+        std::string sps_output;
+
+        HELPER_EXPECT_SUCCESS(hevc.sps_demux((char *)short_sps, sizeof(short_sps), sps_output));
+        EXPECT_TRUE(sps_output.empty());
+    }
+
+    // Test SPS demux with exactly 4 bytes
+    if (true) {
+        unsigned char min_sps[] = {0x42, 0x01, 0x01, 0x01};
+        std::string sps_output;
+
+        HELPER_EXPECT_SUCCESS(hevc.sps_demux((char *)min_sps, sizeof(min_sps), sps_output));
+        EXPECT_EQ(sizeof(min_sps), sps_output.length());
+    }
+}
+
+VOID TEST(ProtocolRawAvcTest, SrsRawHEVCStreamPpsDemux)
+{
+    srs_error_t err = srs_success;
+
+    SrsRawHEVCStream hevc;
+
+    // Test PPS demux with valid PPS data
+    if (true) {
+        // Create PPS NALU data (NALU type 34 = 0x44)
+        unsigned char pps_data[] = {0x44, 0x01, 0xc1, 0x73, 0xd1, 0x89, 0x00};
+        std::string pps_output;
+
+        HELPER_EXPECT_SUCCESS(hevc.pps_demux((char *)pps_data, sizeof(pps_data), pps_output));
+
+        // Should copy the PPS data
+        EXPECT_EQ(sizeof(pps_data), pps_output.length());
+        EXPECT_EQ(0, memcmp(pps_data, pps_output.data(), sizeof(pps_data)));
+    }
+
+    // Test PPS demux with empty data - should fail
+    if (true) {
+        std::string pps_output;
+        HELPER_EXPECT_FAILED(hevc.pps_demux(NULL, 0, pps_output));
+    }
+
+    // Test PPS demux with minimal data
+    if (true) {
+        unsigned char minimal_pps[] = {0x44};
+        std::string pps_output;
+
+        HELPER_EXPECT_SUCCESS(hevc.pps_demux((char *)minimal_pps, sizeof(minimal_pps), pps_output));
+        EXPECT_EQ(sizeof(minimal_pps), pps_output.length());
+    }
+}
+
+VOID TEST(ProtocolRawAvcTest, SrsRawHEVCStreamMuxSequenceHeader)
+{
+    srs_error_t err = srs_success;
+
+    SrsRawHEVCStream hevc;
+
+    // Test mux_sequence_header with valid HEVC VPS, SPS, and PPS data
+    if (true) {
+        // Create valid HEVC VPS data that will pass demux validation
+        // VPS NALU: forbidden_zero_bit(1) + nal_unit_type(6) + nuh_layer_id(6) + nuh_temporal_id_plus1(3) + RBSP
+        // NALU type 32 (VPS) = 0x40 (32 << 1), nuh_layer_id=0, nuh_temporal_id_plus1=1
+        unsigned char vps_raw[] = {
+            0x40, 0x01,                                     // NALU header: type=32(VPS), layer_id=0, temporal_id=1
+            0x0C, 0x01, 0xFF, 0xFF, 0x01, 0x60, 0x00, 0x00, // VPS RBSP data
+            0x03, 0x00, 0x90, 0x00, 0x00, 0x03, 0x00, 0x00,
+            0x03, 0x00, 0x5D, 0xAC, 0x09};
+        std::string vps_data((char *)vps_raw, sizeof(vps_raw));
+
+        // Create valid HEVC SPS data that will pass demux validation
+        // SPS NALU: NALU type 33 (SPS) = 0x42 (33 << 1)
+        unsigned char sps_raw[] = {
+            0x42, 0x01,                                     // NALU header: type=33(SPS), layer_id=0, temporal_id=1
+            0x01, 0x01, 0x60, 0x00, 0x00, 0x03, 0x00, 0x90, // SPS RBSP data
+            0x00, 0x00, 0x03, 0x00, 0x00, 0x03, 0x00, 0x5D,
+            0xA0, 0x02, 0x80, 0x80, 0x2D, 0x16, 0x59, 0x59,
+            0xA4, 0x93, 0x2B, 0xC0, 0x5A, 0x70, 0x80};
+        std::string sps_data((char *)sps_raw, sizeof(sps_raw));
+
+        // Create valid HEVC PPS data
+        // PPS NALU: NALU type 34 (PPS) = 0x44 (34 << 1)
+        std::vector<std::string> pps_list;
+        unsigned char pps_raw[] = {
+            0x44, 0x01,                  // NALU header: type=34(PPS), layer_id=0, temporal_id=1
+            0xC1, 0x73, 0xD1, 0x89, 0x00 // PPS RBSP data
+        };
+        pps_list.push_back(std::string((char *)pps_raw, sizeof(pps_raw)));
+
+        std::string hvcC_output;
+
+        // This should now succeed with valid HEVC data and cover the configuration record generation
+        HELPER_EXPECT_SUCCESS(hevc.mux_sequence_header(vps_data, sps_data, pps_list, hvcC_output));
+
+        // Should produce non-empty HEVCDecoderConfigurationRecord
+        EXPECT_FALSE(hvcC_output.empty());
+        EXPECT_GT(hvcC_output.length(), 23); // Minimum HEVC configuration record size
+
+        // Verify HEVCDecoderConfigurationRecord structure
+        const char *data = hvcC_output.data();
+        EXPECT_EQ(0x01, (unsigned char)data[0]); // configurationVersion = 1
+
+        // Verify the configuration record contains our VPS, SPS, PPS data
+        // The exact structure depends on the implementation, but it should be significantly larger than header
+        EXPECT_GT(hvcC_output.length(), vps_data.length() + sps_data.length() + pps_list[0].length());
+    }
+
+    // Test mux_sequence_header with empty VPS - should fail
+    if (true) {
+        std::string empty_vps;
+        std::string sps_data = std::string("\x42\x01\x01\x01\x60", 5);
+        std::vector<std::string> pps_list;
+        pps_list.push_back(std::string("\x44\x01", 2));
+        std::string hvcC_output;
+
+        srs_error_t mux_err = hevc.mux_sequence_header(empty_vps, sps_data, pps_list, hvcC_output);
+        HELPER_EXPECT_FAILED(mux_err); // Should fail due to empty VPS
+    }
+
+    // Test mux_sequence_header with empty PPS list - should fail
+    if (true) {
+        std::string vps_data = std::string("\x40\x01\x0c", 3);
+        std::string sps_data = std::string("\x42\x01\x01\x01\x60", 5);
+        std::vector<std::string> empty_pps_list;
+        std::string hvcC_output;
+
+        srs_error_t mux_err = hevc.mux_sequence_header(vps_data, sps_data, empty_pps_list, hvcC_output);
+        HELPER_EXPECT_FAILED(mux_err); // Should fail due to empty PPS list
+    }
+
+    // Test mux_sequence_header with multiple PPS
+    if (true) {
+        std::string vps_data = std::string("\x40\x01", 2);
+        std::string sps_data = std::string("\x42\x01\x01\x01", 4);
+
+        std::vector<std::string> pps_list;
+        pps_list.push_back(std::string("\x44\x01", 2));
+        pps_list.push_back(std::string("\x44\x02", 2));
+        pps_list.push_back(std::string("\x44\x03", 2));
+
+        std::string hvcC_output;
+
+        // This may fail due to HEVC validation but shouldn't crash
+        srs_error_t mux_err = hevc.mux_sequence_header(vps_data, sps_data, pps_list, hvcC_output);
+        srs_freep(mux_err); // Don't assert success since HEVC validation is complex
+
+        // Test passed if no crash occurred
+        EXPECT_TRUE(true);
+    }
+
+    // Test mux_sequence_header with different HEVC profile/level to cover more configuration record generation
+    if (true) {
+        // Create VPS with different profile space and tier flag
+        unsigned char vps_raw2[] = {
+            0x40, 0x01,                                     // NALU header: type=32(VPS)
+            0x2C, 0x01, 0xFF, 0xFF, 0x02, 0x20, 0x00, 0x00, // VPS RBSP with different profile_space=1, tier_flag=1
+            0x03, 0x00, 0x90, 0x00, 0x00, 0x03, 0x00, 0x00,
+            0x03, 0x00, 0x78, 0xAC, 0x09};
+        std::string vps_data2((char *)vps_raw2, sizeof(vps_raw2));
+
+        // Create SPS with different parameters
+        unsigned char sps_raw2[] = {
+            0x42, 0x01,                                     // NALU header: type=33(SPS)
+            0x02, 0x20, 0x00, 0x00, 0x03, 0x00, 0x90, 0x00, // SPS RBSP with different profile_idc
+            0x00, 0x03, 0x00, 0x00, 0x03, 0x00, 0x78, 0xA0,
+            0x03, 0x50, 0x80, 0x32, 0x16, 0x59, 0x59, 0xA4,
+            0x93, 0x2B, 0xC0, 0x40, 0x40, 0x40, 0x80};
+        std::string sps_data2((char *)sps_raw2, sizeof(sps_raw2));
+
+        std::vector<std::string> pps_list2;
+        unsigned char pps_raw2[] = {
+            0x44, 0x01,                  // NALU header: type=34(PPS)
+            0xC2, 0x73, 0xD1, 0x89, 0x10 // PPS RBSP data
+        };
+        pps_list2.push_back(std::string((char *)pps_raw2, sizeof(pps_raw2)));
+
+        std::string hvcC_output2;
+
+        // This should succeed and generate different configuration record
+        HELPER_EXPECT_SUCCESS(hevc.mux_sequence_header(vps_data2, sps_data2, pps_list2, hvcC_output2));
+
+        // Should produce non-empty HEVCDecoderConfigurationRecord
+        EXPECT_FALSE(hvcC_output2.empty());
+        EXPECT_GT(hvcC_output2.length(), 23); // Minimum HEVC configuration record size
+
+        // Verify HEVCDecoderConfigurationRecord structure
+        const char *data2 = hvcC_output2.data();
+        EXPECT_EQ(0x01, (unsigned char)data2[0]); // configurationVersion = 1
+
+        // The second byte should contain profile_space, tier_flag, and profile_idc
+        // This tests the bit manipulation code: temp8bits |= ((hevc_info->general_profile_space_ & 0x03) << 6);
+        uint8_t profile_byte = (unsigned char)data2[1];
+        uint8_t profile_space = (profile_byte >> 6) & 0x03;
+        uint8_t tier_flag = (profile_byte >> 5) & 0x01;
+        uint8_t profile_idc = profile_byte & 0x1f;
+
+        // These values should be extracted from the VPS/SPS parsing
+        EXPECT_GE(profile_space, 0);
+        EXPECT_LE(profile_space, 3);
+        EXPECT_GE(tier_flag, 0);
+        EXPECT_LE(tier_flag, 1);
+        EXPECT_GE(profile_idc, 0);
+        EXPECT_LE(profile_idc, 31);
+    }
+}
+
+VOID TEST(ProtocolRawAvcTest, SrsRawHEVCStreamMuxIpbFrame)
+{
+    srs_error_t err = srs_success;
+
+    SrsRawHEVCStream hevc;
+
+    // Test mux_ipb_frame with valid frame data
+    if (true) {
+        // Create test HEVC frame data (IDR slice)
+        unsigned char frame_data[] = {0x26, 0x01, 0xaf, 0x06, 0xb8, 0x63, 0xef, 0x3a, 0x7f, 0x3c, 0x00, 0x01, 0x00, 0x80};
+        std::string ibp_output;
+
+        HELPER_EXPECT_SUCCESS(hevc.mux_ipb_frame((char *)frame_data, sizeof(frame_data), ibp_output));
+
+        // Should produce frame with 4-byte length prefix + frame data
+        EXPECT_EQ(4 + sizeof(frame_data), ibp_output.length());
+
+        // Check length prefix (big-endian)
+        const char *data = ibp_output.data();
+        uint32_t length = ((unsigned char)data[0] << 24) | ((unsigned char)data[1] << 16) | ((unsigned char)data[2] << 8) | (unsigned char)data[3];
+        EXPECT_EQ(sizeof(frame_data), length);
+
+        // Check frame data follows length prefix
+        EXPECT_EQ(0, memcmp(frame_data, data + 4, sizeof(frame_data)));
+    }
+
+    // Test mux_ipb_frame with empty frame - should still work
+    if (true) {
+        unsigned char empty_frame[] = {};
+        std::string ibp_output;
+
+        HELPER_EXPECT_SUCCESS(hevc.mux_ipb_frame((char *)empty_frame, 0, ibp_output));
+
+        // Should produce only 4-byte length prefix with zero length
+        EXPECT_EQ(4, ibp_output.length());
+
+        const char *data = ibp_output.data();
+        uint32_t length = ((unsigned char)data[0] << 24) | ((unsigned char)data[1] << 16) | ((unsigned char)data[2] << 8) | (unsigned char)data[3];
+        EXPECT_EQ(0, length);
+    }
+
+    // Test mux_ipb_frame with large frame
+    if (true) {
+        unsigned char large_frame[1000];
+        for (int i = 0; i < 1000; i++) {
+            large_frame[i] = i % 256;
+        }
+        std::string ibp_output;
+
+        HELPER_EXPECT_SUCCESS(hevc.mux_ipb_frame((char *)large_frame, sizeof(large_frame), ibp_output));
+
+        // Should produce frame with 4-byte length prefix + frame data
+        EXPECT_EQ(4 + sizeof(large_frame), ibp_output.length());
+
+        // Check length prefix
+        const char *data = ibp_output.data();
+        uint32_t length = ((unsigned char)data[0] << 24) | ((unsigned char)data[1] << 16) | ((unsigned char)data[2] << 8) | (unsigned char)data[3];
+        EXPECT_EQ(sizeof(large_frame), length);
+    }
+
+    // Test mux_ipb_frame with different HEVC NALU types
+    if (true) {
+        // Test with P-frame (TRAIL_R NALU type 1)
+        unsigned char p_frame[] = {0x02, 0x01, 0x50, 0x80, 0x12, 0x34, 0x56, 0x78};
+        std::string ibp_output;
+
+        HELPER_EXPECT_SUCCESS(hevc.mux_ipb_frame((char *)p_frame, sizeof(p_frame), ibp_output));
+
+        // Verify output format
+        EXPECT_EQ(4 + sizeof(p_frame), ibp_output.length());
+        const char *data = ibp_output.data();
+        uint32_t length = ((unsigned char)data[0] << 24) | ((unsigned char)data[1] << 16) | ((unsigned char)data[2] << 8) | (unsigned char)data[3];
+        EXPECT_EQ(sizeof(p_frame), length);
+        EXPECT_EQ(0, memcmp(p_frame, data + 4, sizeof(p_frame)));
+    }
+
+    // Test mux_ipb_frame with B-frame (TSA_N NALU type 2)
+    if (true) {
+        unsigned char b_frame[] = {0x04, 0x01, 0x60, 0x90, 0xab, 0xcd, 0xef};
+        std::string ibp_output;
+
+        HELPER_EXPECT_SUCCESS(hevc.mux_ipb_frame((char *)b_frame, sizeof(b_frame), ibp_output));
+
+        // Verify output format
+        EXPECT_EQ(4 + sizeof(b_frame), ibp_output.length());
+        const char *data = ibp_output.data();
+        uint32_t length = ((unsigned char)data[0] << 24) | ((unsigned char)data[1] << 16) | ((unsigned char)data[2] << 8) | (unsigned char)data[3];
+        EXPECT_EQ(sizeof(b_frame), length);
+        EXPECT_EQ(0, memcmp(b_frame, data + 4, sizeof(b_frame)));
+    }
+}
+
+VOID TEST(ProtocolRawAvcTest, SrsRawHEVCStreamMuxAvc2flv)
+{
+    srs_error_t err = srs_success;
+
+    SrsRawHEVCStream hevc;
+
+    // Test mux_avc2flv with sequence header
+    if (true) {
+        std::string video_data = std::string("\x01\x64\x00\x20\xff\xe1\x00\x19\x67\x64\x00\x20", 12);
+        int8_t frame_type = 1;      // keyframe
+        int8_t avc_packet_type = 0; // sequence header
+        uint32_t dts = 1000;
+        uint32_t pts = 1000;
+        char *flv_data = NULL;
+        int nb_flv = 0;
+
+        HELPER_EXPECT_SUCCESS(hevc.mux_avc2flv(video_data, frame_type, avc_packet_type, dts, pts, &flv_data, &nb_flv));
+
+        // Should produce FLV packet with 5-byte header + video data
+        EXPECT_TRUE(flv_data != NULL);
+        EXPECT_EQ(5 + video_data.length(), nb_flv);
+
+        if (flv_data) {
+            // Check FLV header format
+            EXPECT_EQ((frame_type << 4) | 12, (uint8_t)flv_data[0]); // frame_type | SrsVideoCodecIdHEVC(12)
+            EXPECT_EQ(avc_packet_type, flv_data[1]);                 // AVCPacketType
+
+            // Check composition time (CTS = PTS - DTS = 0)
+            uint32_t cts = ((unsigned char)flv_data[2] << 16) | ((unsigned char)flv_data[3] << 8) | (unsigned char)flv_data[4];
+            EXPECT_EQ(0, cts);
+
+            // Check video data follows header
+            EXPECT_EQ(0, memcmp(video_data.data(), flv_data + 5, video_data.length()));
+
+            delete[] flv_data;
+        }
+    }
+
+    // Test mux_avc2flv with NALU frame
+    if (true) {
+        std::string video_data = std::string("\x00\x00\x00\x0e\x26\x01\xaf\x06\xb8\x63\xef\x3a\x7f\x3c\x00\x01\x00\x80", 18);
+        int8_t frame_type = 1;      // keyframe
+        int8_t avc_packet_type = 1; // NALU
+        uint32_t dts = 2000;
+        uint32_t pts = 2100; // PTS > DTS
+        char *flv_data = NULL;
+        int nb_flv = 0;
+
+        HELPER_EXPECT_SUCCESS(hevc.mux_avc2flv(video_data, frame_type, avc_packet_type, dts, pts, &flv_data, &nb_flv));
+
+        EXPECT_TRUE(flv_data != NULL);
+        EXPECT_EQ(5 + video_data.length(), nb_flv);
+
+        if (flv_data) {
+            // Check composition time (CTS = PTS - DTS = 100)
+            uint32_t cts = ((unsigned char)flv_data[2] << 16) | ((unsigned char)flv_data[3] << 8) | (unsigned char)flv_data[4];
+            EXPECT_EQ(100, cts);
+
+            delete[] flv_data;
+        }
+    }
+
+    // Test mux_avc2flv with inter frame
+    if (true) {
+        std::string video_data = std::string("\x00\x00\x00\x08\x02\x01\xd0\x80\x93\x25\x88\x84", 12);
+        int8_t frame_type = 2;      // inter frame
+        int8_t avc_packet_type = 1; // NALU
+        uint32_t dts = 3000;
+        uint32_t pts = 3000;
+        char *flv_data = NULL;
+        int nb_flv = 0;
+
+        HELPER_EXPECT_SUCCESS(hevc.mux_avc2flv(video_data, frame_type, avc_packet_type, dts, pts, &flv_data, &nb_flv));
+
+        EXPECT_TRUE(flv_data != NULL);
+        if (flv_data) {
+            // Check frame type in FLV header
+            EXPECT_EQ((frame_type << 4) | 12, (uint8_t)flv_data[0]); // inter frame | HEVC codec
+            delete[] flv_data;
+        }
+    }
+
+    // Test mux_avc2flv with empty video data
+    if (true) {
+        std::string empty_video_data;
+        int8_t frame_type = 1;      // keyframe
+        int8_t avc_packet_type = 0; // sequence header
+        uint32_t dts = 4000;
+        uint32_t pts = 4000;
+        char *flv_data = NULL;
+        int nb_flv = 0;
+
+        HELPER_EXPECT_SUCCESS(hevc.mux_avc2flv(empty_video_data, frame_type, avc_packet_type, dts, pts, &flv_data, &nb_flv));
+
+        // Should produce FLV packet with 5-byte header only
+        EXPECT_TRUE(flv_data != NULL);
+        EXPECT_EQ(5, nb_flv);
+
+        if (flv_data) {
+            // Check FLV header format
+            EXPECT_EQ((frame_type << 4) | 12, (uint8_t)flv_data[0]); // frame_type | SrsVideoCodecIdHEVC(12)
+            EXPECT_EQ(avc_packet_type, flv_data[1]);                 // AVCPacketType
+
+            // Check composition time (CTS = PTS - DTS = 0)
+            uint32_t cts = ((unsigned char)flv_data[2] << 16) | ((unsigned char)flv_data[3] << 8) | (unsigned char)flv_data[4];
+            EXPECT_EQ(0, cts);
+
+            delete[] flv_data;
+        }
+    }
+
+    // Test mux_avc2flv with large composition time offset
+    if (true) {
+        std::string video_data = std::string("\x00\x00\x00\x04\x26\x01\xaf\x06", 8);
+        int8_t frame_type = 1;      // keyframe
+        int8_t avc_packet_type = 1; // NALU
+        uint32_t dts = 5000;
+        uint32_t pts = 10000; // Large PTS offset
+        char *flv_data = NULL;
+        int nb_flv = 0;
+
+        HELPER_EXPECT_SUCCESS(hevc.mux_avc2flv(video_data, frame_type, avc_packet_type, dts, pts, &flv_data, &nb_flv));
+
+        EXPECT_TRUE(flv_data != NULL);
+        if (flv_data) {
+            // Check composition time (CTS = PTS - DTS = 5000)
+            uint32_t cts = ((unsigned char)flv_data[2] << 16) | ((unsigned char)flv_data[3] << 8) | (unsigned char)flv_data[4];
+            EXPECT_EQ(5000, cts);
+
+            delete[] flv_data;
+        }
+    }
+}
+
+VOID TEST(ProtocolRawAvcTest, SrsRawHEVCStreamMuxAvc2flvEnhanced)
+{
+    srs_error_t err = srs_success;
+
+    SrsRawHEVCStream hevc;
+
+    // Test mux_avc2flv_enhanced with sequence header
+    if (true) {
+        std::string video_data = std::string("\x01\x64\x00\x20\xff\xe1\x00\x19\x67\x64\x00\x20", 12);
+        int8_t frame_type = 1;  // keyframe
+        int8_t packet_type = 0; // sequence start
+        uint32_t dts = 1000;
+        uint32_t pts = 1000;
+        char *flv_data = NULL;
+        int nb_flv = 0;
+
+        HELPER_EXPECT_SUCCESS(hevc.mux_avc2flv_enhanced(video_data, frame_type, packet_type, dts, pts, &flv_data, &nb_flv));
+
+        // Should produce enhanced FLV packet with 5-byte header + video data
+        EXPECT_TRUE(flv_data != NULL);
+        EXPECT_EQ(5 + video_data.length(), nb_flv);
+
+        if (flv_data) {
+            // Check enhanced FLV header format
+            uint8_t header_byte = flv_data[0];
+            EXPECT_TRUE((header_byte & 0x80) != 0);           // SRS_FLV_IS_EX_HEADER bit set
+            EXPECT_EQ(frame_type, (header_byte >> 4) & 0x07); // frame type (3 bits, mask out EX_HEADER bit)
+            EXPECT_EQ(packet_type, header_byte & 0x0f);       // packet type
+
+            // Check HEVC fourcc 'hvc1'
+            EXPECT_EQ('h', flv_data[1]);
+            EXPECT_EQ('v', flv_data[2]);
+            EXPECT_EQ('c', flv_data[3]);
+            EXPECT_EQ('1', flv_data[4]);
+
+            // Check video data follows header
+            EXPECT_EQ(0, memcmp(video_data.data(), flv_data + 5, video_data.length()));
+
+            delete[] flv_data;
+        }
+    }
+
+    // Test mux_avc2flv_enhanced with coded frames
+    if (true) {
+        std::string video_data = std::string("\x00\x00\x00\x0e\x26\x01\xaf\x06\xb8\x63\xef\x3a\x7f\x3c\x00\x01\x00\x80", 18);
+        int8_t frame_type = 1;  // keyframe
+        int8_t packet_type = 1; // coded frames
+        uint32_t dts = 2000;
+        uint32_t pts = 2000;
+        char *flv_data = NULL;
+        int nb_flv = 0;
+
+        HELPER_EXPECT_SUCCESS(hevc.mux_avc2flv_enhanced(video_data, frame_type, packet_type, dts, pts, &flv_data, &nb_flv));
+
+        EXPECT_TRUE(flv_data != NULL);
+        EXPECT_EQ(5 + video_data.length(), nb_flv);
+
+        if (flv_data) {
+            // Check enhanced header with coded frames packet type
+            uint8_t header_byte = flv_data[0];
+            EXPECT_EQ(packet_type, header_byte & 0x0f); // coded frames packet type
+
+            delete[] flv_data;
+        }
+    }
+
+    // Test mux_avc2flv_enhanced with inter frame
+    if (true) {
+        std::string video_data = std::string("\x00\x00\x00\x08\x02\x01\xd0\x80\x93\x25\x88\x84", 12);
+        int8_t frame_type = 2;  // inter frame
+        int8_t packet_type = 1; // coded frames
+        uint32_t dts = 3000;
+        uint32_t pts = 3000;
+        char *flv_data = NULL;
+        int nb_flv = 0;
+
+        HELPER_EXPECT_SUCCESS(hevc.mux_avc2flv_enhanced(video_data, frame_type, packet_type, dts, pts, &flv_data, &nb_flv));
+
+        EXPECT_TRUE(flv_data != NULL);
+        if (flv_data) {
+            // Check inter frame type in enhanced header
+            uint8_t header_byte = flv_data[0];
+            EXPECT_EQ(frame_type, (header_byte >> 4) & 0x07); // inter frame type (3 bits, mask out EX_HEADER bit)
+
+            delete[] flv_data;
+        }
+    }
+
+    // Test mux_avc2flv_enhanced with sequence end packet
+    if (true) {
+        std::string video_data; // Empty for sequence end
+        int8_t frame_type = 1;  // keyframe
+        int8_t packet_type = 2; // sequence end
+        uint32_t dts = 4000;
+        uint32_t pts = 4000;
+        char *flv_data = NULL;
+        int nb_flv = 0;
+
+        HELPER_EXPECT_SUCCESS(hevc.mux_avc2flv_enhanced(video_data, frame_type, packet_type, dts, pts, &flv_data, &nb_flv));
+
+        EXPECT_TRUE(flv_data != NULL);
+        EXPECT_EQ(5, nb_flv); // Should produce 5-byte header only
+
+        if (flv_data) {
+            // Check enhanced FLV header format for sequence end
+            uint8_t header_byte = flv_data[0];
+            EXPECT_TRUE((header_byte & 0x80) != 0);           // SRS_FLV_IS_EX_HEADER bit set
+            EXPECT_EQ(frame_type, (header_byte >> 4) & 0x07); // frame type
+            EXPECT_EQ(packet_type, header_byte & 0x0f);       // sequence end packet type
+
+            // Check HEVC fourcc 'hvc1'
+            EXPECT_EQ('h', flv_data[1]);
+            EXPECT_EQ('v', flv_data[2]);
+            EXPECT_EQ('c', flv_data[3]);
+            EXPECT_EQ('1', flv_data[4]);
+
+            delete[] flv_data;
+        }
+    }
+
+    // Test mux_avc2flv_enhanced with different frame types
+    if (true) {
+        std::string video_data = std::string("\x00\x00\x00\x06\x04\x01\x70\x80\x12\x34", 10);
+        int8_t frame_type = 3;  // disposable inter frame
+        int8_t packet_type = 1; // coded frames
+        uint32_t dts = 5000;
+        uint32_t pts = 5000;
+        char *flv_data = NULL;
+        int nb_flv = 0;
+
+        HELPER_EXPECT_SUCCESS(hevc.mux_avc2flv_enhanced(video_data, frame_type, packet_type, dts, pts, &flv_data, &nb_flv));
+
+        EXPECT_TRUE(flv_data != NULL);
+        if (flv_data) {
+            // Check disposable inter frame type in enhanced header
+            uint8_t header_byte = flv_data[0];
+            EXPECT_EQ(frame_type, (header_byte >> 4) & 0x07); // disposable inter frame type
+
+            delete[] flv_data;
+        }
+    }
+
+    // Test mux_avc2flv_enhanced with empty video data
+    if (true) {
+        std::string empty_video_data;
+        int8_t frame_type = 1;  // keyframe
+        int8_t packet_type = 0; // sequence start
+        uint32_t dts = 6000;
+        uint32_t pts = 6000;
+        char *flv_data = NULL;
+        int nb_flv = 0;
+
+        HELPER_EXPECT_SUCCESS(hevc.mux_avc2flv_enhanced(empty_video_data, frame_type, packet_type, dts, pts, &flv_data, &nb_flv));
+
+        // Should produce enhanced FLV packet with 5-byte header only
+        EXPECT_TRUE(flv_data != NULL);
+        EXPECT_EQ(5, nb_flv);
+
+        if (flv_data) {
+            // Check enhanced FLV header format
+            uint8_t header_byte = flv_data[0];
+            EXPECT_TRUE((header_byte & 0x80) != 0);           // SRS_FLV_IS_EX_HEADER bit set
+            EXPECT_EQ(frame_type, (header_byte >> 4) & 0x07); // frame type
+            EXPECT_EQ(packet_type, header_byte & 0x0f);       // packet type
+
+            // Check HEVC fourcc 'hvc1'
+            EXPECT_EQ('h', flv_data[1]);
+            EXPECT_EQ('v', flv_data[2]);
+            EXPECT_EQ('c', flv_data[3]);
+            EXPECT_EQ('1', flv_data[4]);
+
+            delete[] flv_data;
+        }
+    }
 }
 
 VOID TEST(ProtocolStreamTest, SrsFastStreamBasic)
@@ -456,25 +1104,6 @@ VOID TEST(ProtocolLogTest, SrsThreadContextBasic)
     EXPECT_EQ(0, new_id.compare(set_result));
 }
 
-VOID TEST(ProtocolLogTest, SrsConsoleLogBasic)
-{
-    // SrsConsoleLog requires parameters: level and utc flag
-    SrsConsoleLog console_log(SrsLogLevelTrace, false);
-
-    // Test basic functionality - should not crash
-    // We can't easily test actual logging without capturing output
-
-    // Test initialization
-    srs_error_t err = console_log.initialize();
-    HELPER_EXPECT_SUCCESS(err);
-
-    // Test reopen - should not crash
-    console_log.reopen();
-
-    // The console log should be constructible and destructible without issues
-    EXPECT_TRUE(true); // Just verify we can create and destroy the object
-}
-
 VOID TEST(ProtocolRtmpConnTest, SrsBasicRtmpClientBasic)
 {
     // Test basic RTMP client construction
@@ -506,37 +1135,6 @@ VOID TEST(ProtocolStTest, SrsStSocketBasic)
 
     bool is_not_never_timeout = srs_is_never_timeout(1000 * SRS_UTIME_MILLISECONDS);
     EXPECT_FALSE(is_not_never_timeout);
-}
-
-VOID TEST(ProtocolConnTest, SrsSslConnectionInterface)
-{
-    // Test SSL connection interface
-    // We can't easily test full SSL functionality without certificates
-
-    // Create a TCP connection first (with invalid fd for testing)
-    SrsTcpConnection *tcp = new SrsTcpConnection(NULL);
-
-    // Create SSL connection wrapper
-    SrsSslConnection *ssl = new SrsSslConnection(tcp);
-
-    // The SSL connection should be created
-    EXPECT_TRUE(ssl != NULL);
-
-    // Test timeout methods exist
-    ssl->set_recv_timeout(1000 * SRS_UTIME_MILLISECONDS);
-    srs_utime_t timeout = ssl->get_recv_timeout();
-    EXPECT_EQ(1000 * SRS_UTIME_MILLISECONDS, timeout);
-
-    ssl->set_send_timeout(2000 * SRS_UTIME_MILLISECONDS);
-    srs_utime_t send_timeout = ssl->get_send_timeout();
-    EXPECT_EQ(2000 * SRS_UTIME_MILLISECONDS, send_timeout);
-
-    // Test byte counters
-    EXPECT_EQ(0, ssl->get_recv_bytes());
-    EXPECT_EQ(0, ssl->get_send_bytes());
-
-    // Clean up
-    delete ssl; // This will also delete the tcp connection
 }
 
 VOID TEST(ProtocolRtpTest, SrsRtpVideoBuilderBasic)
@@ -825,71 +1423,6 @@ VOID TEST(ProtocolRtmpConnTest, SrsBasicRtmpClientOperations)
     // because they require valid internal client/transport objects which we don't have
     // without a successful connection. These methods exist and will be tested in
     // integration tests with actual RTMP server connections.
-}
-
-VOID TEST(ProtocolHttpClientTest, SrsHttpClientInitialization)
-{
-    srs_error_t err = srs_success;
-
-    SrsHttpClient client;
-
-    // Test initialization with HTTP
-    HELPER_EXPECT_SUCCESS(client.initialize("http", "127.0.0.1", 8080, 5000 * SRS_UTIME_MILLISECONDS));
-
-    // Test initialization with HTTPS
-    HELPER_EXPECT_SUCCESS(client.initialize("https", "example.com", 443, 10000 * SRS_UTIME_MILLISECONDS));
-
-    // Test header setting and chaining
-    SrsHttpClient *result1 = client.set_header("User-Agent", "SRS-Test/1.0");
-    EXPECT_TRUE(result1 != NULL);
-    EXPECT_EQ(&client, result1); // Should return self for chaining
-
-    SrsHttpClient *result2 = client.set_header("Accept", "application/json");
-    EXPECT_TRUE(result2 != NULL);
-    EXPECT_EQ(&client, result2);
-
-    // Test multiple header settings
-    client.set_header("Content-Type", "application/json");
-    client.set_header("Authorization", "Bearer token123");
-    client.set_header("X-Custom-Header", "custom-value");
-
-    // Test timeout setting
-    client.set_recv_timeout(3000 * SRS_UTIME_MILLISECONDS);
-}
-
-VOID TEST(ProtocolHttpClientTest, SrsHttpClientRequests)
-{
-    srs_error_t err = srs_success;
-
-    SrsHttpClient client;
-    HELPER_EXPECT_SUCCESS(client.initialize("http", "127.0.0.1", 8080, 1000 * SRS_UTIME_MILLISECONDS));
-
-    // Set headers for testing
-    client.set_header("User-Agent", "SRS-UTest");
-    client.set_header("Accept", "application/json");
-
-    // Test GET request - will fail without server but shouldn't crash
-    ISrsHttpMessage *get_msg = NULL;
-    srs_error_t get_err = client.get("/api/test", "", &get_msg);
-    srs_freep(get_err); // Expected to fail without server
-    EXPECT_TRUE(get_msg == NULL);
-
-    // Test POST request - will fail without server but shouldn't crash
-    ISrsHttpMessage *post_msg = NULL;
-    std::string post_data = "{\"test\":\"data\"}";
-    srs_error_t post_err = client.post("/api/submit", post_data, &post_msg);
-    srs_freep(post_err); // Expected to fail without server
-    EXPECT_TRUE(post_msg == NULL);
-
-    // Test requests with different paths
-    ISrsHttpMessage *root_msg = NULL;
-    srs_error_t get_root_err = client.get("/", "", &root_msg);
-    srs_freep(get_root_err);
-    EXPECT_TRUE(root_msg == NULL);
-
-    srs_error_t post_empty_err = client.post("/empty", "", &post_msg);
-    srs_freep(post_empty_err);
-    EXPECT_TRUE(post_msg == NULL);
 }
 
 VOID TEST(ProtocolRtcStunTest, SrsCrc32IeeeBasic)
@@ -2094,4 +2627,138 @@ VOID TEST(ProtocolSdpTest, SrsSdpUpdateMsid)
     EXPECT_STREQ("new_stream_id", video_descs[0]->ssrc_infos_[0].mslabel_.c_str());
     EXPECT_STREQ("new_stream_id", audio_descs[0]->ssrc_infos_[0].msid_.c_str());
     EXPECT_STREQ("new_stream_id", audio_descs[0]->ssrc_infos_[0].mslabel_.c_str());
+}
+
+VOID TEST(RawHEVCStreamTest, VpsDemux)
+{
+    srs_error_t err;
+
+    // Test vps_demux method with valid VPS data
+    if (true) {
+        SrsRawHEVCStream hevc;
+
+        // Create mock VPS NALU data (HEVC VPS type 32)
+        char vps_data[] = {
+            (char)((32 << 1) | 0), // HEVC VPS NALU type 32, layer_id=0
+            (char)1,               // layer_id bits + temporal_id=1
+            0x01, 0x02, 0x03, 0x04 // Mock VPS payload
+        };
+        int vps_size = sizeof(vps_data);
+
+        string vps_output;
+        HELPER_ASSERT_SUCCESS(hevc.vps_demux(vps_data, vps_size, vps_output));
+
+        // Verify VPS output matches input
+        EXPECT_EQ(vps_size, (int)vps_output.length());
+        EXPECT_EQ(0, memcmp(vps_data, vps_output.data(), vps_size));
+    }
+
+    // Test vps_demux with empty frame (should fail)
+    if (true) {
+        SrsRawHEVCStream hevc;
+
+        string vps_output;
+        HELPER_EXPECT_FAILED(hevc.vps_demux(NULL, 0, vps_output));
+    }
+
+    // Test vps_demux with negative frame size (should fail)
+    if (true) {
+        SrsRawHEVCStream hevc;
+
+        char dummy_data[] = {0x01, 0x02};
+        string vps_output;
+        HELPER_EXPECT_FAILED(hevc.vps_demux(dummy_data, -1, vps_output));
+    }
+}
+
+VOID TEST(RawHEVCStreamTest, SpsDemux)
+{
+    srs_error_t err;
+
+    // Test sps_demux method with valid SPS data
+    if (true) {
+        SrsRawHEVCStream hevc;
+
+        // Create mock SPS NALU data (HEVC SPS type 33)
+        char sps_data[] = {
+            (char)((33 << 1) | 0),       // HEVC SPS NALU type 33, layer_id=0
+            (char)1,                     // layer_id bits + temporal_id=1
+            0x10, 0x20, 0x30, 0x40, 0x50 // Mock SPS payload (>= 4 bytes total)
+        };
+        int sps_size = sizeof(sps_data);
+
+        string sps_output;
+        HELPER_ASSERT_SUCCESS(hevc.sps_demux(sps_data, sps_size, sps_output));
+
+        // Verify SPS output matches input
+        EXPECT_EQ(sps_size, (int)sps_output.length());
+        EXPECT_EQ(0, memcmp(sps_data, sps_output.data(), sps_size));
+    }
+
+    // Test sps_demux with frame size < 4 (should succeed but return empty)
+    if (true) {
+        SrsRawHEVCStream hevc;
+
+        char small_data[] = {0x01, 0x02}; // Only 2 bytes
+        string sps_output;
+        HELPER_ASSERT_SUCCESS(hevc.sps_demux(small_data, 2, sps_output));
+
+        // Should return empty string for frames < 4 bytes
+        EXPECT_EQ(0, (int)sps_output.length());
+    }
+
+    // Test sps_demux with exactly 4 bytes
+    if (true) {
+        SrsRawHEVCStream hevc;
+
+        char sps_data[] = {0x42, 0x01, 0x01, 0x01}; // Exactly 4 bytes
+        string sps_output;
+        HELPER_ASSERT_SUCCESS(hevc.sps_demux(sps_data, 4, sps_output));
+
+        // Should return the 4 bytes
+        EXPECT_EQ(4, (int)sps_output.length());
+        EXPECT_EQ(0, memcmp(sps_data, sps_output.data(), 4));
+    }
+}
+
+VOID TEST(RawHEVCStreamTest, PpsDemux)
+{
+    srs_error_t err;
+
+    // Test pps_demux method with valid PPS data
+    if (true) {
+        SrsRawHEVCStream hevc;
+
+        // Create mock PPS NALU data (HEVC PPS type 34)
+        unsigned char pps_data[] = {
+            (unsigned char)((34 << 1) | 0), // HEVC PPS NALU type 34, layer_id=0
+            (unsigned char)1,               // layer_id bits + temporal_id=1
+            0xA0, 0xB0, 0xC0                // Mock PPS payload
+        };
+        int pps_size = sizeof(pps_data);
+
+        string pps_output;
+        HELPER_ASSERT_SUCCESS(hevc.pps_demux((char *)pps_data, pps_size, pps_output));
+
+        // Verify PPS output matches input
+        EXPECT_EQ(pps_size, (int)pps_output.length());
+        EXPECT_EQ(0, memcmp(pps_data, pps_output.data(), pps_size));
+    }
+
+    // Test pps_demux with empty frame (should fail)
+    if (true) {
+        SrsRawHEVCStream hevc;
+
+        string pps_output;
+        HELPER_EXPECT_FAILED(hevc.pps_demux(NULL, 0, pps_output));
+    }
+
+    // Test pps_demux with negative frame size (should fail)
+    if (true) {
+        SrsRawHEVCStream hevc;
+
+        char dummy_data[] = {0x01, 0x02};
+        string pps_output;
+        HELPER_EXPECT_FAILED(hevc.pps_demux(dummy_data, -1, pps_output));
+    }
 }

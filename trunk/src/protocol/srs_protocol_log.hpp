@@ -38,26 +38,6 @@ private:
 // Set the context id of specified thread, not self.
 extern const SrsContextId &srs_context_set_cid_of(srs_thread_t trd, const SrsContextId &v);
 
-// The basic console log, which write log to console.
-class SrsConsoleLog : public ISrsLog
-{
-private:
-    SrsLogLevel level_;
-    bool utc_;
-
-private:
-    char *buffer_;
-
-public:
-    SrsConsoleLog(SrsLogLevel l, bool u);
-    virtual ~SrsConsoleLog();
-    // Interface ISrsLog
-public:
-    virtual srs_error_t initialize();
-    virtual void reopen();
-    virtual void log(SrsLogLevel level, const char *tag, const SrsContextId &context_id, const char *fmt, va_list args);
-};
-
 // Generate the log header.
 // @param dangerous Whether log is warning or error, log the errno if true.
 // @param utc Whether use UTC time format in the log header.

@@ -28,6 +28,10 @@ using namespace std;
 #include <srs_app_log.hpp>
 #include <srs_kernel_stream.hpp>
 
+// Include headers for TCP test classes
+#include <srs_app_listener.hpp>
+#include <srs_protocol_conn.hpp>
+
 // we add an empty macro for upp to show the smart tips.
 #define VOID
 
@@ -140,6 +144,10 @@ private:
     srs_mutex_t lock_;
 
 public:
+    // The thread to run the coroutine.
+    ISrsCoroutine *trd_;
+
+public:
     SrsCoroutineChan();
     virtual ~SrsCoroutineChan();
 
@@ -192,36 +200,32 @@ public:
 //        // The coroutine will be stopped and wait for it to terminate.
 //        // So maybe it won't execute all your code there.
 //
-// Enjoiy the sugar for coroutines.
-#define SRS_COROUTINE_GO_IMPL(context, id, code_block)                            \
-    class AnonymousCoroutineHandler##id : public ISrsCoroutineHandler             \
-    {                                                                             \
-    private:                                                                      \
-        SrsCoroutineChan *ctx_;                                                   \
-                                                                                  \
-    public:                                                                       \
-        AnonymousCoroutineHandler##id(SrsCoroutineChan *c)                        \
-        {                                                                         \
-            /* Copy the context so that we can pop it in different coroutines. */ \
-            ctx_ = c->copy();                                                     \
-        }                                                                         \
-        ~AnonymousCoroutineHandler##id()                                          \
-        {                                                                         \
-            srs_freep(ctx_);                                                      \
-        }                                                                         \
-                                                                                  \
-    public:                                                                       \
-        virtual srs_error_t cycle()                                               \
-        {                                                                         \
-            SrsCoroutineChan &ctx = *ctx_;                                        \
-            (void)ctx;                                                            \
-            code_block;                                                           \
-            return srs_success;                                                   \
-        }                                                                         \
-    };                                                                            \
-    AnonymousCoroutineHandler##id handler##id(context);                           \
-    SrsSTCoroutine st##id("anonymous", &handler##id);                             \
-    srs_error_t err_coroutine##id = st##id.start();                               \
+// Warning: Donot use this macro unless you don't need to debug the code block,
+// because it's impossible to debug it. Accordingly, you should use it when the
+// code block is very simple.
+#define SRS_COROUTINE_GO_IMPL(context, id, code_block)                \
+    class AnonymousCoroutineHandler##id : public ISrsCoroutineHandler \
+    {                                                                 \
+    private:                                                          \
+        SrsCoroutineChan *ctx_;                                       \
+                                                                      \
+    public:                                                           \
+        AnonymousCoroutineHandler##id() : ctx_(NULL) {}               \
+        ~AnonymousCoroutineHandler##id() { srs_freep(ctx_); }         \
+        void set_ctx(SrsCoroutineChan *c) { ctx_ = c->copy(); }       \
+        virtual srs_error_t cycle()                                   \
+        {                                                             \
+            SrsCoroutineChan &ctx = *ctx_;                            \
+            (void)ctx;                                                \
+            code_block;                                               \
+            return srs_success;                                       \
+        }                                                             \
+    };                                                                \
+    AnonymousCoroutineHandler##id handler##id;                        \
+    SrsSTCoroutine st##id("anonymous", &handler##id);                 \
+    (context)->trd_ = &st##id;                                        \
+    handler##id.set_ctx(context);                                     \
+    srs_error_t err_coroutine##id = st##id.start();                   \
     srs_assert(err_coroutine##id == srs_success)
 
 // A helper to create a anonymous coroutine like goroutine in Go.
@@ -273,5 +277,198 @@ public:
 //        });
 #define SRS_COROUTINE_GO_CTX2(ctx, id, code_block) \
     SRS_COROUTINE_GO_IMPL(ctx, id, code_block)
+
+// Simple HTTP test server similar to Go's httptest.NewServer
+// This is a simplified version that uses the raw socket approach like MockOnCycleThread4
+// but with proper HTTP response formatting
+class SrsHttpTestServer : public ISrsCoroutineHandler
+{
+private:
+    ISrsCoroutine *trd_;
+    srs_netfd_t fd_;
+    string response_body_;
+    string ip_;
+    int port_;
+
+public:
+    SrsHttpTestServer(string response_body);
+    virtual ~SrsHttpTestServer();
+
+public:
+    virtual srs_error_t start();
+    virtual void close();
+    virtual string url();
+    virtual int get_port();
+
+    // Interface ISrsCoroutineHandler
+public:
+    virtual srs_error_t cycle();
+
+private:
+    virtual srs_error_t do_cycle(srs_netfd_t cfd);
+};
+
+// Simple HTTPS test server similar to Go's httptest.NewServer but with SSL support
+class SrsHttpsTestServer : public ISrsCoroutineHandler
+{
+private:
+    ISrsCoroutine *trd_;
+    srs_netfd_t fd_;
+    string response_body_;
+    string ssl_key_file_;
+    string ssl_cert_file_;
+    string ip_;
+    int port_;
+
+public:
+    SrsHttpsTestServer(string response_body, string key_file = "./conf/server.key", string cert_file = "./conf/server.crt");
+    virtual ~SrsHttpsTestServer();
+    virtual srs_error_t start();
+    virtual void close();
+    virtual string url();
+    virtual int get_port();
+
+    // Interface ISrsCoroutineHandler
+private:
+    virtual srs_error_t cycle();
+
+private:
+    srs_error_t handle_client(srs_netfd_t client_fd);
+};
+
+// Simple RTMP test server similar to SrsHttpTestServer but for RTMP protocol
+// This server handles basic RTMP handshake and connect app operations
+class SrsRtmpTestServer : public ISrsCoroutineHandler
+{
+private:
+    ISrsCoroutine *trd_;
+    srs_netfd_t fd_;
+    string app_;
+    string stream_;
+    string ip_;
+    int port_;
+    bool enable_publish_;
+    bool enable_play_;
+
+public:
+    SrsRtmpTestServer(string app = "live", string stream = "test");
+    virtual ~SrsRtmpTestServer();
+
+public:
+    virtual srs_error_t start();
+    virtual void close();
+    virtual string url();
+    virtual int get_port();
+    virtual void enable_publish(bool v = true);
+    virtual void enable_play(bool v = true);
+
+    // Interface ISrsCoroutineHandler
+public:
+    virtual srs_error_t cycle();
+
+private:
+    virtual srs_error_t do_cycle(srs_netfd_t cfd);
+    virtual srs_error_t handle_rtmp_client(srs_netfd_t cfd);
+};
+
+// Test TCP server for testing SrsTcpConnection
+class SrsTestTcpServer : public ISrsCoroutineHandler, public ISrsTcpHandler
+{
+private:
+    ISrsCoroutine *trd_;
+    SrsTcpListener *listener_;
+    string ip_;
+    int port_;
+    SrsTcpConnection *conn_;
+
+public:
+    SrsTestTcpServer(string ip = "127.0.0.1");
+    virtual ~SrsTestTcpServer();
+
+public:
+    virtual srs_error_t start();
+    virtual void close();
+    virtual int get_port();
+    virtual SrsTcpConnection *get_connection();
+
+    // Interface ISrsCoroutineHandler
+public:
+    virtual srs_error_t cycle();
+
+    // Interface ISrsTcpHandler
+public:
+    virtual srs_error_t on_tcp_client(ISrsListener *listener, srs_netfd_t stfd);
+};
+
+// Test TCP client for testing SrsTcpConnection
+class SrsTestTcpClient
+{
+private:
+    SrsTcpClient *client_;
+    SrsTcpConnection *conn_;
+    string host_;
+    int port_;
+    srs_utime_t timeout_;
+
+public:
+    SrsTestTcpClient(string host, int port, srs_utime_t timeout = 1 * SRS_UTIME_SECONDS);
+    virtual ~SrsTestTcpClient();
+
+public:
+    virtual srs_error_t connect();
+    virtual void close();
+    virtual SrsTcpConnection *get_connection();
+    virtual srs_error_t write(void *buf, size_t size, ssize_t *nwrite);
+    virtual srs_error_t read(void *buf, size_t size, ssize_t *nread);
+};
+
+// Test UDP server for testing UDP socket communication
+class SrsUdpTestServer : public ISrsCoroutineHandler
+{
+private:
+    srs_netfd_t lfd_;
+    ISrsCoroutine *trd_;
+    SrsStSocket *socket_;
+    string host_;
+    int port_;
+    bool started_;
+
+public:
+    SrsUdpTestServer(string host);
+    virtual ~SrsUdpTestServer();
+
+public:
+    virtual srs_error_t start();
+    virtual void stop();
+    virtual int get_port();
+    virtual SrsStSocket *get_socket();
+
+public:
+    virtual srs_error_t cycle();
+};
+
+// Test UDP client for testing UDP socket communication
+class SrsUdpTestClient
+{
+private:
+    srs_netfd_t stfd_;
+    SrsStSocket *socket_;
+    string host_;
+    int port_;
+    srs_utime_t timeout_;
+    sockaddr_storage server_addr_;
+    int server_addrlen_;
+
+public:
+    SrsUdpTestClient(string host, int port, srs_utime_t timeout = 1 * SRS_UTIME_SECONDS);
+    virtual ~SrsUdpTestClient();
+
+public:
+    virtual srs_error_t connect();
+    virtual void close();
+    virtual SrsStSocket *get_socket();
+    virtual srs_error_t sendto(void *buf, size_t size, ssize_t *nwrite);
+    virtual srs_error_t recvfrom(void *buf, size_t size, ssize_t *nread);
+};
 
 #endif

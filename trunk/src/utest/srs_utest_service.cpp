@@ -7,9 +7,11 @@
 
 using namespace std;
 
+#include <srs_app_http_conn.hpp>
 #include <srs_app_listener.hpp>
 #include <srs_core_deprecated.hpp>
 #include <srs_kernel_error.hpp>
+#include <srs_protocol_http_stack.hpp>
 #include <srs_protocol_st.hpp>
 #include <srs_protocol_utility.hpp>
 
@@ -1329,150 +1331,6 @@ VOID TEST(TCPServerTest, CoverUtility)
         SrsUniquePtr<addrinfo> r(r_raw, freeaddrinfo);
 
         EXPECT_FALSE(srs_net_device_is_internet((sockaddr *)r->ai_addr));
-    }
-}
-
-class MockOnCycleThread4 : public ISrsCoroutineHandler
-{
-public:
-    SrsSTCoroutine trd;
-    srs_netfd_t fd;
-    MockOnCycleThread4() : trd("mock", this)
-    {
-        fd = NULL;
-    };
-    virtual ~MockOnCycleThread4()
-    {
-        trd.stop();
-        srs_close_stfd(fd);
-    }
-    virtual srs_error_t start(string ip, int port)
-    {
-        srs_error_t err = srs_success;
-        if ((err = srs_tcp_listen(ip, port, &fd)) != srs_success) {
-            return err;
-        }
-
-        return trd.start();
-    }
-    virtual srs_error_t do_cycle(srs_netfd_t cfd)
-    {
-        srs_error_t err = srs_success;
-
-        SrsStSocket skt(cfd);
-        skt.set_recv_timeout(1 * SRS_UTIME_SECONDS);
-        skt.set_send_timeout(1 * SRS_UTIME_SECONDS);
-
-        while (true) {
-            if ((err = trd.pull()) != srs_success) {
-                return err;
-            }
-
-            char buf[1024];
-            if ((err = skt.read(buf, 1024, NULL)) != srs_success) {
-                return err;
-            }
-
-            string res = mock_http_response(200, "OK");
-            if ((err = skt.write((char *)res.data(), (int)res.length(), NULL)) != srs_success) {
-                return err;
-            }
-        }
-
-        return err;
-    }
-    virtual srs_error_t cycle()
-    {
-        srs_error_t err = srs_success;
-
-        srs_netfd_t cfd = srs_accept(fd, NULL, NULL, SRS_UTIME_NO_TIMEOUT);
-        if (cfd == NULL) {
-            return err;
-        }
-
-        err = do_cycle(cfd);
-        srs_close_stfd(cfd);
-        srs_freep(err);
-
-        return err;
-    }
-};
-
-VOID TEST(HTTPClientTest, HTTPClientUtility)
-{
-    srs_error_t err;
-
-    // Typical HTTP POST.
-    if (true) {
-        MockOnCycleThread4 trd;
-        HELPER_ASSERT_SUCCESS(trd.start("127.0.0.1", 8080));
-
-        SrsHttpClient client;
-        HELPER_ASSERT_SUCCESS(client.initialize("http", "127.0.0.1", 8080, 1 * SRS_UTIME_SECONDS));
-
-        ISrsHttpMessage *res = NULL;
-        HELPER_ASSERT_SUCCESS(client.post("/api/v1", "", &res));
-        SrsUniquePtr<ISrsHttpMessage> res_uptr(res);
-
-        ISrsHttpResponseReader *br = res->body_reader();
-        ASSERT_FALSE(br->eof());
-
-        ssize_t nn = 0;
-        char buf[1024];
-        HELPER_ARRAY_INIT(buf, sizeof(buf), 0);
-        HELPER_ASSERT_SUCCESS(br->read(buf, sizeof(buf), &nn));
-        ASSERT_EQ(2, nn);
-        EXPECT_STREQ("OK", buf);
-    }
-
-    // Typical HTTP GET.
-    if (true) {
-        MockOnCycleThread4 trd;
-        HELPER_ASSERT_SUCCESS(trd.start("127.0.0.1", 8080));
-
-        SrsHttpClient client;
-        HELPER_ASSERT_SUCCESS(client.initialize("http", "127.0.0.1", 8080, 1 * SRS_UTIME_SECONDS));
-
-        ISrsHttpMessage *res = NULL;
-        HELPER_ASSERT_SUCCESS(client.get("/api/v1", "", &res));
-        SrsUniquePtr<ISrsHttpMessage> res_uptr(res);
-
-        ISrsHttpResponseReader *br = res->body_reader();
-        ASSERT_FALSE(br->eof());
-
-        ssize_t nn = 0;
-        char buf[1024];
-        HELPER_ARRAY_INIT(buf, sizeof(buf), 0);
-        HELPER_ASSERT_SUCCESS(br->read(buf, sizeof(buf), &nn));
-        ASSERT_EQ(2, nn);
-        EXPECT_STREQ("OK", buf);
-    }
-
-    // Set receive timeout and Kbps ample.
-    if (true) {
-        MockOnCycleThread4 trd;
-        HELPER_ASSERT_SUCCESS(trd.start("127.0.0.1", 8080));
-
-        SrsHttpClient client;
-        HELPER_ASSERT_SUCCESS(client.initialize("http", "127.0.0.1", 8080, 1 * SRS_UTIME_SECONDS));
-        client.set_recv_timeout(1 * SRS_UTIME_SECONDS);
-        client.set_header("agent", "srs");
-
-        ISrsHttpMessage *res = NULL;
-        HELPER_ASSERT_SUCCESS(client.get("/api/v1", "", &res));
-        SrsUniquePtr<ISrsHttpMessage> res_uptr(res);
-
-        ISrsHttpResponseReader *br = res->body_reader();
-        ASSERT_FALSE(br->eof());
-
-        ssize_t nn = 0;
-        char buf[1024];
-        HELPER_ARRAY_INIT(buf, sizeof(buf), 0);
-        HELPER_ASSERT_SUCCESS(br->read(buf, sizeof(buf), &nn));
-        ASSERT_EQ(2, nn);
-        EXPECT_STREQ("OK", buf);
-
-        client.kbps_sample("SRS", 0);
     }
 }
 
