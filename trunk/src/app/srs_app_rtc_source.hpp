@@ -43,6 +43,7 @@ class SrsErrorPithyPrint;
 class SrsRtcFrameBuilder;
 class SrsLiveSource;
 class SrsRtpVideoBuilder;
+class ISrsRtcConsumer;
 
 // Firefox defaults as 109, Chrome is 111.
 const int kAudioPayloadType = 111;
@@ -89,12 +90,38 @@ public:
     virtual void on_stream_change(SrsRtcSourceDescription *desc) = 0;
 };
 
+// The RTC source for consumer.
+class ISrsRtcSourceForConsumer
+{
+public:
+    ISrsRtcSourceForConsumer();
+    virtual ~ISrsRtcSourceForConsumer();
+
+public:
+    virtual void on_consumer_destroy(ISrsRtcConsumer *consumer) = 0;
+    virtual SrsContextId source_id() = 0;
+    virtual SrsContextId pre_source_id() = 0;
+};
+
+// The RTC consumer interface.
+class ISrsRtcConsumer
+{
+public:
+    ISrsRtcConsumer();
+    virtual ~ISrsRtcConsumer();
+
+public:
+    virtual void update_source_id() = 0;
+    virtual void on_stream_change(SrsRtcSourceDescription *desc) = 0;
+    virtual srs_error_t enqueue(SrsRtpPacket *pkt) = 0;
+};
+
 // The RTC stream consumer, consume packets from RTC stream source.
-class SrsRtcConsumer
+class SrsRtcConsumer : public ISrsRtcConsumer
 {
 private:
     // Because source references to this object, so we should directly use the source ptr.
-    SrsRtcSource *source_;
+    ISrsRtcSourceForConsumer *source_;
 
 private:
     std::vector<SrsRtpPacket *> queue_;
@@ -110,7 +137,7 @@ private:
     ISrsRtcSourceChangeCallback *handler_;
 
 public:
-    SrsRtcConsumer(SrsRtcSource *s);
+    SrsRtcConsumer(ISrsRtcSourceForConsumer *s);
     virtual ~SrsRtcConsumer();
 
 public:
@@ -189,7 +216,7 @@ public:
 };
 
 // A Source is a stream, to publish and to play with, binding to SrsRtcPublishStream and SrsRtcPlayStream.
-class SrsRtcSource : public ISrsFastTimer
+class SrsRtcSource : public ISrsFastTimer, public ISrsRtcSourceForConsumer
 {
 private:
     // For publish, it's the publish client id.
@@ -214,7 +241,7 @@ private:
 
 private:
     // To delivery stream to clients.
-    std::vector<SrsRtcConsumer *> consumers_;
+    std::vector<ISrsRtcConsumer *> consumers_;
     // Whether stream is created, that is, SDP is done.
     bool is_created_;
     // Whether stream is delivering data, that is, DTLS is done.
@@ -264,13 +291,13 @@ public:
 public:
     // Create consumer
     // @param consumer, output the create consumer.
-    virtual srs_error_t create_consumer(SrsRtcConsumer *&consumer);
+    virtual srs_error_t create_consumer(ISrsRtcConsumer *&consumer);
     // Dumps packets in cache to consumer.
     // @param ds, whether dumps the sequence header.
     // @param dm, whether dumps the metadata.
     // @param dg, whether dumps the gop cache.
-    virtual srs_error_t consumer_dumps(SrsRtcConsumer *consumer, bool ds = true, bool dm = true, bool dg = true);
-    virtual void on_consumer_destroy(SrsRtcConsumer *consumer);
+    virtual srs_error_t consumer_dumps(ISrsRtcConsumer *consumer, bool ds = true, bool dm = true, bool dg = true);
+    virtual void on_consumer_destroy(ISrsRtcConsumer *consumer);
     // Whether we can publish stream to the source, return false if it exists.
     // @remark Note that when SDP is done, we set the stream is not able to publish.
     virtual bool can_publish();

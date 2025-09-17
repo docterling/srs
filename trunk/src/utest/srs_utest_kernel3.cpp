@@ -2031,22 +2031,22 @@ VOID TEST(KernelRtcRtpTest, SrsRtpPacketBasics)
     SrsRtpPacket packet;
 
     // Test initial state
-    EXPECT_EQ(0, packet.header.get_sequence());
-    EXPECT_EQ(0, packet.header.get_timestamp());
-    EXPECT_EQ(0, packet.header.get_ssrc());
+    EXPECT_EQ(0, packet.header_.get_sequence());
+    EXPECT_EQ(0, packet.header_.get_timestamp());
+    EXPECT_EQ(0, packet.header_.get_ssrc());
     EXPECT_EQ(NULL, packet.payload());
     EXPECT_EQ(0, packet.nalu_type_);
     EXPECT_EQ(SrsFrameTypeReserved, packet.frame_type_);
     EXPECT_EQ(-1, packet.get_avsync_time());
 
     // Test setting header values
-    packet.header.set_sequence(100);
-    packet.header.set_timestamp(200);
-    packet.header.set_ssrc(0xABCDEF00);
+    packet.header_.set_sequence(100);
+    packet.header_.set_timestamp(200);
+    packet.header_.set_ssrc(0xABCDEF00);
 
-    EXPECT_EQ(100, packet.header.get_sequence());
-    EXPECT_EQ(200, packet.header.get_timestamp());
-    EXPECT_EQ(0xABCDEF00, packet.header.get_ssrc());
+    EXPECT_EQ(100, packet.header_.get_sequence());
+    EXPECT_EQ(200, packet.header_.get_timestamp());
+    EXPECT_EQ(0xABCDEF00, packet.header_.get_ssrc());
 
     // Test wrapping buffer
     char test_data[64] = "test payload data";
@@ -2418,11 +2418,11 @@ VOID TEST(KernelRtcRtpTest, SrsRtpPacketCopyAndEncodeDecode)
 
     // Create original packet
     SrsRtpPacket original;
-    original.header.set_sequence(1000);
-    original.header.set_timestamp(2000);
-    original.header.set_ssrc(0x12345678);
-    original.header.set_marker(true);
-    original.header.set_payload_type(96);
+    original.header_.set_sequence(1000);
+    original.header_.set_timestamp(2000);
+    original.header_.set_ssrc(0x12345678);
+    original.header_.set_marker(true);
+    original.header_.set_payload_type(96);
     original.nalu_type_ = SrsAvcNaluTypeIDR;
     original.frame_type_ = SrsFrameTypeVideo;
     original.set_avsync_time(5000);
@@ -2434,11 +2434,11 @@ VOID TEST(KernelRtcRtpTest, SrsRtpPacketCopyAndEncodeDecode)
     // Test copy
     SrsRtpPacket *copied = original.copy();
     EXPECT_TRUE(copied != NULL);
-    EXPECT_EQ(1000, copied->header.get_sequence());
-    EXPECT_EQ(2000, copied->header.get_timestamp());
-    EXPECT_EQ(0x12345678, copied->header.get_ssrc());
-    EXPECT_TRUE(copied->header.get_marker());
-    EXPECT_EQ(96, copied->header.get_payload_type());
+    EXPECT_EQ(1000, copied->header_.get_sequence());
+    EXPECT_EQ(2000, copied->header_.get_timestamp());
+    EXPECT_EQ(0x12345678, copied->header_.get_ssrc());
+    EXPECT_TRUE(copied->header_.get_marker());
+    EXPECT_EQ(96, copied->header_.get_payload_type());
     EXPECT_EQ(SrsAvcNaluTypeIDR, copied->nalu_type_);
     EXPECT_EQ(SrsFrameTypeVideo, copied->frame_type_);
     EXPECT_EQ(5000, copied->get_avsync_time());
@@ -2455,11 +2455,11 @@ VOID TEST(KernelRtcRtpTest, SrsRtpPacketCopyAndEncodeDecode)
     SrsRtpPacket decoded;
     HELPER_EXPECT_SUCCESS(decoded.decode(&decode_buffer));
 
-    EXPECT_EQ(1000, decoded.header.get_sequence());
-    EXPECT_EQ(2000, decoded.header.get_timestamp());
-    EXPECT_EQ(0x12345678, decoded.header.get_ssrc());
-    EXPECT_TRUE(decoded.header.get_marker());
-    EXPECT_EQ(96, decoded.header.get_payload_type());
+    EXPECT_EQ(1000, decoded.header_.get_sequence());
+    EXPECT_EQ(2000, decoded.header_.get_timestamp());
+    EXPECT_EQ(0x12345678, decoded.header_.get_ssrc());
+    EXPECT_TRUE(decoded.header_.get_marker());
+    EXPECT_EQ(96, decoded.header_.get_payload_type());
 }
 
 VOID TEST(KernelKbpsTest, SrsPps_MockClockUpdate)

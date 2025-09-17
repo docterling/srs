@@ -765,12 +765,12 @@ srs_error_t SrsRtspRtpBuilder::package_aac(SrsParsedAudioPacket *audio, SrsRtpPa
     dts *= (int64_t)audio_sample_rate_;
     dts /= 1000;
 
-    pkt->header.set_payload_type(audio_payload_type_);
-    pkt->header.set_ssrc(audio_ssrc_);
+    pkt->header_.set_payload_type(audio_payload_type_);
+    pkt->header_.set_ssrc(audio_ssrc_);
     pkt->frame_type_ = SrsFrameTypeAudio;
-    pkt->header.set_marker(true);
-    pkt->header.set_sequence(audio_sequence_++);
-    pkt->header.set_timestamp(dts);
+    pkt->header_.set_marker(true);
+    pkt->header_.set_sequence(audio_sequence_++);
+    pkt->header_.set_timestamp(dts);
 
     SrsRtpRawPayload *raw = new SrsRtpRawPayload();
     pkt->set_payload(raw, SrsRtpPacketPayloadTypeRaw);
@@ -902,7 +902,7 @@ srs_error_t SrsRtspRtpBuilder::on_video(SrsMediaPacket *msg)
     }
 
     if (!pkts.empty()) {
-        pkts.back()->header.set_marker(true);
+        pkts.back()->header_.set_marker(true);
     }
 
     return consume_packets(pkts);
@@ -1035,15 +1035,15 @@ srs_error_t SrsRtspAudioSendTrack::on_rtp(SrsRtpPacket *pkt)
         return err;
     }
 
-    pkt->header.set_ssrc(track_desc_->ssrc_);
+    pkt->header_.set_ssrc(track_desc_->ssrc_);
 
     // Should update PT, because subscriber may use different PT to publisher.
-    if (track_desc_->media_ && pkt->header.get_payload_type() == track_desc_->media_->pt_of_publisher_) {
+    if (track_desc_->media_ && pkt->header_.get_payload_type() == track_desc_->media_->pt_of_publisher_) {
         // If PT is media from publisher, change to PT of media for subscriber.
-        pkt->header.set_payload_type(track_desc_->media_->pt_);
-    } else if (track_desc_->red_ && pkt->header.get_payload_type() == track_desc_->red_->pt_of_publisher_) {
+        pkt->header_.set_payload_type(track_desc_->media_->pt_);
+    } else if (track_desc_->red_ && pkt->header_.get_payload_type() == track_desc_->red_->pt_of_publisher_) {
         // If PT is RED from publisher, change to PT of RED for subscriber.
-        pkt->header.set_payload_type(track_desc_->red_->pt_);
+        pkt->header_.set_payload_type(track_desc_->red_->pt_);
     } else {
         // TODO: FIXME: Should update PT for RTX.
     }
@@ -1052,8 +1052,8 @@ srs_error_t SrsRtspAudioSendTrack::on_rtp(SrsRtpPacket *pkt)
         return srs_error_wrap(err, "raw send");
     }
 
-    srs_info("RTSP: Send audio ssrc=%d, seqno=%d, keyframe=%d, ts=%u", pkt->header.get_ssrc(),
-             pkt->header.get_sequence(), pkt->is_keyframe(), pkt->header.get_timestamp());
+    srs_info("RTSP: Send audio ssrc=%d, seqno=%d, keyframe=%d, ts=%u", pkt->header_.get_ssrc(),
+             pkt->header_.get_sequence(), pkt->is_keyframe(), pkt->header_.get_timestamp());
 
     return err;
 }
@@ -1075,15 +1075,15 @@ srs_error_t SrsRtspVideoSendTrack::on_rtp(SrsRtpPacket *pkt)
         return err;
     }
 
-    pkt->header.set_ssrc(track_desc_->ssrc_);
+    pkt->header_.set_ssrc(track_desc_->ssrc_);
 
     // Should update PT, because subscriber may use different PT to publisher.
-    if (track_desc_->media_ && pkt->header.get_payload_type() == track_desc_->media_->pt_of_publisher_) {
+    if (track_desc_->media_ && pkt->header_.get_payload_type() == track_desc_->media_->pt_of_publisher_) {
         // If PT is media from publisher, change to PT of media for subscriber.
-        pkt->header.set_payload_type(track_desc_->media_->pt_);
-    } else if (track_desc_->red_ && pkt->header.get_payload_type() == track_desc_->red_->pt_of_publisher_) {
+        pkt->header_.set_payload_type(track_desc_->media_->pt_);
+    } else if (track_desc_->red_ && pkt->header_.get_payload_type() == track_desc_->red_->pt_of_publisher_) {
         // If PT is RED from publisher, change to PT of RED for subscriber.
-        pkt->header.set_payload_type(track_desc_->red_->pt_);
+        pkt->header_.set_payload_type(track_desc_->red_->pt_);
     } else {
         // TODO: FIXME: Should update PT for RTX.
     }
@@ -1092,8 +1092,8 @@ srs_error_t SrsRtspVideoSendTrack::on_rtp(SrsRtpPacket *pkt)
         return srs_error_wrap(err, "raw send");
     }
 
-    srs_info("RTSP: Send video ssrc=%d, seqno=%d, keyframe=%d, ts=%u", pkt->header.get_ssrc(),
-             pkt->header.get_sequence(), pkt->is_keyframe(), pkt->header.get_timestamp());
+    srs_info("RTSP: Send video ssrc=%d, seqno=%d, keyframe=%d, ts=%u", pkt->header_.get_ssrc(),
+             pkt->header_.get_sequence(), pkt->is_keyframe(), pkt->header_.get_timestamp());
 
     return err;
 }

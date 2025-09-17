@@ -564,7 +564,7 @@ srs_error_t SrsGbMediaTcpConn::do_cycle()
                 continue;
             }
 
-            if ((err = bind_session(rtp.header.get_ssrc(), &session_)) != srs_success) {
+            if ((err = bind_session(rtp.header_.get_ssrc(), &session_)) != srs_success) {
                 return srs_error_wrap(err, "bind session");
             }
         }
@@ -1432,11 +1432,11 @@ srs_error_t SrsRecoverablePsContext::decode_rtp(SrsBuffer *stream, int reserved,
     }
 
     SrsBuffer b((char *)rtp_raw->payload_, rtp_raw->nn_payload_);
-    // srs_trace("GB: Got RTP length=%d, payload=%d, seq=%u, ts=%d", length, rtp_raw->nn_payload, rtp.header.get_sequence(), rtp.header.get_timestamp());
+    // srs_trace("GB: Got RTP length=%d, payload=%d, seq=%u, ts=%d", length, rtp_raw->nn_payload, rtp.header_.get_sequence(), rtp.header_.get_timestamp());
 
-    ctx_.helper_.rtp_seq_ = rtp.header.get_sequence();
-    ctx_.helper_.rtp_ts_ = rtp.header.get_timestamp();
-    ctx_.helper_.rtp_pt_ = rtp.header.get_payload_type();
+    ctx_.helper_.rtp_seq_ = rtp.header_.get_sequence();
+    ctx_.helper_.rtp_ts_ = rtp.header_.get_timestamp();
+    ctx_.helper_.rtp_pt_ = rtp.header_.get_payload_type();
     if ((err = decode(&b, handler)) != srs_success) {
         return srs_error_wrap(err, "decode");
     }

@@ -264,7 +264,7 @@ srs_error_t SrsRtspPlayStream::send_packet(SrsRtpPacket *&pkt)
 {
     srs_error_t err = srs_success;
 
-    uint32_t ssrc = pkt->header.get_ssrc();
+    uint32_t ssrc = pkt->header_.get_ssrc();
 
     // Try to find track from cache.
     SrsRtspSendTrack *track = NULL;
@@ -312,7 +312,7 @@ srs_error_t SrsRtspPlayStream::send_packet(SrsRtpPacket *&pkt)
 
     // Consume packet by track.
     if ((err = track->on_rtp(pkt)) != srs_success) {
-        return srs_error_wrap(err, "audio track, SSRC=%u, SEQ=%u", ssrc, pkt->header.get_sequence());
+        return srs_error_wrap(err, "audio track, SSRC=%u, SEQ=%u", ssrc, pkt->header_.get_sequence());
     }
 
     return err;
@@ -416,7 +416,7 @@ srs_error_t SrsRtspConnection::do_send_packet(SrsRtpPacket *pkt)
 {
     srs_error_t err = srs_success;
 
-    uint32_t ssrc = pkt->header.get_ssrc();
+    uint32_t ssrc = pkt->header_.get_ssrc();
     ISrsStreamWriter *network = networks_[ssrc];
     if (!network) {
         return srs_error_new(ERROR_RTSP_NO_TRACK, "network not found for ssrc: %u", ssrc);

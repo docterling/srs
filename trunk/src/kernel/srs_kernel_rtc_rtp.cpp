@@ -824,7 +824,7 @@ SrsRtpPacket *SrsRtpPacket::copy()
 {
     SrsRtpPacket *cp = new SrsRtpPacket();
 
-    cp->header = header;
+    cp->header_ = header_;
     cp->payload_ = payload_ ? payload_->copy() : NULL;
     cp->payload_type_ = payload_type_;
 
@@ -844,15 +844,15 @@ SrsRtpPacket *SrsRtpPacket::copy()
 
 void SrsRtpPacket::set_padding(int size)
 {
-    header.set_padding(size);
+    header_.set_padding(size);
     if (cached_payload_size_) {
-        cached_payload_size_ += size - header.get_padding();
+        cached_payload_size_ += size - header_.get_padding();
     }
 }
 
 void SrsRtpPacket::add_padding(int size)
 {
-    header.set_padding(header.get_padding() + size);
+    header_.set_padding(header_.get_padding() + size);
     if (cached_payload_size_) {
         cached_payload_size_ += size;
     }
@@ -870,14 +870,14 @@ bool SrsRtpPacket::is_audio()
 
 void SrsRtpPacket::set_extension_types(SrsRtpExtensionTypes *v)
 {
-    return header.set_extensions(v);
+    return header_.set_extensions(v);
 }
 
 uint64_t SrsRtpPacket::nb_bytes()
 {
     if (!cached_payload_size_) {
         int nn_payload = (payload_ ? payload_->nb_bytes() : 0);
-        cached_payload_size_ = header.nb_bytes() + nn_payload + header.get_padding();
+        cached_payload_size_ = header_.nb_bytes() + nn_payload + header_.get_padding();
     }
     return cached_payload_size_;
 }
@@ -886,7 +886,7 @@ srs_error_t SrsRtpPacket::encode(SrsBuffer *buf)
 {
     srs_error_t err = srs_success;
 
-    if ((err = header.encode(buf)) != srs_success) {
+    if ((err = header_.encode(buf)) != srs_success) {
         return srs_error_wrap(err, "rtp header");
     }
 
@@ -894,8 +894,8 @@ srs_error_t SrsRtpPacket::encode(SrsBuffer *buf)
         return srs_error_wrap(err, "rtp payload");
     }
 
-    if (header.get_padding() > 0) {
-        uint8_t padding = header.get_padding();
+    if (header_.get_padding() > 0) {
+        uint8_t padding = header_.get_padding();
         if (!buf->require(padding)) {
             return srs_error_new(ERROR_RTC_RTP_MUXER, "requires %d bytes", padding);
         }
@@ -910,12 +910,12 @@ srs_error_t SrsRtpPacket::decode(SrsBuffer *buf)
 {
     srs_error_t err = srs_success;
 
-    if ((err = header.decode(buf)) != srs_success) {
+    if ((err = header_.decode(buf)) != srs_success) {
         return srs_error_wrap(err, "rtp header");
     }
 
     // We must skip the padding bytes before parsing payload.
-    uint8_t padding = header.get_padding();
+    uint8_t padding = header_.get_padding();
     if (!buf->require(padding)) {
         return srs_error_wrap(err, "requires padding %d bytes", padding);
     }

@@ -45,12 +45,12 @@ srs_error_t SrsRtpVideoBuilder::package_stap_a(SrsMediaPacket *msg, SrsRtpPacket
         return err;
     }
 
-    pkt->header.set_payload_type(video_payload_type_);
-    pkt->header.set_ssrc(video_ssrc_);
+    pkt->header_.set_payload_type(video_payload_type_);
+    pkt->header_.set_ssrc(video_ssrc_);
     pkt->frame_type_ = SrsFrameTypeVideo;
-    pkt->header.set_marker(false);
-    pkt->header.set_sequence(video_sequence_++);
-    pkt->header.set_timestamp(msg->timestamp_ * 90);
+    pkt->header_.set_marker(false);
+    pkt->header_.set_sequence(video_sequence_++);
+    pkt->header_.set_timestamp(msg->timestamp_ * 90);
 
     ISrsRtpPayloader *stap = NULL;
     vector<vector<char> *> params;
@@ -141,12 +141,12 @@ srs_error_t SrsRtpVideoBuilder::package_nalus(SrsMediaPacket *msg, const vector<
         SrsRtpPacket *pkt = new SrsRtpPacket();
         pkts.push_back(pkt);
 
-        pkt->header.set_payload_type(video_payload_type_);
-        pkt->header.set_ssrc(video_ssrc_);
+        pkt->header_.set_payload_type(video_payload_type_);
+        pkt->header_.set_ssrc(video_ssrc_);
         pkt->frame_type_ = SrsFrameTypeVideo;
         pkt->nalu_type_ = first_nalu_type;
-        pkt->header.set_sequence(video_sequence_++);
-        pkt->header.set_timestamp(msg->timestamp_ * 90);
+        pkt->header_.set_sequence(video_sequence_++);
+        pkt->header_.set_timestamp(msg->timestamp_ * 90);
         pkt->set_payload(raw_raw, SrsRtpPacketPayloadTypeNALU);
         pkt->wrap(msg->payload_);
     } else {
@@ -171,12 +171,12 @@ srs_error_t SrsRtpVideoBuilder::package_nalus(SrsMediaPacket *msg, const vector<
             SrsRtpPacket *pkt = new SrsRtpPacket();
             pkts.push_back(pkt);
 
-            pkt->header.set_payload_type(video_payload_type_);
-            pkt->header.set_ssrc(video_ssrc_);
+            pkt->header_.set_payload_type(video_payload_type_);
+            pkt->header_.set_ssrc(video_ssrc_);
             pkt->frame_type_ = SrsFrameTypeVideo;
             pkt->nalu_type_ = kFuA;
-            pkt->header.set_sequence(video_sequence_++);
-            pkt->header.set_timestamp(msg->timestamp_ * 90);
+            pkt->header_.set_sequence(video_sequence_++);
+            pkt->header_.set_timestamp(msg->timestamp_ * 90);
 
             if (is_hevc) {
                 SrsRtpFUAPayloadHevc *fua = new SrsRtpFUAPayloadHevc();
@@ -219,11 +219,11 @@ srs_error_t SrsRtpVideoBuilder::package_single_nalu(SrsMediaPacket *msg, SrsNalu
     SrsRtpPacket *pkt = new SrsRtpPacket();
     pkts.push_back(pkt);
 
-    pkt->header.set_payload_type(video_payload_type_);
-    pkt->header.set_ssrc(video_ssrc_);
+    pkt->header_.set_payload_type(video_payload_type_);
+    pkt->header_.set_ssrc(video_ssrc_);
     pkt->frame_type_ = SrsFrameTypeVideo;
-    pkt->header.set_sequence(video_sequence_++);
-    pkt->header.set_timestamp(msg->timestamp_ * 90);
+    pkt->header_.set_sequence(video_sequence_++);
+    pkt->header_.set_timestamp(msg->timestamp_ * 90);
 
     SrsRtpRawPayload *raw = new SrsRtpRawPayload();
     pkt->set_payload(raw, SrsRtpPacketPayloadTypeRaw);
@@ -260,11 +260,11 @@ srs_error_t SrsRtpVideoBuilder::package_fu_a(SrsMediaPacket *msg, SrsNaluSample 
         SrsRtpPacket *pkt = new SrsRtpPacket();
         pkts.push_back(pkt);
 
-        pkt->header.set_payload_type(video_payload_type_);
-        pkt->header.set_ssrc(video_ssrc_);
+        pkt->header_.set_payload_type(video_payload_type_);
+        pkt->header_.set_ssrc(video_ssrc_);
         pkt->frame_type_ = SrsFrameTypeVideo;
-        pkt->header.set_sequence(video_sequence_++);
-        pkt->header.set_timestamp(msg->timestamp_ * 90);
+        pkt->header_.set_sequence(video_sequence_++);
+        pkt->header_.set_timestamp(msg->timestamp_ * 90);
         pkt->nalu_type_ = is_hevc ? kFuHevc : kFuA;
 
         if (is_hevc) {

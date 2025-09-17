@@ -423,10 +423,10 @@ VOID TEST(KernelRTC2Test, SrsCodecPayloadCopyBehavior)
 SrsRtpPacket *mock_create_test_rtp_packet(uint16_t sequence_number, uint32_t timestamp, bool marker = false)
 {
     SrsRtpPacket *pkt = new SrsRtpPacket();
-    pkt->header.set_sequence(sequence_number);
-    pkt->header.set_timestamp(timestamp);
-    pkt->header.set_marker(marker);
-    pkt->header.set_ssrc(12345);
+    pkt->header_.set_sequence(sequence_number);
+    pkt->header_.set_timestamp(timestamp);
+    pkt->header_.set_marker(marker);
+    pkt->header_.set_ssrc(12345);
     return pkt;
 }
 
@@ -460,8 +460,8 @@ VOID TEST(KernelRTC2Test, SrsRtcFrameBuilderVideoPacketCacheBasicOperations)
 
         SrsRtpPacket *retrieved = cache.get_packet(100);
         EXPECT_TRUE(retrieved != NULL);
-        EXPECT_EQ(100, retrieved->header.get_sequence());
-        EXPECT_EQ(1000, retrieved->header.get_timestamp());
+        EXPECT_EQ(100, retrieved->header_.get_sequence());
+        EXPECT_EQ(1000, retrieved->header_.get_timestamp());
 
         // Test getting non-existent packet
         SrsRtpPacket *missing = cache.get_packet(200);
@@ -501,8 +501,8 @@ VOID TEST(KernelRTC2Test, SrsRtcFrameBuilderVideoPacketCacheOverwrite)
         // Should get the second packet
         SrsRtpPacket *retrieved = cache.get_packet(100);
         EXPECT_TRUE(retrieved != NULL);
-        EXPECT_EQ(100, retrieved->header.get_sequence());
-        EXPECT_EQ(2000, retrieved->header.get_timestamp());
+        EXPECT_EQ(100, retrieved->header_.get_sequence());
+        EXPECT_EQ(2000, retrieved->header_.get_timestamp());
     }
 }
 
@@ -527,8 +527,8 @@ VOID TEST(KernelRTC2Test, SrsRtcFrameBuilderVideoPacketCacheModuloIndexing)
 
         SrsRtpPacket *retrieved2 = cache.get_packet(100 + cache_size);
         EXPECT_TRUE(retrieved2 != NULL);
-        EXPECT_EQ(100 + cache_size, retrieved2->header.get_sequence());
-        EXPECT_EQ(2000, retrieved2->header.get_timestamp());
+        EXPECT_EQ(100 + cache_size, retrieved2->header_.get_sequence());
+        EXPECT_EQ(2000, retrieved2->header_.get_timestamp());
     }
 }
 
@@ -545,7 +545,7 @@ VOID TEST(KernelRTC2Test, SrsRtcFrameBuilderVideoPacketCacheTakePacket)
         // Take the packet (should remove from cache)
         SrsRtpPacket *taken = cache.take_packet(100);
         EXPECT_TRUE(taken != NULL);
-        EXPECT_EQ(100, taken->header.get_sequence());
+        EXPECT_EQ(100, taken->header_.get_sequence());
 
         // Clean up the taken packet
         srs_freep(taken);
@@ -957,11 +957,11 @@ VOID TEST(KernelRTC2Test, SrsRtcFrameBuilderVideoPacketCacheSequenceWrapAround)
         // Should be able to retrieve both packets
         SrsRtpPacket *retrieved1 = cache.get_packet(seq_near_max);
         EXPECT_TRUE(retrieved1 != NULL);
-        EXPECT_EQ(seq_near_max, retrieved1->header.get_sequence());
+        EXPECT_EQ(seq_near_max, retrieved1->header_.get_sequence());
 
         SrsRtpPacket *retrieved2 = cache.get_packet(seq_wrapped);
         EXPECT_TRUE(retrieved2 != NULL);
-        EXPECT_EQ(seq_wrapped, retrieved2->header.get_sequence());
+        EXPECT_EQ(seq_wrapped, retrieved2->header_.get_sequence());
     }
 }
 
@@ -982,7 +982,7 @@ VOID TEST(KernelRTC2Test, SrsRtcFrameBuilderVideoPacketCacheMemoryManagement)
         // Verify the second packet is stored
         SrsRtpPacket *retrieved = cache.get_packet(100);
         EXPECT_TRUE(retrieved != NULL);
-        EXPECT_EQ(2000, retrieved->header.get_timestamp());
+        EXPECT_EQ(2000, retrieved->header_.get_timestamp());
 
         // Clear all should free remaining packets
         cache.clear_all();

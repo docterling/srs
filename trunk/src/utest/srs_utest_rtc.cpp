@@ -1338,8 +1338,8 @@ VOID TEST(KernelRTCTest, NACKFetchRTPPacket)
     // The RTP queue will free the packet.
     if (true) {
         SrsRtpPacket *pkt = new SrsRtpPacket();
-        pkt->header.set_sequence(100);
-        track->rtp_queue_->set(pkt->header.get_sequence(), pkt);
+        pkt->header_.set_sequence(100);
+        track->rtp_queue_->set(pkt->header_.get_sequence(), pkt);
     }
 
     // If sequence not match, packet not found.
@@ -1670,7 +1670,7 @@ VOID TEST(KernelRTCTest, SyncTimestampBySenderReportNormal)
         uint32_t video_absolute_ts = srs_time_now_cached();
         uint32_t video_rtp_ts = random();
 
-        video_rtp_pkt->header.set_timestamp(video_rtp_ts);
+        video_rtp_pkt->header_.set_timestamp(video_rtp_ts);
         video->on_rtp(rtc_source, video_rtp_pkt);
         // No received any sender report, can not calculate absolute time, expect equal to -1.
         EXPECT_EQ(video_rtp_pkt->get_avsync_time(), -1);
@@ -1688,7 +1688,7 @@ VOID TEST(KernelRTCTest, SyncTimestampBySenderReportNormal)
         // Video timebase 90000, fps=25
         video_rtp_ts += 3600;
         video_absolute_ts += 40;
-        video_rtp_pkt->header.set_timestamp(video_rtp_ts);
+        video_rtp_pkt->header_.set_timestamp(video_rtp_ts);
         video->on_rtp(rtc_source, video_rtp_pkt);
 
         // Received one sender report, can not calculate absolute time, expect equal to -1.
@@ -1703,7 +1703,7 @@ VOID TEST(KernelRTCTest, SyncTimestampBySenderReportNormal)
             // Video timebase 90000, fps=25
             video_rtp_ts += 3600;
             video_absolute_ts += 40;
-            video_rtp_pkt->header.set_timestamp(video_rtp_ts);
+            video_rtp_pkt->header_.set_timestamp(video_rtp_ts);
             video->on_rtp(rtc_source, video_rtp_pkt);
             EXPECT_NEAR(video_rtp_pkt->get_avsync_time(), video_absolute_ts, 1);
         }
@@ -1736,7 +1736,7 @@ VOID TEST(KernelRTCTest, SyncTimestampBySenderReportOutOfOrder)
         uint32_t video_absolute_ts = srs_time_now_cached();
         uint32_t video_rtp_ts = random();
 
-        video_rtp_pkt->header.set_timestamp(video_rtp_ts);
+        video_rtp_pkt->header_.set_timestamp(video_rtp_ts);
         video->on_rtp(rtc_source, video_rtp_pkt);
         // No received any sender report, can not calculate absolute time, expect equal to -1.
         EXPECT_EQ(video_rtp_pkt->get_avsync_time(), -1);
@@ -1753,7 +1753,7 @@ VOID TEST(KernelRTCTest, SyncTimestampBySenderReportOutOfOrder)
         // Video timebase 90000, fps=25
         video_rtp_ts += 3600;
         video_absolute_ts += 40;
-        video_rtp_pkt->header.set_timestamp(video_rtp_ts);
+        video_rtp_pkt->header_.set_timestamp(video_rtp_ts);
         video->on_rtp(rtc_source, video_rtp_pkt);
 
         // No received any sender report, can not calculate absolute time, expect equal to -1.
@@ -1774,7 +1774,7 @@ VOID TEST(KernelRTCTest, SyncTimestampBySenderReportOutOfOrder)
             // Video timebase 90000, fps=25
             video_rtp_ts += 3600;
             video_absolute_ts += 40;
-            video_rtp_pkt->header.set_timestamp(video_rtp_ts);
+            video_rtp_pkt->header_.set_timestamp(video_rtp_ts);
             video->on_rtp(rtc_source, video_rtp_pkt);
             EXPECT_NEAR(video_rtp_pkt->get_avsync_time(), video_absolute_ts, 1);
         }
@@ -1807,7 +1807,7 @@ VOID TEST(KernelRTCTest, SyncTimestampBySenderReportConsecutive)
         uint32_t video_absolute_ts = srs_time_now_cached();
         uint32_t video_rtp_ts = random();
 
-        video_rtp_pkt->header.set_timestamp(video_rtp_ts);
+        video_rtp_pkt->header_.set_timestamp(video_rtp_ts);
         video->on_rtp(rtc_source, video_rtp_pkt);
         // No received any sender report, can not calculate absolute time, expect equal to -1.
         EXPECT_EQ(video_rtp_pkt->get_avsync_time(), -1);
@@ -1825,7 +1825,7 @@ VOID TEST(KernelRTCTest, SyncTimestampBySenderReportConsecutive)
         // Video timebase 90000, fps=25
         video_rtp_ts += 3600;
         video_absolute_ts += 40;
-        video_rtp_pkt->header.set_timestamp(video_rtp_ts);
+        video_rtp_pkt->header_.set_timestamp(video_rtp_ts);
         video->on_rtp(rtc_source, video_rtp_pkt);
 
         // Received one sender report, can not calculate absolute time, expect equal to -1.
@@ -1840,7 +1840,7 @@ VOID TEST(KernelRTCTest, SyncTimestampBySenderReportConsecutive)
             // Video timebase 90000, fps=25
             video_rtp_ts += 3600;
             video_absolute_ts += 40;
-            video_rtp_pkt->header.set_timestamp(video_rtp_ts);
+            video_rtp_pkt->header_.set_timestamp(video_rtp_ts);
             video->on_rtp(rtc_source, video_rtp_pkt);
             EXPECT_NEAR(video_rtp_pkt->get_avsync_time(), video_absolute_ts, 1);
 
@@ -1911,7 +1911,7 @@ VOID TEST(KernelRTCTest, SyncTimestampBySenderReportDuplicated)
         uint32_t video_absolute_ts = srs_time_now_cached();
         uint32_t video_rtp_ts = random();
 
-        video_rtp_pkt->header.set_timestamp(video_rtp_ts);
+        video_rtp_pkt->header_.set_timestamp(video_rtp_ts);
         video->on_rtp(rtc_source, video_rtp_pkt);
         // No received any sender report, can not calculate absolute time, expect equal to -1.
         EXPECT_EQ(video_rtp_pkt->get_avsync_time(), -1);
@@ -1929,7 +1929,7 @@ VOID TEST(KernelRTCTest, SyncTimestampBySenderReportDuplicated)
         // Video timebase 90000, fps=25
         video_rtp_ts += 3600;
         video_absolute_ts += 40;
-        video_rtp_pkt->header.set_timestamp(video_rtp_ts);
+        video_rtp_pkt->header_.set_timestamp(video_rtp_ts);
         video->on_rtp(rtc_source, video_rtp_pkt);
 
         // Received one sender report, can not calculate absolute time, expect equal to -1.
@@ -1944,7 +1944,7 @@ VOID TEST(KernelRTCTest, SyncTimestampBySenderReportDuplicated)
             // Video timebase 90000, fps=25
             video_rtp_ts += 3600;
             video_absolute_ts += 40;
-            video_rtp_pkt->header.set_timestamp(video_rtp_ts);
+            video_rtp_pkt->header_.set_timestamp(video_rtp_ts);
             video->on_rtp(rtc_source, video_rtp_pkt);
             EXPECT_NEAR(video_rtp_pkt->get_avsync_time(), video_absolute_ts, 1);
             // Duplicate 3 sender report packets.

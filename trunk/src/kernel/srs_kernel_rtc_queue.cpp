@@ -149,7 +149,7 @@ void SrsRtpRingBuffer::clear_histroy(uint16_t seq)
     // TODO FIXME Did not consider loopback
     for (uint16_t i = 0; i < capacity_; i++) {
         SrsRtpPacket *p = queue_[i];
-        if (p && p->header.get_sequence() < seq) {
+        if (p && p->header_.get_sequence() < seq) {
             srs_freep(p);
             queue_[i] = NULL;
         }

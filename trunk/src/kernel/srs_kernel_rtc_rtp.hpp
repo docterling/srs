@@ -324,7 +324,7 @@ class SrsRtpPacket
 {
     // RTP packet fields.
 public:
-    SrsRtpHeader header;
+    SrsRtpHeader header_;
 
 private:
     ISrsRtpPayloader *payload_;
@@ -369,7 +369,7 @@ public:
 
 public:
     // Parse the TWCC extension, ignore by default.
-    void enable_twcc_decode() { header.enable_twcc_decode(); } // SrsRtpPacket::enable_twcc_decode
+    void enable_twcc_decode() { header_.enable_twcc_decode(); } // SrsRtpPacket::enable_twcc_decode
     // Get and set the payload of packet.
     // @remark Note that return NULL if no payload.
     void set_payload(ISrsRtpPayloader *p, SrsRtpPacketPayloadType pt)

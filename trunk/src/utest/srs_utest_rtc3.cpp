@@ -18,12 +18,12 @@ SrsRtpPacket *mock_create_audio_rtp_packet(uint16_t sequence, uint32_t timestamp
     SrsRtpPacket *pkt = new SrsRtpPacket();
 
     // Set RTP header
-    pkt->header.set_padding(false);
-    pkt->header.set_marker(false);
-    pkt->header.set_payload_type(111); // Audio payload type
-    pkt->header.set_sequence(sequence);
-    pkt->header.set_timestamp(timestamp);
-    pkt->header.set_ssrc(0x12345678);
+    pkt->header_.set_padding(false);
+    pkt->header_.set_marker(false);
+    pkt->header_.set_payload_type(111); // Audio payload type
+    pkt->header_.set_sequence(sequence);
+    pkt->header_.set_timestamp(timestamp);
+    pkt->header_.set_ssrc(0x12345678);
 
     // For audio cache testing, we don't need actual payload data or avsync time
     // The cache is only concerned with sequence numbers and system time for jitter buffer logic
@@ -59,7 +59,7 @@ VOID TEST(RTC3AudioCacheTest, BasicPacketProcessing)
 
         // First packet should be processed immediately
         EXPECT_EQ(1, (int)ready_packets.size());
-        EXPECT_EQ(100, ready_packets[0]->header.get_sequence());
+        EXPECT_EQ(100, ready_packets[0]->header_.get_sequence());
 
         free_audio_packets(ready_packets);
 
@@ -69,7 +69,7 @@ VOID TEST(RTC3AudioCacheTest, BasicPacketProcessing)
 
         // Second packet should be processed immediately
         EXPECT_EQ(1, (int)ready_packets.size());
-        EXPECT_EQ(101, ready_packets[0]->header.get_sequence());
+        EXPECT_EQ(101, ready_packets[0]->header_.get_sequence());
 
         free_audio_packets(ready_packets);
     }
@@ -103,7 +103,7 @@ VOID TEST(RTC3AudioCacheTest, OutOfOrderPackets)
 
         // Should process packet 101 now
         EXPECT_EQ(1, (int)ready_packets.size());
-        EXPECT_EQ(101, ready_packets[0]->header.get_sequence());
+        EXPECT_EQ(101, ready_packets[0]->header_.get_sequence());
         free_audio_packets(ready_packets);
 
         // Process packet 102 (completes sequence)
@@ -112,8 +112,8 @@ VOID TEST(RTC3AudioCacheTest, OutOfOrderPackets)
 
         // Should process both 102 and 103
         EXPECT_EQ(2, (int)ready_packets.size());
-        EXPECT_EQ(102, ready_packets[0]->header.get_sequence());
-        EXPECT_EQ(103, ready_packets[1]->header.get_sequence());
+        EXPECT_EQ(102, ready_packets[0]->header_.get_sequence());
+        EXPECT_EQ(103, ready_packets[1]->header_.get_sequence());
 
         free_audio_packets(ready_packets);
     }
@@ -133,7 +133,7 @@ VOID TEST(RTC3AudioCacheTest, LatePacketHandling)
             SrsUniquePtr<SrsRtpPacket> pkt(mock_create_audio_rtp_packet(seq, 1000 + (seq - 100) * 20));
             HELPER_EXPECT_SUCCESS(cache.process_packet(pkt.get(), ready_packets));
             EXPECT_EQ(1, (int)ready_packets.size());
-            EXPECT_EQ(seq, ready_packets[0]->header.get_sequence());
+            EXPECT_EQ(seq, ready_packets[0]->header_.get_sequence());
             free_audio_packets(ready_packets);
         }
 
@@ -160,28 +160,28 @@ VOID TEST(RTC3AudioCacheTest, SequenceNumberWrapAround)
         SrsUniquePtr<SrsRtpPacket> pkt1(mock_create_audio_rtp_packet(seq_near_max, 1000));
         HELPER_EXPECT_SUCCESS(cache.process_packet(pkt1.get(), ready_packets));
         EXPECT_EQ(1, (int)ready_packets.size());
-        EXPECT_EQ(seq_near_max, ready_packets[0]->header.get_sequence());
+        EXPECT_EQ(seq_near_max, ready_packets[0]->header_.get_sequence());
         free_audio_packets(ready_packets);
 
         // Process packet 65535
         SrsUniquePtr<SrsRtpPacket> pkt2(mock_create_audio_rtp_packet(65535, 1020));
         HELPER_EXPECT_SUCCESS(cache.process_packet(pkt2.get(), ready_packets));
         EXPECT_EQ(1, (int)ready_packets.size());
-        EXPECT_EQ(65535, ready_packets[0]->header.get_sequence());
+        EXPECT_EQ(65535, ready_packets[0]->header_.get_sequence());
         free_audio_packets(ready_packets);
 
         // Process packet 0 (after wrap-around)
         SrsUniquePtr<SrsRtpPacket> pkt3(mock_create_audio_rtp_packet(0, 1040));
         HELPER_EXPECT_SUCCESS(cache.process_packet(pkt3.get(), ready_packets));
         EXPECT_EQ(1, (int)ready_packets.size());
-        EXPECT_EQ(0, ready_packets[0]->header.get_sequence());
+        EXPECT_EQ(0, ready_packets[0]->header_.get_sequence());
         free_audio_packets(ready_packets);
 
         // Process packet 1
         SrsUniquePtr<SrsRtpPacket> pkt4(mock_create_audio_rtp_packet(1, 1060));
         HELPER_EXPECT_SUCCESS(cache.process_packet(pkt4.get(), ready_packets));
         EXPECT_EQ(1, (int)ready_packets.size());
-        EXPECT_EQ(1, ready_packets[0]->header.get_sequence());
+        EXPECT_EQ(1, ready_packets[0]->header_.get_sequence());
         free_audio_packets(ready_packets);
     }
 }
@@ -221,7 +221,7 @@ VOID TEST(RTC3AudioCacheTest, PacketLossWithTimeout)
         // Should process packet 103 despite missing 101, 102 due to timeout
         bool found_103 = false;
         for (size_t i = 0; i < ready_packets.size(); i++) {
-            if (ready_packets[i]->header.get_sequence() == 103) {
+            if (ready_packets[i]->header_.get_sequence() == 103) {
                 found_103 = true;
                 break;
             }
@@ -322,8 +322,8 @@ VOID TEST(RTC3AudioCacheTest, DuplicatePacketHandling)
 
         // Should process 101 and one instance of 102 (duplicate should be handled)
         EXPECT_GE((int)ready_packets.size(), 2);
-        EXPECT_EQ(101, ready_packets[0]->header.get_sequence());
-        EXPECT_EQ(102, ready_packets[1]->header.get_sequence());
+        EXPECT_EQ(101, ready_packets[0]->header_.get_sequence());
+        EXPECT_EQ(102, ready_packets[1]->header_.get_sequence());
         free_audio_packets(ready_packets);
     }
 }

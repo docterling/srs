@@ -1472,12 +1472,12 @@ VOID TEST(RTPVideoBuilderTest, PackageStapAHevc)
         HELPER_ASSERT_SUCCESS(builder.package_stap_a(&msg, &pkt));
 
         // Verify RTP header settings
-        EXPECT_EQ(96, pkt.header.get_payload_type());
-        EXPECT_EQ(0x12345678, pkt.header.get_ssrc());
+        EXPECT_EQ(96, pkt.header_.get_payload_type());
+        EXPECT_EQ(0x12345678, pkt.header_.get_ssrc());
         EXPECT_EQ(SrsFrameTypeVideo, pkt.frame_type_);
-        EXPECT_FALSE(pkt.header.get_marker());
-        EXPECT_EQ(100, pkt.header.get_sequence());
-        EXPECT_EQ(90000, pkt.header.get_timestamp()); // 1000 * 90
+        EXPECT_FALSE(pkt.header_.get_marker());
+        EXPECT_EQ(100, pkt.header_.get_sequence());
+        EXPECT_EQ(90000, pkt.header_.get_timestamp()); // 1000 * 90
 
         // Verify NALU type is set to HEVC STAP
         EXPECT_EQ(kStapHevc, pkt.nalu_type_);
@@ -1599,11 +1599,11 @@ VOID TEST(RTPVideoBuilderTest, PackageNalusWithEmptySamples)
             SrsRtpPacket *pkt = pkts[0];
 
             // Verify RTP header settings
-            EXPECT_EQ(96, pkt->header.get_payload_type());
-            EXPECT_EQ(0x12345678, pkt->header.get_ssrc());
+            EXPECT_EQ(96, pkt->header_.get_payload_type());
+            EXPECT_EQ(0x12345678, pkt->header_.get_ssrc());
             EXPECT_EQ(SrsFrameTypeVideo, pkt->frame_type_);
-            EXPECT_EQ(200, pkt->header.get_sequence());
-            EXPECT_EQ(180000, pkt->header.get_timestamp()); // 2000 * 90
+            EXPECT_EQ(200, pkt->header_.get_sequence());
+            EXPECT_EQ(180000, pkt->header_.get_timestamp()); // 2000 * 90
 
             // Verify NALU type is set to first valid NALU type (IDR)
             EXPECT_EQ(SrsAvcNaluTypeIDR, pkt->nalu_type_);
@@ -1751,11 +1751,11 @@ VOID TEST(RTPVideoBuilderTest, PackageNalusLargePayload)
             SrsRtpPacket *pkt = pkts[i];
 
             // Verify RTP header settings
-            EXPECT_EQ(96, pkt->header.get_payload_type());
-            EXPECT_EQ(0x87654321, pkt->header.get_ssrc());
+            EXPECT_EQ(96, pkt->header_.get_payload_type());
+            EXPECT_EQ(0x87654321, pkt->header_.get_ssrc());
             EXPECT_EQ(SrsFrameTypeVideo, pkt->frame_type_);
-            EXPECT_EQ(400 + i, pkt->header.get_sequence()); // Sequence increments
-            EXPECT_EQ(360000, pkt->header.get_timestamp()); // 4000 * 90
+            EXPECT_EQ(400 + i, pkt->header_.get_sequence()); // Sequence increments
+            EXPECT_EQ(360000, pkt->header_.get_timestamp()); // 4000 * 90
 
             // Verify NALU type is FU-A for fragmented packets
             EXPECT_EQ(kFuA, pkt->nalu_type_);
@@ -1864,11 +1864,11 @@ VOID TEST(RTPVideoBuilderTest, PackageNalusLargePayloadHevc)
             SrsRtpPacket *pkt = pkts[i];
 
             // Verify RTP header settings
-            EXPECT_EQ(96, pkt->header.get_payload_type());
-            EXPECT_EQ(0x11223344, pkt->header.get_ssrc());
+            EXPECT_EQ(96, pkt->header_.get_payload_type());
+            EXPECT_EQ(0x11223344, pkt->header_.get_ssrc());
             EXPECT_EQ(SrsFrameTypeVideo, pkt->frame_type_);
-            EXPECT_EQ(500 + i, pkt->header.get_sequence()); // Sequence increments
-            EXPECT_EQ(450000, pkt->header.get_timestamp()); // 5000 * 90
+            EXPECT_EQ(500 + i, pkt->header_.get_sequence()); // Sequence increments
+            EXPECT_EQ(450000, pkt->header_.get_timestamp()); // 5000 * 90
 
             // Verify NALU type is FU-A for fragmented packets
             EXPECT_EQ(kFuA, pkt->nalu_type_);
@@ -1994,11 +1994,11 @@ VOID TEST(RTPVideoBuilderTest, PackageNalusMultipleSamplesLargePayload)
             SrsRtpPacket *pkt = pkts[i];
 
             // Verify RTP header settings
-            EXPECT_EQ(96, pkt->header.get_payload_type());
-            EXPECT_EQ(0xAABBCCDD, pkt->header.get_ssrc());
+            EXPECT_EQ(96, pkt->header_.get_payload_type());
+            EXPECT_EQ(0xAABBCCDD, pkt->header_.get_ssrc());
             EXPECT_EQ(SrsFrameTypeVideo, pkt->frame_type_);
-            EXPECT_EQ(600 + i, pkt->header.get_sequence()); // Sequence increments
-            EXPECT_EQ(540000, pkt->header.get_timestamp()); // 6000 * 90
+            EXPECT_EQ(600 + i, pkt->header_.get_sequence()); // Sequence increments
+            EXPECT_EQ(540000, pkt->header_.get_timestamp()); // 6000 * 90
 
             // Verify NALU type is FU-A for fragmented packets
             EXPECT_EQ(kFuA, pkt->nalu_type_);
@@ -2130,11 +2130,11 @@ VOID TEST(RTPVideoBuilderTest, PackageNalusMultipleSamplesLargePayloadHevc)
             SrsRtpPacket *pkt = pkts[i];
 
             // Verify RTP header settings
-            EXPECT_EQ(96, pkt->header.get_payload_type());
-            EXPECT_EQ(0x12345678, pkt->header.get_ssrc());
+            EXPECT_EQ(96, pkt->header_.get_payload_type());
+            EXPECT_EQ(0x12345678, pkt->header_.get_ssrc());
             EXPECT_EQ(SrsFrameTypeVideo, pkt->frame_type_);
-            EXPECT_EQ(700 + i, pkt->header.get_sequence()); // Sequence increments
-            EXPECT_EQ(630000, pkt->header.get_timestamp()); // 7000 * 90
+            EXPECT_EQ(700 + i, pkt->header_.get_sequence()); // Sequence increments
+            EXPECT_EQ(630000, pkt->header_.get_timestamp()); // 7000 * 90
 
             // Verify NALU type is FU-A for fragmented packets
             EXPECT_EQ(kFuA, pkt->nalu_type_);
@@ -2238,11 +2238,11 @@ VOID TEST(RTPVideoBuilderTest, PackageFuAHevc)
             SrsRtpPacket *pkt = pkts[i];
 
             // Verify RTP header settings
-            EXPECT_EQ(96, pkt->header.get_payload_type());
-            EXPECT_EQ(0x11223344, pkt->header.get_ssrc());
+            EXPECT_EQ(96, pkt->header_.get_payload_type());
+            EXPECT_EQ(0x11223344, pkt->header_.get_ssrc());
             EXPECT_EQ(SrsFrameTypeVideo, pkt->frame_type_);
-            EXPECT_EQ(800 + i, pkt->header.get_sequence()); // Sequence increments
-            EXPECT_EQ(720000, pkt->header.get_timestamp()); // 8000 * 90
+            EXPECT_EQ(800 + i, pkt->header_.get_sequence()); // Sequence increments
+            EXPECT_EQ(720000, pkt->header_.get_timestamp()); // 8000 * 90
 
             // Verify NALU type is HEVC FU-A for fragmented packets
             EXPECT_EQ(kFuHevc, pkt->nalu_type_);
@@ -2351,11 +2351,11 @@ VOID TEST(RTPVideoBuilderTest, PackageFuAH264)
             SrsRtpPacket *pkt = pkts[i];
 
             // Verify RTP header settings
-            EXPECT_EQ(96, pkt->header.get_payload_type());
-            EXPECT_EQ(0x55667788, pkt->header.get_ssrc());
+            EXPECT_EQ(96, pkt->header_.get_payload_type());
+            EXPECT_EQ(0x55667788, pkt->header_.get_ssrc());
             EXPECT_EQ(SrsFrameTypeVideo, pkt->frame_type_);
-            EXPECT_EQ(900 + i, pkt->header.get_sequence()); // Sequence increments
-            EXPECT_EQ(810000, pkt->header.get_timestamp()); // 9000 * 90
+            EXPECT_EQ(900 + i, pkt->header_.get_sequence()); // Sequence increments
+            EXPECT_EQ(810000, pkt->header_.get_timestamp()); // 9000 * 90
 
             // Verify NALU type is H.264 FU-A for fragmented packets
             EXPECT_EQ(kFuA, pkt->nalu_type_);

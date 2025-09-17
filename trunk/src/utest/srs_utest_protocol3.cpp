@@ -1550,11 +1550,11 @@ VOID TEST(ProtocolRtpTest, SrsRtpVideoBuilderPackageStapA)
     HELPER_EXPECT_SUCCESS(builder.package_stap_a(msg, pkt));
 
     // Verify RTP packet was properly configured
-    EXPECT_EQ(payload_type, pkt->header.get_payload_type());
-    EXPECT_EQ(ssrc, pkt->header.get_ssrc());
+    EXPECT_EQ(payload_type, pkt->header_.get_payload_type());
+    EXPECT_EQ(ssrc, pkt->header_.get_ssrc());
     EXPECT_EQ(SrsFrameTypeVideo, pkt->frame_type_);
-    EXPECT_EQ(1000 * 90, pkt->header.get_timestamp()); // timestamp * 90
-    EXPECT_FALSE(pkt->header.get_marker());            // STAP-A should not have marker bit set
+    EXPECT_EQ(1000 * 90, pkt->header_.get_timestamp()); // timestamp * 90
+    EXPECT_FALSE(pkt->header_.get_marker());            // STAP-A should not have marker bit set
 
     // Verify STAP-A payload was created
     EXPECT_TRUE(pkt->payload() != NULL);
@@ -1638,10 +1638,10 @@ VOID TEST(ProtocolRtpTest, SrsRtpVideoBuilderPackageNalusWithFormat)
     // Verify first packet configuration
     if (!pkts.empty()) {
         SrsRtpPacket *pkt = pkts[0];
-        EXPECT_EQ(payload_type, pkt->header.get_payload_type());
-        EXPECT_EQ(ssrc, pkt->header.get_ssrc());
+        EXPECT_EQ(payload_type, pkt->header_.get_payload_type());
+        EXPECT_EQ(ssrc, pkt->header_.get_ssrc());
         EXPECT_EQ(SrsFrameTypeVideo, pkt->frame_type_);
-        EXPECT_EQ(2000 * 90, pkt->header.get_timestamp()); // timestamp * 90
+        EXPECT_EQ(2000 * 90, pkt->header_.get_timestamp()); // timestamp * 90
     }
 
     // Clean up any created packets
@@ -1694,10 +1694,10 @@ VOID TEST(ProtocolRtpTest, SrsRtpVideoBuilderPackageSingleNalu)
 
     if (!pkts.empty()) {
         SrsRtpPacket *pkt = pkts[0];
-        EXPECT_EQ(payload_type, pkt->header.get_payload_type());
-        EXPECT_EQ(ssrc, pkt->header.get_ssrc());
+        EXPECT_EQ(payload_type, pkt->header_.get_payload_type());
+        EXPECT_EQ(ssrc, pkt->header_.get_ssrc());
         EXPECT_EQ(SrsFrameTypeVideo, pkt->frame_type_);
-        EXPECT_EQ(3000 * 90, pkt->header.get_timestamp()); // timestamp * 90
+        EXPECT_EQ(3000 * 90, pkt->header_.get_timestamp()); // timestamp * 90
     }
 
     // Clean up packets
@@ -1769,10 +1769,10 @@ VOID TEST(ProtocolRtpTest, SrsRtpVideoBuilderPackageFuA)
     // Verify first packet configuration
     if (!pkts.empty()) {
         SrsRtpPacket *pkt = pkts[0];
-        EXPECT_EQ(payload_type, pkt->header.get_payload_type());
-        EXPECT_EQ(ssrc, pkt->header.get_ssrc());
+        EXPECT_EQ(payload_type, pkt->header_.get_payload_type());
+        EXPECT_EQ(ssrc, pkt->header_.get_ssrc());
         EXPECT_EQ(SrsFrameTypeVideo, pkt->frame_type_);
-        EXPECT_EQ(4000 * 90, pkt->header.get_timestamp()); // timestamp * 90
+        EXPECT_EQ(4000 * 90, pkt->header_.get_timestamp()); // timestamp * 90
 
         // Verify it's a FU-A payload
         SrsRtpFUAPayload2 *fua_payload = dynamic_cast<SrsRtpFUAPayload2 *>(pkt->payload());

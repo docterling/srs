@@ -88,7 +88,7 @@ VOID TEST(RtcRecvTrackTest, OnNackBasicTest)
 
     // Create a test RTP packet
     SrsRtpPacket pkt;
-    pkt.header.set_sequence(100);
+    pkt.header_.set_sequence(100);
 
     SrsRtpPacket *ppkt = &pkt;
 
@@ -98,7 +98,7 @@ VOID TEST(RtcRecvTrackTest, OnNackBasicTest)
     // Test case 2: NACK info exists (recovered packet)
     recv_track.receiver_insert(101, 102);
     SrsRtpPacket pkt2;
-    pkt2.header.set_sequence(101);
+    pkt2.header_.set_sequence(101);
     ppkt = &pkt2;
     HELPER_EXPECT_SUCCESS(recv_track.on_nack(&ppkt));
 }
@@ -116,7 +116,7 @@ VOID TEST(RtcRecvTrackTest, OnNackRecoveredPacketTest)
 
     // Create recovered packet
     SrsRtpPacket pkt;
-    pkt.header.set_sequence(200);
+    pkt.header_.set_sequence(200);
     SrsRtpPacket *ppkt = &pkt;
 
     // Process the recovered packet
@@ -128,7 +128,7 @@ VOID TEST(RtcRecvTrackTest, OnNackRecoveredPacketTest)
     // Verify the packet was added to RTP queue
     SrsRtpPacket *queued_pkt = recv_track.get_packet_from_queue(200);
     EXPECT_TRUE(queued_pkt != NULL);
-    EXPECT_TRUE(queued_pkt->header.get_sequence() == 200);
+    EXPECT_TRUE(queued_pkt->header_.get_sequence() == 200);
 }
 
 VOID TEST(RtcRecvTrackTest, OnNackSequentialPacketsTest)
@@ -139,7 +139,7 @@ VOID TEST(RtcRecvTrackTest, OnNackSequentialPacketsTest)
     // Process sequential packets
     for (uint16_t seq = 300; seq < 305; seq++) {
         SrsRtpPacket pkt;
-        pkt.header.set_sequence(seq);
+        pkt.header_.set_sequence(seq);
         SrsRtpPacket *ppkt = &pkt;
 
         HELPER_EXPECT_SUCCESS(recv_track.on_nack(&ppkt));
@@ -147,7 +147,7 @@ VOID TEST(RtcRecvTrackTest, OnNackSequentialPacketsTest)
         // Verify packet is in queue
         SrsRtpPacket *queued_pkt = recv_track.get_packet_from_queue(seq);
         EXPECT_TRUE(queued_pkt != NULL);
-        EXPECT_TRUE(queued_pkt->header.get_sequence() == seq);
+        EXPECT_TRUE(queued_pkt->header_.get_sequence() == seq);
     }
 }
 
@@ -161,7 +161,7 @@ VOID TEST(RtcRecvTrackTest, OnNackOutOfOrderPacketsTest)
 
     for (int i = 0; i < 3; i++) {
         SrsRtpPacket pkt;
-        pkt.header.set_sequence(sequences[i]);
+        pkt.header_.set_sequence(sequences[i]);
         SrsRtpPacket *ppkt = &pkt;
 
         HELPER_EXPECT_SUCCESS(recv_track.on_nack(&ppkt));
@@ -169,7 +169,7 @@ VOID TEST(RtcRecvTrackTest, OnNackOutOfOrderPacketsTest)
         // Verify packet is in queue
         SrsRtpPacket *queued_pkt = recv_track.get_packet_from_queue(sequences[i]);
         EXPECT_TRUE(queued_pkt != NULL);
-        EXPECT_TRUE(queued_pkt->header.get_sequence() == sequences[i]);
+        EXPECT_TRUE(queued_pkt->header_.get_sequence() == sequences[i]);
     }
 }
 
@@ -183,7 +183,7 @@ VOID TEST(RtcRecvTrackTest, OnNackNoCopyModeTest)
 
     // Create a test RTP packet
     SrsRtpPacket *pkt = new SrsRtpPacket();
-    pkt->header.set_sequence(500);
+    pkt->header_.set_sequence(500);
     SrsRtpPacket *ppkt = pkt;
 
     // Process packet in no-copy mode
@@ -195,7 +195,7 @@ VOID TEST(RtcRecvTrackTest, OnNackNoCopyModeTest)
     // Verify packet is in queue (original packet, not a copy)
     SrsRtpPacket *queued_pkt = recv_track.get_packet_from_queue(500);
     EXPECT_TRUE(queued_pkt != NULL);
-    EXPECT_TRUE(queued_pkt->header.get_sequence() == 500);
+    EXPECT_TRUE(queued_pkt->header_.get_sequence() == 500);
     EXPECT_TRUE(queued_pkt == pkt); // Should be the same object
 }
 
@@ -209,7 +209,7 @@ VOID TEST(RtcRecvTrackTest, OnNackCopyModeTest)
 
     // Create a test RTP packet
     SrsRtpPacket pkt;
-    pkt.header.set_sequence(600);
+    pkt.header_.set_sequence(600);
     SrsRtpPacket *ppkt = &pkt;
 
     // Process packet in copy mode
@@ -221,7 +221,7 @@ VOID TEST(RtcRecvTrackTest, OnNackCopyModeTest)
     // Verify packet is in queue (should be a copy)
     SrsRtpPacket *queued_pkt = recv_track.get_packet_from_queue(600);
     EXPECT_TRUE(queued_pkt != NULL);
-    EXPECT_TRUE(queued_pkt->header.get_sequence() == 600);
+    EXPECT_TRUE(queued_pkt->header_.get_sequence() == 600);
     EXPECT_TRUE(queued_pkt != &pkt); // Should be a different object (copy)
 }
 
@@ -235,7 +235,7 @@ VOID TEST(RtcRecvTrackTest, OnNackSequenceWrapAroundTest)
 
     for (int i = 0; i < 5; i++) {
         SrsRtpPacket pkt;
-        pkt.header.set_sequence(sequences[i]);
+        pkt.header_.set_sequence(sequences[i]);
         SrsRtpPacket *ppkt = &pkt;
 
         HELPER_EXPECT_SUCCESS(recv_track.on_nack(&ppkt));
@@ -243,7 +243,7 @@ VOID TEST(RtcRecvTrackTest, OnNackSequenceWrapAroundTest)
         // Verify packet is in queue
         SrsRtpPacket *queued_pkt = recv_track.get_packet_from_queue(sequences[i]);
         EXPECT_TRUE(queued_pkt != NULL);
-        EXPECT_TRUE(queued_pkt->header.get_sequence() == sequences[i]);
+        EXPECT_TRUE(queued_pkt->header_.get_sequence() == sequences[i]);
     }
 }
 
@@ -265,7 +265,7 @@ VOID TEST(RtcRecvTrackTest, OnNackMixedRecoveredAndNewPacketsTest)
 
     for (int i = 0; i < 4; i++) {
         SrsRtpPacket pkt;
-        pkt.header.set_sequence(sequences[i]);
+        pkt.header_.set_sequence(sequences[i]);
         SrsRtpPacket *ppkt = &pkt;
 
         // Check if packet is in NACK receiver before processing
@@ -282,7 +282,7 @@ VOID TEST(RtcRecvTrackTest, OnNackMixedRecoveredAndNewPacketsTest)
         // Verify packet is in queue
         SrsRtpPacket *queued_pkt = recv_track.get_packet_from_queue(sequences[i]);
         EXPECT_TRUE(queued_pkt != NULL);
-        EXPECT_TRUE(queued_pkt->header.get_sequence() == sequences[i]);
+        EXPECT_TRUE(queued_pkt->header_.get_sequence() == sequences[i]);
     }
 }
 
@@ -296,25 +296,25 @@ VOID TEST(RtcRecvTrackTest, OnNackDuplicatePacketTest)
 
     // First time processing
     SrsRtpPacket pkt1;
-    pkt1.header.set_sequence(seq);
+    pkt1.header_.set_sequence(seq);
     SrsRtpPacket *ppkt1 = &pkt1;
     HELPER_EXPECT_SUCCESS(recv_track.on_nack(&ppkt1));
 
     // Verify packet is in queue
     SrsRtpPacket *queued_pkt1 = recv_track.get_packet_from_queue(seq);
     EXPECT_TRUE(queued_pkt1 != NULL);
-    EXPECT_TRUE(queued_pkt1->header.get_sequence() == seq);
+    EXPECT_TRUE(queued_pkt1->header_.get_sequence() == seq);
 
     // Second time processing (duplicate)
     SrsRtpPacket pkt2;
-    pkt2.header.set_sequence(seq);
+    pkt2.header_.set_sequence(seq);
     SrsRtpPacket *ppkt2 = &pkt2;
     HELPER_EXPECT_SUCCESS(recv_track.on_nack(&ppkt2));
 
     // Verify the packet in queue is replaced (should be the new one)
     SrsRtpPacket *queued_pkt2 = recv_track.get_packet_from_queue(seq);
     EXPECT_TRUE(queued_pkt2 != NULL);
-    EXPECT_TRUE(queued_pkt2->header.get_sequence() == seq);
+    EXPECT_TRUE(queued_pkt2->header_.get_sequence() == seq);
     // In copy mode, it should be a different object
     EXPECT_TRUE(queued_pkt2 != queued_pkt1);
 }
@@ -330,24 +330,24 @@ VOID TEST(RtcRecvTrackTest, OnNackLargeGapTest)
 
     // Process first packet
     SrsRtpPacket pkt1;
-    pkt1.header.set_sequence(seq1);
+    pkt1.header_.set_sequence(seq1);
     SrsRtpPacket *ppkt1 = &pkt1;
     HELPER_EXPECT_SUCCESS(recv_track.on_nack(&ppkt1));
 
     // Process second packet with large gap
     SrsRtpPacket pkt2;
-    pkt2.header.set_sequence(seq2);
+    pkt2.header_.set_sequence(seq2);
     SrsRtpPacket *ppkt2 = &pkt2;
     HELPER_EXPECT_SUCCESS(recv_track.on_nack(&ppkt2));
 
     // Verify both packets are in queue
     SrsRtpPacket *queued_pkt1 = recv_track.get_packet_from_queue(seq1);
     EXPECT_TRUE(queued_pkt1 != NULL);
-    EXPECT_TRUE(queued_pkt1->header.get_sequence() == seq1);
+    EXPECT_TRUE(queued_pkt1->header_.get_sequence() == seq1);
 
     SrsRtpPacket *queued_pkt2 = recv_track.get_packet_from_queue(seq2);
     EXPECT_TRUE(queued_pkt2 != NULL);
-    EXPECT_TRUE(queued_pkt2->header.get_sequence() == seq2);
+    EXPECT_TRUE(queued_pkt2->header_.get_sequence() == seq2);
 }
 
 VOID TEST(RtcRecvTrackTest, OnNackRecoveredPacketRemovedFromNackTest)
@@ -367,7 +367,7 @@ VOID TEST(RtcRecvTrackTest, OnNackRecoveredPacketRemovedFromNackTest)
     uint16_t recovered_seqs[] = {1001, 1003};
     for (int i = 0; i < 2; i++) {
         SrsRtpPacket pkt;
-        pkt.header.set_sequence(recovered_seqs[i]);
+        pkt.header_.set_sequence(recovered_seqs[i]);
         SrsRtpPacket *ppkt = &pkt;
 
         HELPER_EXPECT_SUCCESS(recv_track.on_nack(&ppkt));
@@ -378,7 +378,7 @@ VOID TEST(RtcRecvTrackTest, OnNackRecoveredPacketRemovedFromNackTest)
         // Verify packet is in queue
         SrsRtpPacket *queued_pkt = recv_track.get_packet_from_queue(recovered_seqs[i]);
         EXPECT_TRUE(queued_pkt != NULL);
-        EXPECT_TRUE(queued_pkt->header.get_sequence() == recovered_seqs[i]);
+        EXPECT_TRUE(queued_pkt->header_.get_sequence() == recovered_seqs[i]);
     }
 
     // Verify non-recovered packets are still in NACK receiver
@@ -405,7 +405,7 @@ VOID TEST(RtcRecvTrackTest, OnNackBugFixVerificationTest)
 
     // Step 2: Simulate packet recovery (retransmission arrives)
     SrsRtpPacket recovered_pkt;
-    recovered_pkt.header.set_sequence(lost_seq);
+    recovered_pkt.header_.set_sequence(lost_seq);
     SrsRtpPacket *ppkt = &recovered_pkt;
 
     // Step 3: Process the recovered packet
@@ -417,7 +417,7 @@ VOID TEST(RtcRecvTrackTest, OnNackBugFixVerificationTest)
     // Step 5: Verify the fix - packet should be added to RTP queue (this was the bug)
     SrsRtpPacket *queued_pkt = recv_track.get_packet_from_queue(lost_seq);
     EXPECT_TRUE(queued_pkt != NULL);
-    EXPECT_TRUE(queued_pkt->header.get_sequence() == lost_seq);
+    EXPECT_TRUE(queued_pkt->header_.get_sequence() == lost_seq);
 
     // This test ensures that recovered packets are properly processed and not discarded
 }
@@ -432,7 +432,7 @@ VOID TEST(RtcRecvTrackTest, OnNackControlFlowTest)
     // Scenario 1: New packet (not in NACK receiver)
     uint16_t new_seq = 1200;
     SrsRtpPacket new_pkt;
-    new_pkt.header.set_sequence(new_seq);
+    new_pkt.header_.set_sequence(new_seq);
     SrsRtpPacket *new_ppkt = &new_pkt;
 
     // Should not be in NACK receiver initially
@@ -443,7 +443,7 @@ VOID TEST(RtcRecvTrackTest, OnNackControlFlowTest)
     // New packet should be added to queue
     SrsRtpPacket *new_queued = recv_track.get_packet_from_queue(new_seq);
     EXPECT_TRUE(new_queued != NULL);
-    EXPECT_TRUE(new_queued->header.get_sequence() == new_seq);
+    EXPECT_TRUE(new_queued->header_.get_sequence() == new_seq);
 
     // Scenario 2: Recovered packet (in NACK receiver)
     uint16_t recovered_seq = 1201;
@@ -453,7 +453,7 @@ VOID TEST(RtcRecvTrackTest, OnNackControlFlowTest)
     EXPECT_TRUE(recv_track.receiver_find(recovered_seq) != NULL);
 
     SrsRtpPacket recovered_pkt;
-    recovered_pkt.header.set_sequence(recovered_seq);
+    recovered_pkt.header_.set_sequence(recovered_seq);
     SrsRtpPacket *recovered_ppkt = &recovered_pkt;
 
     HELPER_EXPECT_SUCCESS(recv_track.on_nack(&recovered_ppkt));
@@ -464,7 +464,7 @@ VOID TEST(RtcRecvTrackTest, OnNackControlFlowTest)
     // Recovered packet should also be added to queue (the fix)
     SrsRtpPacket *recovered_queued = recv_track.get_packet_from_queue(recovered_seq);
     EXPECT_TRUE(recovered_queued != NULL);
-    EXPECT_TRUE(recovered_queued->header.get_sequence() == recovered_seq);
+    EXPECT_TRUE(recovered_queued->header_.get_sequence() == recovered_seq);
 }
 
 VOID TEST(RtcRecvTrackTest, OnNackStressTest)
@@ -492,7 +492,7 @@ VOID TEST(RtcRecvTrackTest, OnNackStressTest)
         EXPECT_TRUE(is_in_nack == should_be_recovered);
 
         SrsRtpPacket pkt;
-        pkt.header.set_sequence(seq);
+        pkt.header_.set_sequence(seq);
         SrsRtpPacket *ppkt = &pkt;
 
         HELPER_EXPECT_SUCCESS(recv_track.on_nack(&ppkt));
@@ -503,6 +503,6 @@ VOID TEST(RtcRecvTrackTest, OnNackStressTest)
         // Verify packet is in queue (the key fix)
         SrsRtpPacket *queued_pkt = recv_track.get_packet_from_queue(seq);
         EXPECT_TRUE(queued_pkt != NULL);
-        EXPECT_TRUE(queued_pkt->header.get_sequence() == seq);
+        EXPECT_TRUE(queued_pkt->header_.get_sequence() == seq);
     }
 }

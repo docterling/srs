@@ -626,13 +626,13 @@ srs_error_t SrsRtcPlayStream::cycle()
     SrsSharedPtr<SrsRtcSource> &source = source_;
     srs_assert(source.get());
 
-    SrsRtcConsumer *consumer_raw = NULL;
+    ISrsRtcConsumer *consumer_raw = NULL;
     if ((err = source->create_consumer(consumer_raw)) != srs_success) {
         return srs_error_wrap(err, "create consumer, source=%s", req_->get_stream_url().c_str());
     }
 
     srs_assert(consumer_raw);
-    SrsUniquePtr<SrsRtcConsumer> consumer(consumer_raw);
+    SrsUniquePtr<SrsRtcConsumer> consumer(dynamic_cast<SrsRtcConsumer *>(consumer_raw));
 
     consumer->set_handler(this);
 
@@ -685,7 +685,7 @@ srs_error_t SrsRtcPlayStream::send_packet(SrsRtpPacket *&pkt)
 {
     srs_error_t err = srs_success;
 
-    uint32_t ssrc = pkt->header.get_ssrc();
+    uint32_t ssrc = pkt->header_.get_ssrc();
 
     // Try to find track from cache.
     SrsRtcSendTrack *track = NULL;
@@ -733,7 +733,7 @@ srs_error_t SrsRtcPlayStream::send_packet(SrsRtpPacket *&pkt)
 
     // Consume packet by track.
     if ((err = track->on_rtp(pkt)) != srs_success) {
-        return srs_error_wrap(err, "audio track, SSRC=%u, SEQ=%u", ssrc, pkt->header.get_sequence());
+        return srs_error_wrap(err, "audio track, SSRC=%u, SEQ=%u", ssrc, pkt->header_.get_sequence());
     }
 
     // For NACK to handle packet.
@@ -1433,14 +1433,14 @@ srs_error_t SrsRtcPublishStream::do_on_rtp_plaintext(SrsRtpPacket *&pkt, SrsBuff
 
     pkt->set_decode_handler(this);
     pkt->set_extension_types(&extension_types_);
-    pkt->header.ignore_padding(false);
+    pkt->header_.ignore_padding(false);
 
     if ((err = pkt->decode(buf)) != srs_success) {
         return srs_error_wrap(err, "decode rtp packet");
     }
 
     // For source to consume packet.
-    uint32_t ssrc = pkt->header.get_ssrc();
+    uint32_t ssrc = pkt->header_.get_ssrc();
     SrsRtcAudioRecvTrack *audio_track = get_audio_track(ssrc);
     SrsRtcVideoRecvTrack *video_track = get_video_track(ssrc);
     if (audio_track) {
@@ -1512,7 +1512,7 @@ void SrsRtcPublishStream::on_before_decode_payload(SrsRtpPacket *pkt, SrsBuffer 
         return;
     }
 
-    uint32_t ssrc = pkt->header.get_ssrc();
+    uint32_t ssrc = pkt->header_.get_ssrc();
     SrsRtcAudioRecvTrack *audio_track = get_audio_track(ssrc);
     SrsRtcVideoRecvTrack *video_track = get_video_track(ssrc);
 
@@ -2518,7 +2518,7 @@ srs_error_t SrsRtcConnection::do_send_packet(SrsRtpPacket *pkt)
 
     // For NACK simulator, drop packet.
     if (nn_simulate_player_nack_drop_) {
-        simulate_player_drop_packet(&pkt->header, (int)iov->iov_len);
+        simulate_player_drop_packet(&pkt->header_, (int)iov->iov_len);
         iov->iov_len = 0;
         return err;
     }
@@ -2532,8 +2532,8 @@ srs_error_t SrsRtcConnection::do_send_packet(SrsRtpPacket *pkt)
     }
 
     // Detail log, should disable it in release version.
-    srs_info("RTC: SEND PT=%u, SSRC=%#x, SEQ=%u, Time=%u, %u/%u bytes", pkt->header.get_payload_type(), pkt->header.get_ssrc(),
-             pkt->header.get_sequence(), pkt->header.get_timestamp(), pkt->nb_bytes(), iov->iov_len);
+    srs_info("RTC: SEND PT=%u, SSRC=%#x, SEQ=%u, Time=%u, %u/%u bytes", pkt->header_.get_payload_type(), pkt->header_.get_ssrc(),
+             pkt->header_.get_sequence(), pkt->header_.get_timestamp(), pkt->nb_bytes(), iov->iov_len);
 
     return err;
 }
