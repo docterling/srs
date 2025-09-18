@@ -400,6 +400,7 @@ SrsRtcSource::SrsRtcSource()
 #ifdef SRS_FFMPEG_FIT
     frame_builder_ = NULL;
 #endif
+    circuit_breaker_ = _srs_circuit_breaker;
 
     pli_for_rtmp_ = pli_elapsed_ = 0;
     stream_die_at_ = 0;
@@ -793,7 +794,7 @@ srs_error_t SrsRtcSource::on_rtp(SrsRtpPacket *pkt)
     srs_error_t err = srs_success;
 
     // If circuit-breaker is dying, drop packet.
-    if (_srs_circuit_breaker->hybrid_dying_water_level()) {
+    if (circuit_breaker_ && circuit_breaker_->hybrid_dying_water_level()) {
         _srs_pps_aloss2->sugar_ += (int64_t)consumers_.size();
         return err;
     }
