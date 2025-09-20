@@ -19,7 +19,6 @@
 #endif
 #include <srs_app_rtc_source.hpp>
 
-#include <vector>
 using namespace std;
 
 ISrsFrameTarget::ISrsFrameTarget()
@@ -61,9 +60,9 @@ SrsRtmpBridge::SrsRtmpBridge()
 #endif
 #ifdef SRS_RTSP
     rtsp_builder_ = NULL;
+    rtsp_target_ = NULL;
 #endif
     rtc_target_ = NULL;
-    rtsp_target_ = NULL;
 }
 
 SrsRtmpBridge::~SrsRtmpBridge()
@@ -73,14 +72,24 @@ SrsRtmpBridge::~SrsRtmpBridge()
 #endif
 #ifdef SRS_RTSP
     srs_freep(rtsp_builder_);
+    rtsp_target_ = NULL;
 #endif
     rtc_target_ = NULL;
-    rtsp_target_ = NULL;
 }
 
 bool SrsRtmpBridge::empty()
 {
-    return !rtc_target_.get() || !rtsp_target_.get();
+    if (rtc_target_.get()) {
+        return false;
+    }
+
+#ifdef SRS_RTSP
+    if (rtsp_target_.get()) {
+        return false;
+    }
+#endif
+
+    return true;
 }
 
 void SrsRtmpBridge::enable_rtmp2rtc(SrsSharedPtr<SrsRtcSource> rtc_source)
@@ -88,10 +97,12 @@ void SrsRtmpBridge::enable_rtmp2rtc(SrsSharedPtr<SrsRtcSource> rtc_source)
     rtc_target_ = rtc_source;
 }
 
+#ifdef SRS_RTSP
 void SrsRtmpBridge::enable_rtmp2rtsp(SrsSharedPtr<SrsRtspSource> rtsp_source)
 {
     rtsp_target_ = rtsp_source;
 }
+#endif
 
 srs_error_t SrsRtmpBridge::initialize(ISrsRequest *r)
 {
