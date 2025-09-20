@@ -26,7 +26,6 @@ class SrsRtcSourceDescription;
 class SrsResourceManager;
 class SrsRtspConnection;
 class SrsRtpVideoBuilder;
-class SrsFrameToRtspBridge;
 
 // The RTSP stream consumer, consume packets from RTSP stream source.
 class SrsRtspConsumer
@@ -103,7 +102,7 @@ extern SrsRtspSourceManager *_srs_rtsp_sources;
 extern SrsResourceManager *_srs_rtsp_manager;
 
 // A Source is a stream, to publish and to play with, binding to SrsRtspPlayStream.
-class SrsRtspSource
+class SrsRtspSource : public ISrsRtpTarget
 {
 private:
     // For publish, it's the publish client id.
@@ -176,7 +175,7 @@ public:
 
 public:
     // Consume the shared RTP packet, user must free it.
-    srs_error_t on_rtp(SrsRtpPacket *pkt);
+    virtual srs_error_t on_rtp(SrsRtpPacket *pkt);
 
 public:
     SrsRtcTrackDescription *audio_desc();
@@ -190,7 +189,7 @@ class SrsRtspRtpBuilder
 {
 private:
     ISrsRequest *req_;
-    SrsFrameToRtspBridge *bridge_;
+    ISrsRtpTarget *rtp_target_;
     // The format, codec information.
     SrsRtmpFormat *format_;
     // The metadata cache.
@@ -211,7 +210,7 @@ private:
     bool video_initialized_;
 
 public:
-    SrsRtspRtpBuilder(SrsFrameToRtspBridge *bridge, SrsSharedPtr<SrsRtspSource> source);
+    SrsRtspRtpBuilder(ISrsRtpTarget *target, SrsSharedPtr<SrsRtspSource> source);
     virtual ~SrsRtspRtpBuilder();
 
 private:

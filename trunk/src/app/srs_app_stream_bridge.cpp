@@ -9,6 +9,7 @@
 #include <srs_app_config.hpp>
 #include <srs_app_rtc_source.hpp>
 #include <srs_app_rtmp_source.hpp>
+#include <srs_app_srt_source.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_rtc_rtp.hpp>
 #include <srs_protocol_format.hpp>
@@ -16,243 +17,434 @@
 #ifdef SRS_RTSP
 #include <srs_app_rtsp_source.hpp>
 #endif
+#include <srs_app_rtc_source.hpp>
 
 #include <vector>
 using namespace std;
 
-ISrsStreamBridge::ISrsStreamBridge()
+ISrsFrameTarget::ISrsFrameTarget()
 {
 }
 
-ISrsStreamBridge::~ISrsStreamBridge()
+ISrsFrameTarget::~ISrsFrameTarget()
 {
 }
 
-SrsFrameToRtmpBridge::SrsFrameToRtmpBridge(SrsSharedPtr<SrsLiveSource> source)
-{
-    source_ = source;
-}
-
-SrsFrameToRtmpBridge::~SrsFrameToRtmpBridge()
+ISrsRtpTarget::ISrsRtpTarget()
 {
 }
 
-srs_error_t SrsFrameToRtmpBridge::initialize(ISrsRequest *r)
+ISrsRtpTarget::~ISrsRtpTarget()
 {
-    return srs_success;
 }
 
-srs_error_t SrsFrameToRtmpBridge::on_publish()
+ISrsSrtTarget::ISrsSrtTarget()
 {
-    srs_error_t err = srs_success;
-
-    // TODO: FIXME: Should sync with bridge?
-    if ((err = source_->on_publish()) != srs_success) {
-        return srs_error_wrap(err, "source publish");
-    }
-
-    return err;
 }
 
-void SrsFrameToRtmpBridge::on_unpublish()
+ISrsSrtTarget::~ISrsSrtTarget()
 {
-    // TODO: FIXME: Should sync with bridge?
-    source_->on_unpublish();
 }
 
-srs_error_t SrsFrameToRtmpBridge::on_frame(SrsMediaPacket *frame)
+ISrsRtmpBridge::ISrsRtmpBridge()
 {
-    return source_->on_frame(frame);
 }
 
-SrsFrameToRtcBridge::SrsFrameToRtcBridge(SrsSharedPtr<SrsRtcSource> source)
+ISrsRtmpBridge::~ISrsRtmpBridge()
 {
-    source_ = source;
+}
 
-#if defined(SRS_FFMPEG_FIT)
-    // Use lazy initialization - no need to determine codec/track parameters here
-    rtp_builder_ = new SrsRtcRtpBuilder(this, source);
+SrsRtmpBridge::SrsRtmpBridge()
+{
+#ifdef SRS_FFMPEG_FIT
+    rtp_builder_ = NULL;
 #endif
+#ifdef SRS_RTSP
+    rtsp_builder_ = NULL;
+#endif
+    rtc_target_ = NULL;
+    rtsp_target_ = NULL;
 }
 
-SrsFrameToRtcBridge::~SrsFrameToRtcBridge()
+SrsRtmpBridge::~SrsRtmpBridge()
 {
 #ifdef SRS_FFMPEG_FIT
     srs_freep(rtp_builder_);
 #endif
-}
-
-srs_error_t SrsFrameToRtcBridge::initialize(ISrsRequest *r)
-{
-#ifdef SRS_FFMPEG_FIT
-    return rtp_builder_->initialize(r);
-#else
-    return srs_success;
+#ifdef SRS_RTSP
+    srs_freep(rtsp_builder_);
 #endif
+    rtc_target_ = NULL;
+    rtsp_target_ = NULL;
 }
 
-srs_error_t SrsFrameToRtcBridge::on_publish()
+bool SrsRtmpBridge::empty()
+{
+    return !rtc_target_.get() || !rtsp_target_.get();
+}
+
+void SrsRtmpBridge::enable_rtmp2rtc(SrsSharedPtr<SrsRtcSource> rtc_source)
+{
+    rtc_target_ = rtc_source;
+}
+
+void SrsRtmpBridge::enable_rtmp2rtsp(SrsSharedPtr<SrsRtspSource> rtsp_source)
+{
+    rtsp_target_ = rtsp_source;
+}
+
+srs_error_t SrsRtmpBridge::initialize(ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 
-    // TODO: FIXME: Should sync with bridge?
-    if ((err = source_->on_publish()) != srs_success) {
-        return srs_error_wrap(err, "source publish");
+#ifdef SRS_FFMPEG_FIT
+    if (rtc_target_.get()) {
+        srs_freep(rtp_builder_);
+        rtp_builder_ = new SrsRtcRtpBuilder(rtc_target_.get(), rtc_target_);
+        if ((err = rtp_builder_->initialize(r)) != srs_success) {
+            return srs_error_wrap(err, "rtp builder initialize");
+        }
     }
-
-#ifdef SRS_FFMPEG_FIT
-    if ((err = rtp_builder_->on_publish()) != srs_success) {
-        return srs_error_wrap(err, "rtp builder publish");
-    }
 #endif
-
-    return err;
-}
-
-void SrsFrameToRtcBridge::on_unpublish()
-{
-#ifdef SRS_FFMPEG_FIT
-    rtp_builder_->on_unpublish();
-#endif
-
-    // @remark This bridge might be disposed here, so never use it.
-    // TODO: FIXME: Should sync with bridge?
-    source_->on_unpublish();
-}
-
-srs_error_t SrsFrameToRtcBridge::on_frame(SrsMediaPacket *frame)
-{
-#ifdef SRS_FFMPEG_FIT
-    return rtp_builder_->on_frame(frame);
-#else
-    return srs_success;
-#endif
-}
-
-srs_error_t SrsFrameToRtcBridge::on_rtp(SrsRtpPacket *pkt)
-{
-    return source_->on_rtp(pkt);
-}
 
 #ifdef SRS_RTSP
-SrsFrameToRtspBridge::SrsFrameToRtspBridge(SrsSharedPtr<SrsRtspSource> source)
-{
-    source_ = source;
-
-    // Use lazy initialization - no need to determine codec/track parameters here
-    rtp_builder_ = new SrsRtspRtpBuilder(this, source);
-}
-
-SrsFrameToRtspBridge::~SrsFrameToRtspBridge()
-{
-    srs_freep(rtp_builder_);
-}
-
-srs_error_t SrsFrameToRtspBridge::initialize(ISrsRequest *r)
-{
-    return rtp_builder_->initialize(r);
-}
-
-srs_error_t SrsFrameToRtspBridge::on_publish()
-{
-    srs_error_t err = srs_success;
-
-    // TODO: FIXME: Should sync with bridge?
-    if ((err = source_->on_publish()) != srs_success) {
-        return srs_error_wrap(err, "source publish");
+    if (rtsp_target_.get()) {
+        srs_freep(rtsp_builder_);
+        rtsp_builder_ = new SrsRtspRtpBuilder(rtsp_target_.get(), rtsp_target_);
+        if ((err = rtsp_builder_->initialize(r)) != srs_success) {
+            return srs_error_wrap(err, "rtsp builder initialize");
+        }
     }
-
-    if ((err = rtp_builder_->on_publish()) != srs_success) {
-        return srs_error_wrap(err, "rtp builder publish");
-    }
-
-    return err;
-}
-
-void SrsFrameToRtspBridge::on_unpublish()
-{
-    rtp_builder_->on_unpublish();
-
-    // @remark This bridge might be disposed here, so never use it.
-    // TODO: FIXME: Should sync with bridge?
-    source_->on_unpublish();
-}
-
-srs_error_t SrsFrameToRtspBridge::on_frame(SrsMediaPacket *frame)
-{
-    return rtp_builder_->on_frame(frame);
-}
-
-srs_error_t SrsFrameToRtspBridge::on_rtp(SrsRtpPacket *pkt)
-{
-    return source_->on_rtp(pkt);
-}
 #endif
 
-SrsCompositeBridge::SrsCompositeBridge()
-{
+    return err;
 }
 
-SrsCompositeBridge::~SrsCompositeBridge()
-{
-    for (vector<ISrsStreamBridge *>::iterator it = bridges_.begin(); it != bridges_.end(); ++it) {
-        ISrsStreamBridge *bridge = *it;
-        srs_freep(bridge);
-    }
-}
-
-srs_error_t SrsCompositeBridge::initialize(ISrsRequest *r)
+srs_error_t SrsRtmpBridge::on_publish()
 {
     srs_error_t err = srs_success;
 
-    for (vector<ISrsStreamBridge *>::iterator it = bridges_.begin(); it != bridges_.end(); ++it) {
-        ISrsStreamBridge *bridge = *it;
-        if ((err = bridge->initialize(r)) != srs_success) {
-            return err;
+    // TODO: FIXME: Should sync with bridge?
+    if (rtc_target_.get()) {
+        if ((err = rtc_target_->on_publish()) != srs_success) {
+            return srs_error_wrap(err, "rtc target publish");
         }
+
+#ifdef SRS_FFMPEG_FIT
+        if ((err = rtp_builder_->on_publish()) != srs_success) {
+            return srs_error_wrap(err, "rtp builder publish");
+        }
+#endif
+    }
+
+#ifdef SRS_RTSP
+    // TODO: FIXME: Should sync with bridge?
+    if (rtsp_target_.get()) {
+        if ((err = rtsp_target_->on_publish()) != srs_success) {
+            return srs_error_wrap(err, "rtsp target publish");
+        }
+
+        if ((err = rtsp_builder_->on_publish()) != srs_success) {
+            return srs_error_wrap(err, "rtsp builder publish");
+        }
+    }
+#endif
+
+    return err;
+}
+
+void SrsRtmpBridge::on_unpublish()
+{
+    if (rtc_target_.get()) {
+#ifdef SRS_FFMPEG_FIT
+        rtp_builder_->on_unpublish();
+#endif
+        rtc_target_->on_unpublish();
+    }
+
+#ifdef SRS_RTSP
+    if (rtsp_target_.get()) {
+        rtsp_builder_->on_unpublish();
+        rtsp_target_->on_unpublish();
+    }
+#endif
+
+    // Note that RTMP live source free this rtmp bridge, after on_unpublish() is called.
+    // So there is no need to free its components here.
+}
+
+srs_error_t SrsRtmpBridge::on_frame(SrsMediaPacket *frame)
+{
+    srs_error_t err = srs_success;
+
+#ifdef SRS_FFMPEG_FIT
+    if (rtp_builder_ && (err = rtp_builder_->on_frame(frame)) != srs_success) {
+        return srs_error_wrap(err, "rtp builder on frame");
+    }
+#endif
+
+#ifdef SRS_RTSP
+    if (rtsp_builder_ && (err = rtsp_builder_->on_frame(frame)) != srs_success) {
+        return srs_error_wrap(err, "rtsp builder on frame");
+    }
+#endif
+
+    return err;
+}
+
+ISrsSrtBridge::ISrsSrtBridge()
+{
+}
+
+ISrsSrtBridge::~ISrsSrtBridge()
+{
+}
+
+SrsSrtBridge::SrsSrtBridge()
+{
+    frame_builder_ = new SrsSrtFrameBuilder(this);
+    rtmp_target_ = NULL;
+
+#ifdef SRS_FFMPEG_FIT
+    rtp_builder_ = NULL;
+#endif
+    rtc_target_ = NULL;
+}
+
+SrsSrtBridge::~SrsSrtBridge()
+{
+    rtmp_target_ = NULL;
+    srs_freep(frame_builder_);
+
+    rtc_target_ = NULL;
+#ifdef SRS_FFMPEG_FIT
+    srs_freep(rtp_builder_);
+#endif
+}
+
+bool SrsSrtBridge::empty()
+{
+    return !rtmp_target_.get() && !rtc_target_.get();
+}
+
+void SrsSrtBridge::enable_srt2rtmp(SrsSharedPtr<SrsLiveSource> rtmp_source)
+{
+    rtmp_target_ = rtmp_source;
+}
+
+void SrsSrtBridge::enable_srt2rtc(SrsSharedPtr<SrsRtcSource> rtc_source)
+{
+    rtc_target_ = rtc_source;
+}
+
+srs_error_t SrsSrtBridge::initialize(ISrsRequest *r)
+{
+    srs_error_t err = srs_success;
+
+    if ((err = frame_builder_->initialize(r)) != srs_success) {
+        return srs_error_wrap(err, "frame builder initialize");
+    }
+
+#ifdef SRS_FFMPEG_FIT
+    if (rtc_target_.get()) {
+        srs_freep(rtp_builder_);
+        rtp_builder_ = new SrsRtcRtpBuilder(rtc_target_.get(), rtc_target_);
+        if ((err = rtp_builder_->initialize(r)) != srs_success) {
+            return srs_error_wrap(err, "rtp builder initialize");
+        }
+    }
+#endif
+
+    return err;
+}
+
+srs_error_t SrsSrtBridge::on_publish()
+{
+    srs_error_t err = srs_success;
+
+    if ((err = frame_builder_->on_publish()) != srs_success) {
+        return srs_error_wrap(err, "frame builder publish");
+    }
+
+    // TODO: FIXME: Should sync with bridge?
+    if (rtmp_target_.get()) {
+        if ((err = rtmp_target_->on_publish()) != srs_success) {
+            return srs_error_wrap(err, "rtmp target publish");
+        }
+    }
+
+    if (rtc_target_.get()) {
+        if ((err = rtc_target_->on_publish()) != srs_success) {
+            return srs_error_wrap(err, "rtc target publish");
+        }
+
+#ifdef SRS_FFMPEG_FIT
+        if ((err = rtp_builder_->on_publish()) != srs_success) {
+            return srs_error_wrap(err, "rtp builder publish");
+        }
+#endif
     }
 
     return err;
 }
 
-srs_error_t SrsCompositeBridge::on_publish()
+void SrsSrtBridge::on_unpublish()
+{
+    frame_builder_->on_unpublish();
+
+    if (rtmp_target_.get()) {
+        rtmp_target_->on_unpublish();
+    }
+
+    if (rtc_target_.get()) {
+#ifdef SRS_FFMPEG_FIT
+        rtp_builder_->on_unpublish();
+#endif
+        rtc_target_->on_unpublish();
+    }
+
+    // Note that SRT source free this srt bridge, after on_unpublish() is called.
+    // So there is no need to free its components here.
+}
+
+srs_error_t SrsSrtBridge::on_packet(SrsSrtPacket *pkt)
 {
     srs_error_t err = srs_success;
 
-    for (vector<ISrsStreamBridge *>::iterator it = bridges_.begin(); it != bridges_.end(); ++it) {
-        ISrsStreamBridge *bridge = *it;
-        if ((err = bridge->on_publish()) != srs_success) {
-            return err;
-        }
+    if ((err = frame_builder_->on_packet(pkt)) != srs_success) {
+        return srs_error_wrap(err, "frame builder on packet");
     }
 
     return err;
 }
 
-void SrsCompositeBridge::on_unpublish()
-{
-    for (vector<ISrsStreamBridge *>::iterator it = bridges_.begin(); it != bridges_.end(); ++it) {
-        ISrsStreamBridge *bridge = *it;
-        bridge->on_unpublish();
-    }
-}
-
-srs_error_t SrsCompositeBridge::on_frame(SrsMediaPacket *frame)
+srs_error_t SrsSrtBridge::on_frame(SrsMediaPacket *frame)
 {
     srs_error_t err = srs_success;
 
-    for (vector<ISrsStreamBridge *>::iterator it = bridges_.begin(); it != bridges_.end(); ++it) {
-        ISrsStreamBridge *bridge = *it;
-        if ((err = bridge->on_frame(frame)) != srs_success) {
-            return err;
-        }
+    // Deliver frame to RTMP target
+    if (rtmp_target_.get() && (err = rtmp_target_->on_frame(frame)) != srs_success) {
+        return srs_error_wrap(err, "rtmp target on frame");
     }
+
+    // Deliver frame to RTP builder, which delivers to RTC target
+#ifdef SRS_FFMPEG_FIT
+    if (rtp_builder_ && (err = rtp_builder_->on_frame(frame)) != srs_success) {
+        return srs_error_wrap(err, "rtp builder on frame");
+    }
+#endif
 
     return err;
 }
 
-SrsCompositeBridge *SrsCompositeBridge::append(ISrsStreamBridge *bridge)
+ISrsRtcBridge::ISrsRtcBridge()
 {
-    bridges_.push_back(bridge);
-    return this;
+}
+
+ISrsRtcBridge::~ISrsRtcBridge()
+{
+}
+
+SrsRtcBridge::SrsRtcBridge()
+{
+    req_ = NULL;
+#ifdef SRS_FFMPEG_FIT
+    frame_builder_ = NULL;
+#endif
+    rtmp_target_ = NULL;
+}
+
+SrsRtcBridge::~SrsRtcBridge()
+{
+    srs_freep(req_);
+#ifdef SRS_FFMPEG_FIT
+    srs_freep(frame_builder_);
+#endif
+    rtmp_target_ = NULL;
+}
+
+void SrsRtcBridge::enable_rtc2rtmp(SrsSharedPtr<SrsLiveSource> rtmp_target)
+{
+    rtmp_target_ = rtmp_target;
+}
+
+bool SrsRtcBridge::empty()
+{
+    return !rtmp_target_.get();
+}
+
+srs_error_t SrsRtcBridge::initialize(ISrsRequest *r)
+{
+    srs_error_t err = srs_success;
+
+    srs_freep(req_);
+    req_ = r->copy();
+
+#ifdef SRS_FFMPEG_FIT
+    srs_assert(rtmp_target_.get());
+    srs_freep(frame_builder_);
+    frame_builder_ = new SrsRtcFrameBuilder(rtmp_target_.get());
+#endif
+
+    return err;
+}
+
+srs_error_t SrsRtcBridge::setup_codec(SrsAudioCodecId acodec, SrsVideoCodecId vcodec)
+{
+    srs_error_t err = srs_success;
+
+#ifdef SRS_FFMPEG_FIT
+    srs_assert(frame_builder_);
+    if ((err = frame_builder_->initialize(req_, acodec, vcodec)) != srs_success) {
+        return srs_error_wrap(err, "frame builder initialize");
+    }
+#endif
+
+    return err;
+}
+
+srs_error_t SrsRtcBridge::on_publish()
+{
+    srs_error_t err = srs_success;
+
+    srs_assert(rtmp_target_.get());
+    if ((err = rtmp_target_->on_publish()) != srs_success) {
+        return srs_error_wrap(err, "rtmp target publish");
+    }
+
+#ifdef SRS_FFMPEG_FIT
+    srs_assert(frame_builder_);
+    if ((err = frame_builder_->on_publish()) != srs_success) {
+        return srs_error_wrap(err, "frame builder on publish");
+    }
+#endif
+
+    return err;
+}
+
+void SrsRtcBridge::on_unpublish()
+{
+#ifdef SRS_FFMPEG_FIT
+    srs_assert(frame_builder_);
+    frame_builder_->on_unpublish();
+#endif
+
+    srs_assert(rtmp_target_.get());
+    rtmp_target_->on_unpublish();
+
+    // Note that RTC source free this rtc bridge, after on_unpublish() is called.
+    // So there is no need to free its components here.
+}
+
+srs_error_t SrsRtcBridge::on_rtp(SrsRtpPacket *pkt)
+{
+    srs_error_t err = srs_success;
+
+#ifdef SRS_FFMPEG_FIT
+    if (frame_builder_ && (err = frame_builder_->on_rtp(pkt)) != srs_success) {
+        return srs_error_wrap(err, "frame builder on rtp");
+    }
+#endif
+
+    return err;
 }

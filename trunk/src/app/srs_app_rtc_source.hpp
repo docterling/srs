@@ -29,7 +29,6 @@ class SrsMediaPacket;
 class SrsRtmpCommonMessage;
 class SrsMessageArray;
 class SrsRtcSource;
-class SrsFrameToRtcBridge;
 class SrsAudioTranscoder;
 class SrsRtpPacket;
 class SrsNaluSample;
@@ -60,6 +59,7 @@ const int SLIDING_WINDOW_SIZE = 10;
 // Maximum waiting time for out-of-order packets (in ms)
 const int MAX_AUDIO_WAIT_MS = 100;
 
+// NTP time for RTC.
 class SrsNtp
 {
 public:
@@ -157,6 +157,7 @@ public:
     void on_stream_change(SrsRtcSourceDescription *desc);
 };
 
+// The RTC source manager.
 class SrsRtcSourceManager : public ISrsHourGlass
 {
 private:
@@ -203,6 +204,7 @@ public:
     virtual const SrsContextId &context_id() = 0;
 };
 
+// The event handler for RTC source.
 class ISrsRtcSourceEventHandler
 {
 public:
@@ -217,8 +219,12 @@ public:
 };
 
 // A Source is a stream, to publish and to play with, binding to SrsRtcPublishStream and SrsRtcPlayStream.
-class SrsRtcSource : public ISrsFastTimer, public ISrsRtcSourceForConsumer
+class SrsRtcSource : public ISrsRtpTarget, public ISrsFastTimer, public ISrsRtcSourceForConsumer
 {
+private:
+    // The RTP bridge, convert RTP packets to other protocols.
+    ISrsRtcBridge *rtc_bridge_;
+
 private:
     // Circuit breaker for protecting server resources.
     ISrsCircuitBreaker *circuit_breaker_;
@@ -233,14 +239,6 @@ private:
     ISrsRtcPublishStream *publish_stream_;
     // Steam description for this steam.
     SrsRtcSourceDescription *stream_desc_;
-
-private:
-#ifdef SRS_FFMPEG_FIT
-    // Collect and build WebRTC RTP packets to AV frames.
-    SrsRtcFrameBuilder *frame_builder_;
-#endif
-    // The Source bridge, bridge stream to other source.
-    ISrsStreamBridge *bridge_;
 
 private:
     // To delivery stream to clients.
@@ -289,7 +287,7 @@ public:
     virtual SrsContextId pre_source_id();
 
 public:
-    void set_bridge(ISrsStreamBridge *bridge);
+    virtual void set_bridge(ISrsRtcBridge *bridge);
 
 public:
     // Create consumer
@@ -313,19 +311,19 @@ public:
 
 public:
     // For event handler
-    void subscribe(ISrsRtcSourceEventHandler *h);
-    void unsubscribe(ISrsRtcSourceEventHandler *h);
+    virtual void subscribe(ISrsRtcSourceEventHandler *h);
+    virtual void unsubscribe(ISrsRtcSourceEventHandler *h);
 
 public:
     // Get and set the publisher, passed to consumer to process requests such as PLI.
-    ISrsRtcPublishStream *publish_stream();
-    void set_publish_stream(ISrsRtcPublishStream *v);
+    virtual ISrsRtcPublishStream *publish_stream();
+    virtual void set_publish_stream(ISrsRtcPublishStream *v);
     // Consume the shared RTP packet, user must free it.
-    srs_error_t on_rtp(SrsRtpPacket *pkt);
+    virtual srs_error_t on_rtp(SrsRtpPacket *pkt);
     // Set and get stream description for source
-    bool has_stream_desc();
-    void set_stream_desc(SrsRtcSourceDescription *stream_desc);
-    std::vector<SrsRtcTrackDescription *> get_track_desc(std::string type, std::string media_type);
+    virtual bool has_stream_desc();
+    virtual void set_stream_desc(SrsRtcSourceDescription *stream_desc);
+    virtual std::vector<SrsRtcTrackDescription *> get_track_desc(std::string type, std::string media_type);
     // interface ISrsFastTimer
 private:
     srs_error_t on_timer(srs_utime_t interval);
@@ -338,7 +336,7 @@ class SrsRtcRtpBuilder
 {
 private:
     ISrsRequest *req_;
-    SrsFrameToRtcBridge *bridge_;
+    ISrsRtpTarget *rtp_target_;
     // The format, codec information.
     SrsRtmpFormat *format_;
     // The metadata cache.
@@ -365,7 +363,7 @@ private:
     bool video_initialized_;
 
 public:
-    SrsRtcRtpBuilder(SrsFrameToRtcBridge *bridge, SrsSharedPtr<SrsRtcSource> source);
+    SrsRtcRtpBuilder(ISrsRtpTarget *target, SrsSharedPtr<SrsRtcSource> source);
     virtual ~SrsRtcRtpBuilder();
 
 private:
@@ -494,7 +492,7 @@ public:
 class SrsRtcFrameBuilder
 {
 private:
-    ISrsStreamBridge *bridge_;
+    ISrsFrameTarget *frame_target_;
 
 private:
     bool is_first_audio_;
@@ -517,7 +515,7 @@ private:
     SrsRtpPacket *obs_whip_pps_;
 
 public:
-    SrsRtcFrameBuilder(ISrsStreamBridge *bridge);
+    SrsRtcFrameBuilder(ISrsFrameTarget *target);
     virtual ~SrsRtcFrameBuilder();
 
 public:
