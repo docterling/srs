@@ -541,6 +541,10 @@ void SrsRtcSource::set_bridge(ISrsStreamBridge* bridge)
     srs_freep(bridge_);
     bridge_ = bridge;
 
+    if (!bridge) {
+        return;
+    }
+
 #ifdef SRS_FFMPEG_FIT
     srs_freep(frame_builder_);
     frame_builder_ = new SrsRtcFrameBuilder(bridge);
@@ -626,11 +630,11 @@ srs_error_t SrsRtcSource::on_publish()
     // If bridge to other source, handle event and start timer to request PLI.
     if (bridge_) {
 #ifdef SRS_FFMPEG_FIT
-        if ((err = frame_builder_->initialize(req)) != srs_success) {
+        if (frame_builder_ && (err = frame_builder_->initialize(req)) != srs_success) {
             return srs_error_wrap(err, "frame builder initialize");
         }
 
-        if ((err = frame_builder_->on_publish()) != srs_success) {
+        if (frame_builder_ && (err = frame_builder_->on_publish()) != srs_success) {
             return srs_error_wrap(err, "frame builder on publish");
         }
 #endif
@@ -680,8 +684,10 @@ void SrsRtcSource::on_unpublish()
         _srs_hybrid->timer100ms()->unsubscribe(this);
 
 #ifdef SRS_FFMPEG_FIT
-        frame_builder_->on_unpublish();
-        srs_freep(frame_builder_);
+        if (frame_builder_) {
+            frame_builder_->on_unpublish();
+            srs_freep(frame_builder_);
+        }
 #endif
 
         bridge_->on_unpublish();
