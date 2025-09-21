@@ -86,6 +86,14 @@ public:
 // Register FFmpeg log callback funciton.
 SrsFFmpegLogHelper _srs_ffmpeg_log_helper;
 
+ISrsAudioTranscoder::ISrsAudioTranscoder()
+{
+}
+
+ISrsAudioTranscoder::~ISrsAudioTranscoder()
+{
+}
+
 SrsAudioTranscoder::SrsAudioTranscoder()
 {
     dec_ = NULL;

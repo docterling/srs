@@ -52,38 +52,43 @@ VOID TEST(ProtocolHttpTest, JsonpCallbackName)
     EXPECT_FALSE(srs_is_valid_jsonp_callback("callback;"));
 }
 
-// Mock classes for testing protocol connections
-class MockConnection : public ISrsConnection
+// Mock class implementations
+MockConnection::MockConnection(std::string ip) : ip_(ip)
 {
-public:
-    std::string ip_;
+}
 
-public:
-    MockConnection(std::string ip = "127.0.0.1") : ip_(ip) {}
-    virtual ~MockConnection() {}
-
-public:
-    virtual std::string remote_ip() { return ip_; }
-    virtual std::string desc() { return "MockConnection"; }
-    virtual const SrsContextId &get_id()
-    {
-        static SrsContextId id = SrsContextId();
-        return id;
-    }
-};
-
-class MockExpire : public ISrsExpire
+MockConnection::~MockConnection()
 {
-public:
-    bool expired_;
+}
 
-public:
-    MockExpire() : expired_(false) {}
-    virtual ~MockExpire() {}
+std::string MockConnection::remote_ip()
+{
+    return ip_;
+}
 
-public:
-    virtual void expire() { expired_ = true; }
-};
+std::string MockConnection::desc()
+{
+    return "MockConnection";
+}
+
+const SrsContextId &MockConnection::get_id()
+{
+    static SrsContextId id = SrsContextId();
+    return id;
+}
+
+MockExpire::MockExpire() : expired_(false)
+{
+}
+
+MockExpire::~MockExpire()
+{
+}
+
+void MockExpire::expire()
+{
+    expired_ = true;
+}
 
 VOID TEST(ProtocolConnTest, ISrsConnectionInterface)
 {

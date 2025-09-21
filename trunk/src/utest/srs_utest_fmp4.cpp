@@ -18,62 +18,59 @@ using namespace std;
 #include <srs_protocol_rtmp_stack.hpp>
 #include <srs_utest_kernel.hpp>
 
-// Mock classes for testing
-class MockSrsRequest : public SrsRequest
+// Mock class implementations
+MockFmp4SrsRequest::MockFmp4SrsRequest()
 {
-public:
-    MockSrsRequest()
-    {
-        vhost_ = "__defaultVhost__";
-        app_ = "live";
-        stream_ = "livestream";
-    }
-    virtual ~MockSrsRequest() {}
-};
+    vhost_ = "__defaultVhost__";
+    app_ = "live";
+    stream_ = "livestream";
+}
 
-class MockSrsFormat : public SrsFormat
+MockFmp4SrsRequest::~MockFmp4SrsRequest()
 {
-public:
-    MockSrsFormat()
-    {
-        initialize();
+}
 
-        // Setup video sequence header (H.264 AVC)
-        uint8_t video_raw[] = {
-            0x17,
-            0x00, 0x00, 0x00, 0x00, 0x01, 0x64, 0x00, 0x20, 0xff, 0xe1, 0x00, 0x19, 0x67, 0x64, 0x00, 0x20,
-            0xac, 0xd9, 0x40, 0xc0, 0x29, 0xb0, 0x11, 0x00, 0x00, 0x03, 0x00, 0x01, 0x00, 0x00, 0x03, 0x00,
-            0x32, 0x0f, 0x18, 0x31, 0x96, 0x01, 0x00, 0x05, 0x68, 0xeb, 0xec, 0xb2, 0x2c};
-        on_video(0, (char *)video_raw, sizeof(video_raw));
-
-        // Setup audio sequence header (AAC)
-        uint8_t audio_raw[] = {
-            0xaf, 0x00, 0x12, 0x10};
-        on_audio(0, (char *)audio_raw, sizeof(audio_raw));
-    }
-    virtual ~MockSrsFormat() {}
-};
-
-class MockSrsMediaPacket : public SrsMediaPacket
+MockSrsFormat::MockSrsFormat()
 {
-public:
-    MockSrsMediaPacket(bool is_video_msg, uint32_t ts)
-    {
-        timestamp_ = ts;
+    initialize();
 
-        // Create sample payload
-        char *payload = new char[1024];
-        memset(payload, 0x00, 1024);
-        SrsMediaPacket::wrap(payload, 1024);
+    // Setup video sequence header (H.264 AVC)
+    uint8_t video_raw[] = {
+        0x17,
+        0x00, 0x00, 0x00, 0x00, 0x01, 0x64, 0x00, 0x20, 0xff, 0xe1, 0x00, 0x19, 0x67, 0x64, 0x00, 0x20,
+        0xac, 0xd9, 0x40, 0xc0, 0x29, 0xb0, 0x11, 0x00, 0x00, 0x03, 0x00, 0x01, 0x00, 0x00, 0x03, 0x00,
+        0x32, 0x0f, 0x18, 0x31, 0x96, 0x01, 0x00, 0x05, 0x68, 0xeb, 0xec, 0xb2, 0x2c};
+    on_video(0, (char *)video_raw, sizeof(video_raw));
 
-        if (is_video_msg) {
-            message_type_ = SrsFrameTypeVideo;
-        } else {
-            message_type_ = SrsFrameTypeAudio;
-        }
+    // Setup audio sequence header (AAC)
+    uint8_t audio_raw[] = {
+        0xaf, 0x00, 0x12, 0x10};
+    on_audio(0, (char *)audio_raw, sizeof(audio_raw));
+}
+
+MockSrsFormat::~MockSrsFormat()
+{
+}
+
+MockSrsMediaPacket::MockSrsMediaPacket(bool is_video_msg, uint32_t ts)
+{
+    timestamp_ = ts;
+
+    // Create sample payload
+    char *payload = new char[1024];
+    memset(payload, 0x00, 1024);
+    SrsMediaPacket::wrap(payload, 1024);
+
+    if (is_video_msg) {
+        message_type_ = SrsFrameTypeVideo;
+    } else {
+        message_type_ = SrsFrameTypeAudio;
     }
-    virtual ~MockSrsMediaPacket() {}
-};
+}
+
+MockSrsMediaPacket::~MockSrsMediaPacket()
+{
+}
 
 VOID TEST(Fmp4Test, SrsInitMp4Segment_VideoOnly)
 {
@@ -297,7 +294,7 @@ VOID TEST(Fmp4Test, SrsHlsFmp4Muxer_WriteInitMp4)
     SrsHlsFmp4Muxer muxer;
     HELPER_ASSERT_SUCCESS(muxer.initialize(1, 2));
 
-    MockSrsRequest req;
+    MockFmp4SrsRequest req;
     HELPER_ASSERT_SUCCESS(muxer.on_publish(&req));
     HELPER_ASSERT_SUCCESS(muxer.update_config(&req));
 
@@ -321,7 +318,7 @@ VOID TEST(Fmp4Test, SrsHlsFmp4Muxer_WriteMedia)
     SrsHlsFmp4Muxer muxer;
     HELPER_ASSERT_SUCCESS(muxer.initialize(1, 2));
 
-    MockSrsRequest req;
+    MockFmp4SrsRequest req;
     HELPER_ASSERT_SUCCESS(muxer.on_publish(&req));
     HELPER_ASSERT_SUCCESS(muxer.update_config(&req));
 
@@ -380,7 +377,7 @@ VOID TEST(Fmp4Test, SrsHlsMp4Controller_PublishWorkflow)
     HELPER_ASSERT_SUCCESS(controller.initialize());
 
     // Publish stream
-    MockSrsRequest req;
+    MockFmp4SrsRequest req;
     HELPER_ASSERT_SUCCESS(controller.on_publish(&req));
 
     // Handle sequence headers
@@ -716,7 +713,7 @@ VOID TEST(Fmp4Test, Configuration_TrackIdManagement)
     EXPECT_FALSE(controller.has_audio_sh_);
 
     // Set request first
-    MockSrsRequest req;
+    MockFmp4SrsRequest req;
     HELPER_ASSERT_SUCCESS(controller.on_publish(&req));
 
     MockSrsFormat fmt;
@@ -744,7 +741,7 @@ VOID TEST(Fmp4Test, Configuration_SequenceHeaderValidation)
     HELPER_EXPECT_FAILED(controller.on_sequence_header(&video_sh, &fmt));
 
     // Set request and try again
-    MockSrsRequest req;
+    MockFmp4SrsRequest req;
     HELPER_ASSERT_SUCCESS(controller.on_publish(&req));
     HELPER_ASSERT_SUCCESS(controller.on_sequence_header(&video_sh, &fmt));
 
@@ -758,7 +755,7 @@ VOID TEST(Fmp4Test, CodecDetection_AudioCodecUpdate)
     SrsHlsMp4Controller controller;
     HELPER_ASSERT_SUCCESS(controller.initialize());
 
-    MockSrsRequest req;
+    MockFmp4SrsRequest req;
     HELPER_ASSERT_SUCCESS(controller.on_publish(&req));
 
     // Create mock format with AAC audio codec
@@ -797,7 +794,7 @@ VOID TEST(Fmp4Test, CodecDetection_VideoCodecUpdate)
     SrsHlsMp4Controller controller;
     HELPER_ASSERT_SUCCESS(controller.initialize());
 
-    MockSrsRequest req;
+    MockFmp4SrsRequest req;
     HELPER_ASSERT_SUCCESS(controller.on_publish(&req));
 
     // Create mock format with H.264 video codec
@@ -836,7 +833,7 @@ VOID TEST(Fmp4Test, Performance_MultipleSegments)
     SrsHlsFmp4Muxer muxer;
     HELPER_ASSERT_SUCCESS(muxer.initialize(1, 2));
 
-    MockSrsRequest req;
+    MockFmp4SrsRequest req;
     HELPER_ASSERT_SUCCESS(muxer.on_publish(&req));
     HELPER_ASSERT_SUCCESS(muxer.update_config(&req));
 
@@ -870,7 +867,7 @@ VOID TEST(Fmp4Test, Compatibility_SequenceHeaderIgnore)
     SrsHlsMp4Controller controller;
     HELPER_ASSERT_SUCCESS(controller.initialize());
 
-    MockSrsRequest req;
+    MockFmp4SrsRequest req;
     HELPER_ASSERT_SUCCESS(controller.on_publish(&req));
 
     MockSrsFormat fmt;

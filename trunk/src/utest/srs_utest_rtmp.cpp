@@ -22,49 +22,37 @@
 
 using namespace std;
 
-class MockPacket : public SrsRtmpCommand
+MockPacket::MockPacket()
 {
-public:
-    int size;
+    size = 0;
+}
 
-public:
-    MockPacket()
-    {
-        size = 0;
-    }
-    virtual ~MockPacket()
-    {
-    }
-
-protected:
-    virtual int get_size()
-    {
-        return size;
-    }
-};
-
-class MockPacket2 : public MockPacket
+MockPacket::~MockPacket()
 {
-public:
-    char *payload;
+}
 
-public:
-    MockPacket2()
-    {
-        payload = NULL;
-    }
-    virtual ~MockPacket2()
-    {
-        srs_freep(payload);
-    }
-    virtual srs_error_t encode(int &size, char *&payload)
-    {
-        size = this->size;
-        payload = this->payload;
-        this->payload = NULL;
-        return srs_success;
-    }
-};
+int MockPacket::get_size()
+{
+    return size;
+}
+
+MockPacket2::MockPacket2()
+{
+    payload = NULL;
+}
+
+MockPacket2::~MockPacket2()
+{
+    srs_freep(payload);
+}
+
+srs_error_t MockPacket2::encode(int &size, char *&payload)
+{
+    size = this->size;
+    payload = this->payload;
+    this->payload = NULL;
+    return srs_success;
+}
 
 VOID TEST(ProtocolRTMPTest, PacketEncode)
 {
@@ -2877,18 +2865,14 @@ VOID TEST(ProtocolRTMPTest, AgentMessageTransform)
     }
 }
 
-class MockMRHandler : public IMergeReadHandler
+MockMRHandler::MockMRHandler() : nn(0)
 {
-public:
-    ssize_t nn;
-    MockMRHandler() : nn(0)
-    {
-    }
-    virtual void on_read(ssize_t nread)
-    {
-        nn += nread;
-    }
-};
+}
+
+void MockMRHandler::on_read(ssize_t nread)
+{
+    nn += nread;
+}
 
 VOID TEST(ProtocolRTMPTest, MergeReadHandler)
 {

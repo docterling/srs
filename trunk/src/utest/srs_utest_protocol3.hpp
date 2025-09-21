@@ -12,4 +12,35 @@
 */
 #include <srs_utest_protocol.hpp>
 
+#include <srs_protocol_conn.hpp>
+
+// Mock classes for testing protocol connections
+class MockConnection : public ISrsConnection
+{
+public:
+    std::string ip_;
+
+public:
+    MockConnection(std::string ip = "127.0.0.1");
+    virtual ~MockConnection();
+
+public:
+    virtual std::string remote_ip();
+    virtual std::string desc();
+    virtual const SrsContextId &get_id();
+};
+
+class MockExpire : public ISrsExpire
+{
+public:
+    bool expired_;
+
+public:
+    MockExpire();
+    virtual ~MockExpire();
+
+public:
+    virtual void expire();
+};
+
 #endif

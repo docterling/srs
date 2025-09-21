@@ -12,7 +12,9 @@
 */
 #include <srs_utest.hpp>
 
+#include <srs_app_listener.hpp>
 #include <srs_app_st.hpp>
+#include <srs_kernel_resource.hpp>
 #include <srs_protocol_conn.hpp>
 
 class MockSrsConnection : public ISrsConnection
@@ -29,6 +31,90 @@ public:
     virtual const SrsContextId &get_id();
     virtual std::string desc();
     virtual std::string remote_ip();
+};
+
+class MockTcpHandler : public ISrsTcpHandler
+{
+private:
+    srs_netfd_t fd;
+
+public:
+    MockTcpHandler();
+    virtual ~MockTcpHandler();
+
+public:
+    virtual srs_error_t on_tcp_client(ISrsListener *listener, srs_netfd_t stfd);
+};
+
+class MockOnCycleThread : public ISrsCoroutineHandler
+{
+public:
+    SrsSTCoroutine trd;
+    srs_cond_t cond;
+    MockOnCycleThread();
+    virtual ~MockOnCycleThread();
+    virtual srs_error_t cycle();
+    srs_error_t start();
+    void stop();
+};
+
+class MockOnCycleThread2 : public ISrsCoroutineHandler
+{
+public:
+    SrsSTCoroutine trd;
+    srs_mutex_t lock;
+    MockOnCycleThread2();
+    virtual ~MockOnCycleThread2();
+    virtual srs_error_t cycle();
+    srs_error_t start();
+    void stop();
+};
+
+class MockOnCycleThread3 : public ISrsCoroutineHandler
+{
+public:
+    SrsSTCoroutine trd;
+    srs_netfd_t fd;
+    MockOnCycleThread3();
+    virtual ~MockOnCycleThread3();
+    virtual srs_error_t cycle();
+    virtual srs_error_t start(std::string ip, int port);
+    virtual srs_error_t do_cycle(srs_netfd_t cfd);
+    void stop();
+};
+
+class MockConnectionManager : public ISrsResourceManager
+{
+public:
+    MockConnectionManager();
+    virtual ~MockConnectionManager();
+    virtual void remove(ISrsResource *c);
+    virtual void dispose();
+};
+
+class MockStopSelfThread : public ISrsCoroutineHandler
+{
+public:
+    int r0;
+    int r1;
+    SrsFastCoroutine trd;
+    MockStopSelfThread();
+    virtual ~MockStopSelfThread();
+    srs_error_t start();
+    void stop();
+    virtual srs_error_t cycle();
+};
+
+class MockAsyncReaderThread : public ISrsCoroutineHandler
+{
+public:
+    SrsFastCoroutine trd;
+    srs_netfd_t fd;
+    MockAsyncReaderThread(srs_netfd_t v);
+    virtual ~MockAsyncReaderThread();
+    srs_error_t start();
+    void stop();
+    virtual srs_error_t cycle();
 };
 
 #endif

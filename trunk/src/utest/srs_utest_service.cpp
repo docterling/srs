@@ -67,28 +67,21 @@ VOID TEST(ServiceTimeTest, TimeUnit)
     EXPECT_FALSE(srs_is_never_timeout(0));
 }
 
-class MockTcpHandler : public ISrsTcpHandler
+MockTcpHandler::MockTcpHandler()
 {
-private:
-    srs_netfd_t fd;
+    fd = NULL;
+}
 
-public:
-    MockTcpHandler()
-    {
-        fd = NULL;
-    }
-    virtual ~MockTcpHandler()
-    {
-        srs_close_stfd(fd);
-    }
+MockTcpHandler::~MockTcpHandler()
+{
+    srs_close_stfd(fd);
+}
 
-public:
-    virtual srs_error_t on_tcp_client(ISrsListener *listener, srs_netfd_t stfd)
-    {
-        fd = stfd;
-        return srs_success;
-    }
-};
+srs_error_t MockTcpHandler::on_tcp_client(ISrsListener *listener, srs_netfd_t stfd)
+{
+    fd = stfd;
+    return srs_success;
+}
 
 VOID TEST(TCPServerTest, PingPong)
 {
@@ -992,38 +985,44 @@ VOID TEST(TCPServerTest, UDPListen)
     }
 }
 
-class MockOnCycleThread : public ISrsCoroutineHandler
+MockOnCycleThread::MockOnCycleThread() : trd("mock", this)
 {
-public:
-    SrsSTCoroutine trd;
-    srs_cond_t cond;
-    MockOnCycleThread() : trd("mock", this)
-    {
-        cond = srs_cond_new();
-    };
-    virtual ~MockOnCycleThread()
-    {
-        srs_cond_destroy(cond);
-    }
-    virtual srs_error_t cycle()
-    {
-        srs_error_t err = srs_success;
+    cond = srs_cond_new();
+}
 
-        for (;;) {
-            srs_usleep(10 * SRS_UTIME_MILLISECONDS);
-            srs_cond_signal(cond);
-            // If no one waiting on the cond, directly return event signal more than one time.
-            // If someone waiting, signal them more than one time.
-            srs_cond_signal(cond);
+MockOnCycleThread::~MockOnCycleThread()
+{
+    srs_cond_destroy(cond);
+}
 
-            if ((err = trd.pull()) != srs_success) {
-                return err;
-            }
+srs_error_t MockOnCycleThread::cycle()
+{
+    srs_error_t err = srs_success;
+
+    for (;;) {
+        srs_usleep(10 * SRS_UTIME_MILLISECONDS);
+        srs_cond_signal(cond);
+        // If no one waiting on the cond, directly return event signal more than one time.
+        // If someone waiting, signal them more than one time.
+        srs_cond_signal(cond);
+
+        if ((err = trd.pull()) != srs_success) {
+            return err;
         }
-
-        return err;
     }
-};
+
+    return err;
+}
+
+srs_error_t MockOnCycleThread::start()
+{
+    return trd.start();
+}
+
+void MockOnCycleThread::stop()
+{
+    trd.stop();
+}
 
 VOID TEST(TCPServerTest, ThreadCondWait)
 {
@@ -1035,37 +1034,43 @@ VOID TEST(TCPServerTest, ThreadCondWait)
     trd.trd.stop();
 }
 
-class MockOnCycleThread2 : public ISrsCoroutineHandler
+MockOnCycleThread2::MockOnCycleThread2() : trd("mock", this)
 {
-public:
-    SrsSTCoroutine trd;
-    srs_mutex_t lock;
-    MockOnCycleThread2() : trd("mock", this)
-    {
-        lock = srs_mutex_new();
-    };
-    virtual ~MockOnCycleThread2()
-    {
-        srs_mutex_destroy(lock);
-    }
-    virtual srs_error_t cycle()
-    {
-        srs_error_t err = srs_success;
+    lock = srs_mutex_new();
+}
 
-        for (;;) {
-            srs_mutex_lock(lock);
-            srs_usleep(10 * SRS_UTIME_MILLISECONDS);
-            srs_mutex_unlock(lock);
+MockOnCycleThread2::~MockOnCycleThread2()
+{
+    srs_mutex_destroy(lock);
+}
 
-            srs_error_t err = trd.pull();
-            if (err != srs_success) {
-                return err;
-            }
+srs_error_t MockOnCycleThread2::cycle()
+{
+    srs_error_t err = srs_success;
+
+    for (;;) {
+        srs_mutex_lock(lock);
+        srs_usleep(10 * SRS_UTIME_MILLISECONDS);
+        srs_mutex_unlock(lock);
+
+        srs_error_t err = trd.pull();
+        if (err != srs_success) {
+            return err;
         }
-
-        return err;
     }
-};
+
+    return err;
+}
+
+srs_error_t MockOnCycleThread2::start()
+{
+    return trd.start();
+}
+
+void MockOnCycleThread2::stop()
+{
+    trd.stop();
+}
 
 VOID TEST(TCPServerTest, ThreadMutexWait)
 {
@@ -1079,69 +1084,72 @@ VOID TEST(TCPServerTest, ThreadMutexWait)
     srs_mutex_unlock(trd.lock);
 }
 
-class MockOnCycleThread3 : public ISrsCoroutineHandler
+MockOnCycleThread3::MockOnCycleThread3() : trd("mock", this)
 {
-public:
-    SrsSTCoroutine trd;
-    srs_netfd_t fd;
-    MockOnCycleThread3() : trd("mock", this)
-    {
-        fd = NULL;
-    };
-    virtual ~MockOnCycleThread3()
-    {
-        trd.stop();
-        srs_close_stfd(fd);
+    fd = NULL;
+}
+
+MockOnCycleThread3::~MockOnCycleThread3()
+{
+    trd.stop();
+    srs_close_stfd(fd);
+}
+
+srs_error_t MockOnCycleThread3::start(std::string ip, int port)
+{
+    srs_error_t err = srs_success;
+    if ((err = srs_tcp_listen(ip, port, &fd)) != srs_success) {
+        return err;
     }
-    virtual srs_error_t start(string ip, int port)
-    {
-        srs_error_t err = srs_success;
-        if ((err = srs_tcp_listen(ip, port, &fd)) != srs_success) {
+
+    return trd.start();
+}
+
+srs_error_t MockOnCycleThread3::do_cycle(srs_netfd_t cfd)
+{
+    srs_error_t err = srs_success;
+
+    SrsStSocket skt(cfd);
+    skt.set_recv_timeout(1 * SRS_UTIME_SECONDS);
+    skt.set_send_timeout(1 * SRS_UTIME_SECONDS);
+
+    while (true) {
+        if ((err = trd.pull()) != srs_success) {
             return err;
         }
 
-        return trd.start();
-    }
-    virtual srs_error_t do_cycle(srs_netfd_t cfd)
-    {
-        srs_error_t err = srs_success;
-
-        SrsStSocket skt(cfd);
-        skt.set_recv_timeout(1 * SRS_UTIME_SECONDS);
-        skt.set_send_timeout(1 * SRS_UTIME_SECONDS);
-
-        while (true) {
-            if ((err = trd.pull()) != srs_success) {
-                return err;
-            }
-
-            char buf[5];
-            if ((err = skt.read_fully(buf, 5, NULL)) != srs_success) {
-                return err;
-            }
-            if ((err = skt.write(buf, 5, NULL)) != srs_success) {
-                return err;
-            }
-        }
-
-        return err;
-    }
-    virtual srs_error_t cycle()
-    {
-        srs_error_t err = srs_success;
-
-        srs_netfd_t cfd = srs_accept(fd, NULL, NULL, SRS_UTIME_NO_TIMEOUT);
-        if (cfd == NULL) {
+        char buf[5];
+        if ((err = skt.read_fully(buf, 5, NULL)) != srs_success) {
             return err;
         }
+        if ((err = skt.write(buf, 5, NULL)) != srs_success) {
+            return err;
+        }
+    }
 
-        err = do_cycle(cfd);
-        srs_close_stfd(cfd);
-        srs_freep(err);
+    return err;
+}
 
+srs_error_t MockOnCycleThread3::cycle()
+{
+    srs_error_t err = srs_success;
+
+    srs_netfd_t cfd = srs_accept(fd, NULL, NULL, SRS_UTIME_NO_TIMEOUT);
+    if (cfd == NULL) {
         return err;
     }
-};
+
+    err = do_cycle(cfd);
+    srs_close_stfd(cfd);
+    srs_freep(err);
+
+    return err;
+}
+
+void MockOnCycleThread3::stop()
+{
+    trd.stop();
+}
 
 VOID TEST(TCPServerTest, TCPClientServer)
 {
@@ -1334,21 +1342,21 @@ VOID TEST(TCPServerTest, CoverUtility)
     }
 }
 
-class MockConnectionManager : public ISrsResourceManager
+MockConnectionManager::MockConnectionManager()
 {
-public:
-    MockConnectionManager()
-    {
-    }
-    virtual ~MockConnectionManager()
-    {
-    }
+}
 
-public:
-    virtual void remove(ISrsResource * /*c*/)
-    {
-    }
-};
+MockConnectionManager::~MockConnectionManager()
+{
+}
+
+void MockConnectionManager::remove(ISrsResource * /*c*/)
+{
+}
+
+void MockConnectionManager::dispose()
+{
+}
 
 VOID TEST(TCPServerTest, ContextUtility)
 {
@@ -1428,33 +1436,30 @@ VOID TEST(TCPServerTest, ContextUtility)
     }
 }
 
-class MockStopSelfThread : public ISrsCoroutineHandler
+MockStopSelfThread::MockStopSelfThread() : r0(0), r1(0), trd("mock", this)
 {
-public:
-    int r0;
-    int r1;
-    SrsFastCoroutine trd;
-    MockStopSelfThread() : r0(0), r1(0), trd("mock", this)
-    {
-    }
-    virtual ~MockStopSelfThread()
-    {
-    }
-    srs_error_t start()
-    {
-        return trd.start();
-    }
-    void stop()
-    {
-        trd.stop();
-    }
-    virtual srs_error_t cycle()
-    {
-        r0 = st_thread_join((st_thread_t)trd.trd_, NULL);
-        r1 = errno;
-        return srs_success;
-    }
-};
+}
+
+MockStopSelfThread::~MockStopSelfThread()
+{
+}
+
+srs_error_t MockStopSelfThread::start()
+{
+    return trd.start();
+}
+
+void MockStopSelfThread::stop()
+{
+    trd.stop();
+}
+
+srs_error_t MockStopSelfThread::cycle()
+{
+    r0 = st_thread_join((st_thread_t)trd.trd_, NULL);
+    r1 = errno;
+    return srs_success;
+}
 
 VOID TEST(ThreadCriticalTest, ShouldFailWhenStopSelf)
 {
@@ -1468,40 +1473,38 @@ VOID TEST(ThreadCriticalTest, ShouldFailWhenStopSelf)
     EXPECT_EQ(EDEADLK, trd.r1);
 }
 
-class MockAsyncReaderThread : public ISrsCoroutineHandler
+MockAsyncReaderThread::MockAsyncReaderThread(srs_netfd_t v) : trd("mock", this), fd(v)
 {
-public:
-    SrsFastCoroutine trd;
-    srs_netfd_t fd;
-    MockAsyncReaderThread(srs_netfd_t v) : trd("mock", this), fd(v)
-    {
-    }
-    virtual ~MockAsyncReaderThread()
-    {
-    }
-    srs_error_t start()
-    {
-        return trd.start();
-    }
-    void stop()
-    {
-        trd.stop();
-    }
-    virtual srs_error_t cycle()
-    {
-        srs_error_t err = srs_success;
-        while (true) {
-            if ((err = trd.pull()) != srs_success) {
-                return err;
-            }
-            char buf[16] = {0};
-            if (st_read((st_netfd_t)fd, buf, sizeof(buf), SRS_UTIME_NO_TIMEOUT) <= 0) {
-                break;
-            }
+}
+
+MockAsyncReaderThread::~MockAsyncReaderThread()
+{
+}
+
+srs_error_t MockAsyncReaderThread::start()
+{
+    return trd.start();
+}
+
+void MockAsyncReaderThread::stop()
+{
+    trd.stop();
+}
+
+srs_error_t MockAsyncReaderThread::cycle()
+{
+    srs_error_t err = srs_success;
+    while (true) {
+        if ((err = trd.pull()) != srs_success) {
+            return err;
         }
-        return err;
+        char buf[16] = {0};
+        if (st_read((st_netfd_t)fd, buf, sizeof(buf), SRS_UTIME_NO_TIMEOUT) <= 0) {
+            break;
+        }
     }
-};
+    return err;
+}
 
 VOID TEST(ThreadCriticalTest, FailIfCloseActiveFD)
 {

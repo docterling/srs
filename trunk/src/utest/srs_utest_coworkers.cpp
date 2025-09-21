@@ -18,80 +18,77 @@ using namespace std;
 
 // Use the config from srs_utest_config.hpp
 
-// Mock request class for testing
-class MockSrsRequest : public ISrsRequest
+MockSrsRequest::MockSrsRequest(std::string vhost, std::string app, std::string stream, std::string host, int port)
 {
-public:
-    MockSrsRequest(string vhost, string app, string stream, string host = "127.0.0.1", int port = 1935)
-    {
-        // Initialize base class fields
-        vhost_ = vhost;
-        app_ = app;
-        stream_ = stream;
-        host_ = host;
-        port_ = port;
+    // Initialize base class fields
+    vhost_ = vhost;
+    app_ = app;
+    stream_ = stream;
+    host_ = host;
+    port_ = port;
 
-        // Build URL
-        tcUrl_ = "rtmp://" + host + "/" + app;
-        schema_ = "rtmp";
-        param_ = "";
-        duration_ = 0;
-        args_ = NULL;
-        protocol_ = "rtmp";
-        objectEncoding_ = 0;
+    // Build URL
+    tcUrl_ = "rtmp://" + host + "/" + app;
+    schema_ = "rtmp";
+    param_ = "";
+    duration_ = 0;
+    args_ = NULL;
+    protocol_ = "rtmp";
+    objectEncoding_ = 0;
+}
+
+MockSrsRequest::~MockSrsRequest()
+{
+}
+
+ISrsRequest *MockSrsRequest::copy()
+{
+    MockSrsRequest *req = new MockSrsRequest(vhost_, app_, stream_, host_, port_);
+    req->tcUrl_ = tcUrl_;
+    req->pageUrl_ = pageUrl_;
+    req->swfUrl_ = swfUrl_;
+    req->objectEncoding_ = objectEncoding_;
+    req->schema_ = schema_;
+    req->param_ = param_;
+    req->ice_ufrag_ = ice_ufrag_;
+    req->ice_pwd_ = ice_pwd_;
+    req->duration_ = duration_;
+    req->protocol_ = protocol_;
+    req->ip_ = ip_;
+    return req;
+}
+
+std::string MockSrsRequest::get_stream_url()
+{
+    // Use the same format as srs_net_url_encode_sid()
+    if (vhost_ == "__defaultVhost__" || vhost_.empty()) {
+        return "/" + app_ + "/" + stream_;
+    } else {
+        return vhost_ + "/" + app_ + "/" + stream_;
     }
+}
 
-    virtual ~MockSrsRequest() {}
-
-    virtual ISrsRequest *copy()
-    {
-        MockSrsRequest *req = new MockSrsRequest(vhost_, app_, stream_, host_, port_);
-        req->tcUrl_ = tcUrl_;
-        req->pageUrl_ = pageUrl_;
-        req->swfUrl_ = swfUrl_;
-        req->objectEncoding_ = objectEncoding_;
-        req->schema_ = schema_;
-        req->param_ = param_;
-        req->ice_ufrag_ = ice_ufrag_;
-        req->ice_pwd_ = ice_pwd_;
-        req->duration_ = duration_;
-        req->protocol_ = protocol_;
-        req->ip_ = ip_;
-        return req;
+void MockSrsRequest::update_auth(ISrsRequest *req)
+{
+    // Copy auth related fields from req
+    if (req) {
+        pageUrl_ = req->pageUrl_;
+        swfUrl_ = req->swfUrl_;
+        tcUrl_ = req->tcUrl_;
     }
+}
 
-    virtual string get_stream_url()
-    {
-        // Use the same format as srs_net_url_encode_sid()
-        if (vhost_ == "__defaultVhost__" || vhost_.empty()) {
-            return "/" + app_ + "/" + stream_;
-        } else {
-            return vhost_ + "/" + app_ + "/" + stream_;
-        }
-    }
+void MockSrsRequest::strip()
+{
+    // Remove sensitive information
+    pageUrl_ = "";
+    swfUrl_ = "";
+}
 
-    virtual void update_auth(ISrsRequest *req)
-    {
-        // Copy auth related fields from req
-        if (req) {
-            pageUrl_ = req->pageUrl_;
-            swfUrl_ = req->swfUrl_;
-            tcUrl_ = req->tcUrl_;
-        }
-    }
-
-    virtual void strip()
-    {
-        // Remove sensitive information
-        pageUrl_ = "";
-        swfUrl_ = "";
-    }
-
-    virtual ISrsRequest *as_http()
-    {
-        return NULL;
-    }
-};
+ISrsRequest *MockSrsRequest::as_http()
+{
+    return NULL;
+}
 
 VOID TEST(CoWorkersTest, Singleton)
 {

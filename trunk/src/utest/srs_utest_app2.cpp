@@ -13,6 +13,7 @@
 #include <srs_kernel_codec.hpp>
 #include <srs_kernel_kbps.hpp>
 #include <srs_kernel_rtc_rtp.hpp>
+#include <srs_protocol_amf0.hpp>
 #include <srs_protocol_format.hpp>
 #include <srs_protocol_rtmp_stack.hpp>
 #include <srs_utest.hpp>
@@ -20,333 +21,381 @@
 // External function declaration from srs_app_rtc_source.cpp
 extern srs_error_t aac_raw_append_adts_header(SrsMediaPacket *shared_audio, SrsFormat *format, char **pbuf, int *pnn_buf);
 
-// Mock implementation of ISrsRtcSourceForConsumer for testing SrsRtcConsumer
-class MockRtcSourceForConsumer : public ISrsRtcSourceForConsumer
+// Mock class implementations
+
+MockRtcSourceForConsumer::MockRtcSourceForConsumer()
 {
-public:
-    SrsContextId source_id_;
-    SrsContextId pre_source_id_;
-    int consumer_destroy_count_;
-    ISrsRtcConsumer *last_destroyed_consumer_;
+    source_id_.set_value("test-source-id");
+    pre_source_id_.set_value("test-pre-source-id");
+    consumer_destroy_count_ = 0;
+    can_publish_ = true;
+    is_created_ = true;
+}
 
-    MockRtcSourceForConsumer()
-    {
-        source_id_.set_value("test-source-id");
-        pre_source_id_.set_value("test-pre-source-id");
-        consumer_destroy_count_ = 0;
-        last_destroyed_consumer_ = NULL;
-    }
-
-    virtual ~MockRtcSourceForConsumer()
-    {
-    }
-
-    virtual void on_consumer_destroy(ISrsRtcConsumer *consumer)
-    {
-        consumer_destroy_count_++;
-        last_destroyed_consumer_ = consumer;
-    }
-
-    virtual SrsContextId source_id()
-    {
-        return source_id_;
-    }
-
-    virtual SrsContextId pre_source_id()
-    {
-        return pre_source_id_;
-    }
-};
-
-// Mock implementation of ISrsRtcSourceChangeCallback for testing
-class MockRtcSourceChangeCallback : public ISrsRtcSourceChangeCallback
+MockRtcSourceForConsumer::~MockRtcSourceForConsumer()
 {
-public:
-    int stream_change_count_;
-    SrsRtcSourceDescription *last_stream_desc_;
+}
 
-    MockRtcSourceChangeCallback()
-    {
-        stream_change_count_ = 0;
-        last_stream_desc_ = NULL;
-    }
-
-    virtual ~MockRtcSourceChangeCallback()
-    {
-    }
-
-    virtual void on_stream_change(SrsRtcSourceDescription *desc)
-    {
-        stream_change_count_++;
-        last_stream_desc_ = desc;
-    }
-};
-
-// Mock implementation of ISrsRtcConsumer for testing SrsRtcSource
-class MockRtcConsumer : public ISrsRtcConsumer
+SrsContextId MockRtcSourceForConsumer::get_id()
 {
-public:
-    int update_source_id_count_;
-    int stream_change_count_;
-    SrsRtcSourceDescription *last_stream_desc_;
-    int enqueue_count_;
-    srs_error_t enqueue_error_;
+    return source_id_;
+}
 
-    MockRtcConsumer()
-    {
-        update_source_id_count_ = 0;
-        stream_change_count_ = 0;
-        last_stream_desc_ = NULL;
-        enqueue_count_ = 0;
-        enqueue_error_ = srs_success;
-    }
-
-    virtual ~MockRtcConsumer()
-    {
-        srs_freep(enqueue_error_);
-    }
-
-    virtual void update_source_id()
-    {
-        update_source_id_count_++;
-    }
-
-    virtual void on_stream_change(SrsRtcSourceDescription *desc)
-    {
-        stream_change_count_++;
-        last_stream_desc_ = desc;
-    }
-
-    virtual srs_error_t enqueue(SrsRtpPacket *pkt)
-    {
-        enqueue_count_++;
-        srs_freep(pkt); // Free the packet to avoid memory leak in tests
-        return srs_error_copy(enqueue_error_);
-    }
-
-    void set_enqueue_error(srs_error_t err)
-    {
-        srs_freep(enqueue_error_);
-        enqueue_error_ = srs_error_copy(err);
-    }
-};
-
-// Mock implementation of ISrsRtcSourceEventHandler for testing
-class MockRtcSourceEventHandler : public ISrsRtcSourceEventHandler
+SrsContextId MockRtcSourceForConsumer::get_pre_source_id()
 {
-public:
-    int on_unpublish_count_;
-    int on_consumers_finished_count_;
+    return pre_source_id_;
+}
 
-    MockRtcSourceEventHandler()
-    {
-        on_unpublish_count_ = 0;
-        on_consumers_finished_count_ = 0;
-    }
-
-    virtual ~MockRtcSourceEventHandler()
-    {
-    }
-
-    virtual void on_unpublish()
-    {
-        on_unpublish_count_++;
-    }
-
-    virtual void on_consumers_finished()
-    {
-        on_consumers_finished_count_++;
-    }
-};
-
-// Mock implementation of ISrsRtcPublishStream for testing
-class MockRtcPublishStream : public ISrsRtcPublishStream
+void MockRtcSourceForConsumer::on_consumer_destroy(ISrsRtcConsumer *consumer)
 {
-public:
-    int request_keyframe_count_;
-    uint32_t last_keyframe_ssrc_;
-    SrsContextId last_keyframe_cid_;
-    SrsContextId context_id_;
+    consumer_destroy_count_++;
+}
 
-    MockRtcPublishStream()
-    {
-        request_keyframe_count_ = 0;
-        last_keyframe_ssrc_ = 0;
-    }
-
-    virtual ~MockRtcPublishStream()
-    {
-    }
-
-    virtual void request_keyframe(uint32_t ssrc, SrsContextId cid)
-    {
-        request_keyframe_count_++;
-        last_keyframe_ssrc_ = ssrc;
-        last_keyframe_cid_ = cid;
-    }
-
-    virtual const SrsContextId &context_id()
-    {
-        return context_id_;
-    }
-
-    void set_context_id(const SrsContextId &cid)
-    {
-        context_id_ = cid;
-    }
-};
-
-// Mock implementation of ISrsCircuitBreaker for testing
-class MockCircuitBreaker : public ISrsCircuitBreaker
+bool MockRtcSourceForConsumer::can_publish()
 {
-public:
-    bool hybrid_high_water_level_;
-    bool hybrid_critical_water_level_;
-    bool hybrid_dying_water_level_;
+    return can_publish_;
+}
 
-    MockCircuitBreaker()
-    {
-        hybrid_high_water_level_ = false;
-        hybrid_critical_water_level_ = false;
-        hybrid_dying_water_level_ = false;
-    }
-
-    virtual ~MockCircuitBreaker()
-    {
-    }
-
-    virtual srs_error_t initialize()
-    {
-        return srs_success;
-    }
-
-    virtual bool hybrid_high_water_level()
-    {
-        return hybrid_high_water_level_;
-    }
-
-    virtual bool hybrid_critical_water_level()
-    {
-        return hybrid_critical_water_level_;
-    }
-
-    virtual bool hybrid_dying_water_level()
-    {
-        return hybrid_dying_water_level_;
-    }
-
-    void set_hybrid_dying_water_level(bool value)
-    {
-        hybrid_dying_water_level_ = value;
-    }
-};
-
-// Mock implementation of ISrsRtcBridge for testing
-class MockRtcBridge : public ISrsRtcBridge
+bool MockRtcSourceForConsumer::is_created()
 {
-public:
-    int initialize_count_;
-    int setup_codec_count_;
-    int on_publish_count_;
-    int on_unpublish_count_;
-    int on_rtp_count_;
+    return is_created_;
+}
 
-    srs_error_t initialize_error_;
-    srs_error_t setup_codec_error_;
-    srs_error_t on_publish_error_;
-    srs_error_t on_rtp_error_;
+SrsContextId MockRtcSourceForConsumer::source_id()
+{
+    return source_id_;
+}
 
-    ISrsRequest *last_initialize_req_;
-    SrsAudioCodecId last_audio_codec_;
-    SrsVideoCodecId last_video_codec_;
-    SrsRtpPacket *last_rtp_packet_;
+SrsContextId MockRtcSourceForConsumer::pre_source_id()
+{
+    return pre_source_id_;
+}
 
-    MockRtcBridge()
-    {
-        initialize_count_ = 0;
-        setup_codec_count_ = 0;
-        on_publish_count_ = 0;
-        on_unpublish_count_ = 0;
-        on_rtp_count_ = 0;
+MockRtcSourceChangeCallback::MockRtcSourceChangeCallback()
+{
+    stream_change_count_ = 0;
+    last_stream_desc_ = NULL;
+}
 
-        initialize_error_ = srs_success;
-        setup_codec_error_ = srs_success;
-        on_publish_error_ = srs_success;
-        on_rtp_error_ = srs_success;
+MockRtcSourceChangeCallback::~MockRtcSourceChangeCallback()
+{
+}
 
-        last_initialize_req_ = NULL;
-        last_audio_codec_ = SrsAudioCodecIdForbidden;
-        last_video_codec_ = SrsVideoCodecIdForbidden;
-        last_rtp_packet_ = NULL;
+void MockRtcSourceChangeCallback::on_stream_change(SrsRtcSourceDescription *desc)
+{
+    stream_change_count_++;
+    last_stream_desc_ = desc;
+}
+
+MockRtcConsumer::MockRtcConsumer()
+{
+    update_source_id_count_ = 0;
+    stream_change_count_ = 0;
+    enqueue_count_ = 0;
+    last_stream_desc_ = NULL;
+    source_id_.set_value("test-consumer-source-id");
+    consumer_id_.set_value("test-consumer-id");
+    should_update_source_id_ = false;
+    enqueue_error_ = srs_success;
+}
+
+MockRtcConsumer::~MockRtcConsumer()
+{
+    srs_freep(enqueue_error_);
+}
+
+SrsContextId MockRtcConsumer::get_id()
+{
+    return consumer_id_;
+}
+
+void MockRtcConsumer::update_source_id()
+{
+    update_source_id_count_++;
+}
+
+void MockRtcConsumer::on_stream_change(SrsRtcSourceDescription *desc)
+{
+    stream_change_count_++;
+    last_stream_desc_ = desc;
+}
+
+srs_error_t MockRtcConsumer::enqueue(SrsRtpPacket *pkt)
+{
+    enqueue_count_++;
+    srs_freep(pkt); // Free the packet to avoid memory leak in tests
+    return srs_error_copy(enqueue_error_);
+}
+
+void MockRtcConsumer::set_enqueue_error(srs_error_t err)
+{
+    srs_freep(enqueue_error_);
+    enqueue_error_ = srs_error_copy(err);
+}
+
+MockRtcSourceEventHandler::MockRtcSourceEventHandler()
+{
+    on_unpublish_count_ = 0;
+    on_consumers_finished_count_ = 0;
+}
+
+MockRtcSourceEventHandler::~MockRtcSourceEventHandler()
+{
+}
+
+void MockRtcSourceEventHandler::on_unpublish()
+{
+    on_unpublish_count_++;
+}
+
+void MockRtcSourceEventHandler::on_consumers_finished()
+{
+    on_consumers_finished_count_++;
+}
+
+MockRtcPublishStream::MockRtcPublishStream()
+{
+    request_keyframe_count_ = 0;
+    last_keyframe_ssrc_ = 0;
+    context_id_.set_value("test-publish-stream-id");
+}
+
+MockRtcPublishStream::~MockRtcPublishStream()
+{
+}
+
+void MockRtcPublishStream::request_keyframe(uint32_t ssrc, SrsContextId cid)
+{
+    request_keyframe_count_++;
+    last_keyframe_ssrc_ = ssrc;
+    last_keyframe_cid_ = cid;
+}
+
+const SrsContextId &MockRtcPublishStream::context_id()
+{
+    return context_id_;
+}
+
+void MockRtcPublishStream::set_context_id(const SrsContextId &cid)
+{
+    context_id_ = cid;
+}
+
+MockCircuitBreaker::MockCircuitBreaker()
+{
+    hybrid_high_water_level_ = false;
+    hybrid_critical_water_level_ = false;
+    hybrid_dying_water_level_ = false;
+}
+
+MockCircuitBreaker::~MockCircuitBreaker()
+{
+}
+
+srs_error_t MockCircuitBreaker::initialize()
+{
+    return srs_success;
+}
+
+bool MockCircuitBreaker::hybrid_high_water_level()
+{
+    return hybrid_high_water_level_;
+}
+
+bool MockCircuitBreaker::hybrid_critical_water_level()
+{
+    return hybrid_critical_water_level_;
+}
+
+bool MockCircuitBreaker::hybrid_dying_water_level()
+{
+    return hybrid_dying_water_level_;
+}
+
+void MockCircuitBreaker::set_hybrid_dying_water_level(bool dying)
+{
+    hybrid_dying_water_level_ = dying;
+}
+
+MockFailingRequest::MockFailingRequest()
+{
+    should_fail_copy_ = false;
+    stream_url_ = "rtmp://localhost/live/test";
+    vhost_ = "test.vhost";
+    app_ = "live";
+    stream_ = "test";
+    host_ = "localhost";
+    port_ = 1935;
+    args_ = NULL;
+}
+
+MockFailingRequest::MockFailingRequest(const std::string &stream_url, bool should_fail_copy)
+{
+    should_fail_copy_ = should_fail_copy;
+    stream_url_ = stream_url;
+    vhost_ = "test.vhost";
+    app_ = "live";
+    stream_ = "test";
+    host_ = "localhost";
+    port_ = 1935;
+    args_ = NULL;
+}
+
+MockFailingRequest::~MockFailingRequest()
+{
+    srs_freep(args_);
+}
+
+ISrsRequest *MockFailingRequest::copy()
+{
+    if (should_fail_copy_) {
+        return NULL;
     }
+    MockFailingRequest *cp = new MockFailingRequest();
+    cp->should_fail_copy_ = should_fail_copy_;
+    cp->stream_url_ = stream_url_;
+    cp->vhost_ = vhost_;
+    cp->app_ = app_;
+    cp->stream_ = stream_;
+    cp->host_ = host_;
+    cp->port_ = port_;
+    return cp;
+}
 
-    virtual ~MockRtcBridge()
-    {
-        srs_freep(initialize_error_);
-        srs_freep(setup_codec_error_);
-        srs_freep(on_publish_error_);
-        srs_freep(on_rtp_error_);
-        srs_freep(last_rtp_packet_);
-    }
+void MockFailingRequest::set_should_fail_copy(bool should_fail)
+{
+    should_fail_copy_ = should_fail;
+}
 
-    virtual srs_error_t initialize(ISrsRequest *r)
-    {
-        initialize_count_++;
-        last_initialize_req_ = r;
+void MockFailingRequest::update_auth(ISrsRequest *req)
+{
+    // Mock implementation - do nothing
+}
+
+std::string MockFailingRequest::get_stream_url()
+{
+    return stream_url_;
+}
+
+void MockFailingRequest::strip()
+{
+    // Mock implementation - do nothing
+}
+
+ISrsRequest *MockFailingRequest::as_http()
+{
+    return this;
+}
+
+MockFailingRtcSource::MockFailingRtcSource()
+{
+    should_fail_initialize_ = false;
+    initialize_error_ = srs_success;
+}
+
+MockFailingRtcSource::~MockFailingRtcSource()
+{
+    srs_freep(initialize_error_);
+}
+
+srs_error_t MockFailingRtcSource::initialize(ISrsRequest *req)
+{
+    if (should_fail_initialize_) {
         return srs_error_copy(initialize_error_);
     }
+    return srs_success;
+}
 
-    virtual srs_error_t setup_codec(SrsAudioCodecId acodec, SrsVideoCodecId vcodec)
-    {
-        setup_codec_count_++;
-        last_audio_codec_ = acodec;
-        last_video_codec_ = vcodec;
-        return srs_error_copy(setup_codec_error_);
-    }
+void MockFailingRtcSource::set_initialize_error(srs_error_t err)
+{
+    srs_freep(initialize_error_);
+    initialize_error_ = srs_error_copy(err);
+    should_fail_initialize_ = true;
+}
 
-    virtual srs_error_t on_publish()
-    {
-        on_publish_count_++;
-        return srs_error_copy(on_publish_error_);
-    }
+MockRtcBridge::MockRtcBridge()
+{
+    initialize_count_ = 0;
+    setup_codec_count_ = 0;
+    on_publish_count_ = 0;
+    on_unpublish_count_ = 0;
+    on_rtp_count_ = 0;
+    initialize_error_ = srs_success;
+    setup_codec_error_ = srs_success;
+    on_publish_error_ = srs_success;
+    on_rtp_error_ = srs_success;
+    last_initialize_req_ = NULL;
+    last_audio_codec_ = SrsAudioCodecIdForbidden;
+    last_video_codec_ = SrsVideoCodecIdForbidden;
+    last_rtp_packet_ = NULL;
+}
 
-    virtual void on_unpublish()
-    {
-        on_unpublish_count_++;
-    }
+MockRtcBridge::~MockRtcBridge()
+{
+    srs_freep(initialize_error_);
+    srs_freep(setup_codec_error_);
+    srs_freep(on_publish_error_);
+    srs_freep(on_rtp_error_);
+    srs_freep(last_rtp_packet_);
+}
 
-    virtual srs_error_t on_rtp(SrsRtpPacket *pkt)
-    {
-        on_rtp_count_++;
-        srs_freep(last_rtp_packet_);
-        last_rtp_packet_ = pkt->copy();
-        return srs_error_copy(on_rtp_error_);
-    }
+srs_error_t MockRtcBridge::initialize(ISrsRequest *req)
+{
+    initialize_count_++;
+    last_initialize_req_ = req;
+    return srs_error_copy(initialize_error_);
+}
 
-    void set_initialize_error(srs_error_t err)
-    {
-        srs_freep(initialize_error_);
-        initialize_error_ = srs_error_copy(err);
-    }
+srs_error_t MockRtcBridge::setup_codec(SrsAudioCodecId acodec, SrsVideoCodecId vcodec)
+{
+    setup_codec_count_++;
+    last_audio_codec_ = acodec;
+    last_video_codec_ = vcodec;
+    return srs_error_copy(setup_codec_error_);
+}
 
-    void set_setup_codec_error(srs_error_t err)
-    {
-        srs_freep(setup_codec_error_);
-        setup_codec_error_ = srs_error_copy(err);
-    }
+srs_error_t MockRtcBridge::on_publish()
+{
+    on_publish_count_++;
+    return srs_error_copy(on_publish_error_);
+}
 
-    void set_on_publish_error(srs_error_t err)
-    {
-        srs_freep(on_publish_error_);
-        on_publish_error_ = srs_error_copy(err);
-    }
+void MockRtcBridge::on_unpublish()
+{
+    on_unpublish_count_++;
+}
 
-    void set_on_rtp_error(srs_error_t err)
-    {
-        srs_freep(on_rtp_error_);
-        on_rtp_error_ = srs_error_copy(err);
-    }
-};
+srs_error_t MockRtcBridge::on_rtp(SrsRtpPacket *pkt)
+{
+    on_rtp_count_++;
+    srs_freep(last_rtp_packet_);
+    last_rtp_packet_ = pkt->copy();
+    return srs_error_copy(on_rtp_error_);
+}
+
+void MockRtcBridge::set_initialize_error(srs_error_t err)
+{
+    srs_freep(initialize_error_);
+    initialize_error_ = srs_error_copy(err);
+}
+
+void MockRtcBridge::set_setup_codec_error(srs_error_t err)
+{
+    srs_freep(setup_codec_error_);
+    setup_codec_error_ = srs_error_copy(err);
+}
+
+void MockRtcBridge::set_on_publish_error(srs_error_t err)
+{
+    srs_freep(on_publish_error_);
+    on_publish_error_ = srs_error_copy(err);
+}
+
+void MockRtcBridge::set_on_rtp_error(srs_error_t err)
+{
+    srs_freep(on_rtp_error_);
+    on_rtp_error_ = srs_error_copy(err);
+}
 
 VOID TEST(AppTest2, AacRawAppendAdtsHeaderSequenceHeader)
 {
@@ -1496,6 +1545,468 @@ VOID TEST(AppTest2, RtcConsumerWaitWithLargeThreshold)
         EXPECT_EQ(8000 + i * 1000, pkt->header_.get_timestamp());
         srs_freep(pkt);
     }
+}
+
+VOID TEST(AppTest2, RtcSourceOnRtpWithBridgeSuccess)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->host_ = "localhost";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create and set mock bridge
+    MockRtcBridge *mock_bridge = new MockRtcBridge();
+    source->set_bridge(mock_bridge);
+
+    // Create test RTP packet
+    SrsUniquePtr<SrsRtpPacket> test_pkt(new SrsRtpPacket());
+    test_pkt->header_.set_sequence(1234);
+    test_pkt->header_.set_timestamp(5678);
+    test_pkt->header_.set_ssrc(0x12345678);
+
+    // Test: on_rtp should call bridge->on_rtp and succeed
+    HELPER_EXPECT_SUCCESS(source->on_rtp(test_pkt.get()));
+
+    // Verify bridge was called
+    EXPECT_EQ(1, mock_bridge->on_rtp_count_);
+    EXPECT_TRUE(mock_bridge->last_rtp_packet_ != NULL);
+    EXPECT_EQ(1234, mock_bridge->last_rtp_packet_->header_.get_sequence());
+    EXPECT_EQ(5678, mock_bridge->last_rtp_packet_->header_.get_timestamp());
+    EXPECT_EQ(0x12345678, mock_bridge->last_rtp_packet_->header_.get_ssrc());
+}
+
+VOID TEST(AppTest2, RtcSourceOnRtpWithBridgeFailure)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->host_ = "localhost";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create mock bridge that will fail on_rtp
+    MockRtcBridge *mock_bridge = new MockRtcBridge();
+    srs_error_t bridge_error = srs_error_new(ERROR_RTC_RTP_MUXER, "mock bridge error");
+    mock_bridge->set_on_rtp_error(bridge_error);
+    source->set_bridge(mock_bridge);
+
+    // Create test RTP packet
+    SrsUniquePtr<SrsRtpPacket> test_pkt(new SrsRtpPacket());
+    test_pkt->header_.set_sequence(9999);
+    test_pkt->header_.set_timestamp(8888);
+    test_pkt->header_.set_ssrc(0xABCDEF00);
+
+    // Test: on_rtp should fail when bridge->on_rtp fails
+    HELPER_EXPECT_FAILED(source->on_rtp(test_pkt.get()));
+
+    // Verify bridge was called
+    EXPECT_EQ(1, mock_bridge->on_rtp_count_);
+    EXPECT_TRUE(mock_bridge->last_rtp_packet_ != NULL);
+    EXPECT_EQ(9999, mock_bridge->last_rtp_packet_->header_.get_sequence());
+    EXPECT_EQ(8888, mock_bridge->last_rtp_packet_->header_.get_timestamp());
+    EXPECT_EQ(0xABCDEF00, mock_bridge->last_rtp_packet_->header_.get_ssrc());
+
+    srs_freep(bridge_error);
+}
+
+VOID TEST(AppTest2, RtcSourceOnRtpWithoutBridge)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->host_ = "localhost";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source without setting bridge
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create test RTP packet
+    SrsUniquePtr<SrsRtpPacket> test_pkt(new SrsRtpPacket());
+    test_pkt->header_.set_sequence(5555);
+    test_pkt->header_.set_timestamp(6666);
+    test_pkt->header_.set_ssrc(0x11223344);
+
+    // Test: on_rtp should succeed when no bridge is set (rtc_bridge_ is NULL)
+    HELPER_EXPECT_SUCCESS(source->on_rtp(test_pkt.get()));
+}
+
+VOID TEST(AppTest2, RtcSourceOnRtpWithBridgeAndConsumers)
+{
+    srs_error_t err;
+
+    // Create a mock request
+    SrsUniquePtr<SrsRequest> req(new SrsRequest());
+    req->host_ = "localhost";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->stream_ = "test";
+
+    // Create RTC source
+    SrsUniquePtr<SrsRtcSource> source(new SrsRtcSource());
+    HELPER_EXPECT_SUCCESS(source->initialize(req.get()));
+
+    // Create consumers
+    ISrsRtcConsumer *consumer1 = NULL;
+    ISrsRtcConsumer *consumer2 = NULL;
+    HELPER_EXPECT_SUCCESS(source->create_consumer(consumer1));
+    HELPER_EXPECT_SUCCESS(source->create_consumer(consumer2));
+
+    // Create and set mock bridge
+    MockRtcBridge *mock_bridge = new MockRtcBridge();
+    source->set_bridge(mock_bridge);
+
+    // Create test RTP packet
+    SrsUniquePtr<SrsRtpPacket> test_pkt(new SrsRtpPacket());
+    test_pkt->header_.set_sequence(7777);
+    test_pkt->header_.set_timestamp(8888);
+    test_pkt->header_.set_ssrc(0xFEDCBA98);
+
+    // Test: on_rtp should succeed, delivering to consumers and bridge
+    HELPER_EXPECT_SUCCESS(source->on_rtp(test_pkt.get()));
+
+    // Verify bridge was called
+    EXPECT_EQ(1, mock_bridge->on_rtp_count_);
+    EXPECT_TRUE(mock_bridge->last_rtp_packet_ != NULL);
+    EXPECT_EQ(7777, mock_bridge->last_rtp_packet_->header_.get_sequence());
+    EXPECT_EQ(8888, mock_bridge->last_rtp_packet_->header_.get_timestamp());
+    EXPECT_EQ(0xFEDCBA98, mock_bridge->last_rtp_packet_->header_.get_ssrc());
+
+    // Verify consumers received packets (we can't easily check this without accessing private members,
+    // but the test verifies the method executes successfully with both consumers and bridge)
+}
+
+VOID TEST(AppTest2, RtcSourceManagerFetchOrCreateNewSource)
+{
+    srs_error_t err;
+
+    // Create RTC source manager
+    SrsRtcSourceManager manager;
+    HELPER_EXPECT_SUCCESS(manager.initialize());
+
+    // Create a mock request
+    SrsUniquePtr<MockFailingRequest> req(new MockFailingRequest("test-stream-url"));
+
+    // Fetch or create source - should create new source
+    SrsSharedPtr<SrsRtcSource> source;
+    HELPER_EXPECT_SUCCESS(manager.fetch_or_create(req.get(), source));
+
+    // Verify source was created
+    EXPECT_TRUE(source.get() != NULL);
+
+    // Fetch the same source again - should return existing source
+    SrsSharedPtr<SrsRtcSource> source2;
+    HELPER_EXPECT_SUCCESS(manager.fetch_or_create(req.get(), source2));
+
+    // Verify it's the same source instance
+    EXPECT_TRUE(source.get() == source2.get());
+}
+
+VOID TEST(AppTest2, RtcSourceManagerFetchOrCreateInitializeSuccess)
+{
+    srs_error_t err;
+
+    // Create RTC source manager
+    SrsRtcSourceManager manager;
+    HELPER_EXPECT_SUCCESS(manager.initialize());
+
+    // Create a mock request
+    SrsUniquePtr<MockFailingRequest> req(new MockFailingRequest("test-stream-success"));
+
+    // Fetch or create source - should create new source and initialize successfully
+    SrsSharedPtr<SrsRtcSource> source;
+    HELPER_EXPECT_SUCCESS(manager.fetch_or_create(req.get(), source));
+
+    // Verify source was created and initialized
+    EXPECT_TRUE(source.get() != NULL);
+
+    // Create a consumer to make the source not dead
+    ISrsRtcConsumer *consumer = NULL;
+    HELPER_EXPECT_SUCCESS(source->create_consumer(consumer));
+
+    // Now the source should not be dead since it has a consumer
+    EXPECT_FALSE(source->stream_is_dead());
+}
+
+VOID TEST(AppTest2, RtcSourceManagerFetchOrCreateInitializeFailure)
+{
+    srs_error_t err;
+
+    // Create a custom source manager that uses our failing mock source
+    class MockRtcSourceManager : public SrsRtcSourceManager
+    {
+    public:
+        bool should_fail_initialize_;
+        srs_error_t initialize_error_;
+
+        MockRtcSourceManager()
+        {
+            should_fail_initialize_ = false;
+            initialize_error_ = srs_success;
+        }
+
+        virtual ~MockRtcSourceManager()
+        {
+            srs_freep(initialize_error_);
+        }
+
+        virtual srs_error_t fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsRtcSource> &pps)
+        {
+            srs_error_t err = srs_success;
+
+            bool created = false;
+            // Should never invoke any function during the locking.
+            if (true) {
+                // Use lock to protect coroutine switch.
+                SrsLocker(&lock_);
+
+                string stream_url = r->get_stream_url();
+                std::map<std::string, SrsSharedPtr<SrsRtcSource> >::iterator it = pool_.find(stream_url);
+
+                if (it != pool_.end()) {
+                    SrsSharedPtr<SrsRtcSource> source = it->second;
+                    pps = source;
+                } else {
+                    // Create our failing mock source instead of regular source
+                    MockFailingRtcSource *mock_source = new MockFailingRtcSource();
+                    if (should_fail_initialize_) {
+                        mock_source->set_initialize_error(initialize_error_);
+                    }
+                    SrsSharedPtr<SrsRtcSource> source = SrsSharedPtr<SrsRtcSource>(mock_source);
+                    srs_trace("new rtc source, stream_url=%s", stream_url.c_str());
+                    pps = source;
+
+                    pool_[stream_url] = source;
+                    created = true;
+                }
+            }
+
+            // Initialize source.
+            if (created && (err = pps->initialize(r)) != srs_success) {
+                return srs_error_wrap(err, "init source %s", r->get_stream_url().c_str());
+            }
+
+            // we always update the request of resource,
+            // for origin auth is on, the token in request maybe invalid,
+            // and we only need to update the token of request, it's simple.
+            if (!created) {
+                pps->update_auth(r);
+            }
+
+            return err;
+        }
+
+        void set_initialize_error(srs_error_t err)
+        {
+            srs_freep(initialize_error_);
+            initialize_error_ = srs_error_copy(err);
+            should_fail_initialize_ = true;
+        }
+    };
+
+    // Create mock source manager
+    MockRtcSourceManager manager;
+    HELPER_EXPECT_SUCCESS(manager.initialize());
+
+    // Set up the manager to fail initialization
+    srs_error_t test_error = srs_error_new(ERROR_SYSTEM_ASSERT_FAILED, "test initialization failure");
+    manager.set_initialize_error(test_error);
+    srs_freep(test_error);
+
+    // Create a mock request
+    SrsUniquePtr<MockFailingRequest> req(new MockFailingRequest("test-stream-fail"));
+
+    // Fetch or create source - should fail during initialization
+    SrsSharedPtr<SrsRtcSource> source;
+    HELPER_EXPECT_FAILED(manager.fetch_or_create(req.get(), source));
+}
+
+VOID TEST(AppTest2, RtcSourceManagerFetchOrCreateErrorWrapping)
+{
+    srs_error_t err;
+
+    // Create a custom source manager that uses our failing mock source
+    class MockRtcSourceManagerWithErrorWrapping : public SrsRtcSourceManager
+    {
+    public:
+        virtual srs_error_t fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsRtcSource> &pps)
+        {
+            srs_error_t err = srs_success;
+
+            bool created = false;
+            // Should never invoke any function during the locking.
+            if (true) {
+                // Use lock to protect coroutine switch.
+                SrsLocker(&lock_);
+
+                string stream_url = r->get_stream_url();
+                std::map<std::string, SrsSharedPtr<SrsRtcSource> >::iterator it = pool_.find(stream_url);
+
+                if (it != pool_.end()) {
+                    SrsSharedPtr<SrsRtcSource> source = it->second;
+                    pps = source;
+                } else {
+                    // Create a failing mock source
+                    MockFailingRtcSource *mock_source = new MockFailingRtcSource();
+                    srs_error_t init_error = srs_error_new(ERROR_SYSTEM_ASSERT_FAILED, "mock init error");
+                    mock_source->set_initialize_error(init_error);
+                    srs_freep(init_error);
+
+                    SrsSharedPtr<SrsRtcSource> source = SrsSharedPtr<SrsRtcSource>(mock_source);
+                    srs_trace("new rtc source, stream_url=%s", stream_url.c_str());
+                    pps = source;
+
+                    pool_[stream_url] = source;
+                    created = true;
+                }
+            }
+
+            // Initialize source.
+            if (created && (err = pps->initialize(r)) != srs_success) {
+                return srs_error_wrap(err, "init source %s", r->get_stream_url().c_str());
+            }
+
+            // we always update the request of resource,
+            // for origin auth is on, the token in request maybe invalid,
+            // and we only need to update the token of request, it's simple.
+            if (!created) {
+                pps->update_auth(r);
+            }
+
+            return err;
+        }
+    };
+
+    // Create mock source manager
+    MockRtcSourceManagerWithErrorWrapping manager;
+    HELPER_EXPECT_SUCCESS(manager.initialize());
+
+    // Create a mock request
+    SrsUniquePtr<MockFailingRequest> req(new MockFailingRequest("test-stream-error-wrap"));
+
+    // Fetch or create source - should fail during initialization and wrap the error
+    SrsSharedPtr<SrsRtcSource> source;
+    err = manager.fetch_or_create(req.get(), source);
+
+    // Verify that the error was wrapped with context information
+    EXPECT_TRUE(err != srs_success);
+    if (err != srs_success) {
+        std::string error_desc = srs_error_desc(err);
+        // The error should contain the wrapped context with stream URL
+        EXPECT_TRUE(error_desc.find("init source") != std::string::npos);
+        EXPECT_TRUE(error_desc.find("test-stream-error-wrap") != std::string::npos);
+        srs_freep(err);
+    }
+}
+
+VOID TEST(AppTest2, RtcSourceManagerFetchOrCreateMultipleStreams)
+{
+    srs_error_t err;
+
+    // Create RTC source manager
+    SrsRtcSourceManager manager;
+    HELPER_EXPECT_SUCCESS(manager.initialize());
+
+    // Create multiple mock requests for different streams
+    SrsUniquePtr<MockFailingRequest> req1(new MockFailingRequest("stream1"));
+    SrsUniquePtr<MockFailingRequest> req2(new MockFailingRequest("stream2"));
+    SrsUniquePtr<MockFailingRequest> req3(new MockFailingRequest("stream3"));
+
+    // Fetch or create sources for different streams
+    SrsSharedPtr<SrsRtcSource> source1, source2, source3;
+    HELPER_EXPECT_SUCCESS(manager.fetch_or_create(req1.get(), source1));
+    HELPER_EXPECT_SUCCESS(manager.fetch_or_create(req2.get(), source2));
+    HELPER_EXPECT_SUCCESS(manager.fetch_or_create(req3.get(), source3));
+
+    // Verify all sources were created and are different instances
+    EXPECT_TRUE(source1.get() != NULL);
+    EXPECT_TRUE(source2.get() != NULL);
+    EXPECT_TRUE(source3.get() != NULL);
+    EXPECT_TRUE(source1.get() != source2.get());
+    EXPECT_TRUE(source2.get() != source3.get());
+    EXPECT_TRUE(source1.get() != source3.get());
+
+    // Fetch the same streams again - should return existing sources
+    SrsSharedPtr<SrsRtcSource> source1_again, source2_again, source3_again;
+    HELPER_EXPECT_SUCCESS(manager.fetch_or_create(req1.get(), source1_again));
+    HELPER_EXPECT_SUCCESS(manager.fetch_or_create(req2.get(), source2_again));
+    HELPER_EXPECT_SUCCESS(manager.fetch_or_create(req3.get(), source3_again));
+
+    // Verify they are the same instances (not newly created)
+    EXPECT_TRUE(source1.get() == source1_again.get());
+    EXPECT_TRUE(source2.get() == source2_again.get());
+    EXPECT_TRUE(source3.get() == source3_again.get());
+}
+
+VOID TEST(AppTest2, RtcSourceManagerFetchOrCreateExistingSourceUpdateAuth)
+{
+    srs_error_t err;
+
+    // Create RTC source manager
+    SrsRtcSourceManager manager;
+    HELPER_EXPECT_SUCCESS(manager.initialize());
+
+    // Create a mock request
+    SrsUniquePtr<MockFailingRequest> req(new MockFailingRequest("test-stream-auth"));
+
+    // First call - should create new source and initialize it
+    SrsSharedPtr<SrsRtcSource> source1;
+    HELPER_EXPECT_SUCCESS(manager.fetch_or_create(req.get(), source1));
+    EXPECT_TRUE(source1.get() != NULL);
+
+    // Second call with same stream URL - should return existing source and call update_auth
+    // This tests the !created path where pps->update_auth(r) is called
+    SrsSharedPtr<SrsRtcSource> source2;
+    HELPER_EXPECT_SUCCESS(manager.fetch_or_create(req.get(), source2));
+
+    // Verify it's the same source instance (existing source was returned)
+    EXPECT_TRUE(source1.get() == source2.get());
+
+    // The update_auth method should have been called on the existing source
+    // We can't directly verify this without modifying the source, but we can verify
+    // that the fetch_or_create succeeded and returned the same instance
+}
+
+VOID TEST(AppTest2, RtcSourceManagerFetchOrCreateConcurrentAccess)
+{
+    srs_error_t err;
+
+    // Create RTC source manager
+    SrsRtcSourceManager manager;
+    HELPER_EXPECT_SUCCESS(manager.initialize());
+
+    // Create mock requests for the same stream
+    SrsUniquePtr<MockFailingRequest> req1(new MockFailingRequest("concurrent-stream"));
+    SrsUniquePtr<MockFailingRequest> req2(new MockFailingRequest("concurrent-stream"));
+
+    // Simulate concurrent access by calling fetch_or_create multiple times
+    // The locking mechanism should ensure only one source is created
+    SrsSharedPtr<SrsRtcSource> source1, source2, source3;
+    HELPER_EXPECT_SUCCESS(manager.fetch_or_create(req1.get(), source1));
+    HELPER_EXPECT_SUCCESS(manager.fetch_or_create(req2.get(), source2));
+    HELPER_EXPECT_SUCCESS(manager.fetch_or_create(req1.get(), source3));
+
+    // All should return the same source instance
+    EXPECT_TRUE(source1.get() != NULL);
+    EXPECT_TRUE(source1.get() == source2.get());
+    EXPECT_TRUE(source1.get() == source3.get());
 }
 
 VOID TEST(AppTest2, RtcSourceOnConsumerDestroyRemoveConsumer)
@@ -2999,7 +3510,7 @@ VOID TEST(AppTest2, RtcSourceSetStreamCreatedBasic)
     // Verify state after set_stream_created
     EXPECT_TRUE(source->is_created_);
     EXPECT_FALSE(source->is_delivering_packets_); // Should remain false
-    EXPECT_FALSE(source->can_publish()); // Should now return false
+    EXPECT_FALSE(source->can_publish());          // Should now return false
 }
 
 VOID TEST(AppTest2, RtcSourceSetStreamCreatedMultipleCalls)

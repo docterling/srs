@@ -28,7 +28,7 @@ class SrsMediaPacket;
 class SrsRtmpCommonMessage;
 class SrsMessageArray;
 class SrsRtcSource;
-class SrsAudioTranscoder;
+class ISrsAudioTranscoder;
 class SrsRtpPacket;
 class SrsNaluSample;
 class SrsRtcSourceDescription;
@@ -345,7 +345,7 @@ private:
 
 private:
     SrsAudioCodecId latest_codec_;
-    SrsAudioTranscoder *codec_;
+    ISrsAudioTranscoder *codec_;
     bool keep_bframe_;
     bool keep_avc_nalu_sei_;
     bool merge_nalus_;
@@ -495,7 +495,7 @@ private:
 
 private:
     bool is_first_audio_;
-    SrsAudioTranscoder *audio_transcoder_;
+    ISrsAudioTranscoder *audio_transcoder_;
     SrsVideoCodecId video_codec_;
 
 private:

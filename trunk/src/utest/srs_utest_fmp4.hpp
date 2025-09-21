@@ -12,4 +12,29 @@
 */
 #include <srs_utest.hpp>
 
+#include <srs_kernel_codec.hpp>
+#include <srs_protocol_rtmp_stack.hpp>
+
+// Mock classes for testing
+class MockFmp4SrsRequest : public SrsRequest
+{
+public:
+    MockFmp4SrsRequest();
+    virtual ~MockFmp4SrsRequest();
+};
+
+class MockSrsFormat : public SrsFormat
+{
+public:
+    MockSrsFormat();
+    virtual ~MockSrsFormat();
+};
+
+class MockSrsMediaPacket : public SrsMediaPacket
+{
+public:
+    MockSrsMediaPacket(bool is_video_msg, uint32_t ts);
+    virtual ~MockSrsMediaPacket();
+};
+
 #endif

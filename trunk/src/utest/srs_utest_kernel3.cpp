@@ -40,120 +40,115 @@ extern void asan_report_callback(const char *str);
 extern bool srs_rtp_packet_h264_is_keyframe(uint8_t nalu_type, ISrsRtpPayloader *payload);
 extern bool srs_rtp_packet_h265_is_keyframe(uint8_t nalu_type, ISrsRtpPayloader *payload);
 
-// Mock classes for IO testing
-class MockSrsReader : public ISrsReader
+MockSrsReader::MockSrsReader(const std::string &data) : data_(data), pos_(0), read_error_(srs_success)
 {
-public:
-    std::string data_;
-    size_t pos_;
-    srs_error_t read_error_;
+}
 
-public:
-    MockSrsReader(const std::string &data) : data_(data), pos_(0), read_error_(srs_success) {}
-    virtual ~MockSrsReader() {}
-
-public:
-    virtual srs_error_t read(void *buf, size_t size, ssize_t *nread)
-    {
-        if (read_error_ != srs_success) {
-            return srs_error_copy(read_error_);
-        }
-
-        size_t available = data_.size() - pos_;
-        size_t to_read = std::min(size, available);
-
-        if (to_read > 0) {
-            memcpy(buf, data_.data() + pos_, to_read);
-            pos_ += to_read;
-        }
-
-        if (nread)
-            *nread = to_read;
-        return srs_success;
-    }
-
-    void set_error(srs_error_t err) { read_error_ = err; }
-};
-
-class MockSrsWriter : public ISrsWriter
+MockSrsReader::~MockSrsReader()
 {
-public:
-    std::string written_data_;
-    srs_error_t write_error_;
+}
 
-public:
-    MockSrsWriter() : write_error_(srs_success) {}
-    virtual ~MockSrsWriter() {}
-
-public:
-    virtual srs_error_t write(void *buf, size_t size, ssize_t *nwrite)
-    {
-        if (write_error_ != srs_success) {
-            return srs_error_copy(write_error_);
-        }
-
-        written_data_.append((char *)buf, size);
-        if (nwrite)
-            *nwrite = size;
-        return srs_success;
-    }
-
-    virtual srs_error_t writev(const iovec *iov, int iov_size, ssize_t *nwrite)
-    {
-        if (write_error_ != srs_success) {
-            return srs_error_copy(write_error_);
-        }
-
-        ssize_t total = 0;
-        for (int i = 0; i < iov_size; i++) {
-            written_data_.append((char *)iov[i].iov_base, iov[i].iov_len);
-            total += iov[i].iov_len;
-        }
-
-        if (nwrite)
-            *nwrite = total;
-        return srs_success;
-    }
-
-    void set_error(srs_error_t err) { write_error_ = err; }
-};
-
-class MockSrsSeeker : public ISrsSeeker
+srs_error_t MockSrsReader::read(void *buf, size_t size, ssize_t *nread)
 {
-public:
-    off_t position_;
-    srs_error_t seek_error_;
-
-public:
-    MockSrsSeeker() : position_(0), seek_error_(srs_success) {}
-    virtual ~MockSrsSeeker() {}
-
-public:
-    virtual srs_error_t lseek(off_t offset, int whence, off_t *seeked)
-    {
-        if (seek_error_ != srs_success) {
-            return srs_error_copy(seek_error_);
-        }
-
-        switch (whence) {
-        case SEEK_SET:
-            position_ = offset;
-            break;
-        case SEEK_CUR:
-            position_ += offset;
-            break;
-        case SEEK_END:
-            position_ = 1000 + offset; // Mock file size of 1000
-            break;
-        }
-
-        if (seeked)
-            *seeked = position_;
-        return srs_success;
+    if (read_error_ != srs_success) {
+        return srs_error_copy(read_error_);
     }
 
-    void set_error(srs_error_t err) { seek_error_ = err; }
-};
+    size_t available = data_.size() - pos_;
+    size_t to_read = std::min(size, available);
+
+    if (to_read > 0) {
+        memcpy(buf, data_.data() + pos_, to_read);
+        pos_ += to_read;
+    }
+
+    if (nread)
+        *nread = to_read;
+    return srs_success;
+}
+
+void MockSrsReader::set_error(srs_error_t err)
+{
+    read_error_ = err;
+}
+
+MockSrsWriter::MockSrsWriter() : write_error_(srs_success)
+{
+}
+
+MockSrsWriter::~MockSrsWriter()
+{
+}
+
+srs_error_t MockSrsWriter::write(void *buf, size_t size, ssize_t *nwrite)
+{
+    if (write_error_ != srs_success) {
+        return srs_error_copy(write_error_);
+    }
+
+    written_data_.append((char *)buf, size);
+    if (nwrite)
+        *nwrite = size;
+    return srs_success;
+}
+
+srs_error_t MockSrsWriter::writev(const iovec *iov, int iov_size, ssize_t *nwrite)
+{
+    if (write_error_ != srs_success) {
+        return srs_error_copy(write_error_);
+    }
+
+    ssize_t total = 0;
+    for (int i = 0; i < iov_size; i++) {
+        written_data_.append((char *)iov[i].iov_base, iov[i].iov_len);
+        total += iov[i].iov_len;
+    }
+
+    if (nwrite)
+        *nwrite = total;
+    return srs_success;
+}
+
+void MockSrsWriter::set_error(srs_error_t err)
+{
+    write_error_ = err;
+}
+
+MockSrsSeeker::MockSrsSeeker() : position_(0), seek_error_(srs_success)
+{
+}
+
+MockSrsSeeker::~MockSrsSeeker()
+{
+}
+
+srs_error_t MockSrsSeeker::lseek(off_t offset, int whence, off_t *seeked)
+{
+    if (seek_error_ != srs_success) {
+        return srs_error_copy(seek_error_);
+    }
+
+    switch (whence) {
+    case SEEK_SET:
+        position_ = offset;
+        break;
+    case SEEK_CUR:
+        position_ += offset;
+        break;
+    case SEEK_END:
+        position_ = 1000 + offset; // Mock file size of 1000
+        break;
+    }
+
+    if (seeked)
+        *seeked = position_;
+    return srs_success;
+}
+
+void MockSrsSeeker::set_error(srs_error_t err)
+{
+    seek_error_ = err;
+}
 
 // Tests for srs_kernel_io.hpp
 VOID TEST(KernelIOTest, ISrsReaderInterface)
@@ -348,48 +343,52 @@ VOID TEST(KernelPacketTest, SrsMediaPacketTypeChecking)
     EXPECT_FALSE(packet.is_video());
 }
 
-// Mock classes for resource testing
-class MockSrsResource : public ISrsResource
+MockSrsResource::MockSrsResource()
 {
-public:
-    SrsContextId cid_;
-    std::string desc_;
+    desc_ = "mock resource";
+}
 
-public:
-    MockSrsResource()
-    {
-        desc_ = "mock resource";
-    }
-    virtual ~MockSrsResource() {}
-
-public:
-    virtual const SrsContextId &get_id() { return cid_; }
-    virtual std::string desc() { return desc_; }
-
-    void set_id(const SrsContextId &cid) { cid_ = cid; }
-    void set_desc(const std::string &desc) { desc_ = desc; }
-};
-
-class MockSrsDisposingHandler : public ISrsDisposingHandler
+MockSrsResource::~MockSrsResource()
 {
-public:
-    std::vector<ISrsResource *> before_dispose_calls_;
-    std::vector<ISrsResource *> disposing_calls_;
+}
 
-public:
-    MockSrsDisposingHandler() {}
-    virtual ~MockSrsDisposingHandler() {}
+const SrsContextId &MockSrsResource::get_id()
+{
+    return cid_;
+}
 
-public:
-    virtual void on_before_dispose(ISrsResource *c)
-    {
-        before_dispose_calls_.push_back(c);
-    }
-    virtual void on_disposing(ISrsResource *c)
-    {
-        disposing_calls_.push_back(c);
-    }
-};
+std::string MockSrsResource::desc()
+{
+    return desc_;
+}
+
+void MockSrsResource::set_id(const SrsContextId &cid)
+{
+    cid_ = cid;
+}
+
+void MockSrsResource::set_desc(const std::string &desc)
+{
+    desc_ = desc;
+}
+
+MockSrsDisposingHandler::MockSrsDisposingHandler()
+{
+}
+
+MockSrsDisposingHandler::~MockSrsDisposingHandler()
+{
+}
+
+void MockSrsDisposingHandler::on_before_dispose(ISrsResource *c)
+{
+    before_dispose_calls_.push_back(c);
+}
+
+void MockSrsDisposingHandler::on_disposing(ISrsResource *c)
+{
+    disposing_calls_.push_back(c);
+}
 
 // Tests for srs_kernel_resource.hpp
 VOID TEST(KernelResourceTest, ISrsResourceInterface)
@@ -433,56 +432,47 @@ VOID TEST(KernelResourceTest, SrsSharedResourceBasic)
     EXPECT_EQ("shared test", assigned_resource->desc());
 }
 
-// Mock classes for hourglass testing
-class MockSrsHourGlass : public ISrsHourGlass
+MockSrsHourGlass::MockSrsHourGlass()
 {
-public:
-    std::vector<int> events_;
-    std::vector<srs_utime_t> intervals_;
-    std::vector<srs_utime_t> ticks_;
+}
 
-public:
-    MockSrsHourGlass() {}
-    virtual ~MockSrsHourGlass() {}
-
-public:
-    virtual srs_error_t notify(int event, srs_utime_t interval, srs_utime_t tick)
-    {
-        events_.push_back(event);
-        intervals_.push_back(interval);
-        ticks_.push_back(tick);
-        return srs_success;
-    }
-
-    void clear()
-    {
-        events_.clear();
-        intervals_.clear();
-        ticks_.clear();
-    }
-};
-
-class MockSrsFastTimer : public ISrsFastTimer
+MockSrsHourGlass::~MockSrsHourGlass()
 {
-public:
-    std::vector<srs_utime_t> timer_calls_;
+}
 
-public:
-    MockSrsFastTimer() {}
-    virtual ~MockSrsFastTimer() {}
+srs_error_t MockSrsHourGlass::notify(int event, srs_utime_t interval, srs_utime_t tick)
+{
+    events_.push_back(event);
+    intervals_.push_back(interval);
+    ticks_.push_back(tick);
+    return srs_success;
+}
 
-public:
-    virtual srs_error_t on_timer(srs_utime_t interval)
-    {
-        timer_calls_.push_back(interval);
-        return srs_success;
-    }
+void MockSrsHourGlass::clear()
+{
+    events_.clear();
+    intervals_.clear();
+    ticks_.clear();
+}
 
-    void clear()
-    {
-        timer_calls_.clear();
-    }
-};
+MockSrsFastTimer::MockSrsFastTimer()
+{
+}
+
+MockSrsFastTimer::~MockSrsFastTimer()
+{
+}
+
+srs_error_t MockSrsFastTimer::on_timer(srs_utime_t interval)
+{
+    timer_calls_.push_back(interval);
+    return srs_success;
+}
+
+void MockSrsFastTimer::clear()
+{
+    timer_calls_.clear();
+}
 
 // Tests for srs_kernel_hourglass.hpp
 VOID TEST(KernelHourglassTest, ISrsHourGlassInterface)
@@ -2743,38 +2733,31 @@ VOID TEST(KernelKbpsTest, SrsPps_MockClockUpdate)
     }
 }
 
-// Mock RTP ring buffer for testing NACK receiver
-class MockRtpRingBuffer : public SrsRtpRingBuffer
+MockRtpRingBuffer::MockRtpRingBuffer() : SrsRtpRingBuffer(100)
 {
-public:
-    std::vector<uint16_t> dropped_seqs_;
-    bool nack_list_full_called_;
+    nack_list_full_called_ = false;
+}
 
-public:
-    MockRtpRingBuffer() : SrsRtpRingBuffer(100)
-    {
-        nack_list_full_called_ = false;
-    }
+MockRtpRingBuffer::~MockRtpRingBuffer()
+{
+}
 
-    virtual ~MockRtpRingBuffer() {}
+void MockRtpRingBuffer::notify_drop_seq(uint16_t seq)
+{
+    dropped_seqs_.push_back(seq);
+}
 
-    virtual void notify_drop_seq(uint16_t seq)
-    {
-        dropped_seqs_.push_back(seq);
-    }
+void MockRtpRingBuffer::notify_nack_list_full()
+{
+    nack_list_full_called_ = true;
+    SrsRtpRingBuffer::notify_nack_list_full();
+}
 
-    virtual void notify_nack_list_full()
-    {
-        nack_list_full_called_ = true;
-        SrsRtpRingBuffer::notify_nack_list_full();
-    }
-
-    void clear_mock_data()
-    {
-        dropped_seqs_.clear();
-        nack_list_full_called_ = false;
-    }
-};
+void MockRtpRingBuffer::clear_mock_data()
+{
+    dropped_seqs_.clear();
+    nack_list_full_called_ = false;
+}
 
 VOID TEST(KernelRTCQueueTest, SrsRtpNackForReceiver_GetNackSeqs_Debug)
 {
