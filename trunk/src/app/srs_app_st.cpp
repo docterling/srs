@@ -233,7 +233,8 @@ void SrsFastCoroutine::stop()
     }
     disposed = true;
     stopping_ = true;
-    
+    stopping_cid_ = _srs_context->get_id();
+        
     interrupt();
 
     // When not started, the trd is NULL.

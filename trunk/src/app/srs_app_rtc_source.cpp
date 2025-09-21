@@ -665,9 +665,6 @@ void SrsRtcSource::on_unpublish()
 
     srs_trace("cleanup when unpublish, created=%u, deliver=%u", is_created_, is_delivering_packets_);
 
-    is_created_ = false;
-    is_delivering_packets_ = false;
-
     if (!_source_id.empty()) {
         _pre_source_id = _source_id;
     }
@@ -701,6 +698,9 @@ void SrsRtcSource::on_unpublish()
     if (consumers.empty()) {
         stream_die_at_ = srs_get_system_time();
     }
+
+    is_created_ = false;
+    is_delivering_packets_ = false;
 }
 
 void SrsRtcSource::subscribe(ISrsRtcSourceEventHandler* h)

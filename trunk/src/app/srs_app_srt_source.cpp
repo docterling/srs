@@ -1073,8 +1073,6 @@ void SrsSrtSource::on_unpublish()
         return;
     }
 
-    can_publish_ = true;
-
     SrsStatistic* stat = SrsStatistic::instance();
     stat->on_stream_close(req);
 
@@ -1090,6 +1088,8 @@ void SrsSrtSource::on_unpublish()
     if (consumers.empty()) {
         stream_die_at_ = srs_get_system_time();
     }
+
+    can_publish_ = true;
 }
 
 srs_error_t SrsSrtSource::on_packet(SrsSrtPacket* packet)
