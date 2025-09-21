@@ -1085,8 +1085,6 @@ void SrsSrtSource::on_unpublish()
         return;
     }
 
-    can_publish_ = true;
-
     SrsStatistic *stat = SrsStatistic::instance();
     stat->on_stream_close(req_);
 
@@ -1099,6 +1097,9 @@ void SrsSrtSource::on_unpublish()
     if (consumers_.empty()) {
         stream_die_at_ = srs_time_now_cached();
     }
+
+    // Should never change the final state before all cleanup is done.
+    can_publish_ = true;
 }
 
 srs_error_t SrsSrtSource::on_packet(SrsSrtPacket *packet)

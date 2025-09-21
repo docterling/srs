@@ -1869,6 +1869,9 @@ SrsRtcConnection::~SrsRtcConnection()
 
     srs_freep(req_);
     srs_freep(pli_epp_);
+
+    // Optional to release the publisher token.
+    publish_token_ = NULL;
 }
 
 void SrsRtcConnection::on_before_dispose(ISrsResource *c)
@@ -1929,6 +1932,11 @@ string SrsRtcConnection::username()
 string SrsRtcConnection::token()
 {
     return token_;
+}
+
+void SrsRtcConnection::set_publish_token(SrsSharedPtr<SrsStreamPublishToken> publish_token)
+{
+    publish_token_ = publish_token;
 }
 
 ISrsKbpsDelta *SrsRtcConnection::delta()

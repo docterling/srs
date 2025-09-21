@@ -55,6 +55,7 @@ class SrsRtcNetworks;
 class SrsRtcUdpNetwork;
 class ISrsRtcNetwork;
 class SrsRtcTcpNetwork;
+class SrsStreamPublishToken;
 
 const uint8_t kSR = 200;
 const uint8_t kRR = 201;
@@ -529,6 +530,7 @@ private:
     ISrsRequest *req_;
     SrsSdp remote_sdp_;
     SrsSdp local_sdp_;
+    SrsSharedPtr<SrsStreamPublishToken> publish_token_;
 
 private:
     // twcc handler
@@ -561,6 +563,8 @@ public:
     std::string username();
     // Get the token for verify this session, for example, when delete session by WHIP API.
     std::string token();
+    // Set the publish token for this session if publisher.
+    void set_publish_token(SrsSharedPtr<SrsStreamPublishToken> publish_token);
 
 public:
     virtual ISrsKbpsDelta *delta();

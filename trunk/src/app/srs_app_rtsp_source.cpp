@@ -444,9 +444,6 @@ void SrsRtspSource::on_unpublish()
 
     srs_trace("cleanup when unpublish, created=%u, deliver=%u", is_created_, is_delivering_packets_);
 
-    is_created_ = false;
-    is_delivering_packets_ = false;
-
     if (!_source_id.empty()) {
         _pre_source_id = _source_id;
     }
@@ -459,6 +456,10 @@ void SrsRtspSource::on_unpublish()
     if (consumers_.empty()) {
         stream_die_at_ = srs_time_now_cached();
     }
+
+    // Should never change the final state before all cleanup is done.
+    is_created_ = false;
+    is_delivering_packets_ = false;
 }
 
 srs_error_t SrsRtspSource::on_rtp(SrsRtpPacket *pkt)

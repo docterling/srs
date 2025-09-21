@@ -348,7 +348,7 @@ srs_error_t SrsRtcSessionManager::create_rtc_session(SrsRtcUserConfig *ruc, SrsS
     if (ruc->publish_ && (err = _srs_stream_publish_tokens->acquire_token(req, publish_token_raw)) != srs_success) {
         return srs_error_wrap(err, "acquire stream publish token");
     }
-    SrsUniquePtr<SrsStreamPublishToken> publish_token(publish_token_raw);
+    SrsSharedPtr<SrsStreamPublishToken> publish_token(publish_token_raw);
     if (publish_token.get()) {
         srs_trace("stream publish token acquired, type=rtc, url=%s", req->get_stream_url().c_str());
     }
@@ -368,6 +368,11 @@ srs_error_t SrsRtcSessionManager::create_rtc_session(SrsRtcUserConfig *ruc, SrsS
     if ((err = do_create_rtc_session(ruc, local_sdp, session)) != srs_success) {
         srs_freep(session);
         return srs_error_wrap(err, "create session");
+    }
+
+    // Update publish token for publisher.
+    if (ruc->publish_) {
+        session->set_publish_token(publish_token);
     }
 
     *psession = session;

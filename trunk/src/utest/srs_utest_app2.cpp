@@ -1575,8 +1575,8 @@ VOID TEST(AppTest2, RtcSourceOnConsumerDestroyNotifyEventHandlers)
 
     // Set up source with publish stream and event handlers
     source->set_publish_stream(publish_stream);
-    source->subscribe(handler1);
-    source->subscribe(handler2);
+    source->rtc_source_subscribe(handler1);
+    source->rtc_source_subscribe(handler2);
 
     // Create mock consumers
     MockRtcConsumer *consumer1 = new MockRtcConsumer();
@@ -1625,7 +1625,7 @@ VOID TEST(AppTest2, RtcSourceOnConsumerDestroyNoPublishStream)
 
     // Create mock event handler
     MockRtcSourceEventHandler *handler = new MockRtcSourceEventHandler();
-    source->subscribe(handler);
+    source->rtc_source_subscribe(handler);
 
     // Create mock consumer
     MockRtcConsumer *consumer = new MockRtcConsumer();
@@ -1961,12 +1961,12 @@ VOID TEST(AppTest2, RtcSourceSubscribeBasic)
     EXPECT_EQ(0, (int)source->event_handlers_.size());
 
     // Subscribe first handler
-    source->subscribe(handler1.get());
+    source->rtc_source_subscribe(handler1.get());
     EXPECT_EQ(1, (int)source->event_handlers_.size());
     EXPECT_EQ(handler1.get(), source->event_handlers_[0]);
 
     // Subscribe second handler
-    source->subscribe(handler2.get());
+    source->rtc_source_subscribe(handler2.get());
     EXPECT_EQ(2, (int)source->event_handlers_.size());
     EXPECT_EQ(handler1.get(), source->event_handlers_[0]);
     EXPECT_EQ(handler2.get(), source->event_handlers_[1]);
@@ -1991,18 +1991,18 @@ VOID TEST(AppTest2, RtcSourceSubscribeDuplicateHandler)
     SrsUniquePtr<MockRtcSourceEventHandler> handler(new MockRtcSourceEventHandler());
 
     // Subscribe handler first time
-    source->subscribe(handler.get());
+    source->rtc_source_subscribe(handler.get());
     EXPECT_EQ(1, (int)source->event_handlers_.size());
     EXPECT_EQ(handler.get(), source->event_handlers_[0]);
 
     // Subscribe same handler again - should not add duplicate
-    source->subscribe(handler.get());
+    source->rtc_source_subscribe(handler.get());
     EXPECT_EQ(1, (int)source->event_handlers_.size());
     EXPECT_EQ(handler.get(), source->event_handlers_[0]);
 
     // Subscribe same handler multiple times - should still be only one
-    source->subscribe(handler.get());
-    source->subscribe(handler.get());
+    source->rtc_source_subscribe(handler.get());
+    source->rtc_source_subscribe(handler.get());
     EXPECT_EQ(1, (int)source->event_handlers_.size());
     EXPECT_EQ(handler.get(), source->event_handlers_[0]);
 }
@@ -2026,12 +2026,12 @@ VOID TEST(AppTest2, RtcSourceSubscribeNullHandler)
     EXPECT_EQ(0, (int)source->event_handlers_.size());
 
     // Subscribe null handler - should add it (implementation allows null)
-    source->subscribe(NULL);
+    source->rtc_source_subscribe(NULL);
     EXPECT_EQ(1, (int)source->event_handlers_.size());
     EXPECT_EQ(NULL, source->event_handlers_[0]);
 
     // Subscribe null handler again - should not add duplicate
-    source->subscribe(NULL);
+    source->rtc_source_subscribe(NULL);
     EXPECT_EQ(1, (int)source->event_handlers_.size());
     EXPECT_EQ(NULL, source->event_handlers_[0]);
 }
@@ -2060,9 +2060,9 @@ VOID TEST(AppTest2, RtcSourceSubscribeMultipleHandlers)
     EXPECT_EQ(0, (int)source->event_handlers_.size());
 
     // Subscribe handlers in order
-    source->subscribe(handler1.get());
-    source->subscribe(handler2.get());
-    source->subscribe(handler3.get());
+    source->rtc_source_subscribe(handler1.get());
+    source->rtc_source_subscribe(handler2.get());
+    source->rtc_source_subscribe(handler3.get());
 
     // Verify all handlers are subscribed in correct order
     EXPECT_EQ(3, (int)source->event_handlers_.size());
@@ -2071,8 +2071,8 @@ VOID TEST(AppTest2, RtcSourceSubscribeMultipleHandlers)
     EXPECT_EQ(handler3.get(), source->event_handlers_[2]);
 
     // Try to subscribe duplicates - should not change the list
-    source->subscribe(handler2.get());
-    source->subscribe(handler1.get());
+    source->rtc_source_subscribe(handler2.get());
+    source->rtc_source_subscribe(handler1.get());
     EXPECT_EQ(3, (int)source->event_handlers_.size());
     EXPECT_EQ(handler1.get(), source->event_handlers_[0]);
     EXPECT_EQ(handler2.get(), source->event_handlers_[1]);
@@ -2099,29 +2099,29 @@ VOID TEST(AppTest2, RtcSourceSubscribeUnsubscribeInteraction)
     SrsUniquePtr<MockRtcSourceEventHandler> handler2(new MockRtcSourceEventHandler());
 
     // Subscribe both handlers
-    source->subscribe(handler1.get());
-    source->subscribe(handler2.get());
+    source->rtc_source_subscribe(handler1.get());
+    source->rtc_source_subscribe(handler2.get());
     EXPECT_EQ(2, (int)source->event_handlers_.size());
 
     // Unsubscribe first handler
-    source->unsubscribe(handler1.get());
+    source->rtc_source_unsubscribe(handler1.get());
     EXPECT_EQ(1, (int)source->event_handlers_.size());
     EXPECT_EQ(handler2.get(), source->event_handlers_[0]);
 
     // Re-subscribe first handler - should be added back
-    source->subscribe(handler1.get());
+    source->rtc_source_subscribe(handler1.get());
     EXPECT_EQ(2, (int)source->event_handlers_.size());
     EXPECT_EQ(handler2.get(), source->event_handlers_[0]);
     EXPECT_EQ(handler1.get(), source->event_handlers_[1]);
 
     // Unsubscribe all handlers
-    source->unsubscribe(handler1.get());
-    source->unsubscribe(handler2.get());
+    source->rtc_source_unsubscribe(handler1.get());
+    source->rtc_source_unsubscribe(handler2.get());
     EXPECT_EQ(0, (int)source->event_handlers_.size());
 
     // Re-subscribe in different order
-    source->subscribe(handler2.get());
-    source->subscribe(handler1.get());
+    source->rtc_source_subscribe(handler2.get());
+    source->rtc_source_subscribe(handler1.get());
     EXPECT_EQ(2, (int)source->event_handlers_.size());
     EXPECT_EQ(handler2.get(), source->event_handlers_[0]);
     EXPECT_EQ(handler1.get(), source->event_handlers_[1]);
@@ -2147,8 +2147,8 @@ VOID TEST(AppTest2, RtcSourceSubscribeEventNotification)
     SrsUniquePtr<MockRtcSourceEventHandler> handler2(new MockRtcSourceEventHandler());
 
     // Subscribe handlers
-    source->subscribe(handler1.get());
-    source->subscribe(handler2.get());
+    source->rtc_source_subscribe(handler1.get());
+    source->rtc_source_subscribe(handler2.get());
 
     // Verify initial state
     EXPECT_EQ(0, handler1->on_unpublish_count_);
@@ -2174,11 +2174,11 @@ VOID TEST(AppTest2, RtcSourceSubscribeEventNotification)
     handler2->on_unpublish_count_ = 0;
 
     // Subscribe both handlers to the new source
-    source2->subscribe(handler1.get());
-    source2->subscribe(handler2.get());
+    source2->rtc_source_subscribe(handler1.get());
+    source2->rtc_source_subscribe(handler2.get());
 
     // Unsubscribe handler1
-    source2->unsubscribe(handler1.get());
+    source2->rtc_source_unsubscribe(handler1.get());
 
     // Verify only handler2 is subscribed now
     EXPECT_EQ(1, (int)source2->event_handlers_.size());
@@ -2255,7 +2255,7 @@ VOID TEST(AppTest2, RtcSourcePublishStreamWithConsumerDestroy)
 
     // Create a mock event handler
     SrsUniquePtr<MockRtcSourceEventHandler> handler(new MockRtcSourceEventHandler());
-    source->subscribe(handler.get());
+    source->rtc_source_subscribe(handler.get());
 
     // Create consumers
     ISrsRtcConsumer *consumer1 = NULL;
@@ -3204,8 +3204,8 @@ VOID TEST(AppTest2, RtcSourceSetStreamCreatedWithEventHandlers)
     // Create and subscribe event handlers
     SrsUniquePtr<MockRtcSourceEventHandler> handler1(new MockRtcSourceEventHandler());
     SrsUniquePtr<MockRtcSourceEventHandler> handler2(new MockRtcSourceEventHandler());
-    source->subscribe(handler1.get());
-    source->subscribe(handler2.get());
+    source->rtc_source_subscribe(handler1.get());
+    source->rtc_source_subscribe(handler2.get());
 
     // Verify initial state
     EXPECT_FALSE(source->is_created_);
@@ -3242,7 +3242,7 @@ VOID TEST(AppTest2, RtcSourcePublishStreamWithoutConsumerDestroy)
 
     // Create a mock event handler
     SrsUniquePtr<MockRtcSourceEventHandler> handler(new MockRtcSourceEventHandler());
-    source->subscribe(handler.get());
+    source->rtc_source_subscribe(handler.get());
 
     // Create and destroy consumer
     ISrsRtcConsumer *consumer = NULL;

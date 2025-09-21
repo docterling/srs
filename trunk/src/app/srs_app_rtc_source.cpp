@@ -715,9 +715,6 @@ void SrsRtcSource::on_unpublish()
 
     srs_trace("cleanup when unpublish, created=%u, deliver=%u", is_created_, is_delivering_packets_);
 
-    is_created_ = false;
-    is_delivering_packets_ = false;
-
     if (!_source_id.empty()) {
         _pre_source_id = _source_id;
     }
@@ -744,16 +741,20 @@ void SrsRtcSource::on_unpublish()
     if (consumers_.empty()) {
         stream_die_at_ = srs_time_now_cached();
     }
+
+    // Should never change the final state before all cleanup is done.
+    is_created_ = false;
+    is_delivering_packets_ = false;
 }
 
-void SrsRtcSource::subscribe(ISrsRtcSourceEventHandler *h)
+void SrsRtcSource::rtc_source_subscribe(ISrsRtcSourceEventHandler *h)
 {
     if (std::find(event_handlers_.begin(), event_handlers_.end(), h) == event_handlers_.end()) {
         event_handlers_.push_back(h);
     }
 }
 
-void SrsRtcSource::unsubscribe(ISrsRtcSourceEventHandler *h)
+void SrsRtcSource::rtc_source_unsubscribe(ISrsRtcSourceEventHandler *h)
 {
     std::vector<ISrsRtcSourceEventHandler *>::iterator it;
     it = std::find(event_handlers_.begin(), event_handlers_.end(), h);

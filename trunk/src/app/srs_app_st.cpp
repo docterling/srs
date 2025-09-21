@@ -185,6 +185,7 @@ void SrsFastCoroutine::stop()
     }
     disposed_ = true;
     stopping_ = true;
+    stopping_cid_ = _srs_context->get_id();
 
     interrupt();
 

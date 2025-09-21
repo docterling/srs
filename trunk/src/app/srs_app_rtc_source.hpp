@@ -310,8 +310,8 @@ public:
 
 public:
     // For event handler
-    virtual void subscribe(ISrsRtcSourceEventHandler *h);
-    virtual void unsubscribe(ISrsRtcSourceEventHandler *h);
+    virtual void rtc_source_subscribe(ISrsRtcSourceEventHandler *h);
+    virtual void rtc_source_unsubscribe(ISrsRtcSourceEventHandler *h);
 
 public:
     // Get and set the publisher, passed to consumer to process requests such as PLI.

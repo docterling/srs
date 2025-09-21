@@ -7,6 +7,7 @@ The changelog for SRS.
 <a name="v7-changes"></a>
 
 ## SRS 7.0 Changelog
+* v7.0, 2025-09-21, Fix WHIP with transcoding bug. v7.0.92 (#4495)
 * v7.0, 2025-09-20, Merge [#4504](https://github.com/ossrs/srs/pull/4504): fix rtsp compiling warning. v7.0.91 (#4504)
 * v7.0, 2025-09-19, Merge [#4503](https://github.com/ossrs/srs/pull/4503): AI: Refine RTMP/SRT/RTC bridge. v7.0.90 (#4503)
 * v7.0, 2025-09-15, RTC2RTMP: Fix sequence number wraparound assertion crashes. v7.0.89 (#4491)
@@ -105,6 +106,7 @@ The changelog for SRS.
 <a name="v6-changes"></a>
 
 ## SRS 6.0 Changelog
+* v6.0, 2025-09-21, Fix WHIP with transcoding bug. v6.0.179 (#4495)
 * v6.0, 2025-09-15, RTC2RTMP: Fix sequence number wraparound assertion crashes. v6.0.177 (#4491)
 * v6.0, 2025-09-05, RTX: Fix race condition for timer. v6.0.176 (#4470) (#4474)
 * v6.0, 2025-08-26, Merge [#4451](https://github.com/ossrs/srs/pull/4451): RTC: Fix null pointer crash in RTC2RTMP when start packet is missing. v6.0.175 (#4451)
