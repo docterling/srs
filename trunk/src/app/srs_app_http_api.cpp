@@ -178,7 +178,7 @@ SrsGoApiRoot::~SrsGoApiRoot()
 
 srs_error_t SrsGoApiRoot::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r)
 {
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
 
     SrsUniquePtr<SrsJsonObject> obj(SrsJsonAny::object());
 
@@ -217,7 +217,7 @@ SrsGoApiApi::~SrsGoApiApi()
 
 srs_error_t SrsGoApiApi::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r)
 {
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
 
     SrsUniquePtr<SrsJsonObject> obj(SrsJsonAny::object());
 
@@ -244,7 +244,7 @@ SrsGoApiV1::~SrsGoApiV1()
 
 srs_error_t SrsGoApiV1::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r)
 {
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
 
     SrsUniquePtr<SrsJsonObject> obj(SrsJsonAny::object());
 
@@ -300,7 +300,7 @@ SrsGoApiVersion::~SrsGoApiVersion()
 
 srs_error_t SrsGoApiVersion::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r)
 {
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
 
     SrsUniquePtr<SrsJsonObject> obj(SrsJsonAny::object());
 
@@ -330,7 +330,7 @@ SrsGoApiSummaries::~SrsGoApiSummaries()
 
 srs_error_t SrsGoApiSummaries::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r)
 {
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
 
     SrsUniquePtr<SrsJsonObject> obj(SrsJsonAny::object());
 
@@ -354,7 +354,7 @@ SrsGoApiRusages::~SrsGoApiRusages()
 
 srs_error_t SrsGoApiRusages::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r)
 {
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
 
     SrsUniquePtr<SrsJsonObject> obj(SrsJsonAny::object());
 
@@ -400,7 +400,7 @@ SrsGoApiSelfProcStats::~SrsGoApiSelfProcStats()
 
 srs_error_t SrsGoApiSelfProcStats::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r)
 {
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
 
     SrsUniquePtr<SrsJsonObject> obj(SrsJsonAny::object());
 
@@ -478,7 +478,7 @@ SrsGoApiSystemProcStats::~SrsGoApiSystemProcStats()
 
 srs_error_t SrsGoApiSystemProcStats::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r)
 {
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
 
     SrsUniquePtr<SrsJsonObject> obj(SrsJsonAny::object());
 
@@ -518,7 +518,7 @@ SrsGoApiMemInfos::~SrsGoApiMemInfos()
 
 srs_error_t SrsGoApiMemInfos::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r)
 {
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
 
     SrsUniquePtr<SrsJsonObject> obj(SrsJsonAny::object());
 
@@ -559,7 +559,7 @@ SrsGoApiAuthors::~SrsGoApiAuthors()
 
 srs_error_t SrsGoApiAuthors::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r)
 {
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
 
     SrsUniquePtr<SrsJsonObject> obj(SrsJsonAny::object());
 
@@ -587,7 +587,7 @@ SrsGoApiFeatures::~SrsGoApiFeatures()
 
 srs_error_t SrsGoApiFeatures::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r)
 {
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
 
     SrsUniquePtr<SrsJsonObject> obj(SrsJsonAny::object());
 
@@ -656,7 +656,7 @@ SrsGoApiRequests::~SrsGoApiRequests()
 
 srs_error_t SrsGoApiRequests::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r)
 {
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
 
     SrsUniquePtr<SrsJsonObject> obj(SrsJsonAny::object());
 
@@ -703,7 +703,7 @@ srs_error_t SrsGoApiVhosts::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessag
 {
     srs_error_t err = srs_success;
 
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
 
     // path: {pattern}{vhost_id}
     // e.g. /api/v1/vhosts/100     pattern= /api/v1/vhosts/, vhost_id=100
@@ -761,7 +761,7 @@ srs_error_t SrsGoApiStreams::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessa
 {
     srs_error_t err = srs_success;
 
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
 
     // path: {pattern}{stream_id}
     // e.g. /api/v1/streams/100     pattern= /api/v1/streams/, stream_id=100
@@ -823,7 +823,7 @@ srs_error_t SrsGoApiClients::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessa
 {
     srs_error_t err = srs_success;
 
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
 
     // path: {pattern}{client_id}
     // e.g. /api/v1/clients/100     pattern= /api/v1/clients/, client_id=100
@@ -1273,7 +1273,7 @@ srs_error_t SrsGoApiMetrics::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessa
      * error counter
      */
 
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
     std::stringstream ss;
 
 #if defined(__linux__) || defined(SRS_OSX)

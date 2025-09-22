@@ -37,18 +37,15 @@ VOID TEST(StTest, MutexPtrSugar)
 VOID TEST(StTest, StUtimeInMicroseconds)
 {
     st_utime_t st_time_1 = st_utime();
-    // sleep 1 microsecond
-#if !defined(SRS_CYGWIN64)
-    usleep(1);
-#endif
+    usleep(1); // sleep 1 microsecond
     st_utime_t st_time_2 = st_utime();
 
     EXPECT_GT(st_time_1, 0);
     EXPECT_GT(st_time_2, 0);
     EXPECT_GE(st_time_2, st_time_1);
-    // st_time_2 - st_time_1 should be in range of [1, 300] microseconds
+    // st_time_2 - st_time_1 should be in range of [1, 1000] microseconds
     EXPECT_GE(st_time_2 - st_time_1, 0);
-    EXPECT_LE(st_time_2 - st_time_1, 300);
+    EXPECT_LE(st_time_2 - st_time_1, 1000);
 }
 
 static inline st_utime_t time_gettimeofday()

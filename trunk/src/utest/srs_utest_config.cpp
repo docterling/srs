@@ -3169,7 +3169,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig2)
         EXPECT_FALSE(conf.get_mr_enabled("ossrs.net"));
         EXPECT_EQ(350 * SRS_UTIME_MILLISECONDS, conf.get_mr_sleep("ossrs.net"));
         EXPECT_EQ(350 * SRS_UTIME_MILLISECONDS, conf.get_mw_sleep("ossrs.net"));
-        EXPECT_FALSE(conf.get_realtime_enabled("ossrs.net"));
+        EXPECT_FALSE(conf.get_realtime_enabled("ossrs.net", false));
         EXPECT_FALSE(conf.get_tcp_nodelay("ossrs.net"));
         EXPECT_EQ(0, (int)conf.get_send_min_interval("ossrs.net"));
         EXPECT_FALSE(conf.get_reduce_sequence_header("ossrs.net"));
@@ -3231,7 +3231,7 @@ VOID TEST(ConfigMainTest, CheckVhostConfig2)
     if (true) {
         MockSrsConfig conf;
         HELPER_ASSERT_SUCCESS(conf.mock_parse(_MIN_OK_CONF "vhost ossrs.net{min_latency on;}"));
-        EXPECT_TRUE(conf.get_realtime_enabled("ossrs.net"));
+        EXPECT_TRUE(conf.get_realtime_enabled("ossrs.net", false));
     }
 
     if (true) {

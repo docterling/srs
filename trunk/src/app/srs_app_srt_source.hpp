@@ -51,7 +51,21 @@ private:
     int actual_buffer_size_;
 };
 
-class SrsSrtSourceManager : public ISrsHourGlass
+// The SRT source manager interface.
+class ISrsSrtSourceManager
+{
+public:
+    ISrsSrtSourceManager();
+    virtual ~ISrsSrtSourceManager();
+
+public:
+    virtual srs_error_t initialize() = 0;
+    virtual srs_error_t fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsSrtSource> &pps) = 0;
+    virtual SrsSharedPtr<SrsSrtSource> fetch(ISrsRequest *r) = 0;
+};
+
+// The SRT source manager.
+class SrsSrtSourceManager : public ISrsHourGlass, public ISrsSrtSourceManager
 {
 private:
     srs_mutex_t lock_;

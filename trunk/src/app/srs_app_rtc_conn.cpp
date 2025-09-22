@@ -293,31 +293,31 @@ srs_error_t SrsPlaintextTransport::unprotect_rtcp(void *packet, int *nb_plaintex
     return srs_success;
 }
 
-ISrsRtcPLIWorkerHandler::ISrsRtcPLIWorkerHandler()
+ISrsRtcPliWorkerHandler::ISrsRtcPliWorkerHandler()
 {
 }
 
-ISrsRtcPLIWorkerHandler::~ISrsRtcPLIWorkerHandler()
+ISrsRtcPliWorkerHandler::~ISrsRtcPliWorkerHandler()
 {
 }
 
-SrsRtcPLIWorker::SrsRtcPLIWorker(ISrsRtcPLIWorkerHandler *h)
+SrsRtcPliWorker::SrsRtcPliWorker(ISrsRtcPliWorkerHandler *h)
 {
     handler_ = h;
-    wait_ = srs_cond_new();
+    wait_ = new SrsCond();
     trd_ = new SrsSTCoroutine("pli", this, _srs_context->get_id());
 }
 
-SrsRtcPLIWorker::~SrsRtcPLIWorker()
+SrsRtcPliWorker::~SrsRtcPliWorker()
 {
-    srs_cond_signal(wait_);
+    wait_->signal();
     trd_->stop();
 
     srs_freep(trd_);
-    srs_cond_destroy(wait_);
+    srs_freep(wait_);
 }
 
-srs_error_t SrsRtcPLIWorker::start()
+srs_error_t SrsRtcPliWorker::start()
 {
     srs_error_t err = srs_success;
 
@@ -328,13 +328,13 @@ srs_error_t SrsRtcPLIWorker::start()
     return err;
 }
 
-void SrsRtcPLIWorker::request_keyframe(uint32_t ssrc, SrsContextId cid)
+void SrsRtcPliWorker::request_keyframe(uint32_t ssrc, SrsContextId cid)
 {
     plis_.insert(make_pair(ssrc, cid));
-    srs_cond_signal(wait_);
+    wait_->signal();
 }
 
-srs_error_t SrsRtcPLIWorker::cycle()
+srs_error_t SrsRtcPliWorker::cycle()
 {
     srs_error_t err = srs_success;
 
@@ -359,7 +359,8 @@ srs_error_t SrsRtcPLIWorker::cycle()
                 }
             }
         }
-        srs_cond_wait(wait_);
+
+        wait_->wait();
     }
 
     return err;
@@ -369,18 +370,25 @@ SrsRtcAsyncCallOnStop::SrsRtcAsyncCallOnStop(SrsContextId c, ISrsRequest *r)
 {
     cid_ = c;
     req_ = r->copy();
+    hooks_ = _srs_hooks;
+    context_ = _srs_context;
+    config_ = _srs_config;
 }
 
 SrsRtcAsyncCallOnStop::~SrsRtcAsyncCallOnStop()
 {
     srs_freep(req_);
+
+    hooks_ = NULL;
+    context_ = NULL;
+    config_ = NULL;
 }
 
 srs_error_t SrsRtcAsyncCallOnStop::call()
 {
     srs_error_t err = srs_success;
 
-    if (!_srs_config->get_vhost_http_hooks_enabled(req_->vhost_)) {
+    if (!config_->get_vhost_http_hooks_enabled(req_->vhost_)) {
         return err;
     }
 
@@ -390,7 +398,7 @@ srs_error_t SrsRtcAsyncCallOnStop::call()
     vector<string> hooks;
 
     if (true) {
-        SrsConfDirective *conf = _srs_config->get_vhost_on_stop(req_->vhost_);
+        SrsConfDirective *conf = config_->get_vhost_on_stop(req_->vhost_);
 
         if (!conf) {
             return err;
@@ -399,12 +407,12 @@ srs_error_t SrsRtcAsyncCallOnStop::call()
         hooks = conf->args_;
     }
 
-    SrsContextRestore(_srs_context->get_id());
-    _srs_context->set_id(cid_);
+    SrsContextRestore(context_->get_id());
+    context_->set_id(cid_);
 
     for (int i = 0; i < (int)hooks.size(); i++) {
         std::string url = hooks.at(i);
-        _srs_hooks->on_stop(url, req_);
+        hooks_->on_stop(url, req_);
     }
 
     return err;
@@ -415,15 +423,18 @@ std::string SrsRtcAsyncCallOnStop::to_string()
     return std::string("");
 }
 
-SrsRtcPlayStream::SrsRtcPlayStream(SrsRtcConnection *s, const SrsContextId &cid) : source_(new SrsRtcSource())
+SrsRtcPlayStream::SrsRtcPlayStream(ISrsExecRtcAsyncTask *exec, ISrsExpire *expire, ISrsRtcPacketSender *sender, const SrsContextId &cid) : source_(new SrsRtcSource())
 {
+    exec_ = exec;
+    expire_ = expire;
+    sender_ = sender;
+
     cid_ = cid;
     trd_ = NULL;
 
     req_ = NULL;
 
     is_started_ = false;
-    session_ = s;
 
     mw_msgs_ = 0;
     realtime_ = true;
@@ -433,16 +444,20 @@ SrsRtcPlayStream::SrsRtcPlayStream(SrsRtcConnection *s, const SrsContextId &cid)
 
     _srs_config->subscribe(this);
     nack_epp_ = new SrsErrorPithyPrint();
-    pli_worker_ = new SrsRtcPLIWorker(this);
+    pli_worker_ = new SrsRtcPliWorker(this);
 
     cache_ssrc0_ = cache_ssrc1_ = cache_ssrc2_ = 0;
     cache_track0_ = cache_track1_ = cache_track2_ = NULL;
+
+    config_ = _srs_config;
+    rtc_sources_ = _srs_rtc_sources;
+    stat_ = _srs_stat;
 }
 
 SrsRtcPlayStream::~SrsRtcPlayStream()
 {
-    if (req_) {
-        session_->exec_->exec_rtc_async_work(new SrsRtcAsyncCallOnStop(cid_, req_));
+    if (req_ && exec_) {
+        exec_->exec_rtc_async_work(new SrsRtcAsyncCallOnStop(cid_, req_));
     }
 
     _srs_config->unsubscribe(this);
@@ -467,9 +482,12 @@ SrsRtcPlayStream::~SrsRtcPlayStream()
     }
 
     // update the statistic when client coveried.
-    SrsStatistic *stat = SrsStatistic::instance();
     // TODO: FIXME: Should finger out the err.
-    stat->on_disconnect(cid_.c_str(), srs_success);
+    stat_->on_disconnect(cid_.c_str(), srs_success);
+
+    config_ = NULL;
+    rtc_sources_ = NULL;
+    stat_ = NULL;
 }
 
 srs_error_t SrsRtcPlayStream::initialize(ISrsRequest *req, std::map<uint32_t, SrsRtcTrackDescription *> sub_relations)
@@ -479,12 +497,11 @@ srs_error_t SrsRtcPlayStream::initialize(ISrsRequest *req, std::map<uint32_t, Sr
     req_ = req->copy();
 
     // We must do stat the client before hooks, because hooks depends on it.
-    SrsStatistic *stat = SrsStatistic::instance();
-    if ((err = stat->on_client(cid_.c_str(), req_, session_, SrsRtcConnPlay)) != srs_success) {
+    if ((err = stat_->on_client(cid_.c_str(), req_, expire_, SrsRtcConnPlay)) != srs_success) {
         return srs_error_wrap(err, "rtc: stat client");
     }
 
-    if ((err = _srs_rtc_sources->fetch_or_create(req_, source_)) != srs_success) {
+    if ((err = rtc_sources_->fetch_or_create(req_, source_)) != srs_success) {
         return srs_error_wrap(err, "rtc fetch source failed");
     }
 
@@ -493,19 +510,19 @@ srs_error_t SrsRtcPlayStream::initialize(ISrsRequest *req, std::map<uint32_t, Sr
         SrsRtcTrackDescription *desc = it->second;
 
         if (desc->type_ == "audio") {
-            SrsRtcAudioSendTrack *track = new SrsRtcAudioSendTrack(session_, desc);
+            SrsRtcAudioSendTrack *track = new SrsRtcAudioSendTrack(sender_, desc);
             audio_tracks_.insert(make_pair(ssrc, track));
         }
 
         if (desc->type_ == "video") {
-            SrsRtcVideoSendTrack *track = new SrsRtcVideoSendTrack(session_, desc);
+            SrsRtcVideoSendTrack *track = new SrsRtcVideoSendTrack(sender_, desc);
             video_tracks_.insert(make_pair(ssrc, track));
         }
     }
 
     // TODO: FIXME: Support reload.
-    nack_enabled_ = _srs_config->get_rtc_nack_enabled(req->vhost_);
-    nack_no_copy_ = _srs_config->get_rtc_nack_no_copy(req->vhost_);
+    nack_enabled_ = config_->get_rtc_nack_enabled(req->vhost_);
+    nack_no_copy_ = config_->get_rtc_nack_no_copy(req->vhost_);
     srs_trace("RTC player nack=%d, nnc=%d", nack_enabled_, nack_no_copy_);
 
     // Setup tracks.
@@ -641,8 +658,8 @@ srs_error_t SrsRtcPlayStream::cycle()
         return srs_error_wrap(err, "dumps consumer, url=%s", req_->get_stream_url().c_str());
     }
 
-    realtime_ = _srs_config->get_realtime_enabled(req_->vhost_, true);
-    mw_msgs_ = _srs_config->get_mw_msgs(req_->vhost_, realtime_, true);
+    realtime_ = config_->get_realtime_enabled(req_->vhost_, true);
+    mw_msgs_ = config_->get_mw_msgs(req_->vhost_, realtime_, true);
 
     // TODO: FIXME: Add cost in ms.
     SrsContextId cid = source->source_id();
@@ -925,7 +942,15 @@ srs_error_t SrsRtcPlayStream::do_request_keyframe(uint32_t ssrc, SrsContextId ci
     return err;
 }
 
-SrsRtcPublishRtcpTimer::SrsRtcPublishRtcpTimer(SrsRtcPublishStream *p) : p_(p)
+ISrsRtcRtcpSender::ISrsRtcRtcpSender()
+{
+}
+
+ISrsRtcRtcpSender::~ISrsRtcRtcpSender()
+{
+}
+
+SrsRtcPublishRtcpTimer::SrsRtcPublishRtcpTimer(ISrsRtcRtcpSender *sender) : sender_(sender)
 {
     lock_ = srs_mutex_new();
     _srs_shared_timer->timer1s()->subscribe(this);
@@ -952,19 +977,19 @@ srs_error_t SrsRtcPublishRtcpTimer::on_timer(srs_utime_t interval)
 
     ++_srs_pps_pub->sugar_;
 
-    if (!p_->is_started_) {
+    if (!sender_->is_sender_started()) {
         return err;
     }
 
     // For RR and RRTR.
     ++_srs_pps_rr->sugar_;
 
-    if ((err = p_->send_rtcp_rr()) != srs_success) {
+    if ((err = sender_->send_rtcp_rr()) != srs_success) {
         srs_warn("RR err %s", srs_error_desc(err).c_str());
         srs_freep(err);
     }
 
-    if ((err = p_->send_rtcp_xr_rrtr()) != srs_success) {
+    if ((err = sender_->send_rtcp_xr_rrtr()) != srs_success) {
         srs_warn("XR err %s", srs_error_desc(err).c_str());
         srs_freep(err);
     }
@@ -972,7 +997,7 @@ srs_error_t SrsRtcPublishRtcpTimer::on_timer(srs_utime_t interval)
     return err;
 }
 
-SrsRtcPublishTwccTimer::SrsRtcPublishTwccTimer(SrsRtcPublishStream *p) : p_(p)
+SrsRtcPublishTwccTimer::SrsRtcPublishTwccTimer(ISrsRtcRtcpSender *sender) : sender_(sender)
 {
     lock_ = srs_mutex_new();
     _srs_shared_timer->timer100ms()->subscribe(this);
@@ -999,12 +1024,12 @@ srs_error_t SrsRtcPublishTwccTimer::on_timer(srs_utime_t interval)
 
     ++_srs_pps_pub->sugar_;
 
-    if (!p_->is_started_) {
+    if (!sender_->is_sender_started()) {
         return err;
     }
 
     // For TWCC feedback.
-    if (!p_->twcc_enabled_) {
+    if (!sender_->is_sender_twcc_enabled()) {
         return err;
     }
 
@@ -1018,7 +1043,7 @@ srs_error_t SrsRtcPublishTwccTimer::on_timer(srs_utime_t interval)
 
     // We should not depends on the received packet,
     // instead we should send feedback every Nms.
-    if ((err = p_->send_periodic_twcc()) != srs_success) {
+    if ((err = sender_->send_periodic_twcc()) != srs_success) {
         srs_warn("TWCC err %s", srs_error_desc(err).c_str());
         srs_freep(err);
     }
@@ -1030,18 +1055,24 @@ SrsRtcAsyncCallOnUnpublish::SrsRtcAsyncCallOnUnpublish(SrsContextId c, ISrsReque
 {
     cid_ = c;
     req_ = r->copy();
+
+    hooks_ = _srs_hooks;
+    config_ = _srs_config;
 }
 
 SrsRtcAsyncCallOnUnpublish::~SrsRtcAsyncCallOnUnpublish()
 {
     srs_freep(req_);
+
+    hooks_ = NULL;
+    config_ = NULL;
 }
 
 srs_error_t SrsRtcAsyncCallOnUnpublish::call()
 {
     srs_error_t err = srs_success;
 
-    if (!_srs_config->get_vhost_http_hooks_enabled(req_->vhost_)) {
+    if (!config_->get_vhost_http_hooks_enabled(req_->vhost_)) {
         return err;
     }
 
@@ -1051,7 +1082,7 @@ srs_error_t SrsRtcAsyncCallOnUnpublish::call()
     vector<string> hooks;
 
     if (true) {
-        SrsConfDirective *conf = _srs_config->get_vhost_on_unpublish(req_->vhost_);
+        SrsConfDirective *conf = config_->get_vhost_on_unpublish(req_->vhost_);
 
         if (!conf) {
             return err;
@@ -1065,7 +1096,7 @@ srs_error_t SrsRtcAsyncCallOnUnpublish::call()
 
     for (int i = 0; i < (int)hooks.size(); i++) {
         std::string url = hooks.at(i);
-        _srs_hooks->on_unpublish(url, req_);
+        hooks_->on_unpublish(url, req_);
     }
 
     return err;
@@ -1076,11 +1107,14 @@ std::string SrsRtcAsyncCallOnUnpublish::to_string()
     return std::string("");
 }
 
-SrsRtcPublishStream::SrsRtcPublishStream(SrsRtcConnection *session, const SrsContextId &cid) : source_(new SrsRtcSource())
+SrsRtcPublishStream::SrsRtcPublishStream(ISrsExecRtcAsyncTask *exec, ISrsExpire *expire, ISrsRtcPacketReceiver *receiver, const SrsContextId &cid) : source_(new SrsRtcSource())
 {
+    exec_ = exec;
+    expire_ = expire;
+    receiver_ = receiver;
+
     cid_ = cid;
-    is_started_ = false;
-    session_ = session;
+    is_sender_started_ = false;
     request_keyframe_ = false;
     pli_epp_ = new SrsErrorPithyPrint();
     twcc_epp_ = new SrsErrorPithyPrint(3.0);
@@ -1096,17 +1130,24 @@ SrsRtcPublishStream::SrsRtcPublishStream(SrsRtcConnection *session, const SrsCon
     twcc_id_ = 0;
     twcc_fb_count_ = 0;
 
-    pli_worker_ = new SrsRtcPLIWorker(this);
+    pli_worker_ = new SrsRtcPliWorker(this);
     last_time_send_twcc_ = 0;
 
     timer_rtcp_ = new SrsRtcPublishRtcpTimer(this);
     timer_twcc_ = new SrsRtcPublishTwccTimer(this);
+
+    stat_ = _srs_stat;
+    config_ = _srs_config;
+    rtc_sources_ = _srs_rtc_sources;
+    live_sources_ = _srs_sources;
+    srt_sources_ = _srs_srt_sources;
+    circuit_breaker_ = _srs_circuit_breaker;
 }
 
 SrsRtcPublishStream::~SrsRtcPublishStream()
 {
-    if (req_) {
-        session_->exec_->exec_rtc_async_work(new SrsRtcAsyncCallOnUnpublish(cid_, req_));
+    if (req_ && exec_) {
+        exec_->exec_rtc_async_work(new SrsRtcAsyncCallOnUnpublish(cid_, req_));
     }
 
     srs_freep(timer_rtcp_);
@@ -1133,9 +1174,16 @@ SrsRtcPublishStream::~SrsRtcPublishStream()
     srs_freep(req_);
 
     // update the statistic when client coveried.
-    SrsStatistic *stat = SrsStatistic::instance();
     // TODO: FIXME: Should finger out the err.
-    stat->on_disconnect(cid_.c_str(), srs_success);
+    stat_->on_disconnect(cid_.c_str(), srs_success);
+
+    // Optional but just to make it clear.
+    stat_ = NULL;
+    config_ = NULL;
+    rtc_sources_ = NULL;
+    live_sources_ = NULL;
+    srt_sources_ = NULL;
+    circuit_breaker_ = NULL;
 }
 
 srs_error_t SrsRtcPublishStream::initialize(ISrsRequest *r, SrsRtcSourceDescription *stream_desc)
@@ -1145,18 +1193,17 @@ srs_error_t SrsRtcPublishStream::initialize(ISrsRequest *r, SrsRtcSourceDescript
     req_ = r->copy();
 
     // We must do stat the client before hooks, because hooks depends on it.
-    SrsStatistic *stat = SrsStatistic::instance();
-    if ((err = stat->on_client(cid_.c_str(), req_, session_, SrsRtcConnPublish)) != srs_success) {
+    if ((err = stat_->on_client(cid_.c_str(), req_, expire_, SrsRtcConnPublish)) != srs_success) {
         return srs_error_wrap(err, "rtc: stat client");
     }
 
     if (stream_desc->audio_track_desc_) {
-        audio_tracks_.push_back(new SrsRtcAudioRecvTrack(session_, stream_desc->audio_track_desc_));
+        audio_tracks_.push_back(new SrsRtcAudioRecvTrack(receiver_, stream_desc->audio_track_desc_));
     }
 
     for (int i = 0; i < (int)stream_desc->video_track_descs_.size(); ++i) {
         SrsRtcTrackDescription *desc = stream_desc->video_track_descs_.at(i);
-        video_tracks_.push_back(new SrsRtcVideoRecvTrack(session_, desc));
+        video_tracks_.push_back(new SrsRtcVideoRecvTrack(receiver_, desc));
     }
 
     int twcc_id = -1;
@@ -1175,10 +1222,10 @@ srs_error_t SrsRtcPublishStream::initialize(ISrsRequest *r, SrsRtcSourceDescript
         rtcp_twcc_.set_media_ssrc(media_ssrc);
     }
 
-    nack_enabled_ = _srs_config->get_rtc_nack_enabled(req_->vhost_);
-    nack_no_copy_ = _srs_config->get_rtc_nack_no_copy(req_->vhost_);
-    pt_to_drop_ = (uint16_t)_srs_config->get_rtc_drop_for_pt(req_->vhost_);
-    twcc_enabled_ = _srs_config->get_rtc_twcc_enabled(req_->vhost_);
+    nack_enabled_ = config_->get_rtc_nack_enabled(req_->vhost_);
+    nack_no_copy_ = config_->get_rtc_nack_no_copy(req_->vhost_);
+    pt_to_drop_ = (uint16_t)config_->get_rtc_drop_for_pt(req_->vhost_);
+    twcc_enabled_ = config_->get_rtc_twcc_enabled(req_->vhost_);
 
     // No TWCC when negotiate, disable it.
     if (twcc_id <= 0) {
@@ -1199,14 +1246,14 @@ srs_error_t SrsRtcPublishStream::initialize(ISrsRequest *r, SrsRtcSourceDescript
     }
 
     // Setup the publish stream in source to enable PLI as such.
-    if ((err = _srs_rtc_sources->fetch_or_create(req_, source_)) != srs_success) {
+    if ((err = rtc_sources_->fetch_or_create(req_, source_)) != srs_success) {
         return srs_error_wrap(err, "create source");
     }
     source_->set_publish_stream(this);
 
     // TODO: FIMXE: Check it in SrsRtcConnection::add_publisher?
     SrsSharedPtr<SrsLiveSource> live_source;
-    if ((err = _srs_sources->fetch_or_create(r, live_source)) != srs_success) {
+    if ((err = live_sources_->fetch_or_create(r, live_source)) != srs_success) {
         return srs_error_wrap(err, "create live source");
     }
     if (!live_source->can_publish(false)) {
@@ -1214,11 +1261,11 @@ srs_error_t SrsRtcPublishStream::initialize(ISrsRequest *r, SrsRtcSourceDescript
     }
 
     // Check whether SRT stream is busy.
-    bool srt_server_enabled = _srs_config->get_srt_enabled();
-    bool srt_enabled = _srs_config->get_srt_enabled(r->vhost_);
+    bool srt_server_enabled = config_->get_srt_enabled();
+    bool srt_enabled = config_->get_srt_enabled(r->vhost_);
     if (srt_server_enabled && srt_enabled) {
         SrsSharedPtr<SrsSrtSource> srt;
-        if ((err = _srs_srt_sources->fetch_or_create(r, srt)) != srs_success) {
+        if ((err = srt_sources_->fetch_or_create(r, srt)) != srs_success) {
             return srs_error_wrap(err, "create source");
         }
 
@@ -1232,7 +1279,7 @@ srs_error_t SrsRtcPublishStream::initialize(ISrsRequest *r, SrsRtcSourceDescript
 
     // Bridge to RTMP.
     // TODO: Support bridge to RTSP.
-    bool rtc_to_rtmp = _srs_config->get_rtc_to_rtmp(req_->vhost_);
+    bool rtc_to_rtmp = config_->get_rtc_to_rtmp(req_->vhost_);
     if (rtc_to_rtmp) {
         // Disable GOP cache for RTC2RTMP bridge, to keep the streams in sync,
         // especially for stream merging.
@@ -1263,7 +1310,7 @@ srs_error_t SrsRtcPublishStream::start()
 {
     srs_error_t err = srs_success;
 
-    if (is_started_) {
+    if (is_sender_started_) {
         return err;
     }
 
@@ -1275,7 +1322,7 @@ srs_error_t SrsRtcPublishStream::start()
         return srs_error_wrap(err, "start pli worker");
     }
 
-    is_started_ = true;
+    is_sender_started_ = true;
 
     return err;
 }
@@ -1312,6 +1359,16 @@ void SrsRtcPublishStream::set_all_tracks_status(bool status)
 const SrsContextId &SrsRtcPublishStream::context_id()
 {
     return cid_;
+}
+
+bool SrsRtcPublishStream::is_sender_twcc_enabled()
+{
+    return twcc_enabled_;
+}
+
+bool SrsRtcPublishStream::is_sender_started()
+{
+    return is_sender_started_;
 }
 
 srs_error_t SrsRtcPublishStream::send_rtcp_rr()
@@ -1466,7 +1523,7 @@ srs_error_t SrsRtcPublishStream::do_on_rtp_plaintext(SrsRtpPacket *&pkt, SrsBuff
     }
 
     // If circuit-breaker is enabled, disable nack.
-    if (_srs_circuit_breaker->hybrid_critical_water_level()) {
+    if (circuit_breaker_->hybrid_critical_water_level()) {
         ++_srs_pps_snack4->sugar_;
         return err;
     }
@@ -1563,7 +1620,7 @@ srs_error_t SrsRtcPublishStream::send_periodic_twcc()
             return srs_error_wrap(err, "encode, count=%u", twcc_fb_count_);
         }
 
-        if ((err = session_->send_rtcp(pkt, buffer->pos())) != srs_success) {
+        if ((err = receiver_->send_rtcp(pkt, buffer->pos())) != srs_success) {
             return srs_error_wrap(err, "send twcc, count=%u", twcc_fb_count_);
         }
     }
@@ -1678,7 +1735,7 @@ void SrsRtcPublishStream::request_keyframe(uint32_t ssrc, SrsContextId cid)
 srs_error_t SrsRtcPublishStream::do_request_keyframe(uint32_t ssrc, SrsContextId sub_cid)
 {
     srs_error_t err = srs_success;
-    if ((err = session_->send_rtcp_fb_pli(ssrc, sub_cid)) != srs_success) {
+    if ((err = receiver_->send_rtcp_fb_pli(ssrc, sub_cid)) != srs_success) {
         srs_warn("PLI err %s", srs_error_desc(err).c_str());
         srs_freep(err);
     }
@@ -1753,16 +1810,27 @@ void SrsRtcPublishStream::update_send_report_time(uint32_t ssrc, const SrsNtp &n
 SrsRtcConnectionNackTimer::SrsRtcConnectionNackTimer(SrsRtcConnection *p) : p_(p)
 {
     lock_ = srs_mutex_new();
-    _srs_shared_timer->timer20ms()->subscribe(this);
+
+    shared_timer_ = _srs_shared_timer;
+    circuit_breaker_ = _srs_circuit_breaker;
 }
 
 SrsRtcConnectionNackTimer::~SrsRtcConnectionNackTimer()
 {
     if (true) {
         SrsLocker(&lock_);
-        _srs_shared_timer->timer20ms()->unsubscribe(this);
+        shared_timer_->timer20ms()->unsubscribe(this);
     }
     srs_mutex_destroy(lock_);
+
+    shared_timer_ = NULL;
+    circuit_breaker_ = NULL;
+}
+
+srs_error_t SrsRtcConnectionNackTimer::initialize()
+{
+    shared_timer_->timer20ms()->subscribe(this);
+    return srs_success;
 }
 
 srs_error_t SrsRtcConnectionNackTimer::on_timer(srs_utime_t interval)
@@ -1782,7 +1850,7 @@ srs_error_t SrsRtcConnectionNackTimer::on_timer(srs_utime_t interval)
     ++_srs_pps_conn->sugar_;
 
     // If circuit-breaker is enabled, disable nack.
-    if (_srs_circuit_breaker->hybrid_critical_water_level()) {
+    if (circuit_breaker_->hybrid_critical_water_level()) {
         ++_srs_pps_snack4->sugar_;
         return err;
     }
@@ -2071,6 +2139,10 @@ srs_error_t SrsRtcConnection::initialize(ISrsRequest *r, bool dtls, bool srtp, s
     last_stun_time_ = srs_time_now_cached();
 
     nack_enabled_ = _srs_config->get_rtc_nack_enabled(req_->vhost_);
+
+    if ((err = timer_nack_->initialize()) != srs_success) {
+        return srs_error_wrap(err, "initialize timer nack");
+    }
 
     srs_trace("RTC init session, user=%s, url=%s, encrypt=%u/%u, DTLS(role=%s, version=%s), timeout=%dms, nack=%d",
               username.c_str(), r->get_stream_url().c_str(), dtls, srtp, cfg->dtls_role_.c_str(), cfg->dtls_version_.c_str(),
@@ -3530,7 +3602,7 @@ srs_error_t SrsRtcConnection::create_player(ISrsRequest *req, std::map<uint32_t,
         return err;
     }
 
-    SrsRtcPlayStream *player = new SrsRtcPlayStream(this, _srs_context->get_id());
+    SrsRtcPlayStream *player = new SrsRtcPlayStream(exec_, this, this, _srs_context->get_id());
     if ((err = player->initialize(req, sub_relations)) != srs_success) {
         srs_freep(player);
         return srs_error_wrap(err, "SrsRtcPlayStream init");
@@ -3598,7 +3670,7 @@ srs_error_t SrsRtcConnection::create_publisher(ISrsRequest *req, SrsRtcSourceDes
         return err;
     }
 
-    SrsRtcPublishStream *publisher = new SrsRtcPublishStream(this, _srs_context->get_id());
+    SrsRtcPublishStream *publisher = new SrsRtcPublishStream(exec_, this, this, _srs_context->get_id());
     if ((err = publisher->initialize(req, stream_desc)) != srs_success) {
         srs_freep(publisher);
         return srs_error_wrap(err, "rtc publisher init");

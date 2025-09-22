@@ -104,7 +104,7 @@ public:
     void clear();
 };
 
-class MockSrsFastTimer : public ISrsFastTimer
+class MockSrsFastTimer : public ISrsFastTimerHandler
 {
 public:
     std::vector<srs_utime_t> timer_calls_;

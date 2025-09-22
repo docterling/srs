@@ -96,6 +96,18 @@ public:
 };
 
 // The handler for fast timer.
+class ISrsFastTimerHandler
+{
+public:
+    ISrsFastTimerHandler();
+    virtual ~ISrsFastTimerHandler();
+
+public:
+    // Tick when timer is active.
+    virtual srs_error_t on_timer(srs_utime_t interval) = 0;
+};
+
+// The interface for timer.
 class ISrsFastTimer
 {
 public:
@@ -103,19 +115,19 @@ public:
     virtual ~ISrsFastTimer();
 
 public:
-    // Tick when timer is active.
-    virtual srs_error_t on_timer(srs_utime_t interval) = 0;
+    virtual void subscribe(ISrsFastTimerHandler *timer) = 0;
+    virtual void unsubscribe(ISrsFastTimerHandler *timer) = 0;
 };
 
 // The fast timer, shared by objects, for high performance.
 // For example, we should never start a timer for each connection or publisher or player,
 // instead, we should start only one fast timer in server.
-class SrsFastTimer : public ISrsCoroutineHandler
+class SrsFastTimer : public ISrsCoroutineHandler, public ISrsFastTimer
 {
 private:
     ISrsCoroutine *trd_;
     srs_utime_t interval_;
-    std::vector<ISrsFastTimer *> handlers_;
+    std::vector<ISrsFastTimerHandler *> handlers_;
     ISrsTime *time_;
 
 public:
@@ -126,8 +138,8 @@ public:
     srs_error_t start();
 
 public:
-    void subscribe(ISrsFastTimer *timer);
-    void unsubscribe(ISrsFastTimer *timer);
+    void subscribe(ISrsFastTimerHandler *timer);
+    void unsubscribe(ISrsFastTimerHandler *timer);
     // Interface ISrsCoroutineHandler
 private:
     // Cycle the hourglass, which will sleep resolution every time.
@@ -136,7 +148,7 @@ private:
 };
 
 // To monitor the system wall clock timer deviation.
-class SrsClockWallMonitor : public ISrsFastTimer
+class SrsClockWallMonitor : public ISrsFastTimerHandler
 {
 private:
     ISrsTime *time_;
@@ -144,13 +156,27 @@ private:
 public:
     SrsClockWallMonitor();
     virtual ~SrsClockWallMonitor();
-    // interface ISrsFastTimer
+    // interface ISrsFastTimerHandler
 private:
     srs_error_t on_timer(srs_utime_t interval);
 };
 
+// The interface for shared timer.
+class ISrsSharedTimer
+{
+public:
+    ISrsSharedTimer();
+    virtual ~ISrsSharedTimer();
+
+public:
+    virtual ISrsFastTimer *timer20ms() = 0;
+    virtual ISrsFastTimer *timer100ms() = 0;
+    virtual ISrsFastTimer *timer1s() = 0;
+    virtual ISrsFastTimer *timer5s() = 0;
+};
+
 // Global shared timer manager
-class SrsSharedTimer
+class SrsSharedTimer : public ISrsSharedTimer
 {
 private:
     SrsFastTimer *timer20ms_;
@@ -169,10 +195,10 @@ public:
 
 public:
     // Access to global shared timers
-    SrsFastTimer *timer20ms();
-    SrsFastTimer *timer100ms();
-    SrsFastTimer *timer1s();
-    SrsFastTimer *timer5s();
+    ISrsFastTimer *timer20ms();
+    ISrsFastTimer *timer100ms();
+    ISrsFastTimer *timer1s();
+    ISrsFastTimer *timer5s();
 };
 
 // Global shared timer instance

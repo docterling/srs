@@ -95,6 +95,14 @@ int SrsSrtPacket::size()
     return shared_buffer_->size();
 }
 
+ISrsSrtSourceManager::ISrsSrtSourceManager()
+{
+}
+
+ISrsSrtSourceManager::~ISrsSrtSourceManager()
+{
+}
+
 SrsSrtSourceManager::SrsSrtSourceManager()
 {
     lock_ = srs_mutex_new();
@@ -684,12 +692,12 @@ srs_error_t SrsSrtFrameBuilder::check_vps_sps_pps_change(SrsTsMessage *msg)
     char *flv = NULL;
     int nb_flv = 0;
     if ((err = hevc->mux_hevc2flv_enhanced(sh,
-                                          SrsVideoAvcFrameTypeKeyFrame,
-                                          SrsVideoHEVCFrameTraitPacketTypeSequenceStart,
-                                          dts,
-                                          pts,
-                                          &flv,
-                                          &nb_flv)) != srs_success) {
+                                           SrsVideoAvcFrameTypeKeyFrame,
+                                           SrsVideoHEVCFrameTraitPacketTypeSequenceStart,
+                                           dts,
+                                           pts,
+                                           &flv,
+                                           &nb_flv)) != srs_success) {
         return srs_error_wrap(err, "hevc sh to flv");
     }
 
@@ -1072,7 +1080,7 @@ srs_error_t SrsSrtSource::on_publish()
         return srs_error_wrap(err, "bridge on publish");
     }
 
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
     stat->on_stream_publish(req_, _source_id.c_str());
 
     return err;
@@ -1085,7 +1093,7 @@ void SrsSrtSource::on_unpublish()
         return;
     }
 
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
     stat->on_stream_close(req_);
 
     if (srt_bridge_) {

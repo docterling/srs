@@ -1257,6 +1257,24 @@ SrsNaluSample *SrsRtpSTAPPayload::get_pps()
     return NULL;
 }
 
+SrsNaluSample *SrsRtpSTAPPayload::get_idr()
+{
+    int nn_nalus = (int)nalus_.size();
+    for (int i = 0; i < nn_nalus; i++) {
+        SrsNaluSample *p = nalus_[i];
+        if (!p || !p->size_) {
+            continue;
+        }
+
+        SrsAvcNaluType nalu_type = SrsAvcNaluTypeParse(p->bytes_[0]);
+        if (nalu_type == SrsAvcNaluTypeIDR) {
+            return p;
+        }
+    }
+
+    return NULL;
+}
+
 uint64_t SrsRtpSTAPPayload::nb_bytes()
 {
     int size = 1;
@@ -1623,6 +1641,24 @@ SrsNaluSample *SrsRtpSTAPPayloadHevc::get_pps()
 
         SrsHevcNaluType nalu_type = SrsHevcNaluTypeParse(p->bytes_[0]);
         if (nalu_type == SrsHevcNaluType_PPS) {
+            return p;
+        }
+    }
+
+    return NULL;
+}
+
+SrsNaluSample *SrsRtpSTAPPayloadHevc::get_idr()
+{
+    int nn_nalus = (int)nalus_.size();
+    for (int i = 0; i < nn_nalus; i++) {
+        SrsNaluSample *p = nalus_[i];
+        if (!p || !p->size_) {
+            continue;
+        }
+
+        SrsHevcNaluType nalu_type = SrsHevcNaluTypeParse(p->bytes_[0]);
+        if (SrsIsIRAP(nalu_type)) {
             return p;
         }
     }

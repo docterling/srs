@@ -465,8 +465,25 @@ public:
     virtual srs_error_t update_vsh(SrsMediaPacket *msg);
 };
 
+// The live source manager interface.
+class ISrsLiveSourceManager
+{
+public:
+    ISrsLiveSourceManager();
+    virtual ~ISrsLiveSourceManager();
+
+public:
+    //  create source when fetch from cache failed.
+    // @param r the client request.
+    // @param h the event handler for source.
+    // @param pps the matched source, if success never be NULL.
+    virtual srs_error_t fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsLiveSource> &pps) = 0;
+    // Get the exists source, NULL when not exists.
+    virtual SrsSharedPtr<SrsLiveSource> fetch(ISrsRequest *r) = 0;
+};
+
 // The source manager to create and refresh all stream sources.
-class SrsLiveSourceManager : public ISrsHourGlass
+class SrsLiveSourceManager : public ISrsHourGlass, public ISrsLiveSourceManager
 {
 private:
     srs_mutex_t lock_;

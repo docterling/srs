@@ -279,7 +279,7 @@ SrsPublishRecvThread::SrsPublishRecvThread(SrsRtmpServer *rtmp_sdk, ISrsRequest 
     mr_ = _srs_config->get_mr_enabled(req_->vhost_);
     mr_sleep_ = _srs_config->get_mr_sleep(req_->vhost_);
 
-    realtime_ = _srs_config->get_realtime_enabled(req_->vhost_);
+    realtime_ = _srs_config->get_realtime_enabled(req_->vhost_, false);
 
     _srs_config->subscribe(this);
 }

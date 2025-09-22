@@ -541,7 +541,7 @@ srs_error_t SrsRtmpConn::stream_service_cycle()
         }
 
         // We must do stat the client before hooks, because hooks depends on it.
-        SrsStatistic *stat = SrsStatistic::instance();
+        SrsStatistic *stat = _srs_stat;
         if ((err = stat->on_client(_srs_context->get_id().c_str(), req, this, info_->type_)) != srs_success) {
             return srs_error_wrap(err, "rtmp: stat client");
         }
@@ -751,10 +751,10 @@ srs_error_t SrsRtmpConn::do_playing(SrsSharedPtr<SrsLiveSource> source, SrsLiveC
     int64_t starttime = -1;
 
     // setup the realtime.
-    realtime_ = _srs_config->get_realtime_enabled(req->vhost_);
+    realtime_ = _srs_config->get_realtime_enabled(req->vhost_, false);
     // setup the mw config.
     // when mw_sleep changed, resize the socket send buffer.
-    mw_msgs_ = _srs_config->get_mw_msgs(req->vhost_, realtime_);
+    mw_msgs_ = _srs_config->get_mw_msgs(req->vhost_, realtime_, false);
     mw_sleep_ = _srs_config->get_mw_sleep(req->vhost_);
     transport_->set_socket_buffer(mw_sleep_);
     // initialize the send_min_interval
@@ -877,7 +877,7 @@ srs_error_t SrsRtmpConn::publishing(SrsSharedPtr<SrsLiveSource> source)
     }
 
     // We must do stat the client before hooks, because hooks depends on it.
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
     if ((err = stat->on_client(_srs_context->get_id().c_str(), req, this, info_->type_)) != srs_success) {
         return srs_error_wrap(err, "rtmp: stat client");
     }
@@ -979,7 +979,7 @@ srs_error_t SrsRtmpConn::do_publishing(SrsSharedPtr<SrsLiveSource> source, SrsPu
 
         // Update the stat for video fps.
         // @remark https://github.com/ossrs/srs/issues/851
-        SrsStatistic *stat = SrsStatistic::instance();
+        SrsStatistic *stat = _srs_stat;
         if ((err = stat->on_video_frames(req, (int)(rtrd->nb_video_frames() - nb_frames))) != srs_success) {
             return srs_error_wrap(err, "rtmp: stat video frames");
         }
@@ -1557,7 +1557,7 @@ srs_error_t SrsRtmpConn::cycle()
     err = do_cycle();
 
     // Update statistic when done.
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
     stat->kbps_add_delta(get_id().c_str(), delta_);
     stat->on_disconnect(get_id().c_str(), err);
 

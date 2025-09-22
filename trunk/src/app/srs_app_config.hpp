@@ -274,12 +274,34 @@ enum SrsReloadState {
     SrsReloadStateFinished = 90,
 };
 
+// The app level config interface.
+class ISrsAppConfig : public ISrsConfig
+{
+public:
+    ISrsAppConfig();
+    virtual ~ISrsAppConfig();
+
+public:
+    virtual bool get_vhost_http_hooks_enabled(std::string vhost) = 0;
+    virtual SrsConfDirective *get_vhost_on_stop(std::string vhost) = 0;
+    virtual bool get_rtc_nack_enabled(std::string vhost) = 0;
+    virtual bool get_rtc_nack_no_copy(std::string vhost) = 0;
+    virtual bool get_realtime_enabled(std::string vhost, bool is_rtc) = 0;
+    virtual int get_mw_msgs(std::string vhost, bool is_realtime, bool is_rtc) = 0;
+    virtual SrsConfDirective *get_vhost_on_unpublish(std::string vhost) = 0;
+    virtual int get_rtc_drop_for_pt(std::string vhost) = 0;
+    virtual bool get_rtc_twcc_enabled(std::string vhost) = 0;
+    virtual bool get_srt_enabled() = 0;
+    virtual bool get_srt_enabled(std::string vhost) = 0;
+    virtual bool get_rtc_to_rtmp(std::string vhost) = 0;
+};
+
 // The config service provider.
 // For the config supports reload, so never keep the reference cross st-thread,
 // that is, never save the SrsConfDirective* get by any api of config,
 // For it maybe free in the reload st-thread cycle.
 // You could keep it before st-thread switch, or simply never keep it.
-class SrsConfig : public ISrsConfig
+class SrsConfig : public ISrsAppConfig
 {
     friend class SrsConfDirective;
     // user command
@@ -633,11 +655,11 @@ public:
     // Get the mw_msgs, mw wait time in packets for vhost.
     // @param vhost, the vhost to get the mw sleep msgs.
     // TODO: FIXME: add utest for mw config.
-    virtual int get_mw_msgs(std::string vhost, bool is_realtime, bool is_rtc = false);
+    virtual int get_mw_msgs(std::string vhost, bool is_realtime, bool is_rtc);
     // Whether min latency mode enabled.
     // @param vhost, the vhost to get the min_latency.
     // TODO: FIXME: add utest for min_latency.
-    virtual bool get_realtime_enabled(std::string vhost, bool is_rtc = false);
+    virtual bool get_realtime_enabled(std::string vhost, bool is_rtc);
     // Whether enable tcp nodelay for all clients of vhost.
     virtual bool get_tcp_nodelay(std::string vhost);
     // The minimal send interval in srs_utime_t.

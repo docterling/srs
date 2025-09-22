@@ -429,7 +429,7 @@ srs_error_t SrsRtspSource::on_publish()
         return srs_error_wrap(err, "source id change");
     }
 
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
     stat->on_stream_publish(req_, _source_id.c_str());
 
     return err;
@@ -449,7 +449,7 @@ void SrsRtspSource::on_unpublish()
     }
     _source_id = SrsContextId();
 
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
     stat->on_stream_close(req_);
 
     // Destroy and cleanup source when no publishers and consumers.

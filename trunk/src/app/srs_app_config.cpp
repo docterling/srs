@@ -1380,6 +1380,14 @@ srs_error_t SrsConfDirective::read_token(SrsConfigBuffer *buffer, vector<string>
     return err;
 }
 
+ISrsAppConfig::ISrsAppConfig()
+{
+}
+
+ISrsAppConfig::~ISrsAppConfig()
+{
+}
+
 SrsConfig::SrsConfig()
 {
     env_only_ = false;

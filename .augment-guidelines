@@ -402,6 +402,106 @@ testing:
     - Verify edge cases like sequence number wrap-around, cache overflow, and null inputs
     - Use existing mock helper functions for consistency and maintainability
 
+  test_object_declaration:
+    - pattern: "Use unique pointers for object instantiation"
+      description: "MANDATORY - Always use SrsUniquePtr for object declaration in unit tests instead of stack allocation"
+      usage: |
+        WRONG: Stack allocation for SRS classes
+        SrsRtcPublishStream publish_stream(&mock_exec, &mock_expire, &mock_receiver, cid);
+        SrsBuffer buffer(data, size);
+        SrsHttpUri uri;
+
+        CORRECT: Use SrsUniquePtr for SRS classes
+        SrsUniquePtr<SrsRtcPublishStream> publish_stream(new SrsRtcPublishStream(&mock_exec, &mock_expire, &mock_receiver, cid));
+        SrsUniquePtr<SrsBuffer> buffer(new SrsBuffer(data, size));
+        SrsUniquePtr<SrsHttpUri> uri(new SrsHttpUri());
+
+        // Access members using -> operator
+        HELPER_EXPECT_SUCCESS(publish_stream->initialize());
+        buffer->write_1bytes(0xff);
+        uri->parse("http://example.com");
+
+        EXCEPTION: Mock objects should be declared directly (stack allocation)
+        MockRtcPacketReceiver mock_receiver;
+        MockRtcAsyncCallRequest mock_request("test.vhost", "live", "stream1");
+        MockRtcAsyncTaskExecutor mock_exec;
+      rationale: "Consistent with SRS memory management patterns, automatic cleanup, and prevents stack overflow issues with large objects. Mock objects are lightweight and designed for direct instantiation."
+
+  mock_class_organization:
+    - pattern: "Mock class structure"
+      description: "MANDATORY - Always create mock class declarations in .hpp files and implementations in .cpp files"
+      usage: |
+        WRONG: Inline mock class definition in .cpp test file
+        // In srs_utest_app.cpp
+        class MockRtcConnection {
+        public:
+            bool enabled() { return true; }
+            srs_error_t send_packet() { return srs_success; }
+        };
+
+        CORRECT: Mock class declaration in .hpp, implementation in .cpp
+        // In srs_utest_app.hpp
+        class MockRtcConnection {
+        public:
+            bool enabled();
+            srs_error_t send_packet();
+        };
+
+        // In srs_utest_app.cpp
+        bool MockRtcConnection::enabled() {
+            return true;
+        }
+        srs_error_t MockRtcConnection::send_packet() {
+            return srs_success;
+        }
+      rationale: "Proper separation of interface and implementation, better code organization, and easier maintenance"
+
+    - pattern: "Mock function organization"
+      description: "MANDATORY - Always declare mock functions in .hpp files and implement in .cpp files"
+      usage: |
+        WRONG: Inline mock function in .cpp test file
+        // In srs_utest_app.cpp
+        srs_error_t mock_read_function(char* buf, int size) {
+            return srs_success;
+        }
+
+        CORRECT: Mock function declaration in .hpp, implementation in .cpp
+        // In srs_utest_app.hpp
+        srs_error_t mock_read_function(char* buf, int size);
+
+        // In srs_utest_app.cpp
+        srs_error_t mock_read_function(char* buf, int size) {
+            return srs_success;
+        }
+      rationale: "Consistent with SRS coding standards and better code organization"
+
+    - pattern: "Reuse existing mocks"
+      description: "MANDATORY - Always try to use existing mock classes by including the appropriate header file before creating new mocks"
+      usage: |
+        CORRECT: Check and reuse existing mocks
+        // First, include existing mock headers
+        #include "srs_utest_app.hpp"     // For MockRtcConnection, MockHttpServer, etc.
+
+        // Use existing mock if available
+        MockRtcConnection* mock_conn = new MockRtcConnection();
+
+        // Only create new mock if none exists
+        class MockNewFeature {
+        public:
+            srs_error_t new_method();
+        };
+      rationale: "Reduces code duplication, maintains consistency, and leverages existing test infrastructure"
+
+    - pattern: "Mock creation guidelines"
+      description: "Guidelines for when and how to create new mock classes"
+      rules:
+        - "Only create new mock classes if no suitable existing mock is available"
+        - "Check all existing utest header files (srs_utest_app*.hpp) for reusable mocks"
+        - "Place new mock class declarations in the appropriate srs_utest_app*.hpp file"
+        - "Place new mock class implementations in the corresponding srs_utest_app*.cpp file"
+        - "Follow existing mock naming conventions (Mock prefix + class name)"
+        - "Keep mock implementations simple and focused on test requirements"
+
   error_handling_macros:
     - Use HELPER_EXPECT_SUCCESS(x) when expecting a function to succeed (returns srs_success)
     - Use HELPER_EXPECT_FAILED(x) when expecting a function to fail (returns non-srs_success error)

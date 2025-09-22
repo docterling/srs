@@ -789,8 +789,8 @@ srs_error_t SrsRtcTcpConn::cycle()
     srs_error_t err = do_cycle();
 
     // Only stat the HTTP streaming clients, ignore all API clients.
-    SrsStatistic::instance()->on_disconnect(get_id().c_str(), err);
-    SrsStatistic::instance()->kbps_add_delta(get_id().c_str(), delta_);
+    _srs_stat->on_disconnect(get_id().c_str(), err);
+    _srs_stat->kbps_add_delta(get_id().c_str(), delta_);
 
     // Only remove session when network is established, because client might use other UDP network.
     if (session_ && session_->tcp()->is_establelished()) {

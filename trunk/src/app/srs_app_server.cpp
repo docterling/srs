@@ -178,6 +178,9 @@ SrsServer::SrsServer()
     ingester_ = new SrsIngester();
     timer_ = NULL;
 
+    // Initialize global statistic instance.
+    _srs_stat = new SrsStatistic();
+
     // Initialize WebRTC components
     rtc_session_manager_ = new SrsRtcSessionManager();
 }
@@ -230,6 +233,9 @@ SrsServer::~SrsServer()
     }
 
     srs_freep(rtc_session_manager_);
+
+    // Cleanup global statistic instance.
+    srs_freep(_srs_stat);
 }
 
 void SrsServer::dispose()
@@ -1089,7 +1095,7 @@ srs_error_t SrsServer::notify(int event, srs_utime_t interval, srs_utime_t tick)
 
 void SrsServer::resample_kbps()
 {
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
 
     // collect delta from all clients.
     for (int i = 0; i < (int)_srs_conn_manager->size(); i++) {

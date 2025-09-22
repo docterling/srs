@@ -201,7 +201,22 @@ protected:
     virtual srs_error_t start_arq();
 };
 
-class SrsDtls
+// The interface for DTLS.
+class ISrsDtls
+{
+public:
+    ISrsDtls();
+    virtual ~ISrsDtls();
+
+public:
+    virtual srs_error_t initialize(std::string role, std::string version) = 0;
+    virtual srs_error_t start_active_handshake() = 0;
+    virtual srs_error_t on_dtls(char *data, int nb_data) = 0;
+    virtual srs_error_t get_srtp_key(std::string &recv_key, std::string &send_key) = 0;
+};
+
+// The DTLS transport.
+class SrsDtls : public ISrsDtls
 {
 private:
     SrsDtlsImpl *impl_;
@@ -225,7 +240,23 @@ public:
     srs_error_t get_srtp_key(std::string &recv_key, std::string &send_key);
 };
 
-class SrsSRTP
+// The interface for SRTP.
+class ISrsSRTP
+{
+public:
+    ISrsSRTP();
+    virtual ~ISrsSRTP();
+
+public:
+    virtual srs_error_t initialize(std::string recv_key, std::string send_key) = 0;
+    virtual srs_error_t protect_rtp(void *packet, int *nb_cipher) = 0;
+    virtual srs_error_t protect_rtcp(void *packet, int *nb_cipher) = 0;
+    virtual srs_error_t unprotect_rtp(void *packet, int *nb_plaintext) = 0;
+    virtual srs_error_t unprotect_rtcp(void *packet, int *nb_plaintext) = 0;
+};
+
+// The SRTP transport.
+class SrsSRTP : public ISrsSRTP
 {
 private:
     srtp_t recv_ctx_;

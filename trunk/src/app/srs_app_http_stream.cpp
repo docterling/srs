@@ -663,7 +663,7 @@ srs_error_t SrsLiveStream::serve_http_impl(ISrsHttpResponseWriter *w, ISrsHttpMe
     req_->ip_ = hc->remote_ip();
 
     // We must do stat the client before hooks, because hooks depends on it.
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
     if ((err = stat->on_client(_srs_context->get_id().c_str(), req_, hc, SrsFlvPlay)) != srs_success) {
         return srs_error_wrap(err, "stat on client");
     }

@@ -130,10 +130,22 @@ public:
     virtual srs_error_t dumps(SrsJsonObject *obj);
 };
 
-class SrsStatistic
+// The interface for statistic.
+class ISrsStatistic
+{
+public:
+    ISrsStatistic();
+    virtual ~ISrsStatistic();
+
+public:
+    virtual void on_disconnect(std::string id, srs_error_t err) = 0;
+    virtual srs_error_t on_client(std::string id, ISrsRequest *req, ISrsExpire *conn, SrsRtmpConnType type) = 0;
+};
+
+// The global statistic instance.
+class SrsStatistic : public ISrsStatistic
 {
 private:
-    static SrsStatistic *instance_;
     // The id to identify the sever.
     std::string server_id_;
     // The id to identify the service.
@@ -167,12 +179,9 @@ private:
     // The total of clients errors.
     int64_t nb_errs_;
 
-private:
+public:
     SrsStatistic();
     virtual ~SrsStatistic();
-
-public:
-    static SrsStatistic *instance();
 
 public:
     virtual SrsStatisticVhost *find_vhost_by_id(std::string vid);
@@ -258,5 +267,8 @@ public:
 
 // Generate a random string id, with constant prefix.
 extern std::string srs_generate_stat_vid();
+
+// Global statistic instance.
+extern SrsStatistic *_srs_stat;
 
 #endif

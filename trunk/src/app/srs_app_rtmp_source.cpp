@@ -958,7 +958,7 @@ srs_error_t SrsOriginHub::on_audio(SrsMediaPacket *shared_audio)
         static int flv_sound_types[] = {1, 2, 0};
 
         // when got audio stream info.
-        SrsStatistic *stat = SrsStatistic::instance();
+        SrsStatistic *stat = _srs_stat;
         if ((err = stat->on_audio_info(req_, format->acodec_->id_, c->sound_rate_, c->sound_type_, c->aac_object_)) != srs_success) {
             return srs_error_wrap(err, "stat audio");
         }
@@ -1042,7 +1042,7 @@ srs_error_t SrsOriginHub::on_video(SrsMediaPacket *shared_video, bool is_sequenc
         srs_assert(c);
 
         // when got video stream info.
-        SrsStatistic *stat = SrsStatistic::instance();
+        SrsStatistic *stat = _srs_stat;
 
         if (c->id_ == SrsVideoCodecIdAVC) {
             err = stat->on_video_info(req_, c->id_, c->avc_profile_, c->avc_level_, c->width_, c->height_);
@@ -1548,6 +1548,14 @@ srs_error_t SrsMetaCache::update_vsh(SrsMediaPacket *msg)
     video_ = msg->copy();
     update_previous_vsh();
     return vformat_->on_video(msg);
+}
+
+ISrsLiveSourceManager::ISrsLiveSourceManager()
+{
+}
+
+ISrsLiveSourceManager::~ISrsLiveSourceManager()
+{
 }
 
 SrsLiveSourceManager *_srs_sources = NULL;
@@ -2336,7 +2344,7 @@ srs_error_t SrsLiveSource::on_publish()
         return srs_error_wrap(err, "bridge publish");
     }
 
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
     stat->on_stream_publish(req_, _source_id.c_str());
 
     // When no players, the publisher is idle now.
@@ -2378,7 +2386,7 @@ void SrsLiveSource::on_unpublish()
     ISrsLiveSourceHandler *handler = _srs_server;
     srs_assert(handler);
 
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
     stat->on_stream_close(req_);
 
     handler->on_unpublish(req_);

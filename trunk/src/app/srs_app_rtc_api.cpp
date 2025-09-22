@@ -178,9 +178,9 @@ srs_error_t SrsGoApiRtcPlay::do_serve_http(ISrsHttpResponseWriter *w, ISrsHttpMe
     }
 
     res->set("code", SrsJsonAny::integer(ERROR_SUCCESS));
-    res->set("server", SrsJsonAny::str(SrsStatistic::instance()->server_id().c_str()));
-    res->set("service", SrsJsonAny::str(SrsStatistic::instance()->service_id().c_str()));
-    res->set("pid", SrsJsonAny::str(SrsStatistic::instance()->service_pid().c_str()));
+    res->set("server", SrsJsonAny::str(_srs_stat->server_id().c_str()));
+    res->set("service", SrsJsonAny::str(_srs_stat->service_id().c_str()));
+    res->set("pid", SrsJsonAny::str(_srs_stat->service_pid().c_str()));
 
     // TODO: add candidates in response json?
     res->set("sdp", SrsJsonAny::str(ruc.local_sdp_str_.c_str()));
@@ -465,9 +465,9 @@ srs_error_t SrsGoApiRtcPublish::do_serve_http(ISrsHttpResponseWriter *w, ISrsHtt
     }
 
     res->set("code", SrsJsonAny::integer(ERROR_SUCCESS));
-    res->set("server", SrsJsonAny::str(SrsStatistic::instance()->server_id().c_str()));
-    res->set("service", SrsJsonAny::str(SrsStatistic::instance()->service_id().c_str()));
-    res->set("pid", SrsJsonAny::str(SrsStatistic::instance()->service_pid().c_str()));
+    res->set("server", SrsJsonAny::str(_srs_stat->server_id().c_str()));
+    res->set("service", SrsJsonAny::str(_srs_stat->service_id().c_str()));
+    res->set("pid", SrsJsonAny::str(_srs_stat->service_pid().c_str()));
 
     // TODO: add candidates in response json?
     res->set("sdp", SrsJsonAny::str(ruc.local_sdp_str_.c_str()));

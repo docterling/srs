@@ -44,15 +44,15 @@ VOID TEST(AppResourceManagerTest, FindByFastID)
     srs_error_t err = srs_success;
 
     if (true) {
-        SrsResourceManager m("test");
-        HELPER_EXPECT_SUCCESS(m.start());
+        SrsUniquePtr<SrsResourceManager> m(new SrsResourceManager("test"));
+        HELPER_EXPECT_SUCCESS(m->start());
 
-        m.add_with_fast_id(101, new MockIDResource(1));
-        m.add_with_fast_id(102, new MockIDResource(2));
-        m.add_with_fast_id(103, new MockIDResource(3));
-        EXPECT_EQ(1, ((MockIDResource *)m.find_by_fast_id(101))->id);
-        EXPECT_EQ(2, ((MockIDResource *)m.find_by_fast_id(102))->id);
-        EXPECT_EQ(3, ((MockIDResource *)m.find_by_fast_id(103))->id);
+        m->add_with_fast_id(101, new MockIDResource(1));
+        m->add_with_fast_id(102, new MockIDResource(2));
+        m->add_with_fast_id(103, new MockIDResource(3));
+        EXPECT_EQ(1, ((MockIDResource *)m->find_by_fast_id(101))->id);
+        EXPECT_EQ(2, ((MockIDResource *)m->find_by_fast_id(102))->id);
+        EXPECT_EQ(3, ((MockIDResource *)m->find_by_fast_id(103))->id);
     }
 
     if (true) {
@@ -248,30 +248,30 @@ VOID TEST(AppCoroutineTest, SetCidOfCoroutine)
     srs_error_t err = srs_success;
 
     MockCoroutineHandler ch;
-    SrsSTCoroutine sc("test", &ch);
-    ch.trd = &sc;
-    EXPECT_TRUE(sc.cid().empty());
+    SrsUniquePtr<SrsSTCoroutine> sc(new SrsSTCoroutine("test", &ch));
+    ch.trd = sc.get();
+    EXPECT_TRUE(sc->cid().empty());
 
     // Start coroutine, which will create the cid.
-    HELPER_ASSERT_SUCCESS(sc.start());
-    HELPER_ASSERT_SUCCESS(sc.pull());
+    HELPER_ASSERT_SUCCESS(sc->start());
+    HELPER_ASSERT_SUCCESS(sc->pull());
 
     srs_cond_timedwait(ch.running, 100 * SRS_UTIME_MILLISECONDS);
-    EXPECT_TRUE(!sc.cid().empty());
+    EXPECT_TRUE(!sc->cid().empty());
     EXPECT_TRUE(!ch.cid.empty());
 
     // Should be a new cid.
     SrsContextId cid = _srs_context->generate_id();
-    EXPECT_TRUE(sc.cid().compare(cid) != 0);
+    EXPECT_TRUE(sc->cid().compare(cid) != 0);
     EXPECT_TRUE(ch.cid.compare(cid) != 0);
 
     // Set the cid and stop the coroutine.
-    sc.set_cid(cid);
-    sc.stop();
+    sc->set_cid(cid);
+    sc->stop();
 
     // Now the cid should be the new one.
     srs_cond_timedwait(ch.exited, 100 * SRS_UTIME_MILLISECONDS);
-    EXPECT_TRUE(sc.cid().compare(cid) == 0);
+    EXPECT_TRUE(sc->cid().compare(cid) == 0);
     EXPECT_TRUE(ch.cid.compare(cid) == 0);
 }
 

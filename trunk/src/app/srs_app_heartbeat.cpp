@@ -68,7 +68,7 @@ srs_error_t SrsHttpHeartbeat::do_heartbeat()
     obj->set("device_id", SrsJsonAny::str(device_id.c_str()));
     obj->set("ip", SrsJsonAny::str(ip.c_str()));
 
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
     obj->set("server", SrsJsonAny::str(stat->server_id().c_str()));
     obj->set("service", SrsJsonAny::str(stat->service_id().c_str()));
     obj->set("pid", SrsJsonAny::str(stat->service_pid().c_str()));

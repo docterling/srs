@@ -55,7 +55,7 @@ void SrsHlsVirtualConn::expire()
     interrupt_ = true;
 
     // remove statistic quickly
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
     stat->on_disconnect(ctx_, srs_success);
 }
 
@@ -141,7 +141,7 @@ void SrsHlsStream::on_serve_ts_ctx(ISrsHttpResponseWriter *w, ISrsHttpMessage *r
     // Only update the delta, because SrsServer will sample it. Note that SrsServer also does the stat for all clients
     // including this one, but it should be ignored because the id is not matched, and instead we use the hls_ctx as
     // session id to match the client.
-    SrsStatistic::instance()->kbps_add_delta(ctx, delta);
+    _srs_stat->kbps_add_delta(ctx, delta);
 }
 
 srs_error_t SrsHlsStream::serve_new_session(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, ISrsRequest *req, std::string &ctx)
@@ -162,7 +162,7 @@ srs_error_t SrsHlsStream::serve_new_session(ISrsHttpResponseWriter *w, ISrsHttpM
     _srs_context->set_id(SrsContextId().set_value(ctx));
 
     // We must do stat the client before hooks, because hooks depends on it.
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
     if ((err = stat->on_client(ctx, req, NULL, SrsHlsPlay)) != srs_success) {
         return srs_error_wrap(err, "stat on client");
     }
@@ -292,7 +292,7 @@ void SrsHlsStream::alive(std::string ctx, ISrsRequest *req)
         map_ctx_info_.insert(make_pair(ctx, conn));
 
         // Update the conn of stat client, which is used for receiving the event of kickoff.
-        SrsStatistic *stat = SrsStatistic::instance();
+        SrsStatistic *stat = _srs_stat;
         SrsStatisticClient *client = stat->find_client(ctx);
         if (client) {
             client->conn_ = conn;
@@ -387,7 +387,7 @@ srs_error_t SrsHlsStream::on_timer(srs_utime_t interval)
 
             http_hooks_on_stop(info->req_);
 
-            SrsStatistic *stat = SrsStatistic::instance();
+            SrsStatistic *stat = _srs_stat;
             // TODO: FIXME: Should finger out the err.
             stat->on_disconnect(ctx, srs_success);
 

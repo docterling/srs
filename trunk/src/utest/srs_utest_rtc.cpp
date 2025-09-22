@@ -15,6 +15,8 @@
 #include <srs_kernel_rtc_rtp.hpp>
 #include <srs_protocol_conn.hpp>
 
+#include <srs_utest_app6.hpp>
+#include <srs_utest_protocol3.hpp>
 #include <srs_utest_service.hpp>
 
 #include <vector>
@@ -1328,11 +1330,15 @@ VOID TEST(KernelRTCTest, DumpsHexToString)
 
 VOID TEST(KernelRTCTest, NACKFetchRTPPacket)
 {
-    SrsRtcConnection s(NULL, SrsContextId());
-    SrsRtcPlayStream play(&s, SrsContextId());
+    // Create mock interfaces for SrsRtcPlayStream constructor
+    MockRtcAsyncTaskExecutor mock_executor;
+    MockExpire mock_expire;
+    MockRtcPacketSender mock_sender;
+
+    SrsUniquePtr<SrsRtcPlayStream> play(new SrsRtcPlayStream(&mock_executor, &mock_expire, &mock_sender, SrsContextId()));
 
     SrsRtcTrackDescription ds;
-    SrsRtcVideoSendTrack *track = new SrsRtcVideoSendTrack(&s, &ds);
+    SrsRtcVideoSendTrack *track = new SrsRtcVideoSendTrack(&mock_sender, &ds);
     SrsUniquePtr<SrsRtcVideoSendTrack> track_uptr(track);
 
     // The RTP queue will free the packet.
@@ -1556,8 +1562,12 @@ VOID TEST(KernelRTCTest, DefaultTrackStatus)
 
     // Enable it by player.
     if (true) {
-        SrsRtcConnection s(NULL, SrsContextId());
-        SrsRtcPlayStream play(&s, SrsContextId());
+        // Create mock interfaces for SrsRtcPlayStream constructor
+        MockRtcAsyncTaskExecutor mock_executor;
+        MockExpire mock_expire;
+        MockRtcPacketSender mock_sender;
+
+        SrsUniquePtr<SrsRtcPlayStream> play(new SrsRtcPlayStream(&mock_executor, &mock_expire, &mock_sender, SrsContextId()));
         SrsRtcAudioSendTrack *audio;
         SrsRtcVideoSendTrack *video;
 
@@ -1566,27 +1576,29 @@ VOID TEST(KernelRTCTest, DefaultTrackStatus)
             ds.type_ = "audio";
             ds.id_ = "NSNWOn19NDn12o8nNeji2";
             ds.ssrc_ = 100;
-            play.audio_tracks_[ds.ssrc_] = audio = new SrsRtcAudioSendTrack(&s, &ds);
+            play->audio_tracks_[ds.ssrc_] = audio = new SrsRtcAudioSendTrack(&mock_sender, &ds);
         }
         if (true) {
             SrsRtcTrackDescription ds;
             ds.type_ = "video";
             ds.id_ = "VMo22nfLDn122nfnDNL2";
             ds.ssrc_ = 200;
-            play.video_tracks_[ds.ssrc_] = video = new SrsRtcVideoSendTrack(&s, &ds);
+            play->video_tracks_[ds.ssrc_] = video = new SrsRtcVideoSendTrack(&mock_sender, &ds);
         }
         EXPECT_FALSE(audio->get_track_status());
         EXPECT_FALSE(video->get_track_status());
 
-        play.set_all_tracks_status(true);
+        play->set_all_tracks_status(true);
         EXPECT_TRUE(audio->get_track_status());
         EXPECT_TRUE(video->get_track_status());
     }
 
     // Enable it by publisher.
     if (true) {
-        SrsRtcConnection s(NULL, SrsContextId());
-        SrsRtcPublishStream publish(&s, SrsContextId());
+        MockRtcAsyncTaskExecutor mock_exec;
+        MockExpire mock_expire;
+        MockRtcPacketReceiver mock_receiver;
+        SrsUniquePtr<SrsRtcPublishStream> publish(new SrsRtcPublishStream(&mock_exec, &mock_expire, &mock_receiver, SrsContextId()));
         SrsRtcAudioRecvTrack *audio;
         SrsRtcVideoRecvTrack *video;
 
@@ -1595,21 +1607,21 @@ VOID TEST(KernelRTCTest, DefaultTrackStatus)
             ds.type_ = "audio";
             ds.id_ = "NSNWOn19NDn12o8nNeji2";
             ds.ssrc_ = 100;
-            audio = new SrsRtcAudioRecvTrack(&s, &ds);
-            publish.audio_tracks_.push_back(audio);
+            audio = new SrsRtcAudioRecvTrack(&mock_receiver, &ds);
+            publish->audio_tracks_.push_back(audio);
         }
         if (true) {
             SrsRtcTrackDescription ds;
             ds.type_ = "video";
             ds.id_ = "VMo22nfLDn122nfnDNL2";
             ds.ssrc_ = 200;
-            video = new SrsRtcVideoRecvTrack(&s, &ds);
-            publish.video_tracks_.push_back(video);
+            video = new SrsRtcVideoRecvTrack(&mock_receiver, &ds);
+            publish->video_tracks_.push_back(video);
         }
         EXPECT_FALSE(audio->get_track_status());
         EXPECT_FALSE(video->get_track_status());
 
-        publish.set_all_tracks_status(true);
+        publish->set_all_tracks_status(true);
         EXPECT_TRUE(audio->get_track_status());
         EXPECT_TRUE(video->get_track_status());
     }
@@ -1646,15 +1658,17 @@ VOID TEST(KernelRTCTest, Ntp)
 
 VOID TEST(KernelRTCTest, SyncTimestampBySenderReportNormal)
 {
-    SrsRtcConnection s(NULL, SrsContextId());
-    SrsRtcPublishStream publish(&s, SrsContextId());
+    MockRtcAsyncTaskExecutor mock_exec;
+    MockExpire mock_expire;
+    MockRtcPacketReceiver mock_receiver;
+    SrsRtcPublishStream publish(&mock_exec, &mock_expire, &mock_receiver, SrsContextId());
 
     SrsRtcTrackDescription video_ds;
     video_ds.type_ = "video";
     video_ds.id_ = "VMo22nfLDn122nfnDNL2";
     video_ds.ssrc_ = 200;
 
-    SrsRtcVideoRecvTrack *video = new SrsRtcVideoRecvTrack(&s, &video_ds);
+    SrsRtcVideoRecvTrack *video = new SrsRtcVideoRecvTrack(&mock_receiver, &video_ds);
     publish.video_tracks_.push_back(video);
 
     publish.set_all_tracks_status(true);
@@ -1712,15 +1726,17 @@ VOID TEST(KernelRTCTest, SyncTimestampBySenderReportNormal)
 
 VOID TEST(KernelRTCTest, SyncTimestampBySenderReportOutOfOrder)
 {
-    SrsRtcConnection s(NULL, SrsContextId());
-    SrsRtcPublishStream publish(&s, SrsContextId());
+    MockRtcAsyncTaskExecutor mock_exec;
+    MockExpire mock_expire;
+    MockRtcPacketReceiver mock_receiver;
+    SrsRtcPublishStream publish(&mock_exec, &mock_expire, &mock_receiver, SrsContextId());
 
     SrsRtcTrackDescription video_ds;
     video_ds.type_ = "video";
     video_ds.id_ = "VMo22nfLDn122nfnDNL2";
     video_ds.ssrc_ = 200;
 
-    SrsRtcVideoRecvTrack *video = new SrsRtcVideoRecvTrack(&s, &video_ds);
+    SrsRtcVideoRecvTrack *video = new SrsRtcVideoRecvTrack(&mock_receiver, &video_ds);
     publish.video_tracks_.push_back(video);
 
     publish.set_all_tracks_status(true);
@@ -1783,15 +1799,17 @@ VOID TEST(KernelRTCTest, SyncTimestampBySenderReportOutOfOrder)
 
 VOID TEST(KernelRTCTest, SyncTimestampBySenderReportConsecutive)
 {
-    SrsRtcConnection s(NULL, SrsContextId());
-    SrsRtcPublishStream publish(&s, SrsContextId());
+    MockRtcAsyncTaskExecutor mock_exec;
+    MockExpire mock_expire;
+    MockRtcPacketReceiver mock_receiver;
+    SrsRtcPublishStream publish(&mock_exec, &mock_expire, &mock_receiver, SrsContextId());
 
     SrsRtcTrackDescription video_ds;
     video_ds.type_ = "video";
     video_ds.id_ = "VMo22nfLDn122nfnDNL2";
     video_ds.ssrc_ = 200;
 
-    SrsRtcVideoRecvTrack *video = new SrsRtcVideoRecvTrack(&s, &video_ds);
+    SrsRtcVideoRecvTrack *video = new SrsRtcVideoRecvTrack(&mock_receiver, &video_ds);
     publish.video_tracks_.push_back(video);
 
     publish.set_all_tracks_status(true);
@@ -1887,15 +1905,17 @@ VOID TEST(KernelRTCTest, SrsRtcpNack)
 
 VOID TEST(KernelRTCTest, SyncTimestampBySenderReportDuplicated)
 {
-    SrsRtcConnection s(NULL, SrsContextId());
-    SrsRtcPublishStream publish(&s, SrsContextId());
+    MockRtcAsyncTaskExecutor mock_exec;
+    MockExpire mock_expire;
+    MockRtcPacketReceiver mock_receiver;
+    SrsRtcPublishStream publish(&mock_exec, &mock_expire, &mock_receiver, SrsContextId());
 
     SrsRtcTrackDescription video_ds;
     video_ds.type_ = "video";
     video_ds.id_ = "VMo22nfLDn122nfnDNL2";
     video_ds.ssrc_ = 200;
 
-    SrsRtcVideoRecvTrack *video = new SrsRtcVideoRecvTrack(&s, &video_ds);
+    SrsRtcVideoRecvTrack *video = new SrsRtcVideoRecvTrack(&mock_receiver, &video_ds);
     publish.video_tracks_.push_back(video);
 
     publish.set_all_tracks_status(true);

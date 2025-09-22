@@ -31,7 +31,7 @@ public:
 };
 
 // Server HLS streaming.
-class SrsHlsStream : public ISrsFastTimer
+class SrsHlsStream : public ISrsFastTimerHandler
 {
 private:
     // The period of validity of the ctx
@@ -53,7 +53,7 @@ private:
     srs_error_t http_hooks_on_play(ISrsRequest *req);
     void http_hooks_on_stop(ISrsRequest *req);
     bool is_interrupt(std::string id);
-    // interface ISrsFastTimer
+    // interface ISrsFastTimerHandler
 private:
     srs_error_t on_timer(srs_utime_t interval);
 

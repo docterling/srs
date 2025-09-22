@@ -547,43 +547,43 @@ VOID TEST(KernelFastBufferTest, Grow)
     srs_error_t err;
 
     if (true) {
-        SrsFastStream b(5);
+        SrsUniquePtr<SrsFastStream> b(new SrsFastStream(5));
         MockBufferReader r("Hello, world!");
 
-        HELPER_ASSERT_SUCCESS(b.grow(&r, 5));
-        b.skip(2);
+        HELPER_ASSERT_SUCCESS(b->grow(&r, 5));
+        b->skip(2);
 
-        HELPER_ASSERT_FAILED(b.grow(&r, 6));
+        HELPER_ASSERT_FAILED(b->grow(&r, 6));
     }
 
     if (true) {
-        SrsFastStream b(5);
+        SrsUniquePtr<SrsFastStream> b(new SrsFastStream(5));
         MockBufferReader r("Hello, world!");
 
-        HELPER_ASSERT_SUCCESS(b.grow(&r, 5));
-        b.skip(5);
+        HELPER_ASSERT_SUCCESS(b->grow(&r, 5));
+        b->skip(5);
 
-        HELPER_ASSERT_FAILED(b.grow(&r, 6));
+        HELPER_ASSERT_FAILED(b->grow(&r, 6));
     }
 
     if (true) {
-        SrsFastStream b(6);
+        SrsUniquePtr<SrsFastStream> b(new SrsFastStream(6));
         MockBufferReader r("Hello, world!");
 
-        HELPER_ASSERT_SUCCESS(b.grow(&r, 5));
-        EXPECT_EQ('H', b.read_1byte());
-        EXPECT_EQ('e', b.read_1byte());
-        EXPECT_EQ('l', b.read_1byte());
-        b.skip(2);
+        HELPER_ASSERT_SUCCESS(b->grow(&r, 5));
+        EXPECT_EQ('H', b->read_1byte());
+        EXPECT_EQ('e', b->read_1byte());
+        EXPECT_EQ('l', b->read_1byte());
+        b->skip(2);
 
-        HELPER_ASSERT_SUCCESS(b.grow(&r, 2));
-        b.skip(2);
+        HELPER_ASSERT_SUCCESS(b->grow(&r, 2));
+        b->skip(2);
 
-        HELPER_ASSERT_SUCCESS(b.grow(&r, 5));
-        EXPECT_EQ('w', b.read_1byte());
-        EXPECT_EQ('o', b.read_1byte());
-        EXPECT_EQ('r', b.read_1byte());
-        b.skip(2);
+        HELPER_ASSERT_SUCCESS(b->grow(&r, 5));
+        EXPECT_EQ('w', b->read_1byte());
+        EXPECT_EQ('o', b->read_1byte());
+        EXPECT_EQ('r', b->read_1byte());
+        b->skip(2);
     }
 
     if (true) {
@@ -1696,11 +1696,11 @@ VOID TEST(KernelFLVTest, CoverFLVVodError)
 VOID TEST(KernelStreamTest, StreamPos)
 {
     char data[1024];
-    SrsBuffer s(data, 1024);
-    EXPECT_TRUE(s.pos() == 0);
+    SrsUniquePtr<SrsBuffer> s(new SrsBuffer(data, 1024));
+    EXPECT_TRUE(s->pos() == 0);
 
-    s.read_bytes(data, 1024);
-    EXPECT_TRUE(s.pos() == 1024);
+    s->read_bytes(data, 1024);
+    EXPECT_TRUE(s->pos() == 1024);
 }
 
 /**
@@ -1709,11 +1709,11 @@ VOID TEST(KernelStreamTest, StreamPos)
 VOID TEST(KernelStreamTest, StreamEmpty)
 {
     char data[1024];
-    SrsBuffer s(data, 1024);
-    EXPECT_FALSE(s.empty());
+    SrsUniquePtr<SrsBuffer> s(new SrsBuffer(data, 1024));
+    EXPECT_FALSE(s->empty());
 
-    s.read_bytes(data, 1024);
-    EXPECT_TRUE(s.empty());
+    s->read_bytes(data, 1024);
+    EXPECT_TRUE(s->empty());
 }
 
 /**
@@ -1722,15 +1722,15 @@ VOID TEST(KernelStreamTest, StreamEmpty)
 VOID TEST(KernelStreamTest, StreamRequire)
 {
     char data[1024];
-    SrsBuffer s(data, 1024);
-    EXPECT_TRUE(s.require(1));
-    EXPECT_TRUE(s.require(1024));
+    SrsUniquePtr<SrsBuffer> s(new SrsBuffer(data, 1024));
+    EXPECT_TRUE(s->require(1));
+    EXPECT_TRUE(s->require(1024));
 
-    s.read_bytes(data, 1000);
-    EXPECT_TRUE(s.require(1));
+    s->read_bytes(data, 1000);
+    EXPECT_TRUE(s->require(1));
 
-    s.read_bytes(data, 24);
-    EXPECT_FALSE(s.require(1));
+    s->read_bytes(data, 24);
+    EXPECT_FALSE(s->require(1));
 }
 
 /**
@@ -1739,14 +1739,14 @@ VOID TEST(KernelStreamTest, StreamRequire)
 VOID TEST(KernelStreamTest, StreamSkip)
 {
     char data[1024];
-    SrsBuffer s(data, 1024);
-    EXPECT_EQ(0, s.pos());
+    SrsUniquePtr<SrsBuffer> s(new SrsBuffer(data, 1024));
+    EXPECT_EQ(0, s->pos());
 
-    s.skip(1);
-    EXPECT_EQ(1, s.pos());
+    s->skip(1);
+    EXPECT_EQ(1, s->pos());
 
-    s.skip(-1);
-    EXPECT_EQ(0, s.pos());
+    s->skip(-1);
+    EXPECT_EQ(0, s->pos());
 }
 
 /**
@@ -1755,17 +1755,17 @@ VOID TEST(KernelStreamTest, StreamSkip)
 VOID TEST(KernelStreamTest, StreamRead1Bytes)
 {
     char data[1024];
-    SrsBuffer s(data, 1024);
+    SrsUniquePtr<SrsBuffer> s(new SrsBuffer(data, 1024));
 
     data[0] = 0x12;
     data[99] = 0x13;
     data[100] = 0x14;
     data[101] = 0x15;
-    EXPECT_EQ(0x12, s.read_1bytes());
+    EXPECT_EQ(0x12, s->read_1bytes());
 
-    s.skip(-1 * s.pos());
-    s.skip(100);
-    EXPECT_EQ(0x14, s.read_1bytes());
+    s->skip(-1 * s->pos());
+    s->skip(100);
+    EXPECT_EQ(0x14, s->read_1bytes());
 }
 
 /**
@@ -1774,7 +1774,7 @@ VOID TEST(KernelStreamTest, StreamRead1Bytes)
 VOID TEST(KernelStreamTest, StreamRead2Bytes)
 {
     char data[1024];
-    SrsBuffer s(data, 1024);
+    SrsUniquePtr<SrsBuffer> s(new SrsBuffer(data, 1024));
 
     data[0] = 0x01;
     data[1] = 0x02;
@@ -1787,12 +1787,12 @@ VOID TEST(KernelStreamTest, StreamRead2Bytes)
     data[8] = 0x09;
     data[9] = 0x0a;
 
-    EXPECT_EQ(0x0102, s.read_2bytes());
-    EXPECT_EQ(0x0304, s.read_2bytes());
+    EXPECT_EQ(0x0102, s->read_2bytes());
+    EXPECT_EQ(0x0304, s->read_2bytes());
 
-    s.skip(-1 * s.pos());
-    s.skip(3);
-    EXPECT_EQ(0x0405, s.read_2bytes());
+    s->skip(-1 * s->pos());
+    s->skip(3);
+    EXPECT_EQ(0x0405, s->read_2bytes());
 }
 
 /**

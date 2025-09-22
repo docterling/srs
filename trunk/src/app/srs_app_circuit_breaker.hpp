@@ -46,7 +46,7 @@ public:
     virtual bool hybrid_dying_water_level() = 0;
 };
 
-class SrsCircuitBreaker : public ISrsCircuitBreaker, public ISrsFastTimer
+class SrsCircuitBreaker : public ISrsCircuitBreaker, public ISrsFastTimerHandler
 {
 private:
     bool enabled_;

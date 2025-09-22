@@ -253,6 +253,14 @@ void SrsRtcConsumer::on_stream_change(SrsRtcSourceDescription *desc)
     }
 }
 
+ISrsRtcSourceManager::ISrsRtcSourceManager()
+{
+}
+
+ISrsRtcSourceManager::~ISrsRtcSourceManager()
+{
+}
+
 SrsRtcSourceManager::SrsRtcSourceManager()
 {
     lock_ = srs_mutex_new();
@@ -700,7 +708,7 @@ srs_error_t SrsRtcSource::on_publish()
         _srs_shared_timer->timer100ms()->subscribe(this);
     }
 
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
     stat->on_stream_publish(req_, _source_id.c_str());
 
     return err;
@@ -734,7 +742,7 @@ void SrsRtcSource::on_unpublish()
         srs_freep(rtc_bridge_);
     }
 
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
     stat->on_stream_close(req_);
 
     // Destroy and cleanup source when no publishers and consumers.
@@ -1467,6 +1475,9 @@ SrsRtpPacket *SrsRtcFrameBuilderVideoPacketCache::take_packet(uint16_t sequence_
     return pkt;
 }
 
+// TODO: Should improve the frame builder by jitter and NACK, consider if only RTC2RTMP without
+// any RTC player, then if one RTP packet is lost, the frame builder will not request the lost
+// packet. This makes the whole GOP not available.
 int32_t SrsRtcFrameBuilderVideoPacketCache::find_next_lost_sn(uint16_t current_sn, uint16_t header_sn, uint16_t &end_sn)
 {
     uint32_t last_rtp_ts = get_rtp_timestamp(header_sn);
@@ -1548,7 +1559,8 @@ void SrsRtcFrameBuilderVideoFrameDetector::on_keyframe_start(SrsRtpPacket *pkt)
         rtp_key_frame_ts_ = pkt->header_.get_timestamp();
         header_sn_ = pkt->header_.get_sequence();
         lost_sn_ = header_sn_ + 1;
-        // Received key frame and clean cache of old p frame pkts
+        // Received key frame and clean cache of old p frame pkts.
+        // TODO: Should use jitter buffer to avoid clear previous P frame in case of reordering.
         video_cache_->clear_all();
         srs_trace("RTC2RTMP: keyframe set ts=%u, header=%hu, lost=%hu", (uint32_t)rtp_key_frame_ts_, header_sn_, lost_sn_);
     } else if (rtp_key_frame_ts_ != pkt->header_.get_timestamp()) {
@@ -1559,6 +1571,8 @@ void SrsRtcFrameBuilderVideoFrameDetector::on_keyframe_start(SrsRtpPacket *pkt)
         rtp_key_frame_ts_ = pkt->header_.get_timestamp();
         header_sn_ = pkt->header_.get_sequence();
         lost_sn_ = header_sn_ + 1;
+        // Received key frame and clean cache of old p frame pkts.
+        // TODO: Should use jitter buffer to avoid clear previous P frame in case of reordering.
         video_cache_->clear_all();
         srs_warn("RTC2RTMP: keyframe drop old ts=%u, header=%hu, lost=%hu, set new ts=%u, header=%hu, lost=%hu",
                  (uint32_t)old_ts, old_header_sn, old_lost_sn, (uint32_t)rtp_key_frame_ts_, header_sn_, lost_sn_);
@@ -1683,6 +1697,9 @@ srs_error_t SrsRtcFrameBuilderAudioPacketCache::process_packet(SrsRtpPacket *src
                          (now - last_audio_process_time_) > timeout_;
     uint16_t window_end = last_audio_seq_num_ + SLIDING_WINDOW_SIZE;
 
+    // TODO: Should improve the audio cache by NACK, consider if only RTC2RTMP without
+    // any RTC player, then if one RTP packet is lost, the audio cache will not request the lost
+    // packet. This means some audio packets are lost.
     while (!audio_buffer_.empty()) {
         std::map<uint16_t, SrsRtpPacket *>::iterator it = audio_buffer_.begin();
         uint16_t next_seq = it->first;
@@ -1861,7 +1878,7 @@ srs_error_t SrsRtcFrameBuilder::transcode_audio(SrsRtpPacket *pkt)
 {
     srs_error_t err = srs_success;
 
-    // to common message.
+    // Generate a sequence header for the first audio packet
     uint32_t ts = pkt->get_avsync_time();
     if (is_first_audio_) {
         int header_len = 0;
@@ -1950,8 +1967,10 @@ srs_error_t SrsRtcFrameBuilder::packet_video(SrsRtpPacket *pkt)
         if ((err = frame_detector_->detect_frame(current_sn, start, end, got_frame)) != srs_success) {
             return srs_error_wrap(err, "detect frame failed");
         }
-        if (got_frame && (err = packet_video_rtmp(start, end)) != srs_success) {
-            err = srs_error_wrap(err, "fail to pack video frame, start=%u, end=%u", start, end);
+        if (got_frame) {
+            if ((err = packet_video_rtmp(start, end)) != srs_success) {
+                err = srs_error_wrap(err, "fail to pack video frame, start=%u, end=%u", start, end);
+            }
         }
     }
 
@@ -1976,6 +1995,17 @@ srs_error_t SrsRtcFrameBuilder::packet_video_key_frame(SrsRtpPacket *pkt)
 
     frame_detector_->on_keyframe_start(pkt);
 
+    // If only contains SPS/PPS, no need to store in cache.
+    SrsRtpSTAPPayload *stap_payload = dynamic_cast<SrsRtpSTAPPayload *>(pkt->payload());
+    if (stap_payload && stap_payload->get_idr() == NULL) {
+        return err;
+    }
+    SrsRtpSTAPPayloadHevc *stap_payload_hevc = dynamic_cast<SrsRtpSTAPPayloadHevc *>(pkt->payload());
+    if (stap_payload_hevc && stap_payload_hevc->get_idr() == NULL) {
+        return err;
+    }
+
+    // Cache the keyframe packet, which contains IDR, as long as SPS/PPS/VPS sequence header.
     video_cache_->store_packet(pkt->copy());
 
     uint16_t current_sn = pkt->header_.get_sequence();
@@ -1985,8 +2015,10 @@ srs_error_t SrsRtcFrameBuilder::packet_video_key_frame(SrsRtpPacket *pkt)
         if ((err = frame_detector_->detect_frame(current_sn, start, end, got_frame)) != srs_success) {
             return srs_error_wrap(err, "detect frame failed");
         }
-        if (got_frame && (err = packet_video_rtmp(start, end)) != srs_success) {
-            err = srs_error_wrap(err, "fail to pack video frame, start=%u, end=%u", start, end);
+        if (got_frame) {
+            if ((err = packet_video_rtmp(start, end)) != srs_success) {
+                err = srs_error_wrap(err, "fail to pack video frame, start=%u, end=%u", start, end);
+            }
         }
     }
 
@@ -2164,7 +2196,7 @@ srs_error_t SrsRtcFrameBuilder::do_packet_sequence_header_hevc(SrsRtpPacket *pkt
     char *flv = NULL;
     int nb_flv = 0;
     if ((err = hevc->mux_hevc2flv_enhanced(sh, SrsVideoAvcFrameTypeKeyFrame, SrsVideoHEVCFrameTraitPacketTypeSequenceStart, pkt->get_avsync_time(),
-                                          pkt->get_avsync_time(), &flv, &nb_flv)) != srs_success) {
+                                           pkt->get_avsync_time(), &flv, &nb_flv)) != srs_success) {
         return srs_error_wrap(err, "mux sequence header");
     }
 
@@ -2193,8 +2225,11 @@ int SrsRtcFrameBuilder::calculate_packet_payload_size(SrsRtpPacket *pkt)
 
     // H.264 FU-A payload
     SrsRtpFUAPayload2 *fua_payload = dynamic_cast<SrsRtpFUAPayload2 *>(pkt->payload());
-    if (fua_payload && fua_payload->size_ > 0) {
+    if (fua_payload) {
         int size = fua_payload->size_;
+        if (size <= 0) {
+            return 0;
+        }
         if (fua_payload->start_) {
             size += 1 + 4; // NALU header + length prefix
         }
@@ -2216,8 +2251,11 @@ int SrsRtcFrameBuilder::calculate_packet_payload_size(SrsRtpPacket *pkt)
 
     // H.265 FU-A payload
     SrsRtpFUAPayloadHevc2 *fua_payload_hevc = dynamic_cast<SrsRtpFUAPayloadHevc2 *>(pkt->payload());
-    if (fua_payload_hevc && fua_payload_hevc->size_ > 0) {
+    if (fua_payload_hevc) {
         int size = fua_payload_hevc->size_;
+        if (size <= 0) {
+            return 0;
+        }
         if (fua_payload_hevc->start_) {
             size += 2 + 4; // HEVC NALU header + length prefix
         }
@@ -2239,7 +2277,10 @@ int SrsRtcFrameBuilder::calculate_packet_payload_size(SrsRtpPacket *pkt)
 
     // Raw payload
     SrsRtpRawPayload *raw_payload = dynamic_cast<SrsRtpRawPayload *>(pkt->payload());
-    if (raw_payload && raw_payload->nn_payload_ > 0) {
+    if (raw_payload) {
+        if (raw_payload->nn_payload_ <= 1) {
+            return 0; // Ignore empty payload, which only has the NALU header.
+        }
         return 4 + raw_payload->nn_payload_; // length prefix + payload
     }
 
@@ -2254,15 +2295,19 @@ void SrsRtcFrameBuilder::write_packet_payload_to_buffer(SrsRtpPacket *pkt, SrsBu
 
     // H.264 FU-A payload
     SrsRtpFUAPayload2 *fua_payload = dynamic_cast<SrsRtpFUAPayload2 *>(pkt->payload());
-    if (fua_payload && fua_payload->size_ > 0) {
+    if (fua_payload) {
+        int size = fua_payload->size_;
+        if (size <= 0) {
+            return;
+        }
         if (fua_payload->start_) {
-            nalu_len = fua_payload->size_ + 1;
+            nalu_len = size + 1;
             payload.skip(4); // Skip 4 bytes to write nalu_len later
             payload.write_1bytes(fua_payload->nri_ | fua_payload->nalu_type_);
-            payload.write_bytes(fua_payload->payload_, fua_payload->size_);
+            payload.write_bytes(fua_payload->payload_, size);
         } else {
-            nalu_len += fua_payload->size_;
-            payload.write_bytes(fua_payload->payload_, fua_payload->size_);
+            nalu_len += size;
+            payload.write_bytes(fua_payload->payload_, size);
             if (fua_payload->end_) {
                 // Write nalu_len back
                 payload.skip(-(4 + nalu_len));
@@ -2288,16 +2333,20 @@ void SrsRtcFrameBuilder::write_packet_payload_to_buffer(SrsRtpPacket *pkt, SrsBu
 
     // H.265 FU-A payload
     SrsRtpFUAPayloadHevc2 *fua_payload_hevc = dynamic_cast<SrsRtpFUAPayloadHevc2 *>(pkt->payload());
-    if (fua_payload_hevc && fua_payload_hevc->size_ > 0) {
+    if (fua_payload_hevc) {
+        int size = fua_payload_hevc->size_;
+        if (size <= 0) {
+            return;
+        }
         if (fua_payload_hevc->start_) {
-            nalu_len = fua_payload_hevc->size_ + 2;
+            nalu_len = size + 2;
             payload.skip(4); // Skip 4 bytes to write nalu_len later
             payload.write_1bytes(fua_payload_hevc->nalu_type_ << 1);
             payload.write_1bytes(0x01);
-            payload.write_bytes(fua_payload_hevc->payload_, fua_payload_hevc->size_);
+            payload.write_bytes(fua_payload_hevc->payload_, size);
         } else {
-            nalu_len += fua_payload_hevc->size_;
-            payload.write_bytes(fua_payload_hevc->payload_, fua_payload_hevc->size_);
+            nalu_len += size;
+            payload.write_bytes(fua_payload_hevc->payload_, size);
             if (fua_payload_hevc->end_) {
                 // Write nalu_len back
                 payload.skip(-(4 + nalu_len));
@@ -2323,7 +2372,10 @@ void SrsRtcFrameBuilder::write_packet_payload_to_buffer(SrsRtpPacket *pkt, SrsBu
 
     // Raw payload
     SrsRtpRawPayload *raw_payload = dynamic_cast<SrsRtpRawPayload *>(pkt->payload());
-    if (raw_payload && raw_payload->nn_payload_ > 0) {
+    if (raw_payload) {
+        if (raw_payload->nn_payload_ <= 1) {
+            return; // Ignore empty payload, which only has the NALU header.
+        }
         payload.write_4bytes(raw_payload->nn_payload_);
         payload.write_bytes(raw_payload->payload_, raw_payload->nn_payload_);
         return;
@@ -2359,7 +2411,7 @@ srs_error_t SrsRtcFrameBuilder::packet_video_rtmp(const uint16_t start, const ui
     }
 
     if (0 == nb_payload) {
-        srs_warn("empty nalu");
+        srs_info("RTC2RTMP: empty rtp packet, start=%u, end=%u, cnt=%d", start, end, cnt);
 
         // The chrome web browser send RTP packet with empty payload frequently,
         // reset header_sn_, lost_sn_ and continue to found next frame in this case,
@@ -2369,8 +2421,10 @@ srs_error_t SrsRtcFrameBuilder::packet_video_rtmp(const uint16_t start, const ui
         if ((err = frame_detector_->detect_next_frame(end + 1, next_start, next_end, got_frame)) != srs_success) {
             return srs_error_wrap(err, "update frame detector failed");
         }
-        if (got_frame && (err = packet_video_rtmp(next_start, next_end)) != srs_success) {
-            err = srs_error_wrap(err, "fail to pack video frame, start=%u, end=%u", next_start, next_end);
+        if (got_frame) {
+            if ((err = packet_video_rtmp(next_start, next_end)) != srs_success) {
+                err = srs_error_wrap(err, "fail to pack video frame, start=%u, end=%u", next_start, next_end);
+            }
         }
 
         return err;
@@ -2445,8 +2499,10 @@ srs_error_t SrsRtcFrameBuilder::packet_video_rtmp(const uint16_t start, const ui
     if ((err = frame_detector_->detect_next_frame(end + 1, next_start, next_end, got_frame)) != srs_success) {
         return srs_error_wrap(err, "update frame detector failed");
     }
-    if (got_frame && (err = packet_video_rtmp(next_start, next_end)) != srs_success) {
-        err = srs_error_wrap(err, "fail to pack video frame, start=%u, end=%u", next_start, next_end);
+    if (got_frame) {
+        if ((err = packet_video_rtmp(next_start, next_end)) != srs_success) {
+            err = srs_error_wrap(err, "fail to pack video frame, start=%u, end=%u", next_start, next_end);
+        }
     }
 
     return err;
@@ -3030,9 +3086,17 @@ SrsRtcTrackDescription *SrsRtcSourceDescription::find_track_description_by_ssrc(
     return NULL;
 }
 
-SrsRtcRecvTrack::SrsRtcRecvTrack(SrsRtcConnection *session, SrsRtcTrackDescription *track_desc, bool is_audio)
+ISrsRtcPacketReceiver::ISrsRtcPacketReceiver()
 {
-    session_ = session;
+}
+
+ISrsRtcPacketReceiver::~ISrsRtcPacketReceiver()
+{
+}
+
+SrsRtcRecvTrack::SrsRtcRecvTrack(ISrsRtcPacketReceiver *receiver, SrsRtcTrackDescription *track_desc, bool is_audio)
+{
+    receiver_ = receiver;
     track_desc_ = track_desc->copy();
     nack_no_copy_ = false;
 
@@ -3130,7 +3194,7 @@ srs_error_t SrsRtcRecvTrack::send_rtcp_rr()
 
     uint32_t ssrc = track_desc_->ssrc_;
     const uint64_t &last_time = last_sender_report_sys_time_;
-    if ((err = session_->send_rtcp_rr(ssrc, rtp_queue_, last_time, last_sender_report_ntp_)) != srs_success) {
+    if ((err = receiver_->send_rtcp_rr(ssrc, rtp_queue_, last_time, last_sender_report_ntp_)) != srs_success) {
         return srs_error_wrap(err, "ssrc=%u, last_time=%" PRId64, ssrc, last_time);
     }
 
@@ -3141,7 +3205,7 @@ srs_error_t SrsRtcRecvTrack::send_rtcp_xr_rrtr()
 {
     srs_error_t err = srs_success;
 
-    if ((err = session_->send_rtcp_xr_rrtr(track_desc_->ssrc_)) != srs_success) {
+    if ((err = receiver_->send_rtcp_xr_rrtr(track_desc_->ssrc_)) != srs_success) {
         return srs_error_wrap(err, "ssrc=%u", track_desc_->ssrc_);
     }
 
@@ -3218,13 +3282,13 @@ srs_error_t SrsRtcRecvTrack::do_check_send_nacks(uint32_t &timeout_nacks)
     srs_error_t err = srs_success;
 
     uint32_t sent_nacks = 0;
-    session_->check_send_nacks(nack_receiver_, track_desc_->ssrc_, sent_nacks, timeout_nacks);
+    receiver_->check_send_nacks(nack_receiver_, track_desc_->ssrc_, sent_nacks, timeout_nacks);
 
     return err;
 }
 
-SrsRtcAudioRecvTrack::SrsRtcAudioRecvTrack(SrsRtcConnection *session, SrsRtcTrackDescription *track_desc)
-    : SrsRtcRecvTrack(session, track_desc, true)
+SrsRtcAudioRecvTrack::SrsRtcAudioRecvTrack(ISrsRtcPacketReceiver *receiver, SrsRtcTrackDescription *track_desc)
+    : SrsRtcRecvTrack(receiver, track_desc, true)
 {
 }
 
@@ -3271,8 +3335,8 @@ srs_error_t SrsRtcAudioRecvTrack::check_send_nacks()
     return err;
 }
 
-SrsRtcVideoRecvTrack::SrsRtcVideoRecvTrack(SrsRtcConnection *session, SrsRtcTrackDescription *track_desc)
-    : SrsRtcRecvTrack(session, track_desc, false)
+SrsRtcVideoRecvTrack::SrsRtcVideoRecvTrack(ISrsRtcPacketReceiver *receiver, SrsRtcTrackDescription *track_desc)
+    : SrsRtcRecvTrack(receiver, track_desc, false)
 {
 }
 
@@ -3389,9 +3453,17 @@ uint16_t SrsRtcSeqJitter::correct(uint16_t value)
     return jitter_->correct(value);
 }
 
-SrsRtcSendTrack::SrsRtcSendTrack(SrsRtcConnection *session, SrsRtcTrackDescription *track_desc, bool is_audio)
+ISrsRtcPacketSender::ISrsRtcPacketSender()
 {
-    session_ = session;
+}
+
+ISrsRtcPacketSender::~ISrsRtcPacketSender()
+{
+}
+
+SrsRtcSendTrack::SrsRtcSendTrack(ISrsRtcPacketSender *sender, SrsRtcTrackDescription *track_desc, bool is_audio)
+{
+    sender_ = sender;
     track_desc_ = track_desc->copy();
     nack_no_copy_ = false;
 
@@ -3517,7 +3589,7 @@ srs_error_t SrsRtcSendTrack::on_recv_nack(const vector<uint16_t> &lost_seqs)
         }
 
         // By default, we send packets by sendmmsg.
-        if ((err = session_->do_send_packet(pkt)) != srs_success) {
+        if ((err = sender_->do_send_packet(pkt)) != srs_success) {
             return srs_error_wrap(err, "raw send");
         }
     }
@@ -3525,8 +3597,8 @@ srs_error_t SrsRtcSendTrack::on_recv_nack(const vector<uint16_t> &lost_seqs)
     return err;
 }
 
-SrsRtcAudioSendTrack::SrsRtcAudioSendTrack(SrsRtcConnection *session, SrsRtcTrackDescription *track_desc)
-    : SrsRtcSendTrack(session, track_desc, true)
+SrsRtcAudioSendTrack::SrsRtcAudioSendTrack(ISrsRtcPacketSender *sender, SrsRtcTrackDescription *track_desc)
+    : SrsRtcSendTrack(sender, track_desc, true)
 {
 }
 
@@ -3558,7 +3630,7 @@ srs_error_t SrsRtcAudioSendTrack::on_rtp(SrsRtpPacket *pkt)
     // Rebuild the sequence number and timestamp of packet, see https://github.com/ossrs/srs/issues/3167
     rebuild_packet(pkt);
 
-    if ((err = session_->do_send_packet(pkt)) != srs_success) {
+    if ((err = sender_->do_send_packet(pkt)) != srs_success) {
         return srs_error_wrap(err, "raw send");
     }
 
@@ -3575,8 +3647,8 @@ srs_error_t SrsRtcAudioSendTrack::on_rtcp(SrsRtpPacket *pkt)
     return err;
 }
 
-SrsRtcVideoSendTrack::SrsRtcVideoSendTrack(SrsRtcConnection *session, SrsRtcTrackDescription *track_desc)
-    : SrsRtcSendTrack(session, track_desc, false)
+SrsRtcVideoSendTrack::SrsRtcVideoSendTrack(ISrsRtcPacketSender *sender, SrsRtcTrackDescription *track_desc)
+    : SrsRtcSendTrack(sender, track_desc, false)
 {
 }
 
@@ -3608,7 +3680,7 @@ srs_error_t SrsRtcVideoSendTrack::on_rtp(SrsRtpPacket *pkt)
     // Rebuild the sequence number and timestamp of packet, see https://github.com/ossrs/srs/issues/3167
     rebuild_packet(pkt);
 
-    if ((err = session_->do_send_packet(pkt)) != srs_success) {
+    if ((err = sender_->do_send_packet(pkt)) != srs_success) {
         return srs_error_wrap(err, "raw send");
     }
 

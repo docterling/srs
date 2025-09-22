@@ -416,8 +416,8 @@ srs_error_t SrsHttpxConn::on_conn_done(srs_error_t r0)
 {
     // Only stat the HTTP streaming clients, ignore all API clients.
     if (enable_stat_) {
-        SrsStatistic::instance()->on_disconnect(get_id().c_str(), r0);
-        SrsStatistic::instance()->kbps_add_delta(get_id().c_str(), conn_->delta());
+        _srs_stat->on_disconnect(get_id().c_str(), r0);
+        _srs_stat->kbps_add_delta(get_id().c_str(), conn_->delta());
     }
 
     // Because we use manager to manage this object,

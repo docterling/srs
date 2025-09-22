@@ -75,7 +75,7 @@ SrsRtspPlayStream::~SrsRtspPlayStream()
     }
 
     // update the statistic when client coveried.
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
     // TODO: FIXME: Should finger out the err.
     stat->on_disconnect(cid_.c_str(), srs_success);
 }
@@ -87,7 +87,7 @@ srs_error_t SrsRtspPlayStream::initialize(ISrsRequest *req, std::map<uint32_t, S
     req_ = req->copy();
 
     // We must do stat the client before hooks, because hooks depends on it.
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
     if ((err = stat->on_client(cid_.c_str(), req_, session_, SrsRtcConnPlay)) != srs_success) {
         return srs_error_wrap(err, "RTSP: stat client");
     }
@@ -487,7 +487,7 @@ srs_error_t SrsRtspConnection::cycle()
     err = do_cycle();
 
     // Update statistic when done.
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
     stat->kbps_add_delta(get_id().c_str(), delta());
 
     do_teardown();

@@ -245,7 +245,15 @@ srs_error_t SrsStatisticClient::dumps(SrsJsonObject *obj)
     return err;
 }
 
-SrsStatistic *SrsStatistic::instance_ = NULL;
+ISrsStatistic::ISrsStatistic()
+{
+}
+
+ISrsStatistic::~ISrsStatistic()
+{
+}
+
+SrsStatistic *_srs_stat = NULL;
 
 SrsStatistic::SrsStatistic()
 {
@@ -285,14 +293,6 @@ SrsStatistic::~SrsStatistic()
     rvhosts_.clear();
     streams_.clear();
     rstreams_.clear();
-}
-
-SrsStatistic *SrsStatistic::instance()
-{
-    if (instance_ == NULL) {
-        instance_ = new SrsStatistic();
-    }
-    return instance_;
 }
 
 SrsStatisticVhost *SrsStatistic::find_vhost_by_id(std::string vid)

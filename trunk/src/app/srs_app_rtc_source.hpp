@@ -156,8 +156,21 @@ public:
     void on_stream_change(SrsRtcSourceDescription *desc);
 };
 
+// The RTC source manager interface.
+class ISrsRtcSourceManager
+{
+public:
+    ISrsRtcSourceManager();
+    virtual ~ISrsRtcSourceManager();
+
+public:
+    virtual srs_error_t initialize() = 0;
+    virtual srs_error_t fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsRtcSource> &pps) = 0;
+    virtual SrsSharedPtr<SrsRtcSource> fetch(ISrsRequest *r) = 0;
+};
+
 // The RTC source manager.
-class SrsRtcSourceManager : public ISrsHourGlass
+class SrsRtcSourceManager : public ISrsRtcSourceManager, public ISrsHourGlass
 {
 private:
     srs_mutex_t lock_;
@@ -218,7 +231,7 @@ public:
 };
 
 // A Source is a stream, to publish and to play with, binding to SrsRtcPublishStream and SrsRtcPlayStream.
-class SrsRtcSource : public ISrsRtpTarget, public ISrsFastTimer, public ISrsRtcSourceForConsumer
+class SrsRtcSource : public ISrsRtpTarget, public ISrsFastTimerHandler, public ISrsRtcSourceForConsumer
 {
 private:
     // The RTP bridge, convert RTP packets to other protocols.
@@ -323,7 +336,7 @@ public:
     virtual bool has_stream_desc();
     virtual void set_stream_desc(SrsRtcSourceDescription *stream_desc);
     virtual std::vector<SrsRtcTrackDescription *> get_track_desc(std::string type, std::string media_type);
-    // interface ISrsFastTimer
+    // interface ISrsFastTimerHandler
 private:
     srs_error_t on_timer(srs_utime_t interval);
 };
@@ -746,13 +759,29 @@ public:
     SrsRtcTrackDescription *find_track_description_by_ssrc(uint32_t ssrc);
 };
 
+// The RTC packet receiver interface.
+class ISrsRtcPacketReceiver
+{
+public:
+    ISrsRtcPacketReceiver();
+    virtual ~ISrsRtcPacketReceiver();
+
+public:
+    virtual srs_error_t send_rtcp_rr(uint32_t ssrc, SrsRtpRingBuffer *rtp_queue, const uint64_t &last_send_systime, const SrsNtp &last_send_ntp) = 0;
+    virtual srs_error_t send_rtcp_xr_rrtr(uint32_t ssrc) = 0;
+    virtual void check_send_nacks(SrsRtpNackForReceiver *nack, uint32_t ssrc, uint32_t &sent_nacks, uint32_t &timeout_nacks) = 0;
+    virtual srs_error_t send_rtcp(char *data, int nb_data) = 0;
+    virtual srs_error_t send_rtcp_fb_pli(uint32_t ssrc, const SrsContextId &cid_of_subscriber) = 0;
+};
+
+// The RTC receive track.
 class SrsRtcRecvTrack
 {
 protected:
     SrsRtcTrackDescription *track_desc_;
 
 protected:
-    SrsRtcConnection *session_;
+    ISrsRtcPacketReceiver *receiver_;
     SrsRtpRingBuffer *rtp_queue_;
     SrsRtpNackForReceiver *nack_receiver_;
 
@@ -773,7 +802,7 @@ protected:
     uint64_t last_sender_report_sys_time_;
 
 public:
-    SrsRtcRecvTrack(SrsRtcConnection *session, SrsRtcTrackDescription *stream_descs, bool is_audio);
+    SrsRtcRecvTrack(ISrsRtcPacketReceiver *receiver, SrsRtcTrackDescription *stream_descs, bool is_audio);
     virtual ~SrsRtcRecvTrack();
 
 public:
@@ -806,7 +835,7 @@ protected:
 class SrsRtcAudioRecvTrack : public SrsRtcRecvTrack, public ISrsRtpPacketDecodeHandler
 {
 public:
-    SrsRtcAudioRecvTrack(SrsRtcConnection *session, SrsRtcTrackDescription *track_desc);
+    SrsRtcAudioRecvTrack(ISrsRtcPacketReceiver *receiver, SrsRtcTrackDescription *track_desc);
     virtual ~SrsRtcAudioRecvTrack();
 
 public:
@@ -820,7 +849,7 @@ public:
 class SrsRtcVideoRecvTrack : public SrsRtcRecvTrack, public ISrsRtpPacketDecodeHandler
 {
 public:
-    SrsRtcVideoRecvTrack(SrsRtcConnection *session, SrsRtcTrackDescription *stream_descs);
+    SrsRtcVideoRecvTrack(ISrsRtcPacketReceiver *receiver, SrsRtcTrackDescription *stream_descs);
     virtual ~SrsRtcVideoRecvTrack();
 
 public:
@@ -922,6 +951,17 @@ public:
     uint16_t correct(uint16_t value);
 };
 
+// The RTC packet sender interface.
+class ISrsRtcPacketSender
+{
+public:
+    ISrsRtcPacketSender();
+    virtual ~ISrsRtcPacketSender();
+
+public:
+    virtual srs_error_t do_send_packet(SrsRtpPacket *pkt) = 0;
+};
+
 class SrsRtcSendTrack
 {
 public:
@@ -930,7 +970,7 @@ public:
 
 protected:
     // The owner connection for this track.
-    SrsRtcConnection *session_;
+    ISrsRtcPacketSender *sender_;
     // NACK ARQ ring buffer.
     SrsRtpRingBuffer *rtp_queue_;
 
@@ -946,7 +986,7 @@ private:
     SrsErrorPithyPrint *nack_epp;
 
 public:
-    SrsRtcSendTrack(SrsRtcConnection *session, SrsRtcTrackDescription *track_desc, bool is_audio);
+    SrsRtcSendTrack(ISrsRtcPacketSender *sender, SrsRtcTrackDescription *track_desc, bool is_audio);
     virtual ~SrsRtcSendTrack();
 
 public:
@@ -975,7 +1015,7 @@ public:
 class SrsRtcAudioSendTrack : public SrsRtcSendTrack
 {
 public:
-    SrsRtcAudioSendTrack(SrsRtcConnection *session, SrsRtcTrackDescription *track_desc);
+    SrsRtcAudioSendTrack(ISrsRtcPacketSender *sender, SrsRtcTrackDescription *track_desc);
     virtual ~SrsRtcAudioSendTrack();
 
 public:
@@ -986,7 +1026,7 @@ public:
 class SrsRtcVideoSendTrack : public SrsRtcSendTrack
 {
 public:
-    SrsRtcVideoSendTrack(SrsRtcConnection *session, SrsRtcTrackDescription *track_desc);
+    SrsRtcVideoSendTrack(ISrsRtcPacketSender *sender, SrsRtcTrackDescription *track_desc);
     virtual ~SrsRtcVideoSendTrack();
 
 public:

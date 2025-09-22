@@ -230,7 +230,7 @@ srs_error_t SrsMpegtsSrtConn::cycle()
     srs_error_t err = do_cycle();
 
     // Update statistic when done.
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
     stat->kbps_add_delta(get_id().c_str(), delta_);
     stat->on_disconnect(get_id().c_str(), err);
 
@@ -319,7 +319,7 @@ srs_error_t SrsMpegtsSrtConn::publishing()
     srs_error_t err = srs_success;
 
     // We must do stat the client before hooks, because hooks depends on it.
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
     if ((err = stat->on_client(_srs_context->get_id().c_str(), req_, this, SrsSrtConnPublish)) != srs_success) {
         return srs_error_wrap(err, "srt: stat client");
     }
@@ -348,7 +348,7 @@ srs_error_t SrsMpegtsSrtConn::playing()
     srs_error_t err = srs_success;
 
     // We must do stat the client before hooks, because hooks depends on it.
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
     if ((err = stat->on_client(_srs_context->get_id().c_str(), req_, this, SrsSrtConnPlay)) != srs_success) {
         return srs_error_wrap(err, "srt: stat client");
     }

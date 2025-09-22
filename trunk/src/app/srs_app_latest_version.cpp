@@ -191,7 +191,7 @@ srs_error_t SrsLatestVersion::start()
         return srs_success;
     }
 
-    server_id_ = SrsStatistic::instance()->server_id();
+    server_id_ = _srs_stat->server_id();
     session_id_ = srs_generate_stat_vid();
 
     return trd_->start();
@@ -243,7 +243,7 @@ srs_error_t SrsLatestVersion::query_latest_version(string &url)
        << "&ts=" << srs_time_now_cached()
        << "&alive=" << srsu2ms(srs_time_now_cached() - srs_time_since_startup()) / 1000;
     srs_build_features(ss);
-    SrsStatistic::instance()->dumps_hints_kv(ss);
+    _srs_stat->dumps_hints_kv(ss);
     url = ss.str();
 
     SrsHttpUri uri;

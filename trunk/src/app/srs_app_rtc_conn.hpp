@@ -56,6 +56,12 @@ class SrsRtcUdpNetwork;
 class ISrsRtcNetwork;
 class SrsRtcTcpNetwork;
 class SrsStreamPublishToken;
+class ISrsHttpHooks;
+class ISrsAppConfig;
+class ISrsStatistic;
+class ISrsExecRtcAsyncTask;
+class ISrsSrtSourceManager;
+class ISrsLiveSourceManager;
 
 const uint8_t kSR = 200;
 const uint8_t kRR = 201;
@@ -97,8 +103,8 @@ class SrsSecurityTransport : public ISrsRtcTransport
 {
 private:
     ISrsRtcNetwork *network_;
-    SrsDtls *dtls_;
-    SrsSRTP *srtp_;
+    ISrsDtls *dtls_;
+    ISrsSRTP *srtp_;
     bool handshake_done_;
 
 public:
@@ -171,31 +177,31 @@ public:
 };
 
 // The handler for PLI worker coroutine.
-class ISrsRtcPLIWorkerHandler
+class ISrsRtcPliWorkerHandler
 {
 public:
-    ISrsRtcPLIWorkerHandler();
-    virtual ~ISrsRtcPLIWorkerHandler();
+    ISrsRtcPliWorkerHandler();
+    virtual ~ISrsRtcPliWorkerHandler();
 
 public:
     virtual srs_error_t do_request_keyframe(uint32_t ssrc, SrsContextId cid) = 0;
 };
 
 // A worker coroutine to request the PLI.
-class SrsRtcPLIWorker : public ISrsCoroutineHandler
+class SrsRtcPliWorker : public ISrsCoroutineHandler
 {
 private:
     ISrsCoroutine *trd_;
-    srs_cond_t wait_;
-    ISrsRtcPLIWorkerHandler *handler_;
+    ISrsCond *wait_;
+    ISrsRtcPliWorkerHandler *handler_;
 
 private:
     // Key is SSRC, value is the CID of subscriber which requests PLI.
     std::map<uint32_t, SrsContextId> plis_;
 
 public:
-    SrsRtcPLIWorker(ISrsRtcPLIWorkerHandler *h);
-    virtual ~SrsRtcPLIWorker();
+    SrsRtcPliWorker(ISrsRtcPliWorkerHandler *h);
+    virtual ~SrsRtcPliWorker();
 
 public:
     virtual srs_error_t start();
@@ -211,6 +217,9 @@ class SrsRtcAsyncCallOnStop : public ISrsAsyncCallTask
 private:
     SrsContextId cid_;
     ISrsRequest *req_;
+    ISrsHttpHooks *hooks_;
+    ISrsContext *context_;
+    ISrsAppConfig *config_;
 
 public:
     SrsRtcAsyncCallOnStop(SrsContextId c, ISrsRequest *r);
@@ -222,13 +231,22 @@ public:
 };
 
 // A RTC play stream, client pull and play stream from SRS.
-class SrsRtcPlayStream : public ISrsCoroutineHandler, public ISrsReloadHandler, public ISrsRtcPLIWorkerHandler, public ISrsRtcSourceChangeCallback
+class SrsRtcPlayStream : public ISrsCoroutineHandler, public ISrsReloadHandler, public ISrsRtcPliWorkerHandler, public ISrsRtcSourceChangeCallback
 {
+private:
+    ISrsExecRtcAsyncTask *exec_;
+    ISrsExpire *expire_;
+    ISrsRtcPacketSender *sender_;
+
+private:
+    ISrsAppConfig *config_;
+    ISrsRtcSourceManager *rtc_sources_;
+    ISrsStatistic *stat_;
+
 private:
     SrsContextId cid_;
     SrsFastCoroutine *trd_;
-    SrsRtcConnection *session_;
-    SrsRtcPLIWorker *pli_worker_;
+    SrsRtcPliWorker *pli_worker_;
 
 private:
     ISrsRequest *req_;
@@ -261,7 +279,7 @@ private:
     bool is_started_;
 
 public:
-    SrsRtcPlayStream(SrsRtcConnection *s, const SrsContextId &cid);
+    SrsRtcPlayStream(ISrsExecRtcAsyncTask *exec, ISrsExpire *expire, ISrsRtcPacketSender *sender, const SrsContextId &cid);
     virtual ~SrsRtcPlayStream();
 
 public:
@@ -296,37 +314,54 @@ private:
     srs_error_t on_rtcp_ps_feedback(SrsRtcpFbCommon *rtcp);
     srs_error_t on_rtcp_rr(SrsRtcpRR *rtcp);
     uint32_t get_video_publish_ssrc(uint32_t play_ssrc);
-    // Interface ISrsRtcPLIWorkerHandler
+    // Interface ISrsRtcPliWorkerHandler
 public:
     virtual srs_error_t do_request_keyframe(uint32_t ssrc, SrsContextId cid);
 };
 
+// The RTC RTCP sender interface.
+class ISrsRtcRtcpSender
+{
+public:
+    ISrsRtcRtcpSender();
+    virtual ~ISrsRtcRtcpSender();
+
+public:
+    virtual bool is_sender_started() = 0;
+    virtual srs_error_t send_rtcp_rr() = 0;
+    virtual srs_error_t send_rtcp_xr_rrtr() = 0;
+
+public:
+    virtual bool is_sender_twcc_enabled() = 0;
+    virtual srs_error_t send_periodic_twcc() = 0;
+};
+
 // A fast timer for publish stream, for RTCP feedback.
-class SrsRtcPublishRtcpTimer : public ISrsFastTimer
+class SrsRtcPublishRtcpTimer : public ISrsFastTimerHandler
 {
 private:
-    SrsRtcPublishStream *p_;
+    ISrsRtcRtcpSender *sender_;
     srs_mutex_t lock_;
 
 public:
-    SrsRtcPublishRtcpTimer(SrsRtcPublishStream *p);
+    SrsRtcPublishRtcpTimer(ISrsRtcRtcpSender *sender);
     virtual ~SrsRtcPublishRtcpTimer();
-    // interface ISrsFastTimer
+    // interface ISrsFastTimerHandler
 private:
     srs_error_t on_timer(srs_utime_t interval);
 };
 
 // A fast timer for publish stream, for TWCC feedback.
-class SrsRtcPublishTwccTimer : public ISrsFastTimer
+class SrsRtcPublishTwccTimer : public ISrsFastTimerHandler
 {
 private:
-    SrsRtcPublishStream *p_;
+    ISrsRtcRtcpSender *sender_;
     srs_mutex_t lock_;
 
 public:
-    SrsRtcPublishTwccTimer(SrsRtcPublishStream *p);
+    SrsRtcPublishTwccTimer(ISrsRtcRtcpSender *sender);
     virtual ~SrsRtcPublishTwccTimer();
-    // interface ISrsFastTimer
+    // interface ISrsFastTimerHandler
 private:
     srs_error_t on_timer(srs_utime_t interval);
 };
@@ -334,6 +369,10 @@ private:
 // the rtc on_unpublish async call.
 class SrsRtcAsyncCallOnUnpublish : public ISrsAsyncCallTask
 {
+private:
+    ISrsHttpHooks *hooks_;
+    ISrsAppConfig *config_;
+
 private:
     SrsContextId cid_;
     ISrsRequest *req_;
@@ -348,8 +387,21 @@ public:
 };
 
 // A RTC publish stream, client push and publish stream to SRS.
-class SrsRtcPublishStream : public ISrsRtpPacketDecodeHandler, public ISrsRtcPublishStream, public ISrsRtcPLIWorkerHandler
+class SrsRtcPublishStream : public ISrsRtpPacketDecodeHandler, public ISrsRtcPublishStream, public ISrsRtcPliWorkerHandler, public ISrsRtcRtcpSender
 {
+private:
+    ISrsExecRtcAsyncTask *exec_;
+    ISrsExpire *expire_;
+    ISrsRtcPacketReceiver *receiver_;
+    ISrsCircuitBreaker *circuit_breaker_;
+
+private:
+    ISrsStatistic *stat_;
+    ISrsAppConfig *config_;
+    ISrsRtcSourceManager *rtc_sources_;
+    ISrsLiveSourceManager *live_sources_;
+    ISrsSrtSourceManager *srt_sources_;
+
 private:
     friend class SrsRtcPublishRtcpTimer;
     friend class SrsRtcPublishTwccTimer;
@@ -359,11 +411,10 @@ private:
 private:
     SrsContextId cid_;
     uint64_t nn_audio_frames_;
-    SrsRtcPLIWorker *pli_worker_;
+    SrsRtcPliWorker *pli_worker_;
     SrsErrorPithyPrint *twcc_epp_;
 
 private:
-    SrsRtcConnection *session_;
     uint16_t pt_to_drop_;
     // Whether enabled nack.
     bool nack_enabled_;
@@ -390,11 +441,11 @@ private:
     uint8_t twcc_fb_count_;
     SrsRtcpTWCC rtcp_twcc_;
     SrsRtpExtensionTypes extension_types_;
-    bool is_started_;
+    bool is_sender_started_;
     srs_utime_t last_time_send_twcc_;
 
 public:
-    SrsRtcPublishStream(SrsRtcConnection *session, const SrsContextId &cid);
+    SrsRtcPublishStream(ISrsExecRtcAsyncTask *exec, ISrsExpire *expire, ISrsRtcPacketReceiver *receiver, const SrsContextId &cid);
     virtual ~SrsRtcPublishStream();
 
 public:
@@ -405,6 +456,8 @@ public:
     virtual const SrsContextId &context_id();
 
 private:
+    bool is_sender_started();
+    bool is_sender_twcc_enabled();
     srs_error_t send_rtcp_rr();
     srs_error_t send_rtcp_xr_rrtr();
 
@@ -450,8 +503,12 @@ private:
 };
 
 // A fast timer for conntion, for NACK feedback.
-class SrsRtcConnectionNackTimer : public ISrsFastTimer
+class SrsRtcConnectionNackTimer : public ISrsFastTimerHandler
 {
+private:
+    ISrsSharedTimer *shared_timer_;
+    ISrsCircuitBreaker *circuit_breaker_;
+
 private:
     SrsRtcConnection *p_;
     srs_mutex_t lock_;
@@ -459,7 +516,11 @@ private:
 public:
     SrsRtcConnectionNackTimer(SrsRtcConnection *p);
     virtual ~SrsRtcConnectionNackTimer();
-    // interface ISrsFastTimer
+
+public:
+    virtual srs_error_t initialize();
+
+    // interface ISrsFastTimerHandler
 private:
     srs_error_t on_timer(srs_utime_t interval);
 };
@@ -479,11 +540,9 @@ public:
 //
 // For performance, we use non-public from resource,
 // see https://stackoverflow.com/questions/3747066/c-cannot-convert-from-base-a-to-derived-type-b-via-virtual-base-a
-class SrsRtcConnection : public ISrsResource, public ISrsDisposingHandler, public ISrsExpire
+class SrsRtcConnection : public ISrsResource, public ISrsDisposingHandler, public ISrsExpire, public ISrsRtcPacketSender, public ISrsRtcPacketReceiver
 {
     friend class SrsSecurityTransport;
-    friend class SrsRtcPlayStream;
-    friend class SrsRtcPublishStream;
 
 private:
     friend class SrsRtcConnectionNackTimer;

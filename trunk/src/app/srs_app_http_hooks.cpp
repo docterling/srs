@@ -57,7 +57,7 @@ srs_error_t SrsHttpHooks::on_connect(string url, ISrsRequest *req)
     srs_error_t err = srs_success;
 
     SrsContextId cid = _srs_context->get_id();
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
     SrsUniquePtr<SrsJsonObject> obj(SrsJsonAny::object());
 
     obj->set("server_id", SrsJsonAny::str(stat->server_id().c_str()));
@@ -93,7 +93,7 @@ void SrsHttpHooks::on_close(string url, ISrsRequest *req, int64_t send_bytes, in
     srs_error_t err = srs_success;
 
     SrsContextId cid = _srs_context->get_id();
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
     SrsUniquePtr<SrsJsonObject> obj(SrsJsonAny::object());
 
     obj->set("server_id", SrsJsonAny::str(stat->server_id().c_str()));
@@ -130,7 +130,7 @@ srs_error_t SrsHttpHooks::on_publish(string url, ISrsRequest *req)
     srs_error_t err = srs_success;
 
     SrsContextId cid = _srs_context->get_id();
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
     SrsUniquePtr<SrsJsonObject> obj(SrsJsonAny::object());
 
     obj->set("server_id", SrsJsonAny::str(stat->server_id().c_str()));
@@ -171,7 +171,7 @@ void SrsHttpHooks::on_unpublish(string url, ISrsRequest *req)
     srs_error_t err = srs_success;
 
     SrsContextId cid = _srs_context->get_id();
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
     SrsUniquePtr<SrsJsonObject> obj(SrsJsonAny::object());
 
     obj->set("server_id", SrsJsonAny::str(stat->server_id().c_str()));
@@ -215,7 +215,7 @@ srs_error_t SrsHttpHooks::on_play(string url, ISrsRequest *req)
     srs_error_t err = srs_success;
 
     SrsContextId cid = _srs_context->get_id();
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
     SrsUniquePtr<SrsJsonObject> obj(SrsJsonAny::object());
 
     obj->set("server_id", SrsJsonAny::str(stat->server_id().c_str()));
@@ -257,7 +257,7 @@ void SrsHttpHooks::on_stop(string url, ISrsRequest *req)
     srs_error_t err = srs_success;
 
     SrsContextId cid = _srs_context->get_id();
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
     SrsUniquePtr<SrsJsonObject> obj(SrsJsonAny::object());
 
     obj->set("server_id", SrsJsonAny::str(stat->server_id().c_str()));
@@ -303,7 +303,7 @@ srs_error_t SrsHttpHooks::on_dvr(SrsContextId c, string url, ISrsRequest *req, s
     SrsContextId cid = c;
     std::string cwd = _srs_config->cwd();
 
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
     SrsUniquePtr<SrsJsonObject> obj(SrsJsonAny::object());
 
     obj->set("server_id", SrsJsonAny::str(stat->server_id().c_str()));
@@ -354,7 +354,7 @@ srs_error_t SrsHttpHooks::on_hls(SrsContextId c, string url, ISrsRequest *req, s
         ts_url = prefix + "/" + ts_url;
     }
 
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
     SrsUniquePtr<SrsJsonObject> obj(SrsJsonAny::object());
 
     obj->set("server_id", SrsJsonAny::str(stat->server_id().c_str()));
@@ -407,7 +407,7 @@ srs_error_t SrsHttpHooks::on_hls_notify(SrsContextId c, std::string url, ISrsReq
         url = ts_url;
     }
 
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
 
     url = srs_strings_replace(url, "[server_id]", stat->server_id().c_str());
     url = srs_strings_replace(url, "[service_id]", stat->service_id().c_str());
@@ -526,7 +526,7 @@ srs_error_t SrsHttpHooks::on_forward_backend(string url, ISrsRequest *req, std::
 
     SrsContextId cid = _srs_context->get_id();
 
-    SrsStatistic *stat = SrsStatistic::instance();
+    SrsStatistic *stat = _srs_stat;
     SrsUniquePtr<SrsJsonObject> obj(SrsJsonAny::object());
 
     obj->set("action", SrsJsonAny::str("on_forward"));

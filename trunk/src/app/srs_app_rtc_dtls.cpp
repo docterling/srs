@@ -912,6 +912,14 @@ srs_error_t SrsDtlsEmptyImpl::start_arq()
     return srs_success;
 }
 
+ISrsDtls::ISrsDtls()
+{
+}
+
+ISrsDtls::~ISrsDtls()
+{
+}
+
 SrsDtls::SrsDtls(ISrsDtlsCallback *callback)
 {
     callback_ = callback;
@@ -948,6 +956,14 @@ srs_error_t SrsDtls::on_dtls(char *data, int nb_data)
 srs_error_t SrsDtls::get_srtp_key(std::string &recv_key, std::string &send_key)
 {
     return impl_->get_srtp_key(recv_key, send_key);
+}
+
+ISrsSRTP::ISrsSRTP()
+{
+}
+
+ISrsSRTP::~ISrsSRTP()
+{
 }
 
 SrsSRTP::SrsSRTP()

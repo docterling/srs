@@ -128,6 +128,14 @@ srs_error_t SrsHourGlass::cycle()
     return err;
 }
 
+ISrsFastTimerHandler::ISrsFastTimerHandler()
+{
+}
+
+ISrsFastTimerHandler::~ISrsFastTimerHandler()
+{
+}
+
 ISrsFastTimer::ISrsFastTimer()
 {
 }
@@ -160,16 +168,16 @@ srs_error_t SrsFastTimer::start()
     return err;
 }
 
-void SrsFastTimer::subscribe(ISrsFastTimer *timer)
+void SrsFastTimer::subscribe(ISrsFastTimerHandler *timer)
 {
     if (std::find(handlers_.begin(), handlers_.end(), timer) == handlers_.end()) {
         handlers_.push_back(timer);
     }
 }
 
-void SrsFastTimer::unsubscribe(ISrsFastTimer *timer)
+void SrsFastTimer::unsubscribe(ISrsFastTimerHandler *timer)
 {
-    vector<ISrsFastTimer *>::iterator it = std::find(handlers_.begin(), handlers_.end(), timer);
+    vector<ISrsFastTimerHandler *>::iterator it = std::find(handlers_.begin(), handlers_.end(), timer);
     if (it != handlers_.end()) {
         handlers_.erase(it);
     }
@@ -187,7 +195,7 @@ srs_error_t SrsFastTimer::cycle()
         ++_srs_pps_timer->sugar_;
 
         for (int i = 0; i < (int)handlers_.size(); i++) {
-            ISrsFastTimer *timer = handlers_.at(i);
+            ISrsFastTimerHandler *timer = handlers_.at(i);
 
             if ((err = timer->on_timer(interval_)) != srs_success) {
                 srs_freep(err); // Ignore any error for shared timer.
@@ -248,6 +256,14 @@ srs_error_t SrsClockWallMonitor::on_timer(srs_utime_t interval)
     return err;
 }
 
+ISrsSharedTimer::ISrsSharedTimer()
+{
+}
+
+ISrsSharedTimer::~ISrsSharedTimer()
+{
+}
+
 SrsSharedTimer::SrsSharedTimer()
 {
     timer20ms_ = NULL;
@@ -300,22 +316,22 @@ srs_error_t SrsSharedTimer::initialize()
     return err;
 }
 
-SrsFastTimer *SrsSharedTimer::timer20ms()
+ISrsFastTimer *SrsSharedTimer::timer20ms()
 {
     return timer20ms_;
 }
 
-SrsFastTimer *SrsSharedTimer::timer100ms()
+ISrsFastTimer *SrsSharedTimer::timer100ms()
 {
     return timer100ms_;
 }
 
-SrsFastTimer *SrsSharedTimer::timer1s()
+ISrsFastTimer *SrsSharedTimer::timer1s()
 {
     return timer1s_;
 }
 
-SrsFastTimer *SrsSharedTimer::timer5s()
+ISrsFastTimer *SrsSharedTimer::timer5s()
 {
     return timer5s_;
 }

@@ -470,6 +470,7 @@ public:
 public:
     SrsNaluSample *get_sps();
     SrsNaluSample *get_pps();
+    SrsNaluSample *get_idr();
     // interface ISrsRtpPayloader
 public:
     virtual uint64_t nb_bytes();
@@ -545,6 +546,7 @@ public:
     SrsNaluSample *get_vps();
     SrsNaluSample *get_sps();
     SrsNaluSample *get_pps();
+    SrsNaluSample *get_idr();
     // interface ISrsRtpPayloader
 public:
     virtual uint64_t nb_bytes();
