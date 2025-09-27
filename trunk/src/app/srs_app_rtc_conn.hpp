@@ -62,6 +62,8 @@ class ISrsStatistic;
 class ISrsExecRtcAsyncTask;
 class ISrsSrtSourceManager;
 class ISrsLiveSourceManager;
+class SrsRtcPublisherNegotiator;
+class SrsRtcPlayerNegotiator;
 
 const uint8_t kSR = 200;
 const uint8_t kRR = 201;
@@ -355,6 +357,9 @@ private:
 class SrsRtcPublishTwccTimer : public ISrsFastTimerHandler
 {
 private:
+    ISrsCircuitBreaker *circuit_breaker_;
+
+private:
     ISrsRtcRtcpSender *sender_;
     srs_mutex_t lock_;
 
@@ -502,6 +507,17 @@ private:
     void update_send_report_time(uint32_t ssrc, const SrsNtp &ntp, uint32_t rtp_time);
 };
 
+// The handler for RTC connection nack timer.
+class ISrsRtcConnectionNackTimerHandler
+{
+public:
+    ISrsRtcConnectionNackTimerHandler();
+    virtual ~ISrsRtcConnectionNackTimerHandler();
+
+public:
+    virtual srs_error_t do_check_send_nacks() = 0;
+};
+
 // A fast timer for conntion, for NACK feedback.
 class SrsRtcConnectionNackTimer : public ISrsFastTimerHandler
 {
@@ -510,11 +526,11 @@ private:
     ISrsCircuitBreaker *circuit_breaker_;
 
 private:
-    SrsRtcConnection *p_;
+    ISrsRtcConnectionNackTimerHandler *handler_;
     srs_mutex_t lock_;
 
 public:
-    SrsRtcConnectionNackTimer(SrsRtcConnection *p);
+    SrsRtcConnectionNackTimer(ISrsRtcConnectionNackTimerHandler *handler);
     virtual ~SrsRtcConnectionNackTimer();
 
 public:
@@ -540,19 +556,24 @@ public:
 //
 // For performance, we use non-public from resource,
 // see https://stackoverflow.com/questions/3747066/c-cannot-convert-from-base-a-to-derived-type-b-via-virtual-base-a
-class SrsRtcConnection : public ISrsResource, public ISrsDisposingHandler, public ISrsExpire, public ISrsRtcPacketSender, public ISrsRtcPacketReceiver
+class SrsRtcConnection : public ISrsResource, public ISrsDisposingHandler, public ISrsExpire, public ISrsRtcPacketSender, public ISrsRtcPacketReceiver, public ISrsRtcConnectionNackTimerHandler
 {
     friend class SrsSecurityTransport;
 
 private:
-    friend class SrsRtcConnectionNackTimer;
+    ISrsCircuitBreaker *circuit_breaker_;
+    ISrsResourceManager *conn_manager_;
+    ISrsRtcSourceManager *rtc_sources_;
+    ISrsAppConfig *config_;
+
+private:
     SrsRtcConnectionNackTimer *timer_nack_;
+    ISrsExecRtcAsyncTask *exec_;
+    SrsRtcPublisherNegotiator *publisher_negotiator_;
+    SrsRtcPlayerNegotiator *player_negotiator_;
 
 public:
     bool disposing_;
-
-private:
-    ISrsExecRtcAsyncTask *exec_;
 
 private:
     iovec *cache_iov_;
@@ -604,7 +625,9 @@ private:
 
 public:
     SrsRtcConnection(ISrsExecRtcAsyncTask *exec, const SrsContextId &cid);
+    void assemble(); // Construct object, to avoid call function in constructor.
     virtual ~SrsRtcConnection();
+
     // interface ISrsDisposingHandler
 public:
     virtual void on_before_dispose(ISrsResource *c);
@@ -681,6 +704,10 @@ public:
     srs_error_t send_rtcp_xr_rrtr(uint32_t ssrc);
     srs_error_t send_rtcp_fb_pli(uint32_t ssrc, const SrsContextId &cid_of_subscriber);
 
+    // interface ISrsRtcConnectionNackTimerHandler
+public:
+    virtual srs_error_t do_check_send_nacks();
+
 public:
     // Simulate the NACK to drop nn packets.
     void simulate_nack_drop(int nn);
@@ -694,19 +721,50 @@ public:
     srs_error_t on_binding_request(SrsStunPacket *r, std::string &ice_pwd);
 
 private:
+    srs_error_t create_player(ISrsRequest *request, std::map<uint32_t, SrsRtcTrackDescription *> sub_relations);
+    srs_error_t create_publisher(ISrsRequest *request, SrsRtcSourceDescription *stream_desc);
+};
+
+// Negotiate via SDP exchange for WebRTC publisher.
+class SrsRtcPublisherNegotiator
+{
+private:
+    ISrsRequest *req_;
+    ISrsAppConfig *config_;
+
+public:
+    SrsRtcPublisherNegotiator();
+    virtual ~SrsRtcPublisherNegotiator();
+
+public:
+    virtual srs_error_t initialize(ISrsRequest *r);
     // publish media capabilitiy negotiate
     srs_error_t negotiate_publish_capability(SrsRtcUserConfig *ruc, SrsRtcSourceDescription *stream_desc);
     srs_error_t generate_publish_local_sdp(ISrsRequest *req, SrsSdp &local_sdp, SrsRtcSourceDescription *stream_desc, bool unified_plan, bool audio_before_video);
     srs_error_t generate_publish_local_sdp_for_audio(SrsSdp &local_sdp, SrsRtcSourceDescription *stream_desc);
     srs_error_t generate_publish_local_sdp_for_video(SrsSdp &local_sdp, SrsRtcSourceDescription *stream_desc, bool unified_plan);
+};
+
+// Negotiate via SDP exchange for WebRTC player.
+class SrsRtcPlayerNegotiator
+{
+private:
+    ISrsRequest *req_;
+    ISrsAppConfig *config_;
+    ISrsRtcSourceManager *rtc_sources_;
+
+public:
+    SrsRtcPlayerNegotiator();
+    virtual ~SrsRtcPlayerNegotiator();
+
+public:
+    virtual srs_error_t initialize(ISrsRequest *r);
     // play media capabilitiy negotiate
     // TODO: Use StreamDescription to negotiate and remove first negotiate_play_capability function
     srs_error_t negotiate_play_capability(SrsRtcUserConfig *ruc, std::map<uint32_t, SrsRtcTrackDescription *> &sub_relations);
     srs_error_t generate_play_local_sdp(ISrsRequest *req, SrsSdp &local_sdp, SrsRtcSourceDescription *stream_desc, bool unified_plan, bool audio_before_video);
     srs_error_t generate_play_local_sdp_for_audio(SrsSdp &local_sdp, SrsRtcSourceDescription *stream_desc, std::string cname);
     srs_error_t generate_play_local_sdp_for_video(SrsSdp &local_sdp, SrsRtcSourceDescription *stream_desc, bool unified_plan, std::string cname);
-    srs_error_t create_player(ISrsRequest *request, std::map<uint32_t, SrsRtcTrackDescription *> sub_relations);
-    srs_error_t create_publisher(ISrsRequest *request, SrsRtcSourceDescription *stream_desc);
 };
 
 #endif
