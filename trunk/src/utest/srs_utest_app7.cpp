@@ -12,8 +12,8 @@ using namespace std;
 #include <srs_app_stream_token.hpp>
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_rtc_rtp.hpp>
-#include <srs_protocol_sdp.hpp>
 #include <srs_protocol_rtc_stun.hpp>
+#include <srs_protocol_sdp.hpp>
 #include <srs_utest_app5.hpp>
 #include <srs_utest_app6.hpp>
 
@@ -1172,10 +1172,6 @@ ISrsRequest *MockRtcConnectionRequest::as_http()
     return copy();
 }
 
-
-
-
-
 VOID TEST(SrsRtcConnectionTest, OnDtlsHandshakeDoneTypicalScenario)
 {
     srs_error_t err;
@@ -1347,8 +1343,8 @@ VOID TEST(SrsRtcConnectionTest, CreatePublisherTypicalScenario)
     SrsRtcTrackDescription *audio_desc = new SrsRtcTrackDescription();
     audio_desc->type_ = "audio";
     audio_desc->ssrc_ = 0x12345678;
-    audio_desc->fec_ssrc_ = 0x12345679;  // Different FEC SSRC
-    audio_desc->rtx_ssrc_ = 0x1234567A;  // Different RTX SSRC
+    audio_desc->fec_ssrc_ = 0x12345679; // Different FEC SSRC
+    audio_desc->rtx_ssrc_ = 0x1234567A; // Different RTX SSRC
     audio_desc->id_ = "test-audio-track";
     audio_desc->is_active_ = true;
     audio_desc->direction_ = "sendrecv";
@@ -1358,8 +1354,8 @@ VOID TEST(SrsRtcConnectionTest, CreatePublisherTypicalScenario)
     SrsRtcTrackDescription *video_desc = new SrsRtcTrackDescription();
     video_desc->type_ = "video";
     video_desc->ssrc_ = 0x87654321;
-    video_desc->fec_ssrc_ = 0x87654322;  // Different FEC SSRC
-    video_desc->rtx_ssrc_ = 0x87654323;  // Different RTX SSRC
+    video_desc->fec_ssrc_ = 0x87654322; // Different FEC SSRC
+    video_desc->rtx_ssrc_ = 0x87654323; // Different RTX SSRC
     video_desc->id_ = "test-video-track";
     video_desc->is_active_ = true;
     video_desc->direction_ = "sendrecv";
@@ -1380,7 +1376,7 @@ VOID TEST(SrsRtcConnectionTest, CreatePublisherTypicalScenario)
 
     // Test the early return logic for existing publisher
     HELPER_EXPECT_SUCCESS(conn->create_publisher(req.get(), stream_desc.get()));
-    EXPECT_EQ(1, (int)conn->publishers_.size()); // Should still be 1
+    EXPECT_EQ(1, (int)conn->publishers_.size());                             // Should still be 1
     EXPECT_EQ(existing_publisher, conn->publishers_[req->get_stream_url()]); // Should be the same publisher
 
     // Test scenario 3: Test duplicate SSRC error detection
@@ -1446,7 +1442,7 @@ VOID TEST(SrsRtcConnectionTest, CreatePublisherTypicalScenario)
     }
 
     // Verify all SSRC mappings were created correctly
-    EXPECT_EQ(6, (int)conn->publishers_ssrc_map_.size()); // 3 audio + 3 video SSRCs
+    EXPECT_EQ(6, (int)conn->publishers_ssrc_map_.size());              // 3 audio + 3 video SSRCs
     EXPECT_EQ(test_publisher, conn->publishers_ssrc_map_[0x12345678]); // Audio main
     EXPECT_EQ(test_publisher, conn->publishers_ssrc_map_[0x12345679]); // Audio FEC
     EXPECT_EQ(test_publisher, conn->publishers_ssrc_map_[0x1234567A]); // Audio RTX
@@ -1647,7 +1643,7 @@ VOID TEST(SrsRtcConnectionTest, SendRtcpRrTypicalScenario)
 
     // Set up test parameters for typical RTCP RR scenario
     uint32_t test_ssrc = 0x12345678;
-    uint64_t last_send_systime = 1000000; // 1 second in microseconds
+    uint64_t last_send_systime = 1000000;              // 1 second in microseconds
     SrsNtp last_send_ntp = SrsNtp::from_time_ms(1000); // 1 second in milliseconds
 
     // Test typical send_rtcp_rr scenario - should create and send RTCP RR packet
@@ -1664,9 +1660,9 @@ VOID TEST(SrsRtcConnectionTest, SendRtcpRrTypicalScenario)
 
         // Verify RTCP header: V=2, P=0, RC=1, PT=201(RR), length=7
         EXPECT_EQ(0x81, (unsigned char)rtcp_data[0]); // V=2, P=0, RC=1
-        EXPECT_EQ(201, (unsigned char)rtcp_data[1]);   // PT=201 (RR)
-        EXPECT_EQ(0x00, (unsigned char)rtcp_data[2]);  // Length high byte
-        EXPECT_EQ(0x07, (unsigned char)rtcp_data[3]);  // Length low byte (7 words = 32 bytes)
+        EXPECT_EQ(201, (unsigned char)rtcp_data[1]);  // PT=201 (RR)
+        EXPECT_EQ(0x00, (unsigned char)rtcp_data[2]); // Length high byte
+        EXPECT_EQ(0x07, (unsigned char)rtcp_data[3]); // Length low byte (7 words = 32 bytes)
     }
 
     // Test error handling scenario
@@ -1790,7 +1786,7 @@ VOID TEST(SrsRtcConnectionTest, AddPublisherTypicalScenario)
     SrsUniquePtr<MockRtcSourceManager> mock_rtc_sources(new MockRtcSourceManager());
 
     // Create a mock RTC source that can publish
-    SrsRtcSource* raw_source = new SrsRtcSource();
+    SrsRtcSource *raw_source = new SrsRtcSource();
     mock_rtc_sources->mock_source_ = SrsSharedPtr<SrsRtcSource>(raw_source);
 
     // Replace the default rtc_sources_ with our mock
@@ -1814,13 +1810,13 @@ VOID TEST(SrsRtcConnectionTest, AddPublisherTypicalScenario)
 
     // Create a simple remote SDP that will fail negotiation (testing error handling)
     ruc->remote_sdp_str_ = "v=0\r\n"
-                          "o=- 123456 654321 IN IP4 127.0.0.1\r\n"
-                          "s=-\r\n"
-                          "t=0 0\r\n"
-                          "m=video 9 UDP/TLS/RTP/SAVPF 96\r\n"
-                          "a=rtpmap:96 H264/90000\r\n"
-                          "a=fmtp:96 profile-level-id=42e01f\r\n"
-                          "a=sendonly\r\n";
+                           "o=- 123456 654321 IN IP4 127.0.0.1\r\n"
+                           "s=-\r\n"
+                           "t=0 0\r\n"
+                           "m=video 9 UDP/TLS/RTP/SAVPF 96\r\n"
+                           "a=rtpmap:96 H264/90000\r\n"
+                           "a=fmtp:96 profile-level-id=42e01f\r\n"
+                           "a=sendonly\r\n";
 
     // Parse the remote SDP
     HELPER_EXPECT_SUCCESS(ruc->remote_sdp_.parse(ruc->remote_sdp_str_));
@@ -1868,8 +1864,7 @@ VOID TEST(SrsRtcConnectionTest, OnRtpCipherTypicalScenario)
         0x56, 0x78, 0x9A, 0xBC, // timestamp
         0x12, 0x34, 0x56, 0x78, // SSRC = 0x12345678
         // RTP payload (sample data)
-        0x01, 0x02, 0x03, 0x04
-    };
+        0x01, 0x02, 0x03, 0x04};
 
     // Add the publish stream to the connection's publishers map
     string stream_url = "/live/test";
@@ -1980,8 +1975,10 @@ VOID TEST(SrsRtcPublisherNegotiatorTest, TypicalUseScenario)
     // Find audio and video media descriptions
     bool has_audio = false, has_video = false;
     for (size_t i = 0; i < local_sdp.media_descs_.size(); i++) {
-        if (local_sdp.media_descs_[i].type_ == "audio") has_audio = true;
-        if (local_sdp.media_descs_[i].type_ == "video") has_video = true;
+        if (local_sdp.media_descs_[i].type_ == "audio")
+            has_audio = true;
+        if (local_sdp.media_descs_[i].type_ == "video")
+            has_video = true;
     }
     EXPECT_TRUE(has_audio);
     EXPECT_TRUE(has_video);
@@ -2223,8 +2220,7 @@ VOID TEST(SrsRtcConnectionTest, OnRtpPlaintextTypicalScenario)
         0x56, 0x78, 0x9A, 0xBC, // timestamp
         0x12, 0x34, 0x56, 0x78, // SSRC = 0x12345678
         // RTP payload (sample data)
-        0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08
-    };
+        0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
 
     // Create video track with matching SSRC for the RTP packet using helper function
     SrsUniquePtr<SrsRtcTrackDescription> video_desc(create_video_track_description_with_codec("H264", test_ssrc));
@@ -2521,8 +2517,6 @@ VOID TEST(SrsRtcConnectionTest, DoCheckSendNacksTypicalScenario)
     conn->publishers_.clear();
 }
 
-
-
 VOID TEST(SdpUtilityTest, SrsSDPHasH264ProfilePayloadTypeTypicalScenario)
 {
     // Test srs_sdp_has_h264_profile with SrsMediaPayloadType - typical scenario
@@ -2661,7 +2655,7 @@ VOID TEST(SrsRtcPlayerNegotiatorTest, TypicalUseScenario)
     SrsUniquePtr<SrsRtcSourceDescription> stream_desc(new SrsRtcSourceDescription());
 
     // Create audio track description (managed by stream_desc)
-    SrsRtcTrackDescription* audio_track = new SrsRtcTrackDescription();
+    SrsRtcTrackDescription *audio_track = new SrsRtcTrackDescription();
     audio_track->type_ = "audio";
     audio_track->id_ = "audio_track_id";
     audio_track->ssrc_ = 12345;
@@ -2673,7 +2667,7 @@ VOID TEST(SrsRtcPlayerNegotiatorTest, TypicalUseScenario)
     audio_track->media_ = new SrsAudioPayload(111, "opus", 48000, 2);
 
     // Create video track description (managed by stream_desc)
-    SrsRtcTrackDescription* video_track = new SrsRtcTrackDescription();
+    SrsRtcTrackDescription *video_track = new SrsRtcTrackDescription();
     video_track->type_ = "video";
     video_track->id_ = "video_track_id";
     video_track->ssrc_ = 67890;
@@ -2694,9 +2688,9 @@ VOID TEST(SrsRtcPlayerNegotiatorTest, TypicalUseScenario)
         mock_request.get(),
         local_sdp,
         stream_desc.get(),
-        true,  // unified_plan
-        true   // audio_before_video
-    ));
+        true, // unified_plan
+        true  // audio_before_video
+        ));
 
     // Verify the generated local SDP has the expected structure
     EXPECT_EQ(2, (int)local_sdp.media_descs_.size()); // Should have audio and video

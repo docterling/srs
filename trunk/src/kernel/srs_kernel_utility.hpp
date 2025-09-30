@@ -129,6 +129,20 @@ extern bool srs_bytes_equal(void *pa, void *pb, int size);
 // Create dir recursively
 extern srs_error_t srs_os_mkdir_all(std::string dir);
 
+// The path utility.
+class SrsPath
+{
+public:
+    SrsPath();
+    virtual ~SrsPath();
+
+public:
+    // Whether path exists.
+    virtual bool exists(std::string path);
+    // Remove or unlink file.
+    virtual srs_error_t unlink(std::string path);
+};
+
 // Whether path exists.
 extern bool srs_path_exists(std::string path);
 // Get the dirname of path, for instance, dirname("/live/livestream")="/live"

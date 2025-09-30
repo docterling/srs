@@ -19,10 +19,20 @@
 
 class SrsFileReader;
 
-/**
- * file writer, to write to file.
- */
-class SrsFileWriter : public ISrsWriteSeeker
+// The file writer factory.
+class ISrsFileWriter : public ISrsWriteSeeker
+{
+public:
+    ISrsFileWriter();
+    virtual ~ISrsFileWriter();
+
+public:
+    virtual srs_error_t open(std::string p) = 0;
+    virtual void close() = 0;
+};
+
+// file writer, to write to file.
+class SrsFileWriter : public ISrsFileWriter
 {
 private:
     std::string path_;
@@ -34,25 +44,17 @@ public:
     virtual ~SrsFileWriter();
 
 public:
-    /**
-     * set io buf size
-     */
+    // set io buf size
     virtual srs_error_t set_iobuf_size(int size);
 
-    /**
-     * open file writer, in truncate mode.
-     * @param p a string indicates the path of file to open.
-     */
+    // open file writer, in truncate mode.
+    // @param p a string indicates the path of file to open.
     virtual srs_error_t open(std::string p);
-    /**
-     * open file writer, in append mode.
-     * @param p a string indicates the path of file to open.
-     */
+    // open file writer, in append mode.
+    // @param p a string indicates the path of file to open.
     virtual srs_error_t open_append(std::string p);
-    /**
-     * close current writer.
-     * @remark user can reopen again.
-     */
+    // close current writer.
+    // @remark user can reopen again.
     virtual void close();
 
 public:
@@ -77,10 +79,22 @@ public:
     virtual SrsFileReader *create_file_reader();
 };
 
+// The file reader.
+class ISrsFileReader : public ISrsReadSeeker
+{
+public:
+    ISrsFileReader();
+    virtual ~ISrsFileReader();
+
+public:
+    virtual srs_error_t open(std::string p) = 0;
+    virtual void close() = 0;
+};
+
 /**
  * file reader, to read from file.
  */
-class SrsFileReader : public ISrsReadSeeker
+class SrsFileReader : public ISrsFileReader
 {
 private:
     std::string path_;

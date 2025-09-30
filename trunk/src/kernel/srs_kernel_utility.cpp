@@ -527,6 +527,28 @@ srs_error_t srs_os_mkdir_all(string dir)
     return srs_error_new(ret, "create dir %s", dir.c_str());
 }
 
+SrsPath::SrsPath()
+{
+}
+
+SrsPath::~SrsPath()
+{
+}
+
+bool SrsPath::exists(std::string path)
+{
+    return srs_path_exists(path);
+}
+
+srs_error_t SrsPath::unlink(std::string path)
+{
+    if (::unlink(path.c_str()) < 0) {
+        return srs_error_new(ERROR_SYSTEM_FILE_UNLINK, "unlink %s", path.c_str());
+    }
+
+    return srs_success;
+}
+
 bool srs_path_exists(std::string path)
 {
     struct stat st;

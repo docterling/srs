@@ -19,6 +19,7 @@ using namespace std;
 
 #include <openssl/rand.h>
 #include <srs_app_config.hpp>
+#include <srs_app_factory.hpp>
 #include <srs_app_http_hooks.hpp>
 #include <srs_app_rtmp_source.hpp>
 #include <srs_app_utility.hpp>
@@ -44,7 +45,7 @@ using namespace std;
 // reset the piece id when deviation overflow this.
 #define SRS_JUMP_WHEN_PIECE_DEVIATION 20
 
-SrsHlsSegment::SrsHlsSegment(SrsTsContext *c, SrsAudioCodecId ac, SrsVideoCodecId vc, SrsFileWriter *w)
+SrsHlsSegment::SrsHlsSegment(SrsTsContext *c, SrsAudioCodecId ac, SrsVideoCodecId vc, ISrsFileWriter *w)
 {
     sequence_no_ = 0;
     writer_ = w;
@@ -60,7 +61,8 @@ void SrsHlsSegment::config_cipher(unsigned char *key, unsigned char *iv)
 {
     memcpy(this->iv_, iv, 16);
 
-    SrsEncFileWriter *fw = (SrsEncFileWriter *)writer_;
+    SrsEncFileWriter *fw = dynamic_cast<SrsEncFileWriter *>(writer_);
+    srs_assert(fw);
     fw->config_cipher(key, iv);
 }
 
@@ -75,7 +77,7 @@ srs_error_t SrsHlsSegment::rename()
     return SrsFragment::rename();
 }
 
-SrsInitMp4Segment::SrsInitMp4Segment(SrsFileWriter *fw)
+SrsInitMp4Segment::SrsInitMp4Segment(ISrsFileWriter *fw)
 {
     fw_ = fw;
     const_iv_size_ = 0;
@@ -165,7 +167,7 @@ srs_error_t SrsInitMp4Segment::init_encoder()
     return err;
 }
 
-SrsHlsM4sSegment::SrsHlsM4sSegment(SrsFileWriter *fw)
+SrsHlsM4sSegment::SrsHlsM4sSegment(ISrsFileWriter *fw)
 {
     fw_ = fw;
 }
@@ -264,18 +266,24 @@ SrsDvrAsyncCallOnHls::SrsDvrAsyncCallOnHls(SrsContextId c, ISrsRequest *r, strin
     m3u8_url_ = mu;
     seq_no_ = s;
     duration_ = d;
+
+    config_ = _srs_config;
+    hooks_ = _srs_hooks;
 }
 
 SrsDvrAsyncCallOnHls::~SrsDvrAsyncCallOnHls()
 {
     srs_freep(req_);
+
+    config_ = NULL;
+    hooks_ = NULL;
 }
 
 srs_error_t SrsDvrAsyncCallOnHls::call()
 {
     srs_error_t err = srs_success;
 
-    if (!_srs_config->get_vhost_http_hooks_enabled(req_->vhost_)) {
+    if (!config_->get_vhost_http_hooks_enabled(req_->vhost_)) {
         return err;
     }
 
@@ -285,7 +293,7 @@ srs_error_t SrsDvrAsyncCallOnHls::call()
     vector<string> hooks;
 
     if (true) {
-        SrsConfDirective *conf = _srs_config->get_vhost_on_hls(req_->vhost_);
+        SrsConfDirective *conf = config_->get_vhost_on_hls(req_->vhost_);
 
         if (!conf) {
             return err;
@@ -296,7 +304,7 @@ srs_error_t SrsDvrAsyncCallOnHls::call()
 
     for (int i = 0; i < (int)hooks.size(); i++) {
         std::string url = hooks.at(i);
-        if ((err = _srs_hooks->on_hls(cid_, url, req_, path_, ts_url_, m3u8_, m3u8_url_, seq_no_, duration_)) != srs_success) {
+        if ((err = hooks_->on_hls(cid_, url, req_, path_, ts_url_, m3u8_, m3u8_url_, seq_no_, duration_)) != srs_success) {
             return srs_error_wrap(err, "callback on_hls %s", url.c_str());
         }
     }
@@ -314,18 +322,24 @@ SrsDvrAsyncCallOnHlsNotify::SrsDvrAsyncCallOnHlsNotify(SrsContextId c, ISrsReque
     cid_ = c;
     req_ = r->copy();
     ts_url_ = u;
+
+    config_ = _srs_config;
+    hooks_ = _srs_hooks;
 }
 
 SrsDvrAsyncCallOnHlsNotify::~SrsDvrAsyncCallOnHlsNotify()
 {
     srs_freep(req_);
+
+    config_ = NULL;
+    hooks_ = NULL;
 }
 
 srs_error_t SrsDvrAsyncCallOnHlsNotify::call()
 {
     srs_error_t err = srs_success;
 
-    if (!_srs_config->get_vhost_http_hooks_enabled(req_->vhost_)) {
+    if (!config_->get_vhost_http_hooks_enabled(req_->vhost_)) {
         return err;
     }
 
@@ -335,7 +349,7 @@ srs_error_t SrsDvrAsyncCallOnHlsNotify::call()
     vector<string> hooks;
 
     if (true) {
-        SrsConfDirective *conf = _srs_config->get_vhost_on_hls_notify(req_->vhost_);
+        SrsConfDirective *conf = config_->get_vhost_on_hls_notify(req_->vhost_);
 
         if (!conf) {
             return err;
@@ -344,10 +358,10 @@ srs_error_t SrsDvrAsyncCallOnHlsNotify::call()
         hooks = conf->args_;
     }
 
-    int nb_notify = _srs_config->get_vhost_hls_nb_notify(req_->vhost_);
+    int nb_notify = config_->get_vhost_hls_nb_notify(req_->vhost_);
     for (int i = 0; i < (int)hooks.size(); i++) {
         std::string url = hooks.at(i);
-        if ((err = _srs_hooks->on_hls_notify(cid_, url, req_, ts_url_, nb_notify)) != srs_success) {
+        if ((err = hooks_->on_hls_notify(cid_, url, req_, ts_url_, nb_notify)) != srs_success) {
             return srs_error_wrap(err, "callback on_hls_notify %s", url.c_str());
         }
     }
@@ -388,6 +402,9 @@ SrsHlsFmp4Muxer::SrsHlsFmp4Muxer()
 
     memset(key_, 0, 16);
     memset(iv_, 0, 16);
+
+    config_ = _srs_config;
+    app_factory_ = _srs_app_factory;
 }
 
 SrsHlsFmp4Muxer::~SrsHlsFmp4Muxer()
@@ -397,6 +414,9 @@ SrsHlsFmp4Muxer::~SrsHlsFmp4Muxer()
     srs_freep(req_);
     srs_freep(async_);
     srs_freep(writer_);
+
+    config_ = NULL;
+    app_factory_ = NULL;
 }
 
 void SrsHlsFmp4Muxer::dispose()
@@ -413,8 +433,12 @@ void SrsHlsFmp4Muxer::dispose()
         srs_freep(current_);
     }
 
-    if (unlink(m3u8_.c_str()) < 0) {
-        srs_warn("dispose unlink path failed. file=%s", m3u8_.c_str());
+    SrsUniquePtr<SrsPath> path(app_factory_->create_path());
+    if (path->exists(m3u8_)) {
+        if ((err = path->unlink(m3u8_)) != srs_success) {
+            srs_warn("dispose: ignore remove m3u8 failed, %s", srs_error_desc(err).c_str());
+            srs_freep(err);
+        }
     }
 
     srs_trace("gracefully dispose hls %s", req_ ? req_->get_stream_url().c_str() : "");
@@ -499,10 +523,10 @@ srs_error_t SrsHlsFmp4Muxer::write_init_mp4(SrsFormat *format, bool has_video, b
     std::string app = req_->app_;
 
     // Get init.mp4 file template from configuration
-    std::string init_file = _srs_config->get_hls_init_file(vhost);
+    std::string init_file = config_->get_hls_init_file(vhost);
     init_file = srs_path_build_stream(init_file, vhost, app, stream);
 
-    std::string hls_path = _srs_config->get_hls_path(vhost);
+    std::string hls_path = config_->get_hls_path(vhost);
     std::string path = hls_path + "/" + init_file;
 
     // Create directory for the init file
@@ -649,28 +673,28 @@ srs_error_t SrsHlsFmp4Muxer::update_config(ISrsRequest *r)
     std::string stream = req_->stream_;
     std::string app = req_->app_;
 
-    hls_fragment_ = _srs_config->get_hls_fragment(vhost);
-    double hls_td_ratio = _srs_config->get_hls_td_ratio(vhost);
-    hls_window_ = _srs_config->get_hls_window(vhost);
+    hls_fragment_ = config_->get_hls_fragment(vhost);
+    double hls_td_ratio = config_->get_hls_td_ratio(vhost);
+    hls_window_ = config_->get_hls_window(vhost);
 
     // get the hls m3u8 ts list entry prefix config
-    hls_entry_prefix_ = _srs_config->get_hls_entry_prefix(vhost);
+    hls_entry_prefix_ = config_->get_hls_entry_prefix(vhost);
     // get the hls path config
-    hls_path_ = _srs_config->get_hls_path(vhost);
-    m3u8_url_ = _srs_config->get_hls_m3u8_file(vhost);
-    hls_m4s_file_ = _srs_config->get_hls_fmp4_file(vhost);
-    hls_cleanup_ = _srs_config->get_hls_cleanup(vhost);
-    hls_wait_keyframe_ = _srs_config->get_hls_wait_keyframe(vhost);
+    hls_path_ = config_->get_hls_path(vhost);
+    m3u8_url_ = config_->get_hls_m3u8_file(vhost);
+    hls_m4s_file_ = config_->get_hls_fmp4_file(vhost);
+    hls_cleanup_ = config_->get_hls_cleanup(vhost);
+    hls_wait_keyframe_ = config_->get_hls_wait_keyframe(vhost);
     // the audio overflow, for pure audio to reap segment.
-    hls_aof_ratio_ = _srs_config->get_hls_aof_ratio(vhost);
+    hls_aof_ratio_ = config_->get_hls_aof_ratio(vhost);
     // whether use floor(timestamp/hls_fragment) for variable timestamp
-    hls_ts_floor_ = _srs_config->get_hls_ts_floor(vhost);
+    hls_ts_floor_ = config_->get_hls_ts_floor(vhost);
 
-    hls_keys_ = _srs_config->get_hls_keys(vhost);
-    hls_fragments_per_key_ = _srs_config->get_hls_fragments_per_key(vhost);
-    hls_key_file_ = _srs_config->get_hls_key_file(vhost);
-    hls_key_file_path_ = _srs_config->get_hls_key_file_path(vhost);
-    hls_key_url_ = _srs_config->get_hls_key_url(vhost);
+    hls_keys_ = config_->get_hls_keys(vhost);
+    hls_fragments_per_key_ = config_->get_hls_fragments_per_key(vhost);
+    hls_key_file_ = config_->get_hls_key_file(vhost);
+    hls_key_file_path_ = config_->get_hls_key_file_path(vhost);
+    hls_key_url_ = config_->get_hls_key_url(vhost);
 
     previous_floor_ts_ = 0;
     accept_floor_ts_ = 0;
@@ -698,7 +722,7 @@ srs_error_t SrsHlsFmp4Muxer::update_config(ISrsRequest *r)
         }
     }
 
-    writer_ = new SrsFileWriter();
+    writer_ = app_factory_->create_file_writer();
 
     return err;
 }
@@ -907,13 +931,13 @@ srs_error_t SrsHlsFmp4Muxer::write_hls_key()
         key_file = srs_strings_replace(key_file, "[seq]", srs_strconv_format_int(current_->sequence_no_));
         string key_url = hls_key_file_path_ + "/" + key_file;
 
-        SrsFileWriter fw;
-        if ((err = fw.open(key_url)) != srs_success) {
+        SrsUniquePtr<ISrsFileWriter> fw(app_factory_->create_file_writer());
+        if ((err = fw->open(key_url)) != srs_success) {
             return srs_error_wrap(err, "open file %s", key_url.c_str());
         }
 
-        err = fw.write(key_, 16, NULL);
-        fw.close();
+        err = fw->write(key_, 16, NULL);
+        fw->close();
 
         if (err != srs_success) {
             return srs_error_wrap(err, "write key");
@@ -937,23 +961,25 @@ srs_error_t SrsHlsFmp4Muxer::refresh_m3u8()
     }
 
     std::string temp_m3u8 = m3u8_ + ".temp";
-    if ((err = _refresh_m3u8(temp_m3u8)) == srs_success) {
+    if ((err = do_refresh_m3u8(temp_m3u8)) == srs_success) {
         if (rename(temp_m3u8.c_str(), m3u8_.c_str()) < 0) {
             err = srs_error_new(ERROR_HLS_WRITE_FAILED, "hls: rename m3u8 file failed. %s => %s", temp_m3u8.c_str(), m3u8_.c_str());
         }
     }
 
     // remove the temp file.
-    if (srs_path_exists(temp_m3u8)) {
-        if (unlink(temp_m3u8.c_str()) < 0) {
-            srs_warn("ignore remove m3u8 failed, %s", temp_m3u8.c_str());
+    SrsUniquePtr<SrsPath> path(app_factory_->create_path());
+    if (path->exists(temp_m3u8)) {
+        if ((err = path->unlink(temp_m3u8)) != srs_success) {
+            srs_warn("refresh: ignore remove m3u8 failed, %s", srs_error_desc(err).c_str());
+            srs_freep(err);
         }
     }
 
     return err;
 }
 
-srs_error_t SrsHlsFmp4Muxer::_refresh_m3u8(std::string m3u8_file)
+srs_error_t SrsHlsFmp4Muxer::do_refresh_m3u8(std::string m3u8_file)
 {
     srs_error_t err = srs_success;
 
@@ -962,8 +988,8 @@ srs_error_t SrsHlsFmp4Muxer::_refresh_m3u8(std::string m3u8_file)
         return err;
     }
 
-    SrsFileWriter writer;
-    if ((err = writer.open(m3u8_file)) != srs_success) {
+    SrsUniquePtr<ISrsFileWriter> writer(app_factory_->create_file_writer());
+    if ((err = writer->open(m3u8_file)) != srs_success) {
         return srs_error_wrap(err, "hls: open m3u8 file %s", m3u8_file.c_str());
     }
 
@@ -1048,7 +1074,7 @@ srs_error_t SrsHlsFmp4Muxer::_refresh_m3u8(std::string m3u8_file)
 
     // write m3u8 to writer.
     std::string m3u8 = ss.str();
-    if ((err = writer.write((char *)m3u8.c_str(), (int)m3u8.length(), NULL)) != srs_success) {
+    if ((err = writer->write((char *)m3u8.c_str(), (int)m3u8.length(), NULL)) != srs_success) {
         return srs_error_wrap(err, "hls: write m3u8");
     }
 
@@ -1080,6 +1106,9 @@ SrsHlsMuxer::SrsHlsMuxer()
 
     memset(key_, 0, 16);
     memset(iv_, 0, 16);
+
+    config_ = _srs_config;
+    app_factory_ = _srs_app_factory;
 }
 
 SrsHlsMuxer::~SrsHlsMuxer()
@@ -1090,6 +1119,9 @@ SrsHlsMuxer::~SrsHlsMuxer()
     srs_freep(async_);
     srs_freep(context_);
     srs_freep(writer_);
+
+    config_ = NULL;
+    app_factory_ = NULL;
 }
 
 void SrsHlsMuxer::dispose()
@@ -1106,8 +1138,12 @@ void SrsHlsMuxer::dispose()
         srs_freep(current_);
     }
 
-    if (unlink(m3u8_.c_str()) < 0) {
-        srs_warn("dispose unlink path failed. file=%s", m3u8_.c_str());
+    SrsUniquePtr<SrsPath> path(app_factory_->create_path());
+    if (path->exists(m3u8_)) {
+        if ((err = path->unlink(m3u8_)) != srs_success) {
+            srs_warn("dispose: ignore remove m3u8 failed, %s", srs_error_desc(err).c_str());
+            srs_freep(err);
+        }
     }
 
     srs_trace("gracefully dispose hls %s", req_ ? req_->get_stream_url().c_str() : "");
@@ -1240,7 +1276,7 @@ srs_error_t SrsHlsMuxer::update_config(ISrsRequest *r, string entry_prefix,
     m3u8_ = path + "/" + m3u8_url_;
 
     // when update config, reset the history target duration.
-    max_td_ = fragment * _srs_config->get_hls_td_ratio(r->vhost_);
+    max_td_ = fragment * config_->get_hls_td_ratio(r->vhost_);
 
     // create m3u8 dir once.
     m3u8_dir_ = srs_path_filepath_dir(m3u8_);
@@ -1258,9 +1294,9 @@ srs_error_t SrsHlsMuxer::update_config(ISrsRequest *r, string entry_prefix,
     }
 
     if (hls_keys_) {
-        writer_ = new SrsEncFileWriter();
+        writer_ = app_factory_->create_enc_file_writer();
     } else {
-        writer_ = new SrsFileWriter();
+        writer_ = app_factory_->create_file_writer();
     }
 
     return err;
@@ -1271,21 +1307,29 @@ srs_error_t SrsHlsMuxer::recover_hls()
     srs_error_t err = srs_success;
 
     // exist the m3u8 file.
-    if (!srs_path_exists(m3u8_)) {
+    SrsUniquePtr<SrsPath> path(app_factory_->create_path());
+    if (!path->exists(m3u8_)) {
         return err;
     }
+
+    return do_recover_hls();
+}
+
+srs_error_t SrsHlsMuxer::do_recover_hls()
+{
+    srs_error_t err = srs_success;
 
     srs_trace("hls: recover stream m3u8=%s, m3u8_url=%s, hls_path=%s",
               m3u8_.c_str(), m3u8_url_.c_str(), hls_path_.c_str());
 
     // read whole m3u8 file content as a string
-    SrsFileReader fr;
-    if ((err = fr.open(m3u8_)) != srs_success) {
+    SrsUniquePtr<ISrsFileReader> fr(app_factory_->create_file_reader());
+    if ((err = fr->open(m3u8_)) != srs_success) {
         return srs_error_wrap(err, "open file");
     }
 
     std::string body;
-    if ((err = srs_io_readall(&fr, body)) != srs_success) {
+    if ((err = srs_io_readall(fr.get(), body)) != srs_success) {
         return srs_error_wrap(err, "read data");
     }
     if (body.empty()) {
@@ -1745,13 +1789,13 @@ srs_error_t SrsHlsMuxer::write_hls_key()
         key_file = srs_strings_replace(key_file, "[seq]", srs_strconv_format_int(current_->sequence_no_));
         string key_url = hls_key_file_path_ + "/" + key_file;
 
-        SrsFileWriter fw;
-        if ((err = fw.open(key_url)) != srs_success) {
+        SrsUniquePtr<ISrsFileWriter> fw(app_factory_->create_file_writer());
+        if ((err = fw->open(key_url)) != srs_success) {
             return srs_error_wrap(err, "open file %s", key_url.c_str());
         }
 
-        err = fw.write(key_, 16, NULL);
-        fw.close();
+        err = fw->write(key_, 16, NULL);
+        fw->close();
 
         if (err != srs_success) {
             return srs_error_wrap(err, "write key");
@@ -1775,23 +1819,25 @@ srs_error_t SrsHlsMuxer::refresh_m3u8()
     }
 
     std::string temp_m3u8 = m3u8_ + ".temp";
-    if ((err = _refresh_m3u8(temp_m3u8)) == srs_success) {
+    if ((err = do_refresh_m3u8(temp_m3u8)) == srs_success) {
         if (rename(temp_m3u8.c_str(), m3u8_.c_str()) < 0) {
             err = srs_error_new(ERROR_HLS_WRITE_FAILED, "hls: rename m3u8 file failed. %s => %s", temp_m3u8.c_str(), m3u8_.c_str());
         }
     }
 
     // remove the temp file.
-    if (srs_path_exists(temp_m3u8)) {
-        if (unlink(temp_m3u8.c_str()) < 0) {
-            srs_warn("ignore remove m3u8 failed, %s", temp_m3u8.c_str());
+    SrsUniquePtr<SrsPath> path(app_factory_->create_path());
+    if (path->exists(temp_m3u8)) {
+        if ((err = path->unlink(temp_m3u8)) != srs_success) {
+            srs_warn("refresh: ignore remove m3u8 failed, %s", srs_error_desc(err).c_str());
+            srs_freep(err);
         }
     }
 
     return err;
 }
 
-srs_error_t SrsHlsMuxer::_refresh_m3u8(string m3u8_file)
+srs_error_t SrsHlsMuxer::do_refresh_m3u8(string m3u8_file)
 {
     srs_error_t err = srs_success;
 
@@ -1800,8 +1846,8 @@ srs_error_t SrsHlsMuxer::_refresh_m3u8(string m3u8_file)
         return err;
     }
 
-    SrsFileWriter writer;
-    if ((err = writer.open(m3u8_file)) != srs_success) {
+    SrsUniquePtr<ISrsFileWriter> writer(app_factory_->create_file_writer());
+    if ((err = writer->open(m3u8_file)) != srs_success) {
         return srs_error_wrap(err, "hls: open m3u8 file %s", m3u8_file.c_str());
     }
 
@@ -1882,7 +1928,7 @@ srs_error_t SrsHlsMuxer::_refresh_m3u8(string m3u8_file)
 
     // write m3u8 to writer.
     std::string m3u8 = ss.str();
-    if ((err = writer.write((char *)m3u8.c_str(), (int)m3u8.length(), NULL)) != srs_success) {
+    if ((err = writer->write((char *)m3u8.c_str(), (int)m3u8.length(), NULL)) != srs_success) {
         return srs_error_wrap(err, "hls: write m3u8");
     }
 
@@ -1905,12 +1951,16 @@ SrsHlsController::SrsHlsController()
     hls_dts_directly_ = false;
     previous_audio_dts_ = 0;
     aac_samples_ = 0;
+
+    config_ = _srs_config;
 }
 
 SrsHlsController::~SrsHlsController()
 {
     srs_freep(muxer_);
     srs_freep(tsmc_);
+
+    config_ = NULL;
 }
 
 // CRITICAL: This method is called AFTER the source has been added to the source pool
@@ -1961,34 +2011,34 @@ srs_error_t SrsHlsController::on_publish(ISrsRequest *req)
     std::string stream = req->stream_;
     std::string app = req->app_;
 
-    srs_utime_t hls_fragment = _srs_config->get_hls_fragment(vhost);
-    double hls_td_ratio = _srs_config->get_hls_td_ratio(vhost);
-    srs_utime_t hls_window = _srs_config->get_hls_window(vhost);
+    srs_utime_t hls_fragment = config_->get_hls_fragment(vhost);
+    double hls_td_ratio = config_->get_hls_td_ratio(vhost);
+    srs_utime_t hls_window = config_->get_hls_window(vhost);
 
     // get the hls m3u8 ts list entry prefix config
-    std::string entry_prefix = _srs_config->get_hls_entry_prefix(vhost);
+    std::string entry_prefix = config_->get_hls_entry_prefix(vhost);
     // get the hls path config
-    std::string path = _srs_config->get_hls_path(vhost);
-    std::string m3u8_file = _srs_config->get_hls_m3u8_file(vhost);
-    std::string ts_file = _srs_config->get_hls_ts_file(vhost);
-    bool cleanup = _srs_config->get_hls_cleanup(vhost);
-    bool wait_keyframe = _srs_config->get_hls_wait_keyframe(vhost);
+    std::string path = config_->get_hls_path(vhost);
+    std::string m3u8_file = config_->get_hls_m3u8_file(vhost);
+    std::string ts_file = config_->get_hls_ts_file(vhost);
+    bool cleanup = config_->get_hls_cleanup(vhost);
+    bool wait_keyframe = config_->get_hls_wait_keyframe(vhost);
     // the audio overflow, for pure audio to reap segment.
-    double hls_aof_ratio = _srs_config->get_hls_aof_ratio(vhost);
+    double hls_aof_ratio = config_->get_hls_aof_ratio(vhost);
     // whether use floor(timestamp/hls_fragment) for variable timestamp
-    bool ts_floor = _srs_config->get_hls_ts_floor(vhost);
+    bool ts_floor = config_->get_hls_ts_floor(vhost);
     // the seconds to dispose the hls.
-    srs_utime_t hls_dispose = _srs_config->get_hls_dispose(vhost);
+    srs_utime_t hls_dispose = config_->get_hls_dispose(vhost);
 
-    bool hls_keys = _srs_config->get_hls_keys(vhost);
-    int hls_fragments_per_key = _srs_config->get_hls_fragments_per_key(vhost);
-    string hls_key_file = _srs_config->get_hls_key_file(vhost);
-    string hls_key_file_path = _srs_config->get_hls_key_file_path(vhost);
-    string hls_key_url = _srs_config->get_hls_key_url(vhost);
+    bool hls_keys = config_->get_hls_keys(vhost);
+    int hls_fragments_per_key = config_->get_hls_fragments_per_key(vhost);
+    string hls_key_file = config_->get_hls_key_file(vhost);
+    string hls_key_file_path = config_->get_hls_key_file_path(vhost);
+    string hls_key_url = config_->get_hls_key_url(vhost);
 
     // TODO: FIXME: support load exists m3u8, to recover publish stream.
     // for the HLS donot requires the EXT-X-MEDIA-SEQUENCE be monotonically increase.
-    bool recover = _srs_config->get_hls_recover(vhost);
+    bool recover = config_->get_hls_recover(vhost);
 
     if ((err = muxer_->on_publish(req)) != srs_success) {
         return srs_error_wrap(err, "muxer publish");
@@ -2011,7 +2061,7 @@ srs_error_t SrsHlsController::on_publish(ISrsRequest *req)
     // This config item is used in SrsHls, we just log its value here.
     // If enabled, directly turn FLV timestamp to TS DTS.
     // @remark It'll be reloaded automatically, because the origin hub will republish while reloading.
-    hls_dts_directly_ = _srs_config->get_vhost_hls_dts_directly(req->vhost_);
+    hls_dts_directly_ = config_->get_vhost_hls_dts_directly(req->vhost_);
 
     srs_trace("hls: win=%dms, frag=%dms, prefix=%s, path=%s, m3u8=%s, ts=%s, tdr=%.2f, aof=%.2f, floor=%d, clean=%d, waitk=%d, dispose=%dms, dts_directly=%d",
               srsu2msi(hls_window), srsu2msi(hls_fragment), entry_prefix.c_str(), path.c_str(), m3u8_file.c_str(), ts_file.c_str(),
@@ -2235,11 +2285,15 @@ SrsHlsMp4Controller::SrsHlsMp4Controller()
 
     req_ = NULL;
     muxer_ = new SrsHlsFmp4Muxer();
+
+    config_ = _srs_config;
 }
 
 SrsHlsMp4Controller::~SrsHlsMp4Controller()
 {
     srs_freep(muxer_);
+
+    config_ = NULL;
 }
 
 // CRITICAL: This method is called AFTER the source has been added to the source pool
@@ -2273,11 +2327,11 @@ srs_error_t SrsHlsMp4Controller::on_publish(ISrsRequest *req)
     std::string app = req->app_;
 
     // get the hls m3u8 ts list entry prefix config
-    std::string entry_prefix = _srs_config->get_hls_entry_prefix(vhost);
+    std::string entry_prefix = config_->get_hls_entry_prefix(vhost);
     // get the hls path config
-    std::string path = _srs_config->get_hls_path(vhost);
-    std::string m3u8_file = _srs_config->get_hls_m3u8_file(vhost);
-    std::string ts_file = _srs_config->get_hls_ts_file(vhost);
+    std::string path = config_->get_hls_path(vhost);
+    std::string m3u8_file = config_->get_hls_m3u8_file(vhost);
+    std::string ts_file = config_->get_hls_ts_file(vhost);
 
     if ((err = muxer_->on_publish(req)) != srs_success) {
         return srs_error_wrap(err, "muxer publish");
@@ -2417,6 +2471,8 @@ SrsHls::SrsHls()
     controller_ = NULL;
 
     pprint_ = SrsPithyPrint::create_hls();
+
+    config_ = _srs_config;
 }
 
 SrsHls::~SrsHls()
@@ -2424,6 +2480,8 @@ SrsHls::~SrsHls()
     srs_freep(jitter_);
     srs_freep(controller_);
     srs_freep(pprint_);
+
+    config_ = NULL;
 }
 
 void SrsHls::async_reload()
@@ -2483,7 +2541,7 @@ void SrsHls::dispose()
 
     // Ignore when hls_dispose disabled.
     // @see https://github.com/ossrs/srs/issues/865
-    srs_utime_t hls_dispose = _srs_config->get_hls_dispose(req_->vhost_);
+    srs_utime_t hls_dispose = config_->get_hls_dispose(req_->vhost_);
     if (!hls_dispose) {
         return;
     }
@@ -2512,7 +2570,7 @@ srs_error_t SrsHls::cycle()
         return err;
 
     // If not unpublishing and not reloading, try to dispose HLS stream.
-    srs_utime_t hls_dispose = _srs_config->get_hls_dispose(req_->vhost_);
+    srs_utime_t hls_dispose = config_->get_hls_dispose(req_->vhost_);
     if (hls_dispose <= 0) {
         return err;
     }
@@ -2535,7 +2593,7 @@ srs_error_t SrsHls::cycle()
 srs_utime_t SrsHls::cleanup_delay()
 {
     // We use larger timeout to cleanup the HLS, after disposed it if required.
-    return _srs_config->get_hls_dispose(req_->vhost_) * 1.1;
+    return config_->get_hls_dispose(req_->vhost_) * 1.1;
 }
 
 // CRITICAL: This method is called AFTER the source has been added to the source pool
@@ -2551,7 +2609,7 @@ srs_error_t SrsHls::initialize(SrsOriginHub *h, ISrsRequest *r)
     hub_ = h;
     req_ = r;
 
-    bool is_fmp4_enabled = _srs_config->get_hls_use_fmp4(r->vhost_);
+    bool is_fmp4_enabled = config_->get_hls_use_fmp4(r->vhost_);
 
     if (!controller_) {
         if (is_fmp4_enabled) {
@@ -2580,7 +2638,7 @@ srs_error_t SrsHls::on_publish()
         return err;
     }
 
-    if (!_srs_config->get_hls_enabled(req_->vhost_)) {
+    if (!config_->get_hls_enabled(req_->vhost_)) {
         return err;
     }
 

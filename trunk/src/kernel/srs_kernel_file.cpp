@@ -32,6 +32,14 @@ srs_fclose_t _srs_fclose_fn = ::fclose;
 srs_ftell_t _srs_ftell_fn = ::ftell;
 srs_setvbuf_t _srs_setvbuf_fn = ::setvbuf;
 
+ISrsFileWriter::ISrsFileWriter()
+{
+}
+
+ISrsFileWriter::~ISrsFileWriter()
+{
+}
+
 SrsFileWriter::SrsFileWriter()
 {
     fp_ = NULL;
@@ -197,6 +205,14 @@ ISrsFileReaderFactory::~ISrsFileReaderFactory()
 SrsFileReader *ISrsFileReaderFactory::create_file_reader()
 {
     return new SrsFileReader();
+}
+
+ISrsFileReader::ISrsFileReader()
+{
+}
+
+ISrsFileReader::~ISrsFileReader()
+{
 }
 
 SrsFileReader::SrsFileReader()

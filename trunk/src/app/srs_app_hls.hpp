@@ -27,13 +27,18 @@ class ISrsRequest;
 class SrsPithyPrint;
 class SrsLiveSource;
 class SrsOriginHub;
-class SrsFileWriter;
+class ISrsFileWriter;
+class ISrsAppConfig;
+class ISrsHttpHooks;
 class SrsSimpleStream;
 class SrsTsAacJitter;
 class SrsTsMessageCache;
 class SrsHlsSegment;
 class SrsTsContext;
 class SrsFmp4SegmentEncoder;
+class ISrsHttpHooks;
+class ISrsAppConfig;
+class SrsAppFactory;
 
 // The wrapper of m3u8 segment from specification:
 //
@@ -48,7 +53,7 @@ public:
     // ts uri in m3u8.
     std::string uri_;
     // The underlayer file writer.
-    SrsFileWriter *writer_;
+    ISrsFileWriter *writer_;
     // The TS context writer to write TS to file.
     SrsTsContextWriter *tscw_;
     // Will be saved in m3u8 file.
@@ -57,7 +62,7 @@ public:
     std::string keypath_;
 
 public:
-    SrsHlsSegment(SrsTsContext *c, SrsAudioCodecId ac, SrsVideoCodecId vc, SrsFileWriter *w);
+    SrsHlsSegment(SrsTsContext *c, SrsAudioCodecId ac, SrsVideoCodecId vc, ISrsFileWriter *w);
     virtual ~SrsHlsSegment();
 
 public:
@@ -69,7 +74,7 @@ public:
 class SrsInitMp4Segment : public SrsFragment
 {
 private:
-    SrsFileWriter *fw_;
+    ISrsFileWriter *fw_;
     SrsMp4M2tsInitEncoder init_;
 
 private:
@@ -81,7 +86,7 @@ private:
     uint8_t const_iv_size_;
 
 public:
-    SrsInitMp4Segment(SrsFileWriter *fw);
+    SrsInitMp4Segment(ISrsFileWriter *fw);
     virtual ~SrsInitMp4Segment();
 
 public:
@@ -99,7 +104,7 @@ private:
 class SrsHlsM4sSegment : public SrsFragment
 {
 private:
-    SrsFileWriter *fw_;
+    ISrsFileWriter *fw_;
     SrsFmp4SegmentEncoder enc_;
 
 public:
@@ -111,7 +116,7 @@ public:
     unsigned char iv_[16];
 
 public:
-    SrsHlsM4sSegment(SrsFileWriter *fw);
+    SrsHlsM4sSegment(ISrsFileWriter *fw);
     virtual ~SrsHlsM4sSegment();
 
 public:
@@ -125,6 +130,10 @@ public:
 // The hls async call: on_hls
 class SrsDvrAsyncCallOnHls : public ISrsAsyncCallTask
 {
+private:
+    ISrsAppConfig *config_;
+    ISrsHttpHooks *hooks_;
+
 private:
     SrsContextId cid_;
     std::string path_;
@@ -149,6 +158,10 @@ public:
 class SrsDvrAsyncCallOnHlsNotify : public ISrsAsyncCallTask
 {
 private:
+    ISrsAppConfig *config_;
+    ISrsHttpHooks *hooks_;
+
+private:
     SrsContextId cid_;
     std::string ts_url_;
     ISrsRequest *req_;
@@ -171,6 +184,10 @@ public:
 // TODO: Rename to SrsHlsTsMuxer, for TS file only.
 class SrsHlsMuxer
 {
+private:
+    ISrsAppConfig *config_;
+    SrsAppFactory *app_factory_;
+
 private:
     ISrsRequest *req_;
 
@@ -212,7 +229,7 @@ private:
     unsigned char key_[16];
     unsigned char iv_[16];
     // The underlayer file writer.
-    SrsFileWriter *writer_;
+    ISrsFileWriter *writer_;
 
 private:
     int sequence_no_;
@@ -293,13 +310,15 @@ private:
     virtual srs_error_t do_segment_close();
     virtual srs_error_t write_hls_key();
     virtual srs_error_t refresh_m3u8();
-    virtual srs_error_t _refresh_m3u8(std::string m3u8_file);
+    virtual srs_error_t do_refresh_m3u8(std::string m3u8_file);
     // Check if a segment with the given URI already exists in the segments list.
     virtual bool segment_exists(const std::string &ts_url);
 
 public:
     // HLS recover mode.
     srs_error_t recover_hls();
+private:
+    virtual srs_error_t do_recover_hls();
 };
 
 // Mux the HLS stream(m3u8 and m4s files).
@@ -307,6 +326,10 @@ public:
 // to flush video/audio, without any mechenisms.
 class SrsHlsFmp4Muxer
 {
+private:
+    ISrsAppConfig *config_;
+    SrsAppFactory *app_factory_;
+
 private:
     ISrsRequest *req_;
 
@@ -359,7 +382,7 @@ private:
     unsigned char kid_[16];
     unsigned char iv_[16];
     // The underlayer file writer.
-    SrsFileWriter *writer_;
+    ISrsFileWriter *writer_;
 
 private:
     int sequence_no_;
@@ -441,7 +464,7 @@ private:
     virtual srs_error_t do_segment_close();
     virtual srs_error_t write_hls_key();
     virtual srs_error_t refresh_m3u8();
-    virtual srs_error_t _refresh_m3u8(std::string m3u8_file);
+    virtual srs_error_t do_refresh_m3u8(std::string m3u8_file);
 };
 
 // The base class for HLS controller
@@ -489,6 +512,9 @@ public:
 // TODO: Rename to SrsHlsTsController, for TS file only.
 class SrsHlsController : public ISrsHlsController
 {
+private:
+    ISrsAppConfig *config_;
+
 private:
     // The HLS muxer to reap ts and m3u8.
     // The TS is cached to SrsTsMessageCache then flush to ts segment.
@@ -543,6 +569,9 @@ private:
 class SrsHlsMp4Controller : public ISrsHlsController
 {
 private:
+    ISrsAppConfig *config_;
+
+private:
     bool has_video_sh_;
     bool has_audio_sh_;
 
@@ -587,6 +616,9 @@ public:
 // TODO: FIXME: add utest for hls.
 class SrsHls
 {
+private:
+    ISrsAppConfig *config_;
+
 private:
     ISrsHlsController *controller_;
 

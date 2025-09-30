@@ -296,6 +296,36 @@ public:
     virtual bool get_rtc_to_rtmp(std::string vhost) = 0;
     virtual srs_utime_t get_rtc_stun_timeout(std::string vhost) = 0;
     virtual bool get_rtc_stun_strict_check(std::string vhost) = 0;
+    virtual SrsConfDirective *get_vhost_on_hls(std::string vhost) = 0;
+    virtual SrsConfDirective *get_vhost_on_hls_notify(std::string vhost) = 0;
+    virtual bool get_hls_enabled(std::string vhost) = 0;
+    virtual bool get_hls_enabled(SrsConfDirective *vhost) = 0;
+    virtual bool get_hls_use_fmp4(std::string vhost) = 0;
+    virtual std::string get_hls_entry_prefix(std::string vhost) = 0;
+    virtual std::string get_hls_path(std::string vhost) = 0;
+    virtual std::string get_hls_m3u8_file(std::string vhost) = 0;
+    virtual std::string get_hls_ts_file(std::string vhost) = 0;
+    virtual std::string get_hls_fmp4_file(std::string vhost) = 0;
+    virtual std::string get_hls_init_file(std::string vhost) = 0;
+    virtual bool get_hls_ts_floor(std::string vhost) = 0;
+    virtual srs_utime_t get_hls_fragment(std::string vhost) = 0;
+    virtual double get_hls_td_ratio(std::string vhost) = 0;
+    virtual double get_hls_aof_ratio(std::string vhost) = 0;
+    virtual srs_utime_t get_hls_window(std::string vhost) = 0;
+    virtual std::string get_hls_on_error(std::string vhost) = 0;
+    virtual bool get_hls_cleanup(std::string vhost) = 0;
+    virtual srs_utime_t get_hls_dispose(std::string vhost) = 0;
+    virtual bool get_hls_wait_keyframe(std::string vhost) = 0;
+    virtual bool get_hls_keys(std::string vhost) = 0;
+    virtual int get_hls_fragments_per_key(std::string vhost) = 0;
+    virtual std::string get_hls_key_file(std::string vhost) = 0;
+    virtual std::string get_hls_key_file_path(std::string vhost) = 0;
+    virtual std::string get_hls_key_url(std::string vhost) = 0;
+    virtual int get_vhost_hls_nb_notify(std::string vhost) = 0;
+    virtual bool get_vhost_hls_dts_directly(std::string vhost) = 0;
+    virtual bool get_hls_ctx_enabled(std::string vhost) = 0;
+    virtual bool get_hls_ts_ctx_enabled(std::string vhost) = 0;
+    virtual bool get_hls_recover(std::string vhost) = 0;
 };
 
 // The config service provider.

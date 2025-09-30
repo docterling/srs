@@ -2240,6 +2240,156 @@ bool MockAppConfig::get_rtc_stun_strict_check(std::string vhost)
     return false; // Default to non-strict mode
 }
 
+SrsConfDirective *MockAppConfig::get_vhost_on_hls(std::string vhost)
+{
+    return NULL;
+}
+
+SrsConfDirective *MockAppConfig::get_vhost_on_hls_notify(std::string vhost)
+{
+    return NULL;
+}
+
+bool MockAppConfig::get_hls_enabled(std::string vhost)
+{
+    return false;
+}
+
+bool MockAppConfig::get_hls_enabled(SrsConfDirective *vhost)
+{
+    return false;
+}
+
+bool MockAppConfig::get_hls_use_fmp4(std::string vhost)
+{
+    return false;
+}
+
+std::string MockAppConfig::get_hls_entry_prefix(std::string vhost)
+{
+    return "";
+}
+
+std::string MockAppConfig::get_hls_path(std::string vhost)
+{
+    return "./objs/nginx/html";
+}
+
+std::string MockAppConfig::get_hls_m3u8_file(std::string vhost)
+{
+    return "[app]/[stream].m3u8";
+}
+
+std::string MockAppConfig::get_hls_ts_file(std::string vhost)
+{
+    return "[app]/[stream]-[seq].ts";
+}
+
+std::string MockAppConfig::get_hls_fmp4_file(std::string vhost)
+{
+    return "[app]/[stream]-[seq].m4s";
+}
+
+std::string MockAppConfig::get_hls_init_file(std::string vhost)
+{
+    return "[app]/[stream]/init.mp4";
+}
+
+bool MockAppConfig::get_hls_ts_floor(std::string vhost)
+{
+    return false;
+}
+
+srs_utime_t MockAppConfig::get_hls_fragment(std::string vhost)
+{
+    return 10 * SRS_UTIME_SECONDS;
+}
+
+double MockAppConfig::get_hls_td_ratio(std::string vhost)
+{
+    return 1.5;
+}
+
+double MockAppConfig::get_hls_aof_ratio(std::string vhost)
+{
+    return 2.0;
+}
+
+srs_utime_t MockAppConfig::get_hls_window(std::string vhost)
+{
+    return 60 * SRS_UTIME_SECONDS;
+}
+
+std::string MockAppConfig::get_hls_on_error(std::string vhost)
+{
+    return "continue";
+}
+
+bool MockAppConfig::get_hls_cleanup(std::string vhost)
+{
+    return true;
+}
+
+srs_utime_t MockAppConfig::get_hls_dispose(std::string vhost)
+{
+    return 120 * SRS_UTIME_SECONDS;
+}
+
+bool MockAppConfig::get_hls_wait_keyframe(std::string vhost)
+{
+    return true;
+}
+
+bool MockAppConfig::get_hls_keys(std::string vhost)
+{
+    return false;
+}
+
+int MockAppConfig::get_hls_fragments_per_key(std::string vhost)
+{
+    return 5;
+}
+
+std::string MockAppConfig::get_hls_key_file(std::string vhost)
+{
+    return "[app]/[stream]-[seq].key";
+}
+
+std::string MockAppConfig::get_hls_key_file_path(std::string vhost)
+{
+    return "./objs/nginx/html";
+}
+
+std::string MockAppConfig::get_hls_key_url(std::string vhost)
+{
+    return "";
+}
+
+int MockAppConfig::get_vhost_hls_nb_notify(std::string vhost)
+{
+    return 64;
+}
+
+bool MockAppConfig::get_vhost_hls_dts_directly(std::string vhost)
+{
+    return true;
+}
+
+bool MockAppConfig::get_hls_ctx_enabled(std::string vhost)
+{
+    return true;
+}
+
+bool MockAppConfig::get_hls_ts_ctx_enabled(std::string vhost)
+{
+    return true;
+}
+
+bool MockAppConfig::get_hls_recover(std::string vhost)
+{
+    return true;
+}
+
 void MockAppConfig::set_http_hooks_enabled(bool enabled)
 {
     http_hooks_enabled_ = enabled;

@@ -61,6 +61,7 @@ SrsConfig *_srs_config = NULL;
 
 // @global kernel factory.
 ISrsKernelFactory *_srs_kernel_factory = new SrsFinalFactory();
+SrsAppFactory *_srs_app_factory = new SrsAppFactory();
 
 // @global version of srs, which can grep keyword "XCORE"
 extern const char *_srs_version;

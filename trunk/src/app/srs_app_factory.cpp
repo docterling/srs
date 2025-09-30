@@ -8,7 +8,38 @@
 
 #include <srs_app_config.hpp>
 #include <srs_app_st.hpp>
+#include <srs_kernel_file.hpp>
 #include <srs_protocol_st.hpp>
+#include <srs_kernel_ts.hpp>
+#include <srs_kernel_utility.hpp>
+
+SrsAppFactory::SrsAppFactory()
+{
+}
+
+SrsAppFactory::~SrsAppFactory()
+{
+}
+
+ISrsFileWriter *SrsAppFactory::create_file_writer()
+{
+    return new SrsFileWriter();
+}
+
+ISrsFileWriter *SrsAppFactory::create_enc_file_writer()
+{
+    return new SrsEncFileWriter();
+}
+
+ISrsFileReader *SrsAppFactory::create_file_reader()
+{
+    return new SrsFileReader();
+}
+
+SrsPath *SrsAppFactory::create_path()
+{
+    return new SrsPath();
+}
 
 SrsFinalFactory::SrsFinalFactory()
 {

@@ -11,6 +11,26 @@
 
 #include <srs_kernel_factory.hpp>
 
+class ISrsFileWriter;
+class ISrsFileReader;
+class SrsPath;
+
+// The factory to create app objects.
+class SrsAppFactory
+{
+public:
+    SrsAppFactory();
+    virtual ~SrsAppFactory();
+
+public:
+    virtual ISrsFileWriter *create_file_writer();
+    virtual ISrsFileWriter *create_enc_file_writer();
+    virtual ISrsFileReader *create_file_reader();
+    virtual SrsPath *create_path();
+};
+
+extern SrsAppFactory *_srs_app_factory;
+
 // The factory to create kernel objects.
 class SrsFinalFactory : public ISrsKernelFactory
 {

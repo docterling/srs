@@ -15,10 +15,10 @@
 #include <srs_app_rtc_conn.hpp>
 #include <srs_app_rtc_source.hpp>
 #include <srs_kernel_rtc_queue.hpp>
-#include <srs_utest_app6.hpp>
 #include <srs_utest_app2.hpp>
-#include <srs_utest_service.hpp>
+#include <srs_utest_app6.hpp>
 #include <srs_utest_kernel3.hpp>
+#include <srs_utest_service.hpp>
 
 // Mock video recv track for testing check_send_nacks
 class MockRtcVideoRecvTrackForNack : public SrsRtcVideoRecvTrack
@@ -156,7 +156,5 @@ public:
     virtual void strip();
     virtual ISrsRequest *as_http();
 };
-
-
 
 #endif
