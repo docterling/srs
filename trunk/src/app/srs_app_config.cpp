@@ -1933,7 +1933,7 @@ srs_error_t SrsConfig::check_normal_config()
         SrsConfDirective *conf = root_->get("srt_server");
         for (int i = 0; conf && i < (int)conf->directives_.size(); i++) {
             string n = conf->at(i)->name_;
-            if (n != "enabled" && n != "listen" && n != "maxbw" && n != "mss" && n != "latency" && n != "recvlatency" && n != "peerlatency" && n != "connect_timeout" && n != "peer_idle_timeout" && n != "sendbuf" && n != "recvbuf" && n != "payloadsize" && n != "default_app" && n != "sei_filter" && n != "mix_correct" && n != "tlpktdrop" && n != "tsbpdmode" && n != "passphrase" && n != "pbkeylen") {
+            if (n != "enabled" && n != "listen" && n != "maxbw" && n != "mss" && n != "latency" && n != "recvlatency" && n != "peerlatency" && n != "connect_timeout" && n != "peer_idle_timeout" && n != "sendbuf" && n != "recvbuf" && n != "payloadsize" && n != "default_app" && n != "sei_filter" && n != "mix_correct" && n != "tlpktdrop" && n != "tsbpdmode" && n != "passphrase" && n != "pbkeylen" && n != "default_streamid") {
                 return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "illegal srt_server.%s", n.c_str());
             }
         }
@@ -7607,6 +7607,23 @@ string SrsConfig::get_default_app_name()
     }
 
     conf = conf->get("default_app");
+    if (!conf || conf->arg0().empty()) {
+        return DEFAULT;
+    }
+    return conf->arg0();
+}
+
+string SrsConfig::get_srt_default_streamid()
+{
+    SRS_OVERWRITE_BY_ENV_STRING("srs.srt_server.default_streamid"); // SRS_SRT_SERVER_DEFAULT_STREAMID
+
+    static string DEFAULT = "#!::r=live/livestream,m=publish";
+    SrsConfDirective *conf = root_->get("srt_server");
+    if (!conf) {
+        return DEFAULT;
+    }
+
+    conf = conf->get("default_streamid");
     if (!conf || conf->arg0().empty()) {
         return DEFAULT;
     }
