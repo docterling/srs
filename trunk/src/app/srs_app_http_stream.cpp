@@ -655,9 +655,10 @@ srs_error_t SrsLiveStream::serve_http_impl(ISrsHttpResponseWriter *w, ISrsHttpMe
 
     // Correct the app and stream by path, which is created from template.
     // @remark Be careful that the stream has extension now, might cause identify fail.
-    req_->stream_ = srs_path_filepath_base(r->path());
+    SrsPath path;
+    req_->stream_ = path.filepath_base(r->path());
     // remove the extension of stream if have. for instance, test.flv -> test
-    req_->stream_ = srs_path_filepath_filename(req_->stream_);
+    req_->stream_ = path.filepath_filename(req_->stream_);
 
     // update client ip
     req_->ip_ = hc->remote_ip();
@@ -983,7 +984,8 @@ SrsLiveEntry::SrsLiveEntry(std::string m)
 
     req_ = NULL;
 
-    std::string ext = srs_path_filepath_ext(m);
+    SrsPath path;
+    std::string ext = path.filepath_ext(m);
     is_flv_ = (ext == ".flv");
     is_ts_ = (ext == ".ts");
     is_mp3_ = (ext == ".mp3");

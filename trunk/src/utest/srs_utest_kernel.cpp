@@ -2861,29 +2861,33 @@ VOID TEST(KernelUtility, BytesUtils)
 VOID TEST(KernelUtility, PathUtils)
 {
     if (true) {
-        EXPECT_TRUE("./" == srs_path_filepath_dir(""));
-        EXPECT_TRUE("/" == srs_path_filepath_dir("/"));
-        EXPECT_TRUE("/" == srs_path_filepath_dir("//"));
-        EXPECT_TRUE("/" == srs_path_filepath_dir("/stream"));
-        EXPECT_TRUE("live" == srs_path_filepath_dir("live/stream"));
+        SrsPath path;
+        EXPECT_TRUE("./" == path.filepath_dir(""));
+        EXPECT_TRUE("/" == path.filepath_dir("/"));
+        EXPECT_TRUE("/" == path.filepath_dir("//"));
+        EXPECT_TRUE("/" == path.filepath_dir("/stream"));
+        EXPECT_TRUE("live" == path.filepath_dir("live/stream"));
     }
 
     if (true) {
-        EXPECT_TRUE("" == srs_path_filepath_base(""));
-        EXPECT_TRUE("/" == srs_path_filepath_base("/"));
-        EXPECT_TRUE("stream" == srs_path_filepath_base("/stream"));
-        EXPECT_TRUE("stream" == srs_path_filepath_base("live/stream"));
-        EXPECT_TRUE("stream.flv" == srs_path_filepath_base("live/stream.flv"));
+        SrsPath path;
+        EXPECT_TRUE("" == path.filepath_base(""));
+        EXPECT_TRUE("/" == path.filepath_base("/"));
+        EXPECT_TRUE("stream" == path.filepath_base("/stream"));
+        EXPECT_TRUE("stream" == path.filepath_base("live/stream"));
+        EXPECT_TRUE("stream.flv" == path.filepath_base("live/stream.flv"));
     }
 
     if (true) {
-        EXPECT_TRUE("" == srs_path_filepath_filename(""));
-        EXPECT_TRUE("stream" == srs_path_filepath_filename("stream.flv"));
+        SrsPath path;
+        EXPECT_TRUE("" == path.filepath_filename(""));
+        EXPECT_TRUE("stream" == path.filepath_filename("stream.flv"));
     }
 
     if (true) {
-        EXPECT_TRUE("" == srs_path_filepath_ext(""));
-        EXPECT_TRUE(".flv" == srs_path_filepath_ext("stream.flv"));
+        SrsPath path;
+        EXPECT_TRUE("" == path.filepath_ext(""));
+        EXPECT_TRUE(".flv" == path.filepath_ext("stream.flv"));
     }
 }
 
@@ -5551,7 +5555,8 @@ MockFileRemover::~MockFileRemover()
         return;
     if (path_.find(".log") == string::npos)
         return;
-    ::unlink(path_.c_str());
+    SrsPath path;
+    path.unlink(path_);
 }
 
 VOID TEST(KernelFileTest, ReadWriteCase)
@@ -6164,8 +6169,9 @@ VOID TEST(KernelUtilityTest, CoverTimeUtilityAll)
     }
 
     if (true) {
-        EXPECT_TRUE(srs_path_exists("."));
-        HELPER_EXPECT_SUCCESS(srs_os_mkdir_all("."));
+        SrsPath path;
+        EXPECT_TRUE(path.exists("."));
+        HELPER_EXPECT_SUCCESS(path.mkdir_all("."));
     }
 
     if (true) {

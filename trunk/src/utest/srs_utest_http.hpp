@@ -59,6 +59,28 @@ string mock_http_response2(int status, string content);
 string mock_http_response4(int status, string content);
 bool is_string_contain(string substr, string str);
 
+// Mock SrsPath that always returns true for exists()
+class MockSrsPathAlwaysExists : public SrsPath
+{
+public:
+    MockSrsPathAlwaysExists();
+    virtual ~MockSrsPathAlwaysExists();
+
+public:
+    virtual bool exists(std::string path);
+};
+
+// Mock SrsPath that always returns false for exists()
+class MockSrsPathNotExists : public SrsPath
+{
+public:
+    MockSrsPathNotExists();
+    virtual ~MockSrsPathNotExists();
+
+public:
+    virtual bool exists(std::string path);
+};
+
 #define __MOCK_HTTP_EXPECT_STREQ(status, text, w) \
     EXPECT_STREQ(mock_http_response(status, text).c_str(), HELPER_BUFFER2STR(&w.io.out_buffer).c_str())
 

@@ -333,7 +333,8 @@ srs_error_t SrsDH::do_initialize()
 
 SrsKeyBlock::SrsKeyBlock()
 {
-    offset_ = (int32_t)srs_rand_integer();
+    SrsRand rand;
+    offset_ = (int32_t)rand.integer();
     random0_ = NULL;
     random1_ = NULL;
 
@@ -343,16 +344,16 @@ SrsKeyBlock::SrsKeyBlock()
     random0_size_ = valid_offset;
     if (random0_size_ > 0) {
         random0_ = new char[random0_size_];
-        srs_rand_gen_bytes(random0_, random0_size_);
+        rand_.gen_bytes(random0_, random0_size_);
         snprintf(random0_, random0_size_, "%s", RTMP_SIG_SRS_HANDSHAKE);
     }
 
-    srs_rand_gen_bytes(key_, sizeof(key_));
+    rand_.gen_bytes(key_, sizeof(key_));
 
     random1_size_ = 764 - valid_offset - 128 - 4;
     if (random1_size_ > 0) {
         random1_ = new char[random1_size_];
-        srs_rand_gen_bytes(random1_, random1_size_);
+        rand_.gen_bytes(random1_, random1_size_);
         snprintf(random1_, random1_size_, "%s", RTMP_SIG_SRS_HANDSHAKE);
     }
 }
@@ -415,7 +416,8 @@ int SrsKeyBlock::calc_valid_offset()
 
 SrsDigestBlock::SrsDigestBlock()
 {
-    offset_ = (int32_t)srs_rand_integer();
+    SrsRand rand;
+    offset_ = (int32_t)rand.integer();
     random0_ = NULL;
     random1_ = NULL;
 
@@ -425,16 +427,16 @@ SrsDigestBlock::SrsDigestBlock()
     random0_size_ = valid_offset;
     if (random0_size_ > 0) {
         random0_ = new char[random0_size_];
-        srs_rand_gen_bytes(random0_, random0_size_);
+        rand_.gen_bytes(random0_, random0_size_);
         snprintf(random0_, random0_size_, "%s", RTMP_SIG_SRS_HANDSHAKE);
     }
 
-    srs_rand_gen_bytes(digest_, sizeof(digest_));
+    rand_.gen_bytes(digest_, sizeof(digest_));
 
     random1_size_ = 764 - 4 - valid_offset - 32;
     if (random1_size_ > 0) {
         random1_ = new char[random1_size_];
-        srs_rand_gen_bytes(random1_, random1_size_);
+        rand_.gen_bytes(random1_, random1_size_);
         snprintf(random1_, random1_size_, "%s", RTMP_SIG_SRS_HANDSHAKE);
     }
 }
@@ -945,13 +947,13 @@ srs_error_t SrsC1S1::s1_validate_digest(bool &is_valid)
 
 SrsC2S2::SrsC2S2()
 {
-    srs_rand_gen_bytes(random_, 1504);
+    rand_.gen_bytes(random_, 1504);
 
     int size = snprintf(random_, 1504, "%s", RTMP_SIG_SRS_HANDSHAKE);
     srs_assert(size > 0 && size < 1504);
     snprintf(random_ + 1504 - size, size, "%s", RTMP_SIG_SRS_HANDSHAKE);
 
-    srs_rand_gen_bytes(digest_, 32);
+    rand_.gen_bytes(digest_, 32);
 }
 
 SrsC2S2::~SrsC2S2()

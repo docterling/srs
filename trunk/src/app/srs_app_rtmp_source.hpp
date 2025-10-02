@@ -47,6 +47,20 @@ class SrsBuffer;
 #ifdef SRS_HDS
 class SrsHds;
 #endif
+class ISrsStatistic;
+class ISrsHttpHooks;
+class ISrsAppConfig;
+class ISrsLiveSource;
+class ISrsHls;
+class ISrsDash;
+class ISrsDvr;
+class ISrsMediaEncoder;
+#ifdef SRS_HDS
+class ISrsHds;
+#endif
+class ISrsNgExec;
+class ISrsForwarder;
+class SrsAppFactory;
 
 // The time jitter algorithm:
 // 1. full, to ensure stream start at zero, and ensure stream monotonically increasing.
@@ -180,7 +194,7 @@ class SrsLiveConsumer : public ISrsWakable
 {
 private:
     // Because source references to this object, so we should directly use the source ptr.
-    SrsLiveSource *source_;
+    ISrsLiveSource *source_;
 
 private:
     SrsRtmpJitter *jitter_;
@@ -196,7 +210,7 @@ private:
     srs_utime_t mw_duration_;
 #endif
 public:
-    SrsLiveConsumer(SrsLiveSource *s);
+    SrsLiveConsumer(ISrsLiveSource *s);
     virtual ~SrsLiveConsumer();
 
 public:
@@ -329,14 +343,48 @@ public:
     virtual SrsMediaPacket *pop();
 };
 
+// The interface for origin hub.
+class ISrsOriginHub
+{
+public:
+    ISrsOriginHub();
+    virtual ~ISrsOriginHub();
+
+public:
+    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> s, ISrsRequest *r) = 0;
+    virtual void dispose() = 0;
+    virtual srs_error_t cycle() = 0;
+    virtual bool active() = 0;
+    virtual srs_utime_t cleanup_delay() = 0;
+
+public:
+    // When got a parsed metadata.
+    virtual srs_error_t on_meta_data(SrsMediaPacket *shared_metadata, SrsOnMetaDataPacket *packet) = 0;
+    // When got a parsed audio packet.
+    virtual srs_error_t on_audio(SrsMediaPacket *shared_audio) = 0;
+    // When got a parsed video packet.
+    virtual srs_error_t on_video(SrsMediaPacket *shared_video, bool is_sequence_header) = 0;
+
+public:
+    // When start publish stream.
+    virtual srs_error_t on_publish() = 0;
+    // When stop publish stream.
+    virtual void on_unpublish() = 0;
+};
+
 // The hub for origin is a collection of utilities for origin only,
 // For example, DVR, HLS, Forward and Transcode are only available for origin,
 // they are meanless for edge server.
-class SrsOriginHub : public ISrsReloadHandler
+class SrsOriginHub : public ISrsReloadHandler, public ISrsOriginHub
 {
 private:
+    ISrsAppConfig *config_;
+    ISrsStatistic *stat_;
+    ISrsHttpHooks *hooks_;
+
+private:
     // Because source references to this object, so we should directly use the source ptr.
-    SrsLiveSource *source_;
+    ISrsLiveSource *source_;
 
 private:
     ISrsRequest *req_;
@@ -344,24 +392,25 @@ private:
 
 private:
     // hls handler.
-    SrsHls *hls_;
+    ISrsHls *hls_;
     // The DASH encoder.
-    SrsDash *dash_;
+    ISrsDash *dash_;
     // dvr handler.
-    SrsDvr *dvr_;
+    ISrsDvr *dvr_;
     // transcoding handler.
-    SrsEncoder *encoder_;
+    ISrsMediaEncoder *encoder_;
 #ifdef SRS_HDS
     // adobe hds(http dynamic streaming).
-    SrsHds *hds_;
+    ISrsHds *hds_;
 #endif
     // nginx-rtmp exec feature.
-    SrsNgExec *ng_exec_;
+    ISrsNgExec *ng_exec_;
     // To forward stream to other servers
-    std::vector<SrsForwarder *> forwarders_;
+    std::vector<ISrsForwarder *> forwarders_;
 
 public:
     SrsOriginHub();
+    void assemble();
     virtual ~SrsOriginHub();
 
 public:
@@ -483,12 +532,15 @@ public:
 };
 
 // The source manager to create and refresh all stream sources.
-class SrsLiveSourceManager : public ISrsHourGlass, public ISrsLiveSourceManager
+class SrsLiveSourceManager : public ISrsHourGlassHandler, public ISrsLiveSourceManager
 {
+private:
+    SrsAppFactory *app_factory_;
+
 private:
     srs_mutex_t lock_;
     std::map<std::string, SrsSharedPtr<SrsLiveSource> > pool_;
-    SrsHourGlass *timer_;
+    ISrsHourGlass *timer_;
 
 public:
     SrsLiveSourceManager();
@@ -509,7 +561,7 @@ public:
 public:
     // dispose and cycle all sources.
     virtual void dispose();
-    // interface ISrsHourGlass
+    // interface ISrsHourGlassHandler
 private:
     virtual srs_error_t setup_ticks();
     virtual srs_error_t notify(int event, srs_utime_t interval, srs_utime_t tick);
@@ -523,10 +575,29 @@ public:
 // Global singleton instance.
 extern SrsLiveSourceManager *_srs_sources;
 
-// The live streaming source.
-class SrsLiveSource : public ISrsReloadHandler, public ISrsFrameTarget
+// The live source interface.
+class ISrsLiveSource
 {
-    friend class SrsOriginHub;
+public:
+    ISrsLiveSource();
+    virtual ~ISrsLiveSource();
+
+public:
+    virtual void on_consumer_destroy(SrsLiveConsumer *consumer) = 0;
+    virtual SrsContextId source_id() = 0;
+    virtual SrsContextId pre_source_id() = 0;
+    virtual SrsMetaCache *meta() = 0;
+    virtual SrsRtmpFormat *format() = 0;
+};
+
+// The live streaming source.
+class SrsLiveSource : public ISrsReloadHandler, public ISrsFrameTarget, public ISrsLiveSource
+{
+private:
+    ISrsAppConfig *config_;
+    ISrsStatistic *stat_;
+    ISrsLiveSourceHandler *handler_;
+    SrsAppFactory *app_factory_;
 
 private:
     // For publish, it's the publish client id.
@@ -563,7 +634,7 @@ private:
     // The gop cache for client fast startup.
     SrsGopCache *gop_cache_;
     // The hub for origin server.
-    SrsOriginHub *hub_;
+    ISrsOriginHub *hub_;
     // The metadata cache.
     SrsMetaCache *meta_;
     // The format, codec information.
@@ -579,6 +650,7 @@ private:
 
 public:
     SrsLiveSource();
+    void assemble();
     virtual ~SrsLiveSource();
 
 public:
@@ -588,6 +660,8 @@ public:
     virtual bool stream_is_dead();
     // Whether publisher is idle for a period of timeout.
     bool publisher_is_idle_for(srs_utime_t timeout);
+    virtual SrsMetaCache *meta();
+    virtual SrsRtmpFormat *format();
 
 public:
     // Initialize the hls with handlers.

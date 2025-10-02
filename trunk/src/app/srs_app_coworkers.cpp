@@ -80,7 +80,8 @@ SrsJsonAny *SrsCoWorkers::dumps(string vhost, string coworker, string app, strin
         service_ip = coworker_host;
     }
     if (service_ip.empty()) {
-        service_ip = srs_get_public_internet_address();
+        SrsProtocolUtility utility;
+        service_ip = utility.public_internet_address();
     }
 
     // The backend API endpoint.

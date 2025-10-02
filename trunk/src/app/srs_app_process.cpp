@@ -299,7 +299,8 @@ void SrsProcess::stop()
     // when rewind, upstream will stop publish(unpublish),
     // unpublish event will stop all ffmpeg encoders,
     // then publish will start all ffmpeg encoders.
-    srs_error_t err = srs_kill_forced(pid_);
+    SrsAppUtility utility;
+    srs_error_t err = utility.kill(pid_);
     if (err != srs_success) {
         srs_warn("ignore kill the process failed, pid=%d. err=%s", pid_, srs_error_desc(err).c_str());
         srs_freep(err);

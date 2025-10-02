@@ -90,7 +90,7 @@ public:
 };
 
 // Mock classes for hourglass testing
-class MockSrsHourGlass : public ISrsHourGlass
+class MockSrsHourGlass : public ISrsHourGlassHandler
 {
 public:
     std::vector<int> events_;

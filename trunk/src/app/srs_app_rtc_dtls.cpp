@@ -300,7 +300,8 @@ srs_error_t SrsDtlsCertificate::initialize()
         X509_NAME *subject = X509_NAME_new();
         srs_assert(subject);
 
-        int serial = (int)srs_rand_integer();
+        SrsRand rand;
+        int serial = (int)rand.integer();
         ASN1_INTEGER_set(X509_get_serialNumber(dtls_cert_), serial);
 
         const std::string &aor = RTMP_SIG_SRS_DOMAIN;

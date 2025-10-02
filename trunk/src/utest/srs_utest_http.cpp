@@ -202,12 +202,28 @@ public:
     }
 };
 
-bool _mock_srs_path_always_exists(std::string /*path*/)
+MockSrsPathAlwaysExists::MockSrsPathAlwaysExists()
+{
+}
+
+MockSrsPathAlwaysExists::~MockSrsPathAlwaysExists()
+{
+}
+
+bool MockSrsPathAlwaysExists::exists(std::string /*path*/)
 {
     return true;
 }
 
-bool _mock_srs_path_not_exists(std::string /*path*/)
+MockSrsPathNotExists::MockSrsPathNotExists()
+{
+}
+
+MockSrsPathNotExists::~MockSrsPathNotExists()
+{
+}
+
+bool MockSrsPathNotExists::exists(std::string /*path*/)
 {
     return false;
 }
@@ -1463,7 +1479,7 @@ VOID TEST(ProtocolHTTPTest, VodStreamHandlers)
 
         SrsVodStream h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory(fs));
-        h.set_path_check(_mock_srs_path_always_exists);
+        h.set_path(new MockSrsPathAlwaysExists());
         h.entry = &e;
 
         MockResponseWriter w;
@@ -1486,7 +1502,7 @@ VOID TEST(ProtocolHTTPTest, VodStreamHandlers)
 
         SrsVodStream h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("Hello, world!"));
-        h.set_path_check(_mock_srs_path_always_exists);
+        h.set_path(new MockSrsPathAlwaysExists());
         h.entry = &e;
 
         MockResponseWriter w;
@@ -1503,7 +1519,7 @@ VOID TEST(ProtocolHTTPTest, VodStreamHandlers)
 
         SrsVodStream h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("Hello, world!"));
-        h.set_path_check(_mock_srs_path_always_exists);
+        h.set_path(new MockSrsPathAlwaysExists());
         h.entry = &e;
 
         MockResponseWriter w;
@@ -1521,7 +1537,7 @@ VOID TEST(ProtocolHTTPTest, VodStreamHandlers)
 
         SrsVodStream h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("Hello, world!"));
-        h.set_path_check(_mock_srs_path_always_exists);
+        h.set_path(new MockSrsPathAlwaysExists());
         h.entry = &e;
 
         MockResponseWriter w;
@@ -1539,7 +1555,7 @@ VOID TEST(ProtocolHTTPTest, VodStreamHandlers)
 
         SrsVodStream h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("Hello, world!"));
-        h.set_path_check(_mock_srs_path_always_exists);
+        h.set_path(new MockSrsPathAlwaysExists());
         h.entry = &e;
 
         MockResponseWriter w;
@@ -1557,7 +1573,7 @@ VOID TEST(ProtocolHTTPTest, VodStreamHandlers)
 
         SrsVodStream h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("Hello, world!"));
-        h.set_path_check(_mock_srs_path_always_exists);
+        h.set_path(new MockSrsPathAlwaysExists());
         h.entry = &e;
 
         MockResponseWriter w;
@@ -1575,7 +1591,7 @@ VOID TEST(ProtocolHTTPTest, VodStreamHandlers)
 
         SrsVodStream h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("Hello, world!"));
-        h.set_path_check(_mock_srs_path_always_exists);
+        h.set_path(new MockSrsPathAlwaysExists());
         h.entry = &e;
 
         MockResponseWriter w;
@@ -1597,7 +1613,7 @@ VOID TEST(ProtocolHTTPTest, VodStreamHandlers)
 
         SrsVodStream h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("livestream-13.ts"));
-        h.set_path_check(_mock_srs_path_always_exists);
+        h.set_path(new MockSrsPathAlwaysExists());
         h.entry = &e;
 
         MockResponseWriter w;
@@ -1619,7 +1635,7 @@ VOID TEST(ProtocolHTTPTest, VodStreamHandlers)
 
         SrsVodStream h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("livestream-13.m4s"));
-        h.set_path_check(_mock_srs_path_always_exists);
+        h.set_path(new MockSrsPathAlwaysExists());
         h.entry = &e;
 
         MockResponseWriter w;
@@ -1641,7 +1657,7 @@ VOID TEST(ProtocolHTTPTest, VodStreamHandlers)
 
         SrsVodStream h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("init.mp4"));
-        h.set_path_check(_mock_srs_path_always_exists);
+        h.set_path(new MockSrsPathAlwaysExists());
         h.entry = &e;
 
         MockResponseWriter w;
@@ -1667,7 +1683,7 @@ VOID TEST(ProtocolHTTPTest, BasicHandlers)
 
         SrsHttpFileServer h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("Hello, world!"));
-        h.set_path_check(_mock_srs_path_always_exists);
+        h.set_path(new MockSrsPathAlwaysExists());
         h.entry = &e;
 
         MockResponseWriter w;
@@ -1684,7 +1700,7 @@ VOID TEST(ProtocolHTTPTest, BasicHandlers)
 
         SrsHttpFileServer h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("Hello, world!"));
-        h.set_path_check(_mock_srs_path_always_exists);
+        h.set_path(new MockSrsPathAlwaysExists());
         h.entry = &e;
 
         MockResponseWriter w;
@@ -1701,7 +1717,7 @@ VOID TEST(ProtocolHTTPTest, BasicHandlers)
 
         SrsHttpFileServer h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("Hello, world!"));
-        h.set_path_check(_mock_srs_path_always_exists);
+        h.set_path(new MockSrsPathAlwaysExists());
         h.entry = &e;
 
         MockResponseWriter w;
@@ -1718,7 +1734,7 @@ VOID TEST(ProtocolHTTPTest, BasicHandlers)
 
         SrsHttpFileServer h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("Hello, world!"));
-        h.set_path_check(_mock_srs_path_always_exists);
+        h.set_path(new MockSrsPathAlwaysExists());
         h.entry = &e;
 
         MockResponseWriter w;
@@ -1735,7 +1751,7 @@ VOID TEST(ProtocolHTTPTest, BasicHandlers)
 
         SrsHttpFileServer h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("Hello, world!"));
-        h.set_path_check(_mock_srs_path_always_exists);
+        h.set_path(new MockSrsPathAlwaysExists());
         h.entry = &e;
 
         MockResponseWriter w;
@@ -1752,7 +1768,7 @@ VOID TEST(ProtocolHTTPTest, BasicHandlers)
 
         SrsHttpFileServer h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("Hello, world!"));
-        h.set_path_check(_mock_srs_path_always_exists);
+        h.set_path(new MockSrsPathAlwaysExists());
         h.entry = &e;
 
         MockResponseWriter w;
@@ -1769,7 +1785,7 @@ VOID TEST(ProtocolHTTPTest, BasicHandlers)
 
         SrsHttpFileServer h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("Hello, world!"));
-        h.set_path_check(_mock_srs_path_always_exists);
+        h.set_path(new MockSrsPathAlwaysExists());
         h.entry = &e;
 
         MockResponseWriter w;
@@ -1786,7 +1802,7 @@ VOID TEST(ProtocolHTTPTest, BasicHandlers)
 
         SrsHttpFileServer h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("Hello, world!"));
-        h.set_path_check(_mock_srs_path_not_exists);
+        h.set_path(new MockSrsPathNotExists());
         h.entry = &e;
 
         MockResponseWriter w;

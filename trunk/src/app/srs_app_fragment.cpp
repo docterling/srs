@@ -81,8 +81,9 @@ srs_error_t SrsFragment::unlink_file()
 {
     srs_error_t err = srs_success;
 
-    if (::unlink(filepath_.c_str()) < 0) {
-        return srs_error_new(ERROR_SYSTEM_FRAGMENT_UNLINK, "unlink %s", filepath_.c_str());
+    SrsPath path;
+    if ((err = path.unlink(filepath_)) != srs_success) {
+        return srs_error_wrap(err, "unlink %s", filepath_.c_str());
     }
 
     return err;
@@ -92,9 +93,10 @@ srs_error_t SrsFragment::create_dir()
 {
     srs_error_t err = srs_success;
 
-    std::string segment_dir = srs_path_filepath_dir(filepath_);
+    SrsPath path;
+    std::string segment_dir = path.filepath_dir(filepath_);
 
-    if ((err = srs_os_mkdir_all(segment_dir)) != srs_success) {
+    if ((err = path.mkdir_all(segment_dir)) != srs_success) {
         return srs_error_wrap(err, "create %s", segment_dir.c_str());
     }
 
@@ -113,8 +115,9 @@ srs_error_t SrsFragment::unlink_tmpfile()
     srs_error_t err = srs_success;
 
     string filepath = tmppath();
-    if (::unlink(filepath.c_str()) < 0) {
-        return srs_error_new(ERROR_SYSTEM_FRAGMENT_UNLINK, "unlink tmp file %s", filepath.c_str());
+    SrsPath path;
+    if ((err = path.unlink(filepath)) != srs_success) {
+        return srs_error_wrap(err, "unlink tmp file %s", filepath.c_str());
     }
 
     return err;

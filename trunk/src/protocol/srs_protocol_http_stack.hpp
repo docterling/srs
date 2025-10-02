@@ -10,6 +10,7 @@
 #include <srs_core.hpp>
 
 #include <srs_kernel_io.hpp>
+#include <srs_kernel_utility.hpp>
 #include <srs_protocol_http_stack_llhttp.hpp>
 
 #include <map>
@@ -327,9 +328,6 @@ public:
     virtual srs_error_t serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r);
 };
 
-// For utest to mock it.
-typedef bool (*_pfn_srs_path_exists)(std::string path);
-
 // Build the file path from request r.
 extern std::string srs_http_fs_fullpath(std::string dir, std::string pattern, std::string upath);
 
@@ -348,7 +346,7 @@ protected:
 
 protected:
     ISrsFileReaderFactory *fs_factory;
-    _pfn_srs_path_exists _srs_path_exists;
+    SrsPath *path_;
 
 public:
     SrsHttpFileServer(std::string root_dir);
@@ -357,8 +355,8 @@ public:
 private:
     // For utest to mock the fs.
     virtual void set_fs_factory(ISrsFileReaderFactory *v);
-    // For utest to mock the path check function.
-    virtual void set_path_check(_pfn_srs_path_exists pfn);
+    // For utest to mock the path utility.
+    virtual void set_path(SrsPath *v);
 
 public:
     virtual srs_error_t serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r);

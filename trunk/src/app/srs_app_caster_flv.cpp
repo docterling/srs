@@ -172,10 +172,11 @@ srs_error_t SrsAppCasterFlv::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessa
     SrsDynamicHttpConn *dconn = dynamic_cast<SrsDynamicHttpConn *>(hconn->handler());
     srs_assert(dconn);
 
-    std::string app = srs_path_filepath_dir(r->path());
+    SrsPath path;
+    std::string app = path.filepath_dir(r->path());
     app = srs_strings_trim_start(app, "/");
 
-    std::string stream = srs_path_filepath_base(r->path());
+    std::string stream = path.filepath_base(r->path());
     stream = srs_strings_trim_start(stream, "/");
 
     std::string o = output_;

@@ -126,9 +126,6 @@ bool srs_strings_equal(std::vector<T> &a, std::vector<T> &b)
 // @return true if completely equal; otherwise, false.
 extern bool srs_bytes_equal(void *pa, void *pb, int size);
 
-// Create dir recursively
-extern srs_error_t srs_os_mkdir_all(std::string dir);
-
 // The path utility.
 class SrsPath
 {
@@ -141,18 +138,19 @@ public:
     virtual bool exists(std::string path);
     // Remove or unlink file.
     virtual srs_error_t unlink(std::string path);
-};
+    // Get the dirname of path, for instance, dirname("/live/livestream")="/live"
+    virtual std::string filepath_dir(std::string path);
+    // Get the basename of path, for instance, basename("/live/livestream")="livestream"
+    virtual std::string filepath_base(std::string path);
+    // Get the filename of path, for instance, filename("livestream.flv")="livestream"
+    virtual std::string filepath_filename(std::string path);
+    // Get the file extension of path, for instance, filext("live.flv")=".flv"
+    virtual std::string filepath_ext(std::string path);
 
-// Whether path exists.
-extern bool srs_path_exists(std::string path);
-// Get the dirname of path, for instance, dirname("/live/livestream")="/live"
-extern std::string srs_path_filepath_dir(std::string path);
-// Get the basename of path, for instance, basename("/live/livestream")="livestream"
-extern std::string srs_path_filepath_base(std::string path);
-// Get the filename of path, for instance, filename("livestream.flv")="livestream"
-extern std::string srs_path_filepath_filename(std::string path);
-// Get the file extension of path, for instance, filext("live.flv")=".flv"
-extern std::string srs_path_filepath_ext(std::string path);
+public:
+    // Create dir recursively
+    virtual srs_error_t mkdir_all(std::string dir);
+};
 
 // Covert hex string p to uint8 data, for example:
 //      srs_hex_decode_string(data, string("139056E5A0"))
@@ -166,15 +164,22 @@ extern char *srs_hex_encode_to_string(char *des, const uint8_t *src, int len);
 // Output in lowercase, such as string("f33f").
 extern char *srs_hex_encode_to_string_lowercase(char *des, const uint8_t *src, int len);
 
-// Generate ramdom data for handshake.
-extern void srs_rand_gen_bytes(char *bytes, int size);
+// The random generator.
+class SrsRand
+{
+public:
+    SrsRand();
+    virtual ~SrsRand();
 
-// Generate random string [0-9a-z] in size of len bytes.
-extern std::string srs_rand_gen_str(int len);
-
-// Generate random value, use srandom(now_us) to init seed if not initialized.
-extern long srs_rand_integer();
-extern long srs_rand_integer(long min, long max);
+public:
+    // Generate ramdom data for handshake.
+    virtual void gen_bytes(char *bytes, int size);
+    // Generate random string [0-9a-z] in size of len bytes.
+    virtual std::string gen_str(int len);
+    // Generate random value, use srandom(now_us) to init seed if not initialized.
+    virtual long integer();
+    virtual long integer(long min, long max);
+};
 
 // Whether string is digit number
 //      is_digit("0")  is true

@@ -92,7 +92,8 @@ srs_error_t SrsHlsStream::serve_m3u8_ctx(ISrsHttpResponseWriter *w, ISrsHttpMess
 
     // Correct the app and stream by path, which is created from template.
     // @remark Be careful that the stream has extension now, might cause identify fail.
-    req->stream_ = srs_path_filepath_base(r->path());
+    SrsPath path;
+    req->stream_ = path.filepath_base(r->path());
 
     // Served by us.
     *served = true;
@@ -152,9 +153,10 @@ srs_error_t SrsHlsStream::serve_new_session(ISrsHttpResponseWriter *w, ISrsHttpM
     srs_assert(hr);
 
     if (ctx.empty()) {
+        SrsRand rand;
         // make sure unique
         do {
-            ctx = srs_rand_gen_str(8); // the same as cid
+            ctx = rand.gen_str(8); // the same as cid
         } while (ctx_is_exist(ctx));
     }
 

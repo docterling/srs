@@ -349,7 +349,8 @@ srs_error_t SrsHttpHooks::on_hls(SrsContextId c, string url, ISrsRequest *req, s
     std::string cwd = _srs_config->cwd();
 
     // the ts_url is under the same dir of m3u8_url.
-    string prefix = srs_path_filepath_dir(m3u8_url);
+    SrsPath path;
+    string prefix = path.filepath_dir(m3u8_url);
     if (!prefix.empty() && !srs_net_url_is_http(ts_url)) {
         ts_url = prefix + "/" + ts_url;
     }

@@ -1278,7 +1278,8 @@ srs_error_t SrsGoApiMetrics::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessa
 
 #if defined(__linux__) || defined(SRS_OSX)
     // Get system info
-    utsname *system_info = srs_get_system_uname_info();
+    SrsProtocolUtility utility;
+    utsname *system_info = utility.system_uname();
     ss << "# HELP srs_node_uname_info Labeled system information as provided by the uname system call.\n"
        << "# TYPE srs_node_uname_info gauge\n"
        << "srs_node_uname_info{"

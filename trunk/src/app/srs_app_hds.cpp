@@ -232,6 +232,14 @@ private:
     string path_;
 };
 
+ISrsHds::ISrsHds()
+{
+}
+
+ISrsHds::~ISrsHds()
+{
+}
+
 SrsHds::SrsHds()
     : currentSegment_(NULL), fragment_index_(1), video_sh_(NULL), audio_sh_(NULL), hds_req_(NULL), hds_enabled_(false)
 {
@@ -407,8 +415,9 @@ srs_error_t SrsHds::flush_mainfest()
                         "</manifest>",
              hds_req_->stream_.c_str(), hds_req_->stream_.c_str(), hds_req_->stream_.c_str());
 
+    SrsPath path_util;
     string dir = _srs_config->get_hds_path(hds_req_->vhost_) + "/" + hds_req_->app_;
-    if ((err = srs_os_mkdir_all(dir)) != srs_success) {
+    if ((err = path_util.mkdir_all(dir)) != srs_success) {
         return srs_error_wrap(err, "hds create dir failed");
     }
     string path = dir + "/" + hds_req_->stream_ + ".f4m";
@@ -689,7 +698,8 @@ void SrsHds::adjust_windows()
     double windows_size_limit = srsu2ms(_srs_config->get_hds_window(hds_req_->vhost_));
     if (windows_size > windows_size_limit) {
         SrsHdsFragment *fragment = fragments_.front();
-        unlink(fragment->fragment_path().c_str());
+        SrsPath path;
+        path.unlink(fragment->fragment_path());
         fragments_.erase(fragments_.begin());
         srs_freep(fragment);
     }

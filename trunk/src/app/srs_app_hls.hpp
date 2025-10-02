@@ -317,6 +317,7 @@ private:
 public:
     // HLS recover mode.
     srs_error_t recover_hls();
+
 private:
     virtual srs_error_t do_recover_hls();
 };
@@ -612,9 +613,29 @@ public:
     virtual int deviation();
 };
 
+// The HLS interface.
+class ISrsHls
+{
+public:
+    ISrsHls();
+    virtual ~ISrsHls();
+
+public:
+    virtual srs_error_t initialize(SrsOriginHub *h, ISrsRequest *r) = 0;
+    virtual srs_error_t on_audio(SrsMediaPacket *shared_audio, SrsFormat *format) = 0;
+    virtual srs_error_t on_video(SrsMediaPacket *shared_video, SrsFormat *format) = 0;
+    virtual srs_error_t on_publish() = 0;
+    virtual void on_unpublish() = 0;
+
+public:
+    virtual void dispose() = 0;
+    virtual srs_error_t cycle() = 0;
+    virtual srs_utime_t cleanup_delay() = 0;
+};
+
 // Transmux RTMP stream to HLS(m3u8 and ts,fmp4).
 // TODO: FIXME: add utest for hls.
-class SrsHls
+class SrsHls : public ISrsHls
 {
 private:
     ISrsAppConfig *config_;

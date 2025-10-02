@@ -14,6 +14,8 @@
 class ISrsFileWriter;
 class ISrsFileReader;
 class SrsPath;
+class SrsLiveSource;
+class ISrsOriginHub;
 
 // The factory to create app objects.
 class SrsAppFactory
@@ -27,6 +29,8 @@ public:
     virtual ISrsFileWriter *create_enc_file_writer();
     virtual ISrsFileReader *create_file_reader();
     virtual SrsPath *create_path();
+    virtual SrsLiveSource *create_live_source();
+    virtual ISrsOriginHub *create_origin_hub();
 };
 
 extern SrsAppFactory *_srs_app_factory;

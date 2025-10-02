@@ -23,7 +23,8 @@ using namespace std;
 
 string srs_generate_stat_vid()
 {
-    return "vid-" + srs_rand_gen_str(7);
+    SrsRand rand;
+    return "vid-" + rand.gen_str(7);
 }
 
 SrsStatisticVhost::SrsStatisticVhost()
@@ -567,7 +568,8 @@ std::string SrsStatistic::server_id()
 std::string SrsStatistic::service_id()
 {
     if (service_id_.empty()) {
-        service_id_ = srs_rand_gen_str(8);
+        SrsRand rand;
+        service_id_ = rand.gen_str(8);
     }
 
     return service_id_;

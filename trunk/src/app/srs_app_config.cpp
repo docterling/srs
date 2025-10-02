@@ -1576,7 +1576,8 @@ srs_error_t SrsConfig::parse_options(int argc, char **argv)
     }
 
     // Make sure config file exists.
-    if (!env_only_ && !srs_path_exists(config_file_)) {
+    SrsPath path;
+    if (!env_only_ && !path.exists(config_file_)) {
         return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "no config file at %s", config_file_.c_str());
     }
 
@@ -1677,13 +1678,15 @@ srs_error_t SrsConfig::persistence()
 
     // do persistence to writer.
     if ((err = do_persistence(&fw)) != srs_success) {
-        ::unlink(path.c_str());
+        SrsPath p;
+        p.unlink(path);
         return srs_error_wrap(err, "persistence");
     }
 
     // rename the config file.
     if (::rename(path.c_str(), config_file_.c_str()) < 0) {
-        ::unlink(path.c_str());
+        SrsPath p;
+        p.unlink(path);
         return srs_error_new(ERROR_SYSTEM_CONFIG_PERSISTENCE, "rename %s=>%s", path.c_str(), config_file_.c_str());
     }
 
@@ -2032,7 +2035,8 @@ srs_error_t SrsConfig::check_normal_config()
         return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "invalid stats.network=%d", get_stats_network());
     }
     if (true) {
-        vector<SrsIPAddress *> ips = srs_get_local_ips();
+        SrsProtocolUtility utility;
+        vector<SrsIPAddress *> ips = utility.local_ips();
         int index = get_stats_network();
         if (index >= (int)ips.size()) {
             return srs_error_new(ERROR_SYSTEM_CONFIG_INVALID, "invalid stats.network=%d of %d",

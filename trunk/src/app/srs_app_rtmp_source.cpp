@@ -15,6 +15,7 @@ using namespace std;
 #include <srs_app_dvr.hpp>
 #include <srs_app_edge.hpp>
 #include <srs_app_encoder.hpp>
+#include <srs_app_factory.hpp>
 #include <srs_app_forward.hpp>
 #include <srs_app_hds.hpp>
 #include <srs_app_hls.hpp>
@@ -403,7 +404,7 @@ ISrsWakable::~ISrsWakable()
 {
 }
 
-SrsLiveConsumer::SrsLiveConsumer(SrsLiveSource *s)
+SrsLiveConsumer::SrsLiveConsumer(ISrsLiveSource *s)
 {
     source_ = s;
     paused_ = false;
@@ -817,6 +818,14 @@ SrsMediaPacket *SrsMixQueue::pop()
     return msg;
 }
 
+ISrsOriginHub::ISrsOriginHub()
+{
+}
+
+ISrsOriginHub::~ISrsOriginHub()
+{
+}
+
 SrsOriginHub::SrsOriginHub()
 {
     source_ = NULL;
@@ -832,17 +841,24 @@ SrsOriginHub::SrsOriginHub()
 #endif
     ng_exec_ = new SrsNgExec();
 
-    _srs_config->subscribe(this);
+    config_ = _srs_config;
+    stat_ = _srs_stat;
+    hooks_ = _srs_hooks;
+}
+
+void SrsOriginHub::assemble()
+{
+    config_->subscribe(this);
 }
 
 SrsOriginHub::~SrsOriginHub()
 {
-    _srs_config->unsubscribe(this);
+    config_->unsubscribe(this);
 
     if (true) {
-        std::vector<SrsForwarder *>::iterator it;
+        std::vector<ISrsForwarder *>::iterator it;
         for (it = forwarders_.begin(); it != forwarders_.end(); ++it) {
-            SrsForwarder *forwarder = *it;
+            ISrsForwarder *forwarder = *it;
             srs_freep(forwarder);
         }
         forwarders_.clear();
@@ -856,6 +872,10 @@ SrsOriginHub::~SrsOriginHub()
 #ifdef SRS_HDS
     srs_freep(hds_);
 #endif
+
+    config_ = NULL;
+    stat_ = NULL;
+    hooks_ = NULL;
 }
 
 // CRITICAL: This method is called AFTER the source has been added to the source pool
@@ -926,9 +946,9 @@ srs_error_t SrsOriginHub::on_meta_data(SrsMediaPacket *shared_metadata, SrsOnMet
 
     // copy to all forwarders
     if (true) {
-        std::vector<SrsForwarder *>::iterator it;
+        std::vector<ISrsForwarder *>::iterator it;
         for (it = forwarders_.begin(); it != forwarders_.end(); ++it) {
-            SrsForwarder *forwarder = *it;
+            ISrsForwarder *forwarder = *it;
             if ((err = forwarder->on_meta_data(shared_metadata)) != srs_success) {
                 return srs_error_wrap(err, "Forwarder consume metadata");
             }
@@ -947,7 +967,7 @@ srs_error_t SrsOriginHub::on_audio(SrsMediaPacket *shared_audio)
     srs_error_t err = srs_success;
 
     SrsMediaPacket *msg = shared_audio;
-    SrsRtmpFormat *format = source_->format_;
+    SrsRtmpFormat *format = source_->format();
 
     // Handle the metadata when got sequence header.
     if (format->is_aac_sequence_header() || format->is_mp3_sequence_header()) {
@@ -958,8 +978,7 @@ srs_error_t SrsOriginHub::on_audio(SrsMediaPacket *shared_audio)
         static int flv_sound_types[] = {1, 2, 0};
 
         // when got audio stream info.
-        SrsStatistic *stat = _srs_stat;
-        if ((err = stat->on_audio_info(req_, format->acodec_->id_, c->sound_rate_, c->sound_type_, c->aac_object_)) != srs_success) {
+        if ((err = stat_->on_audio_info(req_, format->acodec_->id_, c->sound_rate_, c->sound_type_, c->aac_object_)) != srs_success) {
             return srs_error_wrap(err, "stat audio");
         }
 
@@ -978,13 +997,13 @@ srs_error_t SrsOriginHub::on_audio(SrsMediaPacket *shared_audio)
 
     if ((err = hls_->on_audio(msg, format)) != srs_success) {
         // apply the error strategy for hls.
-        std::string hls_error_strategy = _srs_config->get_hls_on_error(req_->vhost_);
+        std::string hls_error_strategy = config_->get_hls_on_error(req_->vhost_);
         if (srs_config_hls_is_on_error_ignore(hls_error_strategy)) {
             srs_warn("hls: ignore audio error %s", srs_error_desc(err).c_str());
             hls_->on_unpublish();
             srs_freep(err);
         } else if (srs_config_hls_is_on_error_continue(hls_error_strategy)) {
-            if (srs_hls_can_continue(srs_error_code(err), source_->meta_->ash(), msg)) {
+            if (srs_hls_can_continue(srs_error_code(err), source_->meta()->ash(), msg)) {
                 srs_freep(err);
             } else {
                 return srs_error_wrap(err, "hls: audio");
@@ -1016,9 +1035,9 @@ srs_error_t SrsOriginHub::on_audio(SrsMediaPacket *shared_audio)
 
     // copy to all forwarders.
     if (true) {
-        std::vector<SrsForwarder *>::iterator it;
+        std::vector<ISrsForwarder *>::iterator it;
         for (it = forwarders_.begin(); it != forwarders_.end(); ++it) {
-            SrsForwarder *forwarder = *it;
+            ISrsForwarder *forwarder = *it;
             if ((err = forwarder->on_audio(msg)) != srs_success) {
                 return srs_error_wrap(err, "forward: audio");
             }
@@ -1033,7 +1052,7 @@ srs_error_t SrsOriginHub::on_video(SrsMediaPacket *shared_video, bool is_sequenc
     srs_error_t err = srs_success;
 
     SrsMediaPacket *msg = shared_video;
-    SrsRtmpFormat *format = source_->format_;
+    SrsRtmpFormat *format = source_->format();
 
     // cache the sequence header if h264
     // donot cache the sequence header to gop_cache, return here.
@@ -1042,15 +1061,13 @@ srs_error_t SrsOriginHub::on_video(SrsMediaPacket *shared_video, bool is_sequenc
         srs_assert(c);
 
         // when got video stream info.
-        SrsStatistic *stat = _srs_stat;
-
         if (c->id_ == SrsVideoCodecIdAVC) {
-            err = stat->on_video_info(req_, c->id_, c->avc_profile_, c->avc_level_, c->width_, c->height_);
+            err = stat_->on_video_info(req_, c->id_, c->avc_profile_, c->avc_level_, c->width_, c->height_);
             srs_trace("%dB video sh, codec(%d, profile=%s, level=%s, %dx%d, %dkbps, %.1ffps, %.1fs)",
                       msg->size(), c->id_, srs_avc_profile2str(c->avc_profile_).c_str(), srs_avc_level2str(c->avc_level_).c_str(),
                       c->width_, c->height_, c->video_data_rate_ / 1000, c->frame_rate_, c->duration_);
         } else if (c->id_ == SrsVideoCodecIdHEVC) {
-            err = stat->on_video_info(req_, c->id_, c->hevc_profile_, c->hevc_level_, c->width_, c->height_);
+            err = stat_->on_video_info(req_, c->id_, c->hevc_profile_, c->hevc_level_, c->width_, c->height_);
             srs_trace("%dB video sh, codec(%d, profile=%s, level=%s, %dx%d, %dkbps, %.1ffps, %.1fs)",
                       msg->size(), c->id_, srs_hevc_profile2str(c->hevc_profile_).c_str(), srs_hevc_level2str(c->hevc_level_).c_str(),
                       c->width_, c->height_, c->video_data_rate_ / 1000, c->frame_rate_, c->duration_);
@@ -1069,13 +1086,13 @@ srs_error_t SrsOriginHub::on_video(SrsMediaPacket *shared_video, bool is_sequenc
     if ((err = hls_->on_video(msg, format)) != srs_success) {
         // TODO: We should support more strategies.
         // apply the error strategy for hls.
-        std::string hls_error_strategy = _srs_config->get_hls_on_error(req_->vhost_);
+        std::string hls_error_strategy = config_->get_hls_on_error(req_->vhost_);
         if (srs_config_hls_is_on_error_ignore(hls_error_strategy)) {
             srs_warn("hls: ignore video error %s", srs_error_desc(err).c_str());
             hls_->on_unpublish();
             srs_freep(err);
         } else if (srs_config_hls_is_on_error_continue(hls_error_strategy)) {
-            if (srs_hls_can_continue(srs_error_code(err), source_->meta_->vsh(), msg)) {
+            if (srs_hls_can_continue(srs_error_code(err), source_->meta()->vsh(), msg)) {
                 srs_freep(err);
             } else {
                 return srs_error_wrap(err, "hls: video");
@@ -1107,9 +1124,9 @@ srs_error_t SrsOriginHub::on_video(SrsMediaPacket *shared_video, bool is_sequenc
 
     // copy to all forwarders.
     if (!forwarders_.empty()) {
-        std::vector<SrsForwarder *>::iterator it;
+        std::vector<ISrsForwarder *>::iterator it;
         for (it = forwarders_.begin(); it != forwarders_.end(); ++it) {
-            SrsForwarder *forwarder = *it;
+            ISrsForwarder *forwarder = *it;
             if ((err = forwarder->on_video(msg)) != srs_success) {
                 return srs_error_wrap(err, "forward video");
             }
@@ -1186,9 +1203,9 @@ srs_error_t SrsOriginHub::on_forwarder_start(SrsForwarder *forwarder)
 {
     srs_error_t err = srs_success;
 
-    SrsMediaPacket *cache_metadata = source_->meta_->data();
-    SrsMediaPacket *cache_sh_video = source_->meta_->vsh();
-    SrsMediaPacket *cache_sh_audio = source_->meta_->ash();
+    SrsMediaPacket *cache_metadata = source_->meta()->data();
+    SrsMediaPacket *cache_sh_video = source_->meta()->vsh();
+    SrsMediaPacket *cache_sh_audio = source_->meta()->ash();
 
     // feed the forwarder the metadata/sequence header,
     // when reload to enable the forwarder.
@@ -1209,9 +1226,9 @@ srs_error_t SrsOriginHub::on_dvr_request_sh()
 {
     srs_error_t err = srs_success;
 
-    SrsMediaPacket *cache_metadata = source_->meta_->data();
-    SrsMediaPacket *cache_sh_video = source_->meta_->vsh();
-    SrsMediaPacket *cache_sh_audio = source_->meta_->ash();
+    SrsMediaPacket *cache_metadata = source_->meta()->data();
+    SrsMediaPacket *cache_sh_video = source_->meta()->vsh();
+    SrsMediaPacket *cache_sh_audio = source_->meta()->ash();
 
     // feed the dvr the metadata/sequence header,
     // when reload to start dvr, dvr will never get the sequence header in stream,
@@ -1221,13 +1238,13 @@ srs_error_t SrsOriginHub::on_dvr_request_sh()
     }
 
     if (cache_sh_video) {
-        if ((err = dvr_->on_video(cache_sh_video, source_->meta_->vsh_format())) != srs_success) {
+        if ((err = dvr_->on_video(cache_sh_video, source_->meta()->vsh_format())) != srs_success) {
             return srs_error_wrap(err, "dvr video");
         }
     }
 
     if (cache_sh_audio) {
-        if ((err = dvr_->on_audio(cache_sh_audio, source_->meta_->ash_format())) != srs_success) {
+        if ((err = dvr_->on_audio(cache_sh_audio, source_->meta()->ash_format())) != srs_success) {
             return srs_error_wrap(err, "dvr audio");
         }
     }
@@ -1239,16 +1256,16 @@ srs_error_t SrsOriginHub::on_hls_request_sh()
 {
     srs_error_t err = srs_success;
 
-    SrsMediaPacket *cache_sh_video = source_->meta_->vsh();
+    SrsMediaPacket *cache_sh_video = source_->meta()->vsh();
     if (cache_sh_video) {
-        if ((err = hls_->on_video(cache_sh_video, source_->meta_->vsh_format())) != srs_success) {
+        if ((err = hls_->on_video(cache_sh_video, source_->meta()->vsh_format())) != srs_success) {
             return srs_error_wrap(err, "hls video");
         }
     }
 
-    SrsMediaPacket *cache_sh_audio = source_->meta_->ash();
+    SrsMediaPacket *cache_sh_audio = source_->meta()->ash();
     if (cache_sh_audio) {
-        if ((err = hls_->on_audio(cache_sh_audio, source_->meta_->ash_format())) != srs_success) {
+        if ((err = hls_->on_audio(cache_sh_audio, source_->meta()->ash_format())) != srs_success) {
             return srs_error_wrap(err, "hls audio");
         }
     }
@@ -1260,7 +1277,7 @@ srs_error_t SrsOriginHub::create_forwarders()
 {
     srs_error_t err = srs_success;
 
-    if (!_srs_config->get_forward_enabled(req_->vhost_)) {
+    if (!config_->get_forward_enabled(req_->vhost_)) {
         return err;
     }
 
@@ -1277,11 +1294,11 @@ srs_error_t SrsOriginHub::create_forwarders()
     }
 
     // For destanition config
-    SrsConfDirective *conf = _srs_config->get_forwards(req_->vhost_);
+    SrsConfDirective *conf = config_->get_forwards(req_->vhost_);
     for (int i = 0; conf && i < (int)conf->args_.size(); i++) {
         std::string forward_server = conf->args_.at(i);
 
-        SrsForwarder *forwarder = new SrsForwarder(this);
+        ISrsForwarder *forwarder = new SrsForwarder(this);
         forwarders_.push_back(forwarder);
 
         // initialize the forwarder with request.
@@ -1289,7 +1306,7 @@ srs_error_t SrsOriginHub::create_forwarders()
             return srs_error_wrap(err, "init forwarder");
         }
 
-        srs_utime_t queue_size = _srs_config->get_queue_length(req_->vhost_);
+        srs_utime_t queue_size = config_->get_queue_length(req_->vhost_);
         forwarder->set_queue_size(queue_size);
 
         if ((err = forwarder->on_publish()) != srs_success) {
@@ -1308,7 +1325,7 @@ srs_error_t SrsOriginHub::create_backend_forwarders(bool &applied)
     // default not configure backend service
     applied = false;
 
-    SrsConfDirective *conf = _srs_config->get_forward_backend(req_->vhost_);
+    SrsConfDirective *conf = config_->get_forward_backend(req_->vhost_);
     if (!conf || conf->arg0().empty()) {
         return err;
     }
@@ -1321,7 +1338,7 @@ srs_error_t SrsOriginHub::create_backend_forwarders(bool &applied)
 
     // get urls on forward backend
     std::vector<std::string> urls;
-    if ((err = _srs_hooks->on_forward_backend(backend_url, req_, urls)) != srs_success) {
+    if ((err = hooks_->on_forward_backend(backend_url, req_, urls)) != srs_success) {
         return srs_error_wrap(err, "get forward backend failed, backend=%s", backend_url.c_str());
     }
 
@@ -1336,7 +1353,7 @@ srs_error_t SrsOriginHub::create_backend_forwarders(bool &applied)
         srs_net_url_parse_tcurl(req->tcUrl_, req->schema_, req->host_, req->vhost_, req->app_, req->stream_, req->port_, req->param_);
 
         // create forwarder
-        SrsForwarder *forwarder = new SrsForwarder(this);
+        ISrsForwarder *forwarder = new SrsForwarder(this);
         forwarders_.push_back(forwarder);
 
         std::stringstream forward_server;
@@ -1347,7 +1364,7 @@ srs_error_t SrsOriginHub::create_backend_forwarders(bool &applied)
             return srs_error_wrap(err, "init backend forwarder failed, forward-to=%s", forward_server.str().c_str());
         }
 
-        srs_utime_t queue_size = _srs_config->get_queue_length(req_->vhost_);
+        srs_utime_t queue_size = config_->get_queue_length(req_->vhost_);
         forwarder->set_queue_size(queue_size);
 
         if ((err = forwarder->on_publish()) != srs_success) {
@@ -1361,9 +1378,9 @@ srs_error_t SrsOriginHub::create_backend_forwarders(bool &applied)
 
 void SrsOriginHub::destroy_forwarders()
 {
-    std::vector<SrsForwarder *>::iterator it;
+    std::vector<ISrsForwarder *>::iterator it;
     for (it = forwarders_.begin(); it != forwarders_.end(); ++it) {
-        SrsForwarder *forwarder = *it;
+        ISrsForwarder *forwarder = *it;
         forwarder->on_unpublish();
         srs_freep(forwarder);
     }
@@ -1564,12 +1581,16 @@ SrsLiveSourceManager::SrsLiveSourceManager()
 {
     lock_ = srs_mutex_new();
     timer_ = new SrsHourGlass("sources", this, 1 * SRS_UTIME_SECONDS);
+
+    app_factory_ = _srs_app_factory;
 }
 
 SrsLiveSourceManager::~SrsLiveSourceManager()
 {
     srs_mutex_destroy(lock_);
     srs_freep(timer_);
+
+    app_factory_ = NULL;
 }
 
 srs_error_t SrsLiveSourceManager::initialize()
@@ -1596,7 +1617,7 @@ srs_error_t SrsLiveSourceManager::fetch_or_create(ISrsRequest *r, SrsSharedPtr<S
             SrsSharedPtr<SrsLiveSource> &source = it->second;
             pps = source;
         } else {
-            SrsSharedPtr<SrsLiveSource> source = new SrsLiveSource();
+            SrsSharedPtr<SrsLiveSource> source = app_factory_->create_live_source();
             srs_trace("new live source, stream_url=%s", stream_url.c_str());
             pps = source;
 
@@ -1703,6 +1724,14 @@ void SrsLiveSourceManager::destroy()
     pool_.clear();
 }
 
+ISrsLiveSource::ISrsLiveSource()
+{
+}
+
+ISrsLiveSource::~ISrsLiveSource()
+{
+}
+
 SrsLiveSource::SrsLiveSource()
 {
     req_ = NULL;
@@ -1726,13 +1755,22 @@ SrsLiveSource::SrsLiveSource()
     is_monotonically_increase_ = false;
     last_packet_time_ = 0;
 
-    _srs_config->subscribe(this);
     atc_ = false;
+
+    config_ = _srs_config;
+    stat_ = _srs_stat;
+    handler_ = _srs_server;
+    app_factory_ = _srs_app_factory;
+}
+
+void SrsLiveSource::assemble()
+{
+    config_->subscribe(this);
 }
 
 SrsLiveSource::~SrsLiveSource()
 {
-    _srs_config->unsubscribe(this);
+    config_->unsubscribe(this);
 
     // never free the consumers,
     // for all consumers are auto free.
@@ -1754,6 +1792,11 @@ SrsLiveSource::~SrsLiveSource()
     if (cid.empty())
         cid = _pre_source_id;
     srs_trace("free live source id=[%s]", cid.c_str());
+
+    config_ = NULL;
+    stat_ = NULL;
+    handler_ = NULL;
+    app_factory_ = NULL;
 }
 
 void SrsLiveSource::dispose()
@@ -1815,6 +1858,16 @@ bool SrsLiveSource::publisher_is_idle_for(srs_utime_t timeout)
     return false;
 }
 
+SrsMetaCache *SrsLiveSource::meta()
+{
+    return meta_;
+}
+
+SrsRtmpFormat *SrsLiveSource::format()
+{
+    return format_;
+}
+
 // CRITICAL: This method is called AFTER the source has been added to the source pool
 // in the fetch_or_create pattern (see PR 4449).
 //
@@ -1834,17 +1887,17 @@ srs_error_t SrsLiveSource::initialize(SrsSharedPtr<SrsLiveSource> wrapper, ISrsR
     srs_assert(!req_);
 
     req_ = r->copy();
-    atc_ = _srs_config->get_atc(req_->vhost_);
+    atc_ = config_->get_atc(req_->vhost_);
 
-    jitter_algorithm_ = (SrsRtmpJitterAlgorithm)_srs_config->get_time_jitter(req_->vhost_);
-    mix_correct_ = _srs_config->get_mix_correct(req_->vhost_);
+    jitter_algorithm_ = (SrsRtmpJitterAlgorithm)config_->get_time_jitter(req_->vhost_);
+    mix_correct_ = config_->get_mix_correct(req_->vhost_);
 
     if ((err = format_->initialize()) != srs_success) {
         return srs_error_wrap(err, "format initialize");
     }
 
     // Setup the SPS/PPS parsing strategy.
-    format_->try_annexb_first_ = _srs_config->try_annexb_first(r->vhost_);
+    format_->try_annexb_first_ = config_->try_annexb_first(r->vhost_);
 
     if ((err = play_edge_->initialize(wrapper, req_)) != srs_success) {
         return srs_error_wrap(err, "edge(play)");
@@ -1853,14 +1906,14 @@ srs_error_t SrsLiveSource::initialize(SrsSharedPtr<SrsLiveSource> wrapper, ISrsR
         return srs_error_wrap(err, "edge(publish)");
     }
 
-    srs_utime_t queue_size = _srs_config->get_queue_length(req_->vhost_);
+    srs_utime_t queue_size = config_->get_queue_length(req_->vhost_);
     publish_edge_->set_queue_size(queue_size);
 
     // Create and initialize origin hub only for origin servers, not edge servers
-    bool edge = _srs_config->get_vhost_is_edge(req_->vhost_);
+    bool edge = config_->get_vhost_is_edge(req_->vhost_);
     if (!edge) {
         srs_freep(hub_);
-        hub_ = new SrsOriginHub();
+        hub_ = app_factory_->create_origin_hub();
     } else {
         srs_warn("disable OriginHub creation for edge vhost=%s", req_->vhost_.c_str());
     }
@@ -1942,8 +1995,8 @@ srs_error_t SrsLiveSource::on_meta_data(SrsRtmpCommonMessage *msg, SrsOnMetaData
 
     // if allow atc_auto and bravo-atc detected, open atc for vhost.
     SrsAmf0Any *prop = NULL;
-    atc_ = _srs_config->get_atc(req_->vhost_);
-    if (_srs_config->get_atc_auto(req_->vhost_)) {
+    atc_ = config_->get_atc(req_->vhost_);
+    if (config_->get_atc_auto(req_->vhost_)) {
         if ((prop = metadata->metadata_->get_property("bravo_atc")) != NULL) {
             if (prop->is_string() && prop->to_str() == "true") {
                 atc_ = true;
@@ -1962,7 +2015,7 @@ srs_error_t SrsLiveSource::on_meta_data(SrsRtmpCommonMessage *msg, SrsOnMetaData
 
     // when already got metadata, drop when reduce sequence header.
     bool drop_for_reduce = false;
-    if (meta_->data() && _srs_config->get_reduce_sequence_header(req_->vhost_)) {
+    if (meta_->data() && config_->get_reduce_sequence_header(req_->vhost_)) {
         drop_for_reduce = true;
         srs_warn("drop for reduce sh metadata, size=%d", msg->size());
     }
@@ -2060,7 +2113,7 @@ srs_error_t SrsLiveSource::on_audio_imp(SrsMediaPacket *msg)
 
     // whether consumer should drop for the duplicated sequence header.
     bool drop_for_reduce = false;
-    if (is_sequence_header && meta_->previous_ash() && _srs_config->get_reduce_sequence_header(req_->vhost_)) {
+    if (is_sequence_header && meta_->previous_ash() && config_->get_reduce_sequence_header(req_->vhost_)) {
         if (meta_->previous_ash()->size() == msg->size()) {
             drop_for_reduce = srs_bytes_equal(meta_->previous_ash()->payload(), msg->payload(), msg->size());
             srs_warn("drop for reduce sh audio, size=%d", msg->size());
@@ -2160,7 +2213,7 @@ srs_error_t SrsLiveSource::on_video_imp(SrsMediaPacket *msg)
     // user can disable the sps parse to workaround when parse sps failed.
     // @see https://github.com/ossrs/srs/issues/474
     if (is_sequence_header) {
-        format_->avc_parse_sps_ = _srs_config->get_parse_sps(req_->vhost_);
+        format_->avc_parse_sps_ = config_->get_parse_sps(req_->vhost_);
     }
 
     if ((err = format_->on_video(msg)) != srs_success) {
@@ -2175,7 +2228,7 @@ srs_error_t SrsLiveSource::on_video_imp(SrsMediaPacket *msg)
 
     // whether consumer should drop for the duplicated sequence header.
     bool drop_for_reduce = false;
-    if (is_sequence_header && meta_->previous_vsh() && _srs_config->get_reduce_sequence_header(req_->vhost_)) {
+    if (is_sequence_header && meta_->previous_vsh() && config_->get_reduce_sequence_header(req_->vhost_)) {
         if (meta_->previous_vsh()->size() == msg->size()) {
             drop_for_reduce = srs_bytes_equal(meta_->previous_vsh()->payload(), msg->payload(), msg->size());
             srs_warn("drop for reduce sh video, size=%d", msg->size());
@@ -2350,9 +2403,8 @@ srs_error_t SrsLiveSource::on_publish()
     }
 
     // notify the handler.
-    ISrsLiveSourceHandler *handler = _srs_server;
-    srs_assert(handler);
-    if ((err = handler->on_publish(req_)) != srs_success) {
+    srs_assert(handler_);
+    if ((err = handler_->on_publish(req_)) != srs_success) {
         return srs_error_wrap(err, "handle publish");
     }
 
@@ -2360,8 +2412,7 @@ srs_error_t SrsLiveSource::on_publish()
         return srs_error_wrap(err, "bridge publish");
     }
 
-    SrsStatistic *stat = _srs_stat;
-    stat->on_stream_publish(req_, _source_id.c_str());
+    stat_->on_stream_publish(req_, _source_id.c_str());
 
     // When no players, the publisher is idle now.
     if (consumers_.empty()) {
@@ -2401,13 +2452,10 @@ void SrsLiveSource::on_unpublish()
     _source_id = SrsContextId();
 
     // notify the handler.
-    ISrsLiveSourceHandler *handler = _srs_server;
-    srs_assert(handler);
+    stat_->on_stream_close(req_);
 
-    SrsStatistic *stat = _srs_stat;
-    stat->on_stream_close(req_);
-
-    handler->on_unpublish(req_);
+    srs_assert(handler_);
+    handler_->on_unpublish(req_);
 
     if (rtmp_bridge_) {
         rtmp_bridge_->on_unpublish();
@@ -2430,7 +2478,7 @@ srs_error_t SrsLiveSource::create_consumer(SrsLiveConsumer *&consumer)
     srs_error_t err = srs_success;
 
     // for edge, when play edge stream, check the state
-    if (_srs_config->get_vhost_is_edge(req_->vhost_)) {
+    if (config_->get_vhost_is_edge(req_->vhost_)) {
         // notice edge to start for the first client.
         if ((err = play_edge_->on_client_play()) != srs_success) {
             return srs_error_wrap(err, "play edge");
@@ -2451,7 +2499,7 @@ srs_error_t SrsLiveSource::consumer_dumps(SrsLiveConsumer *consumer, bool ds, bo
 {
     srs_error_t err = srs_success;
 
-    srs_utime_t queue_size = _srs_config->get_queue_length(req_->vhost_);
+    srs_utime_t queue_size = config_->get_queue_length(req_->vhost_);
     consumer->set_queue_size(queue_size);
 
     // if atc, update the sequence header to gop cache time.
@@ -2509,7 +2557,7 @@ void SrsLiveSource::on_consumer_destroy(SrsLiveConsumer *consumer)
 
         // For edge server, the stream die when the last player quit, because the edge stream is created by player
         // activities, so it should die when all players quit.
-        if (_srs_config->get_vhost_is_edge(req_->vhost_)) {
+        if (config_->get_vhost_is_edge(req_->vhost_)) {
             stream_die_at_ = srs_time_now_cached();
         }
 

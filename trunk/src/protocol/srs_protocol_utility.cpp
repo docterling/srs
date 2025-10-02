@@ -79,12 +79,13 @@ void srs_net_url_parse_tcurl(string tcUrl, string &schema, string &host, string 
     schema = uri.get_schema();
     host = uri.get_host();
     port = uri.get_port();
-    stream = srs_path_filepath_base(uri.get_path());
+    SrsPath path;
+    stream = path.filepath_base(uri.get_path());
     param = uri.get_query().empty() ? "" : "?" + uri.get_query();
     param += uri.get_fragment().empty() ? "" : "#" + uri.get_fragment();
 
     // Parse app without the prefix slash.
-    app = srs_path_filepath_dir(uri.get_path());
+    app = path.filepath_dir(uri.get_path());
     if (!app.empty() && app.at(0) == '/')
         app = app.substr(1);
     if (app.empty())
@@ -260,7 +261,8 @@ string srs_net_url_encode_sid(string vhost, string app, string stream)
     }
     url += "/" + app;
     // Note that we ignore any extension.
-    url += "/" + srs_path_filepath_filename(stream);
+    SrsPath path;
+    url += "/" + path.filepath_filename(stream);
 
     return url;
 }
@@ -341,7 +343,15 @@ srs_error_t srs_rtmp_create_msg(char type, uint32_t timestamp, char *data, int s
     return err;
 }
 
-srs_error_t srs_write_large_iovs(ISrsProtocolReadWriter *skt, iovec *iovs, int size, ssize_t *pnwrite)
+SrsProtocolUtility::SrsProtocolUtility()
+{
+}
+
+SrsProtocolUtility::~SrsProtocolUtility()
+{
+}
+
+srs_error_t SrsProtocolUtility::write_iovs(ISrsProtocolReadWriter *skt, iovec *iovs, int size, ssize_t *pnwrite)
 {
     srs_error_t err = srs_success;
 
@@ -379,7 +389,7 @@ srs_error_t srs_write_large_iovs(ISrsProtocolReadWriter *skt, iovec *iovs, int s
 //      value is whether internet, for instance, true.
 static std::map<std::string, bool> _srs_device_ifs;
 
-bool srs_net_device_is_internet(string ifname)
+bool SrsProtocolUtility::is_internet(string ifname)
 {
     srs_info("check ifname=%s", ifname.c_str());
 
@@ -389,7 +399,7 @@ bool srs_net_device_is_internet(string ifname)
     return _srs_device_ifs[ifname];
 }
 
-bool srs_net_device_is_internet(const sockaddr *addr)
+bool SrsProtocolUtility::is_internet(const sockaddr *addr)
 {
     if (addr->sa_family == AF_INET) {
         const in_addr inaddr = ((sockaddr_in *)addr)->sin_addr;
@@ -465,9 +475,7 @@ bool srs_net_device_is_internet(const sockaddr *addr)
     return true;
 }
 
-vector<SrsIPAddress *> _srs_system_ips;
-
-void discover_network_iface(ifaddrs *cur, vector<SrsIPAddress *> &ips, stringstream &ss0, stringstream &ss1, bool ipv6, bool loopback)
+void discover_network_iface(SrsProtocolUtility *utility, ifaddrs *cur, vector<SrsIPAddress *> &ips, stringstream &ss0, stringstream &ss1, bool ipv6, bool loopback)
 {
     char saddr[64];
     char *h = (char *)saddr;
@@ -487,7 +495,7 @@ void discover_network_iface(ifaddrs *cur, vector<SrsIPAddress *> &ips, stringstr
     ip_address->is_ipv4_ = !ipv6;
     ip_address->is_loopback_ = loopback;
     ip_address->ifname_ = cur->ifa_name;
-    ip_address->is_internet_ = srs_net_device_is_internet(cur->ifa_addr);
+    ip_address->is_internet_ = utility->is_internet(cur->ifa_addr);
     ips.push_back(ip_address);
 
     // set the device internet status.
@@ -501,7 +509,9 @@ void discover_network_iface(ifaddrs *cur, vector<SrsIPAddress *> &ips, stringstr
     ss1 << cur->ifa_name << " " << ip;
 }
 
-void retrieve_local_ips()
+vector<SrsIPAddress *> _srs_system_ips;
+
+void retrieve_local_ips(SrsProtocolUtility *utility)
 {
     vector<SrsIPAddress *> &ips = _srs_system_ips;
 
@@ -536,7 +546,7 @@ void retrieve_local_ips()
         bool ignored = (!cur->ifa_addr) || (cur->ifa_flags & IFF_LOOPBACK) || (cur->ifa_flags & IFF_POINTOPOINT);
         bool loopback = (cur->ifa_flags & IFF_LOOPBACK);
         if (ipv4 && ready && !ignored) {
-            discover_network_iface(cur, ips, ss0, ss1, false, loopback);
+            discover_network_iface(utility, cur, ips, ss0, ss1, false, loopback);
         }
     }
 
@@ -557,7 +567,7 @@ void retrieve_local_ips()
         bool ignored = (!cur->ifa_addr) || (cur->ifa_flags & IFF_POINTOPOINT) || (cur->ifa_flags & IFF_PROMISC) || (cur->ifa_flags & IFF_LOOPBACK);
         bool loopback = (cur->ifa_flags & IFF_LOOPBACK);
         if (ipv6 && ready && !ignored) {
-            discover_network_iface(cur, ips, ss0, ss1, true, loopback);
+            discover_network_iface(utility, cur, ips, ss0, ss1, true, loopback);
         }
     }
 
@@ -579,7 +589,7 @@ void retrieve_local_ips()
             bool ignored = (!cur->ifa_addr) || (cur->ifa_flags & IFF_POINTOPOINT) || (cur->ifa_flags & IFF_PROMISC);
             bool loopback = (cur->ifa_flags & IFF_LOOPBACK);
             if (ipv4 && ready && !ignored) {
-                discover_network_iface(cur, ips, ss0, ss1, false, loopback);
+                discover_network_iface(utility, cur, ips, ss0, ss1, false, loopback);
             }
         }
     }
@@ -590,10 +600,10 @@ void retrieve_local_ips()
     freeifaddrs(ifap);
 }
 
-vector<SrsIPAddress *> &srs_get_local_ips()
+vector<SrsIPAddress *> &SrsProtocolUtility::local_ips()
 {
     if (_srs_system_ips.empty()) {
-        retrieve_local_ips();
+        retrieve_local_ips(this);
     }
 
     return _srs_system_ips;
@@ -601,13 +611,13 @@ vector<SrsIPAddress *> &srs_get_local_ips()
 
 std::string _public_internet_address;
 
-string srs_get_public_internet_address(bool ipv4_only)
+string SrsProtocolUtility::public_internet_address(bool ipv4_only)
 {
     if (!_public_internet_address.empty()) {
         return _public_internet_address;
     }
 
-    std::vector<SrsIPAddress *> &ips = srs_get_local_ips();
+    std::vector<SrsIPAddress *> &ips = local_ips();
 
     // find the best match public address.
     for (int i = 0; i < (int)ips.size(); i++) {
@@ -678,7 +688,7 @@ string srs_get_original_ip(ISrsHttpMessage *r)
 
 std::string _srs_system_hostname;
 
-string srs_get_system_hostname()
+string SrsProtocolUtility::system_hostname()
 {
     if (!_srs_system_hostname.empty()) {
         return _srs_system_hostname;
@@ -695,7 +705,7 @@ string srs_get_system_hostname()
 }
 
 #if defined(__linux__) || defined(SRS_OSX)
-utsname *srs_get_system_uname_info()
+utsname *SrsProtocolUtility::system_uname()
 {
     static utsname *system_info = NULL;
 
@@ -838,7 +848,8 @@ bool srs_srt_streamid_to_request(const std::string &streamid, SrtMode &mode, ISr
         request->param_ = stream_with_params.substr(pos + 1);
     }
 
-    request->host_ = srs_get_public_internet_address();
+    SrsProtocolUtility utility;
+    request->host_ = utility.public_internet_address();
     if (request->vhost_.empty())
         request->vhost_ = request->host_;
     request->tcUrl_ = srs_net_url_encode_tcurl("srt", request->host_, request->vhost_, request->app_, request->port_);

@@ -57,7 +57,8 @@ srs_error_t SrsHttpHeartbeat::do_heartbeat()
     ip = srs_getenv("srs.device.ip"); // SRS_DEVICE_IP
     if (ip.empty()) {
         // Use the local ip address specified by the stats.network config.
-        vector<SrsIPAddress *> &ips = srs_get_local_ips();
+        SrsProtocolUtility utility;
+        vector<SrsIPAddress *> &ips = utility.local_ips();
         if (!ips.empty()) {
             ip = ips[_srs_config->get_stats_network() % (int)ips.size()]->ip_;
         }

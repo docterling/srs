@@ -8,6 +8,7 @@
 #define SRS_PROTOCOL_HANDSHAKE_HPP
 
 #include <srs_core.hpp>
+#include <srs_kernel_utility.hpp>
 
 class ISrsProtocolReadWriter;
 class SrsComplexHandshake;
@@ -90,6 +91,9 @@ enum srs_schema_type {
 // @see also: http://blog.csdn.net/win_lin/article/details/13006803
 class SrsKeyBlock
 {
+private:
+    SrsRand rand_;
+
 public:
     // (offset)bytes
     char *random0_;
@@ -129,6 +133,9 @@ private:
 // @see also: http://blog.csdn.net/win_lin/article/details/13006803
 class SrsDigestBlock
 {
+private:
+    SrsRand rand_;
+
 public:
     // 4bytes
     int32_t offset_;
@@ -382,6 +389,9 @@ public:
 // @see also: http://blog.csdn.net/win_lin/article/details/13006803
 class SrsC2S2
 {
+private:
+    SrsRand rand_;
+
 public:
     char random_[1504];
     char digest_[32];

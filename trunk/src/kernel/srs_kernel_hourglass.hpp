@@ -18,6 +18,18 @@
 class ISrsCoroutine;
 
 // The handler for the tick.
+class ISrsHourGlassHandler
+{
+public:
+    ISrsHourGlassHandler();
+    virtual ~ISrsHourGlassHandler();
+
+public:
+    // When time is ticked, this function is called.
+    virtual srs_error_t notify(int event, srs_utime_t interval, srs_utime_t tick) = 0;
+};
+
+// The interface for hourglass.
 class ISrsHourGlass
 {
 public:
@@ -25,8 +37,11 @@ public:
     virtual ~ISrsHourGlass();
 
 public:
-    // When time is ticked, this function is called.
-    virtual srs_error_t notify(int event, srs_utime_t interval, srs_utime_t tick) = 0;
+    virtual srs_error_t start() = 0;
+    virtual void stop() = 0;
+    virtual srs_error_t tick(srs_utime_t interval) = 0;
+    virtual srs_error_t tick(int event, srs_utime_t interval) = 0;
+    virtual void untick(int event) = 0;
 };
 
 // The hourglass(timer or SrsTimer) for special tasks,
@@ -53,12 +68,12 @@ public:
 //
 //      // The hg will create a thread for timer.
 //      hg->start();
-class SrsHourGlass : public ISrsCoroutineHandler
+class SrsHourGlass : public ISrsCoroutineHandler, public ISrsHourGlass
 {
 private:
     std::string label_;
     ISrsCoroutine *trd_;
-    ISrsHourGlass *handler_;
+    ISrsHourGlassHandler *handler_;
     srs_utime_t resolution_;
     ISrsTime *time_;
     // The ticks:
@@ -71,7 +86,7 @@ private:
 
 public:
     // TODO: FIMXE: Refine to SrsHourGlass(std::string label);
-    SrsHourGlass(std::string label, ISrsHourGlass *h, srs_utime_t resolution);
+    SrsHourGlass(std::string label, ISrsHourGlassHandler *h, srs_utime_t resolution);
     virtual ~SrsHourGlass();
 
 public:

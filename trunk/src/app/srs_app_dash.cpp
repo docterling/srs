@@ -179,8 +179,11 @@ void SrsMpdWriter::dispose()
     if (req_) {
         string mpd_path = srs_path_build_stream(mpd_file_, req_->vhost_, req_->app_, req_->stream_);
         string full_path = home_ + "/" + mpd_path;
-        if (unlink(full_path.c_str()) < 0) {
-            srs_warn("ignore remove mpd failed, %s", full_path.c_str());
+        SrsPath path;
+        srs_error_t err = path.unlink(full_path);
+        if (err != srs_success) {
+            srs_warn("ignore remove mpd failed, %s, %s", full_path.c_str(), srs_error_desc(err).c_str());
+            srs_freep(err);
         }
     }
 }
@@ -207,8 +210,9 @@ srs_error_t SrsMpdWriter::on_publish()
     home_ = _srs_config->get_dash_path(r->vhost_);
     mpd_file_ = _srs_config->get_dash_mpd_file(r->vhost_);
 
+    SrsPath path;
     string mpd_path = srs_path_build_stream(mpd_file_, req_->vhost_, req_->app_, req_->stream_);
-    fragment_home_ = srs_path_filepath_dir(mpd_path) + "/" + req_->stream_;
+    fragment_home_ = path.filepath_dir(mpd_path) + "/" + req_->stream_;
     window_size_ = _srs_config->get_dash_window_size(r->vhost_);
 
     srs_trace("DASH: Config fragment=%dms, period=%dms, window=%d, timeshit=%dms, home=%s, mpd=%s",
@@ -230,13 +234,14 @@ srs_error_t SrsMpdWriter::write(SrsFormat *format, SrsFragmentWindow *afragments
         return err;
     }
 
+    SrsPath path;
     string mpd_path = srs_path_build_stream(mpd_file_, req_->vhost_, req_->app_, req_->stream_);
     string full_path = home_ + "/" + mpd_path;
-    string full_home = srs_path_filepath_dir(full_path);
+    string full_home = path.filepath_dir(full_path);
 
-    fragment_home_ = srs_path_filepath_dir(mpd_path) + "/" + req_->stream_;
+    fragment_home_ = path.filepath_dir(mpd_path) + "/" + req_->stream_;
 
-    if ((err = srs_os_mkdir_all(full_home)) != srs_success) {
+    if ((err = path.mkdir_all(full_home)) != srs_success) {
         return srs_error_wrap(err, "Create MPD home failed, home=%s", full_home.c_str());
     }
 
@@ -650,8 +655,9 @@ srs_error_t SrsDashController::refresh_init_mp4(SrsMediaPacket *msg, SrsFormat *
         return err;
     }
 
+    SrsPath path_util;
     string full_home = home_ + "/" + req_->app_ + "/" + req_->stream_;
-    if ((err = srs_os_mkdir_all(full_home)) != srs_success) {
+    if ((err = path_util.mkdir_all(full_home)) != srs_success) {
         return srs_error_wrap(err, "Create media home failed, home=%s", full_home.c_str());
     }
 
@@ -678,6 +684,14 @@ srs_error_t SrsDashController::refresh_init_mp4(SrsMediaPacket *msg, SrsFormat *
     srs_trace("DASH: Refresh media type=%s, file=%s", (msg->is_video() ? "video" : "audio"), path.c_str());
 
     return err;
+}
+
+ISrsDash::ISrsDash()
+{
+}
+
+ISrsDash::~ISrsDash()
+{
 }
 
 SrsDash::SrsDash()

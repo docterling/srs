@@ -242,7 +242,8 @@ set<string> discover_candidates(SrsRtcUserConfig *ruc)
     }
 
     // All automatically detected IP list.
-    vector<SrsIPAddress *> &ips = srs_get_local_ips();
+    SrsProtocolUtility utility;
+    vector<SrsIPAddress *> &ips = utility.local_ips();
     if (ips.empty()) {
         return candidate_ips;
     }
@@ -402,8 +403,9 @@ srs_error_t SrsRtcSessionManager::do_create_rtc_session(SrsRtcUserConfig *ruc, S
     // All tracks default as inactive, so we must enable them.
     session->set_all_tracks_status(req->get_stream_url(), ruc->publish_, true);
 
-    std::string local_pwd = ruc->req_->ice_pwd_.empty() ? srs_rand_gen_str(32) : ruc->req_->ice_pwd_;
-    std::string local_ufrag = ruc->req_->ice_ufrag_.empty() ? srs_rand_gen_str(8) : ruc->req_->ice_ufrag_;
+    SrsRand rand;
+    std::string local_pwd = ruc->req_->ice_pwd_.empty() ? rand.gen_str(32) : ruc->req_->ice_pwd_;
+    std::string local_ufrag = ruc->req_->ice_ufrag_.empty() ? rand.gen_str(8) : ruc->req_->ice_ufrag_;
     // TODO: FIXME: Rename for a better name, it's not an username.
     std::string username = "";
     while (true) {
@@ -413,7 +415,7 @@ srs_error_t SrsRtcSessionManager::do_create_rtc_session(SrsRtcUserConfig *ruc, S
         }
 
         // Username conflict, regenerate a new one.
-        local_ufrag = srs_rand_gen_str(8);
+        local_ufrag = rand.gen_str(8);
     }
 
     local_sdp.set_ice_ufrag(local_ufrag);

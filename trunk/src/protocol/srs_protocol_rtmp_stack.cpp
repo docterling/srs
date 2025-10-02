@@ -184,6 +184,8 @@ SrsProtocol::SrsProtocol(ISrsProtocolReadWriter *io)
     show_debug_info_ = true;
     in_buffer_length_ = 0;
 
+    protocol_utility_ = new SrsProtocolUtility();
+
     cs_cache_ = NULL;
     if (SRS_PERF_CHUNK_STREAM_CACHE > 0) {
         cs_cache_ = new SrsChunkStream *[SRS_PERF_CHUNK_STREAM_CACHE];
@@ -234,6 +236,8 @@ SrsProtocol::~SrsProtocol()
     srs_freepa(cs_cache_);
 
     srs_freepa(out_c0c3_caches_);
+
+    srs_freep(protocol_utility_);
 }
 
 void SrsProtocol::set_auto_response(bool v)
@@ -539,7 +543,7 @@ srs_error_t SrsProtocol::do_send_messages(SrsMediaPacket **msgs, int nb_msgs)
 
 srs_error_t SrsProtocol::do_iovs_send(iovec *iovs, int size)
 {
-    return srs_write_large_iovs(skt_, iovs, size);
+    return protocol_utility_->write_iovs(skt_, iovs, size);
 }
 
 srs_error_t SrsProtocol::do_send_and_free_packet(SrsRtmpCommand *packet_raw, int stream_id)
@@ -1706,7 +1710,7 @@ srs_error_t SrsHandshakeBytes::create_c0c1()
     }
 
     c0c1_ = new char[1537];
-    srs_rand_gen_bytes(c0c1_, 1537);
+    rand_.gen_bytes(c0c1_, 1537);
 
     // plain text required.
     SrsBuffer stream(c0c1_, 9);
@@ -1727,7 +1731,7 @@ srs_error_t SrsHandshakeBytes::create_s0s1s2(const char *c1)
     }
 
     s0s1s2_ = new char[3073];
-    srs_rand_gen_bytes(s0s1s2_, 3073);
+    rand_.gen_bytes(s0s1s2_, 3073);
 
     // plain text required.
     SrsBuffer stream(s0s1s2_, 9);
@@ -1757,7 +1761,7 @@ srs_error_t SrsHandshakeBytes::create_c2()
     }
 
     c2_ = new char[1536];
-    srs_rand_gen_bytes(c2_, 1536);
+    rand_.gen_bytes(c2_, 1536);
 
     // time
     SrsBuffer stream(c2_, 8);
@@ -2387,7 +2391,8 @@ srs_error_t SrsRtmpServer::redirect(ISrsRequest *r, string url, bool &accepted)
 
         // The redirect is tcUrl while redirect2 is RTMP URL.
         // https://github.com/ossrs/srs/issues/1575#issuecomment-574999798
-        string tcUrl = srs_path_filepath_dir(url);
+        SrsPath path;
+        string tcUrl = path.filepath_dir(url);
         ex->set("redirect", SrsAmf0Any::str(tcUrl.c_str()));
         ex->set("redirect2", SrsAmf0Any::str(url.c_str()));
 

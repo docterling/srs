@@ -18,8 +18,22 @@ class SrsMediaPacket;
 class SrsHdsFragment;
 class SrsLiveSource;
 
+// The HDS interface.
+class ISrsHds
+{
+public:
+    ISrsHds();
+    virtual ~ISrsHds();
+
+public:
+    virtual srs_error_t on_publish(ISrsRequest *req) = 0;
+    virtual srs_error_t on_unpublish() = 0;
+    virtual srs_error_t on_video(SrsMediaPacket *msg) = 0;
+    virtual srs_error_t on_audio(SrsMediaPacket *msg) = 0;
+};
+
 // Mux RTMP to Adobe HDS streaming.
-class SrsHds
+class SrsHds : public ISrsHds
 {
 public:
     SrsHds();

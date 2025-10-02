@@ -4630,8 +4630,9 @@ VOID TEST(ProtocolKbpsTest, WriteLargeIOVs)
         iovs[0].iov_len = 5;
 
         MockBufferIO io;
+        SrsProtocolUtility utility;
         ssize_t nn = 0;
-        HELPER_EXPECT_SUCCESS(srs_write_large_iovs(&io, iovs, 1, &nn));
+        HELPER_EXPECT_SUCCESS(utility.write_iovs(&io, iovs, 1, &nn));
         EXPECT_EQ(5, nn);
         EXPECT_EQ(5, io.sbytes);
     }
@@ -4645,8 +4646,9 @@ VOID TEST(ProtocolKbpsTest, WriteLargeIOVs)
         }
 
         MockBufferIO io;
+        SrsProtocolUtility utility;
         ssize_t nn = 0;
-        HELPER_EXPECT_SUCCESS(srs_write_large_iovs(&io, iovs, nn_iovs, &nn));
+        HELPER_EXPECT_SUCCESS(utility.write_iovs(&io, iovs, nn_iovs, &nn));
         EXPECT_EQ(5 * nn_iovs, nn);
         EXPECT_EQ(5 * nn_iovs, io.sbytes);
     }
@@ -4660,8 +4662,9 @@ VOID TEST(ProtocolKbpsTest, WriteLargeIOVs)
         }
 
         MockBufferIO io;
+        SrsProtocolUtility utility;
         ssize_t nn = 0;
-        HELPER_EXPECT_SUCCESS(srs_write_large_iovs(&io, iovs, nn_iovs, &nn));
+        HELPER_EXPECT_SUCCESS(utility.write_iovs(&io, iovs, nn_iovs, &nn));
         EXPECT_EQ(5 * nn_iovs, nn);
         EXPECT_EQ(5 * nn_iovs, io.sbytes);
     }
@@ -4675,8 +4678,9 @@ VOID TEST(ProtocolKbpsTest, WriteLargeIOVs)
         }
 
         MockBufferIO io;
+        SrsProtocolUtility utility;
         ssize_t nn = 0;
-        HELPER_EXPECT_SUCCESS(srs_write_large_iovs(&io, iovs, nn_iovs, &nn));
+        HELPER_EXPECT_SUCCESS(utility.write_iovs(&io, iovs, nn_iovs, &nn));
         EXPECT_EQ(5 * nn_iovs, nn);
         EXPECT_EQ(5 * nn_iovs, io.sbytes);
     }

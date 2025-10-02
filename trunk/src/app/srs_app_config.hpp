@@ -282,6 +282,88 @@ public:
     virtual ~ISrsAppConfig();
 
 public:
+    virtual void subscribe(ISrsReloadHandler *handler) = 0;
+    virtual void unsubscribe(ISrsReloadHandler *handler) = 0;
+    virtual srs_error_t reload(SrsReloadState *pstate) = 0;
+    virtual srs_error_t persistence() = 0;
+    virtual std::string config() = 0;
+
+public:
+    // Global server config
+    virtual int get_max_connections() = 0;
+    virtual std::string get_pid_file() = 0;
+    virtual bool empty_ip_ok() = 0;
+    virtual bool get_asprocess() = 0;
+    virtual srs_utime_t get_grace_start_wait() = 0;
+    virtual srs_utime_t get_grace_final_wait() = 0;
+    virtual bool is_force_grace_quit() = 0;
+    virtual bool inotify_auto_reload() = 0;
+    virtual bool auto_reload_for_docker() = 0;
+
+public:
+    // RTMP config
+    virtual std::vector<std::string> get_listens() = 0;
+    virtual bool get_rtmps_enabled() = 0;
+    virtual std::vector<std::string> get_rtmps_listen() = 0;
+
+public:
+    // HTTP API config
+    virtual bool get_http_api_enabled() = 0;
+    virtual std::vector<std::string> get_http_api_listens() = 0;
+    virtual bool get_https_api_enabled() = 0;
+    virtual std::vector<std::string> get_https_api_listens() = 0;
+    virtual std::string get_https_api_ssl_key() = 0;
+    virtual std::string get_https_api_ssl_cert() = 0;
+
+public:
+    // HTTP Server config
+    virtual bool get_http_stream_enabled() = 0;
+    virtual std::vector<std::string> get_http_stream_listens() = 0;
+    virtual bool get_https_stream_enabled() = 0;
+    virtual std::vector<std::string> get_https_stream_listens() = 0;
+    virtual std::string get_https_stream_ssl_key() = 0;
+    virtual std::string get_https_stream_ssl_cert() = 0;
+    virtual std::string get_http_stream_dir() = 0;
+
+public:
+    // WebRTC config
+    virtual bool get_rtc_server_enabled() = 0;
+    virtual bool get_rtc_server_tcp_enabled() = 0;
+    virtual std::vector<std::string> get_rtc_server_tcp_listens() = 0;
+    virtual std::string get_rtc_server_protocol() = 0;
+    virtual std::vector<std::string> get_rtc_server_listens() = 0;
+    virtual int get_rtc_server_reuseport() = 0;
+
+public:
+    // RTSP config
+    virtual bool get_rtsp_server_enabled() = 0;
+    virtual std::vector<std::string> get_rtsp_server_listens() = 0;
+
+public:
+    // SRT config
+    virtual std::vector<std::string> get_srt_listens() = 0;
+
+public:
+    // Stream caster config
+    virtual std::vector<SrsConfDirective *> get_stream_casters() = 0;
+    virtual bool get_stream_caster_enabled(SrsConfDirective *conf) = 0;
+    virtual std::string get_stream_caster_engine(SrsConfDirective *conf) = 0;
+
+public:
+    // Exporter config
+    virtual bool get_exporter_enabled() = 0;
+    virtual std::string get_exporter_listen() = 0;
+
+public:
+    // Stats config
+    virtual bool get_stats_enabled() = 0;
+
+public:
+    // Heartbeat config
+    virtual bool get_heartbeat_enabled() = 0;
+    virtual srs_utime_t get_heartbeat_interval() = 0;
+
+public:
     virtual bool get_vhost_http_hooks_enabled(std::string vhost) = 0;
     virtual SrsConfDirective *get_vhost_on_stop(std::string vhost) = 0;
     virtual bool get_rtc_nack_enabled(std::string vhost) = 0;
@@ -326,6 +408,18 @@ public:
     virtual bool get_hls_ctx_enabled(std::string vhost) = 0;
     virtual bool get_hls_ts_ctx_enabled(std::string vhost) = 0;
     virtual bool get_hls_recover(std::string vhost) = 0;
+    virtual bool get_forward_enabled(std::string vhost) = 0;
+    virtual SrsConfDirective *get_forwards(std::string vhost) = 0;
+    virtual srs_utime_t get_queue_length(std::string vhost) = 0;
+    virtual SrsConfDirective *get_forward_backend(std::string vhost) = 0;
+    virtual bool get_atc(std::string vhost) = 0;
+    virtual int get_time_jitter(std::string vhost) = 0;
+    virtual bool get_mix_correct(std::string vhost) = 0;
+    virtual bool try_annexb_first(std::string vhost) = 0;
+    virtual bool get_vhost_is_edge(std::string vhost) = 0;
+    virtual bool get_atc_auto(std::string vhost) = 0;
+    virtual bool get_reduce_sequence_header(std::string vhost) = 0;
+    virtual bool get_parse_sps(std::string vhost) = 0;
 };
 
 // The config service provider.

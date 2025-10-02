@@ -474,7 +474,8 @@ void SrsIngester::show_ingest_log_message()
     }
 
     // random choose one ingester to report.
-    int index = srs_rand_integer() % (int)ingesters_.size();
+    SrsRand rand;
+    int index = rand.integer() % (int)ingesters_.size();
     SrsIngesterFFMPEG *ingester = ingesters_.at(index);
 
     // reportable

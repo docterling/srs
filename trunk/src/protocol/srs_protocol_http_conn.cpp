@@ -388,7 +388,8 @@ srs_error_t SrsHttpMessage::set_url(string url, bool allow_jsonp)
 
         // If no host in header, we use local discovered IP, IPv4 first.
         if (host.empty()) {
-            host = srs_get_public_internet_address(true);
+            SrsProtocolUtility utility;
+            host = utility.public_internet_address(true);
         }
 
         // The url must starts with slash if no schema. For example, SIP request line starts with "sip".
@@ -406,7 +407,8 @@ srs_error_t SrsHttpMessage::set_url(string url, bool allow_jsonp)
     }
 
     // parse ext.
-    _ext = srs_path_filepath_ext(_uri->get_path());
+    SrsPath path;
+    _ext = path.filepath_ext(_uri->get_path());
 
     // parse query string.
     srs_net_url_parse_query(_uri->get_query(), _query);
@@ -633,7 +635,8 @@ ISrsRequest *SrsHttpMessage::to_request(string vhost)
     req->app_ = srs_strings_trim_start(req->app_, "/");
 
     // remove the extension, for instance, livestream.flv to livestream
-    req->stream_ = srs_path_filepath_filename(req->stream_);
+    SrsPath path;
+    req->stream_ = path.filepath_filename(req->stream_);
 
     // generate others.
     req->tcUrl_ = "rtmp://" + vhost + "/" + req->app_;
@@ -703,12 +706,14 @@ SrsHttpMessageWriter::SrsHttpMessageWriter(ISrsProtocolReadWriter *io, ISrsHttpF
     iovss_cache_ = NULL;
     hf_ = NULL;
     flw_ = flw;
+    protocol_utility_ = new SrsProtocolUtility();
 }
 
 SrsHttpMessageWriter::~SrsHttpMessageWriter()
 {
     srs_freep(hdr_);
     srs_freepa(iovss_cache_);
+    srs_freep(protocol_utility_);
 }
 
 srs_error_t SrsHttpMessageWriter::final_request()
@@ -874,7 +879,7 @@ srs_error_t SrsHttpMessageWriter::writev(const iovec *iov, int iovcnt, ssize_t *
 
     // sendout all ioves.
     ssize_t nwrite = 0;
-    if ((err = srs_write_large_iovs(skt_, iovss, nb_iovss, &nwrite)) != srs_success) {
+    if ((err = protocol_utility_->write_iovs(skt_, iovss, nb_iovss, &nwrite)) != srs_success) {
         return srs_error_wrap(err, "writev large iovs");
     }
 

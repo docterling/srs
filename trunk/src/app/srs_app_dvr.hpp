@@ -233,8 +233,24 @@ private:
     virtual srs_error_t update_duration(SrsMediaPacket *msg);
 };
 
+// The DVR interface.
+class ISrsDvr
+{
+public:
+    ISrsDvr();
+    virtual ~ISrsDvr();
+
+public:
+    virtual srs_error_t initialize(SrsOriginHub *h, ISrsRequest *r) = 0;
+    virtual srs_error_t on_publish(ISrsRequest *r) = 0;
+    virtual void on_unpublish() = 0;
+    virtual srs_error_t on_meta_data(SrsMediaPacket *metadata) = 0;
+    virtual srs_error_t on_audio(SrsMediaPacket *shared_audio, SrsFormat *format) = 0;
+    virtual srs_error_t on_video(SrsMediaPacket *shared_video, SrsFormat *format) = 0;
+};
+
 // DVR(Digital Video Recorder) to record RTMP stream to flv/mp4 file.
-class SrsDvr : public ISrsReloadHandler
+class SrsDvr : public ISrsReloadHandler, public ISrsDvr
 {
 private:
     SrsOriginHub *hub_;

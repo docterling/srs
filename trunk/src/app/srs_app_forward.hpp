@@ -25,8 +25,25 @@ class SrsOriginHub;
 class SrsKbps;
 class SrsSimpleRtmpClient;
 
+// The forward interface.
+class ISrsForwarder
+{
+public:
+    ISrsForwarder();
+    virtual ~ISrsForwarder();
+
+public:
+    virtual srs_error_t initialize(ISrsRequest *r, std::string ep) = 0;
+    virtual void set_queue_size(srs_utime_t queue_size) = 0;
+    virtual srs_error_t on_publish() = 0;
+    virtual void on_unpublish() = 0;
+    virtual srs_error_t on_meta_data(SrsMediaPacket *shared_metadata) = 0;
+    virtual srs_error_t on_audio(SrsMediaPacket *shared_audio) = 0;
+    virtual srs_error_t on_video(SrsMediaPacket *shared_video) = 0;
+};
+
 // Forward the stream to other servers.
-class SrsForwarder : public ISrsCoroutineHandler
+class SrsForwarder : public ISrsCoroutineHandler, public ISrsForwarder
 {
 private:
     // The ep to forward, server[:port].

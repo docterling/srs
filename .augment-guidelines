@@ -363,6 +363,71 @@ code_patterns:
     - pattern: "#ifdef SRS_VALGRIND"
       description: "Valgrind support"
 
+  dependency_injection_for_testing:
+    - pattern: "assemble() method pattern"
+      description: "MANDATORY pattern for making classes testable by separating construction from initialization - applies ONLY to production code, NOT to unit test code or mock classes"
+      purpose: "Enables dependency injection for unit testing by deferring subscription/registration operations that depend on global state or external dependencies"
+
+      usage: |
+        WRONG: Direct dependency in constructor (not testable)
+        class SrsOriginHub {
+        public:
+            SrsOriginHub() {
+                _srs_config->subscribe(this);  // Hard dependency on global config
+            }
+            ~SrsOriginHub() {
+                _srs_config->unsubscribe(this);
+            }
+        };
+
+        CORRECT: Separate construction from initialization with assemble()
+        class SrsOriginHub {
+        private:
+            SrsConfig* config_;
+        public:
+            SrsOriginHub() {
+                config_ = _srs_config;  // Store reference only
+            }
+            void assemble() {
+                config_->subscribe(this);  // Actual initialization
+            }
+            ~SrsOriginHub() {
+                config_->unsubscribe(this);
+                config_ = NULL;
+            }
+        };
+
+        // Production code usage
+        hub_ = new SrsOriginHub();
+        hub_->assemble();  // Call immediately after construction
+
+        // Unit test usage
+        SrsOriginHub* hub = new SrsOriginHub();
+        hub->config_ = mock_config;  // Inject mock dependency
+        hub->assemble();              // Now uses mock config
+        // Or skip assemble() entirely to avoid side effects
+
+      scope: "Applies ONLY to production code in trunk/src/app/, trunk/src/protocol/, trunk/src/kernel/, trunk/src/core/ - does NOT apply to unit test code or mock classes"
+
+      when_to_use:
+        - "When constructor needs to invoke functions (e.g., subscribe(), register(), initialize() on dependencies)"
+        - "Exception: Simple object creation functions like srs_mutex_new() can remain in constructor - no need to extract to assemble()"
+        - "Rule: If constructor calls methods on dependencies, move those calls to assemble()"
+
+      when_not_to_use:
+        - "In unit test code (trunk/src/utest/) - tests can use direct construction"
+        - "In mock classes (Mock* classes in utest files) - mocks are designed for testing"
+        - "For simple value initialization without external dependencies"
+        - "When the class is already easily testable without this pattern"
+
+      benefits:
+        - "Enables dependency injection for unit testing"
+        - "Allows mocking of global dependencies"
+        - "Separates object construction from initialization side effects"
+        - "Makes code more testable without changing production behavior"
+
+      rationale: "This pattern enables unit testing by allowing mock dependencies to be injected before initialization, while maintaining clean production code that calls assemble() immediately after construction. Unit test code and mock classes don't need this pattern because they are already designed for testing purposes."
+
   codec_handling:
     enhanced_rtmp:
       description: |

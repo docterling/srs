@@ -29,6 +29,8 @@
 #include <sys/utsname.h>
 #endif
 
+#include <ifaddrs.h>
+
 class ISrsHttpMessage;
 
 class SrsMessageHeader;
@@ -103,10 +105,6 @@ extern std::string srs_net_url_encode_rtmp_url(std::string server, int port, std
  */
 extern srs_error_t srs_rtmp_create_msg(char type, uint32_t timestamp, char *data, int size, int stream_id, SrsRtmpCommonMessage **ppmsg);
 
-// write large numbers of iovs.
-extern srs_error_t srs_write_large_iovs(ISrsProtocolReadWriter *skt, iovec *iovs, int size, ssize_t *pnwrite = NULL);
-
-// Get local ip, fill to @param ips
 struct SrsIPAddress {
     // The network interface name, such as eth0, en0, eth1.
     std::string ifname_;
@@ -119,25 +117,38 @@ struct SrsIPAddress {
     // Whether the ip is loopback, such as 127.0.0.1
     bool is_loopback_;
 };
-extern std::vector<SrsIPAddress *> &srs_get_local_ips();
 
-// Get local public ip, empty string if no public internet address found.
-extern std::string srs_get_public_internet_address(bool ipv4_only = false);
+// The utility functions for protocol.
+class SrsProtocolUtility
+{
+public:
+    SrsProtocolUtility();
+    virtual ~SrsProtocolUtility();
 
-// Detect whether specified device is internet public address.
-extern bool srs_net_device_is_internet(std::string ifname);
-extern bool srs_net_device_is_internet(const sockaddr *addr);
+public:
+    // write large numbers of iovs.
+    virtual srs_error_t write_iovs(ISrsProtocolReadWriter *skt, iovec *iovs, int size, ssize_t *pnwrite = NULL);
+
+public:
+    // Get local ip, fill to @param ips
+    virtual std::vector<SrsIPAddress *> &local_ips();
+    // Get local public ip, empty string if no public internet address found.
+    virtual std::string public_internet_address(bool ipv4_only = false);
+    // Detect whether specified device is internet public address.
+    virtual bool is_internet(std::string ifname);
+    virtual bool is_internet(const sockaddr *addr);
+
+public:
+    // Get hostname
+    virtual std::string system_hostname(void);
+#if defined(__linux__) || defined(SRS_OSX)
+    // Get system uname info.
+    virtual utsname *system_uname();
+#endif
+};
 
 // Get the original ip from query and header by proxy.
 extern std::string srs_get_original_ip(ISrsHttpMessage *r);
-
-// Get hostname
-extern std::string srs_get_system_hostname(void);
-
-#if defined(__linux__) || defined(SRS_OSX)
-// Get system uname info.
-extern utsname *srs_get_system_uname_info();
-#endif
 
 class ISrsRequest;
 

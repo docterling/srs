@@ -475,7 +475,7 @@ void MockSrsFastTimer::clear()
 }
 
 // Tests for srs_kernel_hourglass.hpp
-VOID TEST(KernelHourglassTest, ISrsHourGlassInterface)
+VOID TEST(KernelHourglassTest, ISrsHourGlassHandlerInterface)
 {
     MockSrsHourGlass handler;
 
@@ -4001,7 +4001,7 @@ VOID TEST(KernelHourglassTest, SrsHourGlass_untick)
 {
     // Test SrsHourGlass::untick method
     // Create a mock handler for the hourglass
-    class MockHourGlassHandler : public ISrsHourGlass
+    class MockHourGlassHandler : public ISrsHourGlassHandler
     {
     public:
         srs_error_t notify(int event, srs_utime_t interval, srs_utime_t tick)
@@ -4037,7 +4037,7 @@ VOID TEST(KernelHourglassTest, SrsHourGlass_stop)
 {
     // Test SrsHourGlass::stop method
     // Create a mock handler for the hourglass
-    class MockHourGlassHandler : public ISrsHourGlass
+    class MockHourGlassHandler : public ISrsHourGlassHandler
     {
     public:
         srs_error_t notify(int event, srs_utime_t interval, srs_utime_t tick)
@@ -4141,7 +4141,8 @@ VOID TEST(KernelTSTest, SrsEncFileWriter_write)
     writer.close();
 
     // Clean up temp file
-    unlink(temp_file.c_str());
+    SrsPath path;
+    path.unlink(temp_file);
 }
 
 VOID TEST(KernelTSTest, SrsEncFileWriter_close)
@@ -4184,7 +4185,8 @@ VOID TEST(KernelTSTest, SrsEncFileWriter_close)
     writer.close();
 
     // Clean up
-    unlink(temp_file.c_str());
+    SrsPath path;
+    path.unlink(temp_file);
 }
 
 VOID TEST(KernelTSTest, SrsTsMessageCache_do_cache_mp3)
@@ -4286,7 +4288,8 @@ VOID TEST(KernelTSTest, SrsTsTransmuxer_set_has_video)
             srs_freep(err);
         }
         writer.close();
-        unlink(temp_file.c_str());
+        SrsPath path;
+        path.unlink(temp_file);
     } else {
         srs_freep(err);
     }

@@ -1207,6 +1207,8 @@ VOID TEST(TCPServerTest, CoverUtility)
     EXPECT_FALSE(srs_net_url_is_rtmp("http://"));
     EXPECT_FALSE(srs_net_url_is_rtmp("rtmp:"));
 
+    SrsProtocolUtility utility;
+
     // ipv4 loopback
     if (true) {
         addrinfo hints;
@@ -1217,7 +1219,7 @@ VOID TEST(TCPServerTest, CoverUtility)
         ASSERT_TRUE(!getaddrinfo("127.0.0.1", NULL, &hints, &r_raw));
         SrsUniquePtr<addrinfo> r(r_raw, freeaddrinfo);
 
-        EXPECT_FALSE(srs_net_device_is_internet((sockaddr *)r->ai_addr));
+        EXPECT_FALSE(utility.is_internet((sockaddr *)r->ai_addr));
     }
 
     // ipv4 intranet
@@ -1230,7 +1232,7 @@ VOID TEST(TCPServerTest, CoverUtility)
         ASSERT_TRUE(!getaddrinfo("192.168.0.1", NULL, &hints, &r_raw));
         SrsUniquePtr<addrinfo> r(r_raw, freeaddrinfo);
 
-        EXPECT_FALSE(srs_net_device_is_internet((sockaddr *)r->ai_addr));
+        EXPECT_FALSE(utility.is_internet((sockaddr *)r->ai_addr));
     }
 
     if (true) {
@@ -1238,31 +1240,31 @@ VOID TEST(TCPServerTest, CoverUtility)
         addr.sin_family = AF_INET;
 
         addr.sin_addr.s_addr = htonl(0x12000000);
-        EXPECT_TRUE(srs_net_device_is_internet((sockaddr *)&addr));
+        EXPECT_TRUE(utility.is_internet((sockaddr *)&addr));
 
         addr.sin_addr.s_addr = htonl(0x7f000000);
-        EXPECT_FALSE(srs_net_device_is_internet((sockaddr *)&addr));
+        EXPECT_FALSE(utility.is_internet((sockaddr *)&addr));
 
         addr.sin_addr.s_addr = htonl(0x7f000001);
-        EXPECT_FALSE(srs_net_device_is_internet((sockaddr *)&addr));
+        EXPECT_FALSE(utility.is_internet((sockaddr *)&addr));
 
         addr.sin_addr.s_addr = htonl(0x0a000000);
-        EXPECT_FALSE(srs_net_device_is_internet((sockaddr *)&addr));
+        EXPECT_FALSE(utility.is_internet((sockaddr *)&addr));
 
         addr.sin_addr.s_addr = htonl(0x0a000001);
-        EXPECT_FALSE(srs_net_device_is_internet((sockaddr *)&addr));
+        EXPECT_FALSE(utility.is_internet((sockaddr *)&addr));
 
         addr.sin_addr.s_addr = htonl(0x0affffff);
-        EXPECT_FALSE(srs_net_device_is_internet((sockaddr *)&addr));
+        EXPECT_FALSE(utility.is_internet((sockaddr *)&addr));
 
         addr.sin_addr.s_addr = htonl(0xc0a80000);
-        EXPECT_FALSE(srs_net_device_is_internet((sockaddr *)&addr));
+        EXPECT_FALSE(utility.is_internet((sockaddr *)&addr));
 
         addr.sin_addr.s_addr = htonl(0xc0a80001);
-        EXPECT_FALSE(srs_net_device_is_internet((sockaddr *)&addr));
+        EXPECT_FALSE(utility.is_internet((sockaddr *)&addr));
 
         addr.sin_addr.s_addr = htonl(0xc0a8ffff);
-        EXPECT_FALSE(srs_net_device_is_internet((sockaddr *)&addr));
+        EXPECT_FALSE(utility.is_internet((sockaddr *)&addr));
     }
 
     // Normal ipv6 address.
@@ -1275,7 +1277,7 @@ VOID TEST(TCPServerTest, CoverUtility)
         ASSERT_TRUE(!getaddrinfo("2001:da8:6000:291:21f:d0ff:fed4:928c", NULL, &hints, &r_raw));
         SrsUniquePtr<addrinfo> r(r_raw, freeaddrinfo);
 
-        EXPECT_TRUE(srs_net_device_is_internet((sockaddr *)r->ai_addr));
+        EXPECT_TRUE(utility.is_internet((sockaddr *)r->ai_addr));
     }
     if (true) {
         addrinfo hints;
@@ -1286,7 +1288,7 @@ VOID TEST(TCPServerTest, CoverUtility)
         ASSERT_TRUE(!getaddrinfo("3ffe:dead:beef::1", NULL, &hints, &r_raw));
         SrsUniquePtr<addrinfo> r(r_raw, freeaddrinfo);
 
-        EXPECT_TRUE(srs_net_device_is_internet((sockaddr *)r->ai_addr));
+        EXPECT_TRUE(utility.is_internet((sockaddr *)r->ai_addr));
     }
 
     // IN6_IS_ADDR_UNSPECIFIED
@@ -1299,7 +1301,7 @@ VOID TEST(TCPServerTest, CoverUtility)
         ASSERT_TRUE(!getaddrinfo("::", NULL, &hints, &r_raw));
         SrsUniquePtr<addrinfo> r(r_raw, freeaddrinfo);
 
-        EXPECT_FALSE(srs_net_device_is_internet((sockaddr *)r->ai_addr));
+        EXPECT_FALSE(utility.is_internet((sockaddr *)r->ai_addr));
     }
 
     // IN6_IS_ADDR_SITELOCAL
@@ -1312,7 +1314,7 @@ VOID TEST(TCPServerTest, CoverUtility)
         ASSERT_TRUE(!getaddrinfo("fec0::", NULL, &hints, &r_raw));
         SrsUniquePtr<addrinfo> r(r_raw, freeaddrinfo);
 
-        EXPECT_FALSE(srs_net_device_is_internet((sockaddr *)r->ai_addr));
+        EXPECT_FALSE(utility.is_internet((sockaddr *)r->ai_addr));
     }
 
     // IN6_IS_ADDR_LINKLOCAL
@@ -1325,7 +1327,7 @@ VOID TEST(TCPServerTest, CoverUtility)
         ASSERT_TRUE(!getaddrinfo("FE80::", NULL, &hints, &r_raw));
         SrsUniquePtr<addrinfo> r(r_raw, freeaddrinfo);
 
-        EXPECT_FALSE(srs_net_device_is_internet((sockaddr *)r->ai_addr));
+        EXPECT_FALSE(utility.is_internet((sockaddr *)r->ai_addr));
     }
 
     // IN6_IS_ADDR_LINKLOCAL
@@ -1338,7 +1340,7 @@ VOID TEST(TCPServerTest, CoverUtility)
         ASSERT_TRUE(!getaddrinfo("::1", NULL, &hints, &r_raw));
         SrsUniquePtr<addrinfo> r(r_raw, freeaddrinfo);
 
-        EXPECT_FALSE(srs_net_device_is_internet((sockaddr *)r->ai_addr));
+        EXPECT_FALSE(utility.is_internet((sockaddr *)r->ai_addr));
     }
 }
 

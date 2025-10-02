@@ -67,7 +67,7 @@ public:
     void on_stream_change(SrsRtcSourceDescription *desc);
 };
 
-class SrsRtspSourceManager : public ISrsHourGlass
+class SrsRtspSourceManager : public ISrsHourGlassHandler
 {
 private:
     srs_mutex_t lock_;
@@ -80,7 +80,7 @@ public:
 
 public:
     virtual srs_error_t initialize();
-    // interface ISrsHourGlass
+    // interface ISrsHourGlassHandler
 private:
     virtual srs_error_t setup_ticks();
     virtual srs_error_t notify(int event, srs_utime_t interval, srs_utime_t tick);

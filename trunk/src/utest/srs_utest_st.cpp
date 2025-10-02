@@ -502,7 +502,8 @@ VOID TEST(StSocketTest, RandomPortTcpListenAndConnect)
     srs_error_t err;
 
     // Generate random port in range [30000, 60000]
-    int random_port = 30000 + (srs_rand_integer() % (60000 - 30000 + 1));
+    SrsRand rand;
+    int random_port = 30000 + (rand.integer() % (60000 - 30000 + 1));
     EXPECT_GE(random_port, 30000);
     EXPECT_LE(random_port, 60000);
 
@@ -534,7 +535,8 @@ VOID TEST(StSocketTest, RandomPortTcpListenAndConnectIPv6)
     srs_error_t err;
 
     // Generate random port in range [30000, 60000]
-    int random_port = 30000 + (srs_rand_integer() % (60000 - 30000 + 1));
+    SrsRand rand;
+    int random_port = 30000 + (rand.integer() % (60000 - 30000 + 1));
     EXPECT_GE(random_port, 30000);
     EXPECT_LE(random_port, 60000);
 
@@ -565,7 +567,8 @@ VOID TEST(StSocketTest, RandomPortUdpListenIPv4)
     srs_error_t err;
 
     // Generate random port in range [30000, 60000]
-    int random_port = 30000 + (srs_rand_integer() % (60000 - 30000 + 1));
+    SrsRand rand;
+    int random_port = 30000 + (rand.integer() % (60000 - 30000 + 1));
     EXPECT_GE(random_port, 30000);
     EXPECT_LE(random_port, 60000);
 
@@ -597,7 +600,8 @@ VOID TEST(StSocketTest, RandomPortUdpListenIPv6)
     srs_error_t err;
 
     // Generate random port in range [30000, 60000]
-    int random_port = 30000 + (srs_rand_integer() % (60000 - 30000 + 1));
+    SrsRand rand;
+    int random_port = 30000 + (rand.integer() % (60000 - 30000 + 1));
     EXPECT_GE(random_port, 30000);
     EXPECT_LE(random_port, 60000);
 

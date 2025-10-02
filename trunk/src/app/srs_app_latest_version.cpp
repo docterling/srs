@@ -203,7 +203,8 @@ srs_error_t SrsLatestVersion::cycle()
 
     if (true) {
         srs_utime_t first_wait_for_qlv = _srs_config->first_wait_for_qlv();
-        string pip = srs_get_public_internet_address();
+        SrsProtocolUtility utility;
+        string pip = utility.public_internet_address();
         srs_trace("Startup query id=%s, session=%s, eip=%s, wait=%ds", server_id_.c_str(), session_id_.c_str(), pip.c_str(), srsu2msi(first_wait_for_qlv) / 1000);
         srs_usleep(first_wait_for_qlv);
     }
@@ -220,8 +221,9 @@ srs_error_t SrsLatestVersion::cycle()
             srs_freep(err); // Ignore any error.
         }
 
+        SrsProtocolUtility utility2;
         srs_trace("Finish query id=%s, session=%s, eip=%s, match=%s, stable=%s, cost=%dms, url=%s",
-                  server_id_.c_str(), session_id_.c_str(), srs_get_public_internet_address().c_str(), match_version_.c_str(),
+                  server_id_.c_str(), session_id_.c_str(), utility2.public_internet_address().c_str(), match_version_.c_str(),
                   stable_version_.c_str(), srsu2msi(srs_time_now_realtime() - starttime), url.c_str());
 
         srs_usleep(3600 * SRS_UTIME_SECONDS); // Every an hour.
@@ -235,11 +237,12 @@ srs_error_t SrsLatestVersion::query_latest_version(string &url)
     srs_error_t err = srs_success;
 
     // Generate uri and parse to object.
+    SrsProtocolUtility utility3;
     stringstream ss;
     ss << "http://api.ossrs.net/service/v1/releases?"
        << "version=v" << VERSION_MAJOR << "." << VERSION_MINOR << "." << VERSION_REVISION
        << "&id=" << server_id_ << "&session=" << session_id_ << "&role=srs"
-       << "&eip=" << srs_get_public_internet_address()
+       << "&eip=" << utility3.public_internet_address()
        << "&ts=" << srs_time_now_cached()
        << "&alive=" << srsu2ms(srs_time_now_cached() - srs_time_since_startup()) / 1000;
     srs_build_features(ss);

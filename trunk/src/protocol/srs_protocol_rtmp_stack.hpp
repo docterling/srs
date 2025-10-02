@@ -22,6 +22,7 @@
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_flv.hpp>
 #include <srs_kernel_log.hpp>
+#include <srs_kernel_utility.hpp>
 
 class SrsFastStream;
 class SrsBuffer;
@@ -33,6 +34,7 @@ class SrsMediaPacket;
 class SrsProtocol;
 class ISrsProtocolReader;
 class ISrsProtocolReadWriter;
+class SrsProtocolUtility;
 class SrsCreateStreamPacket;
 class SrsFMLEStartPacket;
 class SrsPublishPacket;
@@ -197,6 +199,8 @@ private:
     bool warned_c0c3_cache_dry_;
     // The output chunk size, default to 128, set by config.
     int32_t out_chunk_size_;
+    // Protocol utility for writing large iovs.
+    SrsProtocolUtility *protocol_utility_;
 
 public:
     SrsProtocol(ISrsProtocolReadWriter *io);
@@ -539,6 +543,9 @@ bool srs_client_type_is_publish(SrsRtmpConnType type);
 // For smart switch between complex and simple handshake.
 class SrsHandshakeBytes
 {
+private:
+    SrsRand rand_;
+
 public:
     // For RTMP proxy, the real IP.
     uint32_t proxy_real_ip_;

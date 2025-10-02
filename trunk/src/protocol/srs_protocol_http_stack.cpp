@@ -532,12 +532,13 @@ SrsHttpFileServer::SrsHttpFileServer(string root_dir)
 {
     dir = root_dir;
     fs_factory = new ISrsFileReaderFactory();
-    _srs_path_exists = srs_path_exists;
+    path_ = new SrsPath();
 }
 
 SrsHttpFileServer::~SrsHttpFileServer()
 {
     srs_freep(fs_factory);
+    srs_freep(path_);
 }
 
 void SrsHttpFileServer::set_fs_factory(ISrsFileReaderFactory *f)
@@ -546,9 +547,10 @@ void SrsHttpFileServer::set_fs_factory(ISrsFileReaderFactory *f)
     fs_factory = f;
 }
 
-void SrsHttpFileServer::set_path_check(_pfn_srs_path_exists pfn)
+void SrsHttpFileServer::set_path(SrsPath *v)
 {
-    _srs_path_exists = pfn;
+    srs_freep(path_);
+    path_ = v;
 }
 
 srs_error_t SrsHttpFileServer::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r)
@@ -561,10 +563,11 @@ srs_error_t SrsHttpFileServer::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMes
 
     string upath = r->path();
     string fullpath = srs_http_fs_fullpath(dir, entry->pattern, upath);
-    string basename = srs_path_filepath_base(upath);
+    SrsPath path;
+    string basename = path.filepath_base(upath);
 
     // stat current dir, if exists, return error.
-    if (!_srs_path_exists(fullpath)) {
+    if (!path_->exists(fullpath)) {
         srs_warn("http miss file=%s, pattern=%s, upath=%s",
                  fullpath.c_str(), entry->pattern.c_str(), upath.c_str());
         return SrsHttpNotFoundHandler().serve_http(w, r);
@@ -640,7 +643,8 @@ srs_error_t SrsHttpFileServer::serve_file(ISrsHttpResponseWriter *w, ISrsHttpMes
     }
 
     if (true) {
-        std::string ext = srs_path_filepath_ext(fullpath);
+        SrsPath path;
+        std::string ext = path.filepath_ext(fullpath);
 
         if (_mime.find(ext) == _mime.end()) {
             w->header()->set_content_type("application/octet-stream");

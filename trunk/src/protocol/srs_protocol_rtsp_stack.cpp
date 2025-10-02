@@ -551,8 +551,9 @@ srs_error_t SrsRtspStack::do_recv_message(SrsRtspRequest *req)
 
     // for setup, parse the stream id from uri.
     if (req->is_setup()) {
+        SrsPath path;
         size_t pos = string::npos;
-        std::string stream_id = srs_path_filepath_base(req->uri_);
+        std::string stream_id = path.filepath_base(req->uri_);
         if ((pos = stream_id.find("=")) != string::npos) {
             stream_id = stream_id.substr(pos + 1);
         }

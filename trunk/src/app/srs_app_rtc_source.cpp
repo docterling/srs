@@ -489,13 +489,15 @@ void SrsRtcSource::init_for_play_before_publishing()
 
     SrsUniquePtr<SrsRtcSourceDescription> stream_desc(new SrsRtcSourceDescription());
 
+    SrsRand rand;
+
     // audio track description
     if (true) {
         SrsRtcTrackDescription *audio_track_desc = new SrsRtcTrackDescription();
         stream_desc->audio_track_desc_ = audio_track_desc;
 
         audio_track_desc->type_ = "audio";
-        audio_track_desc->id_ = "audio-" + srs_rand_gen_str(8);
+        audio_track_desc->id_ = "audio-" + rand.gen_str(8);
 
         uint32_t audio_ssrc = SrsRtcSSRCGenerator::instance()->generate_ssrc();
         audio_track_desc->ssrc_ = audio_ssrc;
@@ -512,7 +514,7 @@ void SrsRtcSource::init_for_play_before_publishing()
         stream_desc->video_track_descs_.push_back(h264_track_desc);
 
         h264_track_desc->type_ = "video";
-        h264_track_desc->id_ = "video-h264-" + srs_rand_gen_str(8);
+        h264_track_desc->id_ = "video-h264-" + rand.gen_str(8);
 
         uint32_t h264_ssrc = SrsRtcSSRCGenerator::instance()->generate_ssrc();
         h264_track_desc->ssrc_ = h264_ssrc;
@@ -530,7 +532,7 @@ void SrsRtcSource::init_for_play_before_publishing()
         stream_desc->video_track_descs_.push_back(h265_track_desc);
 
         h265_track_desc->type_ = "video";
-        h265_track_desc->id_ = "video-h265-" + srs_rand_gen_str(8);
+        h265_track_desc->id_ = "video-h265-" + rand.gen_str(8);
 
         uint32_t h265_ssrc = SrsRtcSSRCGenerator::instance()->generate_ssrc();
         h265_track_desc->ssrc_ = h265_ssrc;

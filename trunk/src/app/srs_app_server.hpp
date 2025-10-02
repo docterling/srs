@@ -56,6 +56,7 @@ class SrsSrtAcceptor;
 class SrsSrtEventLoop;
 class SrsRtcSessionManager;
 class SrsPidFileLocker;
+class ISrsAppConfig;
 
 // Initialize global shared variables cross all threads.
 extern srs_error_t srs_global_initialize();
@@ -66,10 +67,13 @@ extern srs_error_t srs_global_initialize();
 class SrsServer : public ISrsReloadHandler, // Reload framework for permormance optimization.
                   public ISrsLiveSourceHandler,
                   public ISrsTcpHandler,
-                  public ISrsHourGlass,
+                  public ISrsHourGlassHandler,
                   public ISrsSrtClientHandler,
                   public ISrsUdpMuxHandler
 {
+private:
+    ISrsAppConfig *config_;
+
 private:
     ISrsHttpServeMux *http_api_mux_;
     SrsHttpServer *http_server_;
@@ -207,7 +211,7 @@ private:
     // the cpu/mem/network statistic.
     virtual srs_error_t do_cycle();
 
-    // interface ISrsHourGlass
+    // interface ISrsHourGlassHandler
 private:
     virtual srs_error_t setup_ticks();
     virtual srs_error_t notify(int event, srs_utime_t interval, srs_utime_t tick);
@@ -313,6 +317,9 @@ public:
 // PID file manager for process identification and locking.
 class SrsPidFileLocker
 {
+private:
+    ISrsAppConfig *config_;
+    
 private:
     int pid_fd_;
     std::string pid_file_;

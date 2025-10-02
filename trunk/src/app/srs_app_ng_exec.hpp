@@ -18,10 +18,23 @@ class ISrsRequest;
 class SrsPithyPrint;
 class SrsProcess;
 
+// The ng-exec interface.
+class ISrsNgExec
+{
+public:
+    ISrsNgExec();
+    virtual ~ISrsNgExec();
+
+public:
+    virtual srs_error_t on_publish(ISrsRequest *req) = 0;
+    virtual void on_unpublish() = 0;
+    virtual srs_error_t cycle() = 0;
+};
+
 // The ng-exec is the exec feature introduced by nginx-rtmp,
 // @see https://github.com/arut/nginx-rtmp-module/wiki/Directives#exec_push
 // @see https://github.com/ossrs/srs/issues/367
-class SrsNgExec : public ISrsCoroutineHandler
+class SrsNgExec : public ISrsCoroutineHandler, public ISrsNgExec
 {
 private:
     ISrsCoroutine *trd_;

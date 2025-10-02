@@ -2140,7 +2140,8 @@ srs_error_t SrsRtcConnection::initialize(ISrsRequest *r, bool dtls, bool srtp, s
     srs_error_t err = srs_success;
 
     username_ = username;
-    token_ = srs_rand_gen_str(9);
+    SrsRand rand;
+    token_ = rand.gen_str(9);
     req_ = r->copy();
 
     SrsSessionConfig *cfg = &local_sdp_.session_negotiate_;
@@ -3699,7 +3700,8 @@ srs_error_t SrsRtcPlayerNegotiator::generate_play_local_sdp(ISrsRequest *req, Sr
 
     local_sdp.group_policy_ = "BUNDLE";
 
-    std::string cname = srs_rand_gen_str(16);
+    SrsRand rand;
+    std::string cname = rand.gen_str(16);
 
     if (audio_before_video) {
         if ((err = generate_play_local_sdp_for_audio(local_sdp, stream_desc, cname)) != srs_success) {

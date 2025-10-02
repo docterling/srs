@@ -401,7 +401,8 @@ int srs_do_create_dir_recursively(string dir)
     int ret = ERROR_SUCCESS;
 
     // stat current dir, if exists, return error.
-    if (srs_path_exists(dir)) {
+    SrsPath path;
+    if (path.exists(dir)) {
         return ERROR_SYSTEM_DIR_EXISTS;
     }
 
@@ -516,17 +517,6 @@ bool srs_bytes_equal(void *pa, void *pb, int size)
     return true;
 }
 
-srs_error_t srs_os_mkdir_all(string dir)
-{
-    int ret = srs_do_create_dir_recursively(dir);
-
-    if (ret == ERROR_SYSTEM_DIR_EXISTS || ret == ERROR_SUCCESS) {
-        return srs_success;
-    }
-
-    return srs_error_new(ret, "create dir %s", dir.c_str());
-}
-
 SrsPath::SrsPath()
 {
 }
@@ -536,20 +526,6 @@ SrsPath::~SrsPath()
 }
 
 bool SrsPath::exists(std::string path)
-{
-    return srs_path_exists(path);
-}
-
-srs_error_t SrsPath::unlink(std::string path)
-{
-    if (::unlink(path.c_str()) < 0) {
-        return srs_error_new(ERROR_SYSTEM_FILE_UNLINK, "unlink %s", path.c_str());
-    }
-
-    return srs_success;
-}
-
-bool srs_path_exists(std::string path)
 {
     struct stat st;
 
@@ -561,7 +537,16 @@ bool srs_path_exists(std::string path)
     return false;
 }
 
-string srs_path_filepath_dir(string path)
+srs_error_t SrsPath::unlink(std::string path)
+{
+    if (::unlink(path.c_str()) < 0) {
+        return srs_error_new(ERROR_SYSTEM_FILE_UNLINK, "unlink %s", path.c_str());
+    }
+
+    return srs_success;
+}
+
+std::string SrsPath::filepath_dir(std::string path)
 {
     std::string dirname = path;
 
@@ -581,7 +566,7 @@ string srs_path_filepath_dir(string path)
     return dirname;
 }
 
-string srs_path_filepath_base(string path)
+string SrsPath::filepath_base(string path)
 {
     std::string dirname = path;
     size_t pos = string::npos;
@@ -597,7 +582,7 @@ string srs_path_filepath_base(string path)
     return dirname;
 }
 
-string srs_path_filepath_filename(string path)
+string SrsPath::filepath_filename(string path)
 {
     std::string filename = path;
     size_t pos = string::npos;
@@ -609,7 +594,7 @@ string srs_path_filepath_filename(string path)
     return filename;
 }
 
-string srs_path_filepath_ext(string path)
+string SrsPath::filepath_ext(string path)
 {
     size_t pos = string::npos;
 
@@ -618,6 +603,17 @@ string srs_path_filepath_ext(string path)
     }
 
     return "";
+}
+
+srs_error_t SrsPath::mkdir_all(string dir)
+{
+    int ret = srs_do_create_dir_recursively(dir);
+
+    if (ret == ERROR_SYSTEM_DIR_EXISTS || ret == ERROR_SUCCESS) {
+        return srs_success;
+    }
+
+    return srs_error_new(ret, "create dir %s", dir.c_str());
 }
 
 // fromHexChar converts a hex character into its value and a success flag.
@@ -691,28 +687,36 @@ int srs_hex_decode_string(uint8_t *data, const char *p, int size)
     return size / 2;
 }
 
-void srs_rand_gen_bytes(char *bytes, int size)
+SrsRand::SrsRand()
+{
+}
+
+SrsRand::~SrsRand()
+{
+}
+
+void SrsRand::gen_bytes(char *bytes, int size)
 {
     for (int i = 0; i < size; i++) {
         // the common value in [0x0f, 0xf0]
-        bytes[i] = 0x0f + (srs_rand_integer() % (256 - 0x0f - 0x0f));
+        bytes[i] = 0x0f + (integer() % (256 - 0x0f - 0x0f));
     }
 }
 
-std::string srs_rand_gen_str(int len)
+std::string SrsRand::gen_str(int len)
 {
     static string random_table = "01234567890123456789012345678901234567890123456789abcdefghijklmnopqrstuvwxyz";
 
     string ret;
     ret.reserve(len);
     for (int i = 0; i < len; ++i) {
-        ret.append(1, random_table[srs_rand_integer() % random_table.size()]);
+        ret.append(1, random_table[integer() % random_table.size()]);
     }
 
     return ret;
 }
 
-long srs_rand_integer()
+long SrsRand::integer()
 {
     static bool _random_initialized = false;
     if (!_random_initialized) {
@@ -723,9 +727,9 @@ long srs_rand_integer()
     return random();
 }
 
-long srs_rand_integer(long min, long max)
+long SrsRand::integer(long min, long max)
 {
-    return min + (srs_rand_integer() % (max - min + 1));
+    return min + (integer() % (max - min + 1));
 }
 
 bool srs_is_digit_number(string str)

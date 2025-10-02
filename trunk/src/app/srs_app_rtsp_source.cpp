@@ -539,10 +539,12 @@ srs_error_t SrsRtspRtpBuilder::initialize_audio_track(SrsAudioCodecId codec)
     // RTSP behavior: Build track description from real audio format, not default values
     // This is different from RTC which uses default track descriptions
 
+    SrsRand rand;
+
     // Create audio track description from actual format data
     SrsUniquePtr<SrsRtcTrackDescription> audio_desc(new SrsRtcTrackDescription());
     audio_desc->type_ = "audio";
-    audio_desc->id_ = "audio-" + srs_rand_gen_str(8);
+    audio_desc->id_ = "audio-" + rand.gen_str(8);
     audio_desc->direction_ = "recvonly";
 
     // Generate SSRC for this track
@@ -612,10 +614,12 @@ srs_error_t SrsRtspRtpBuilder::initialize_video_track(SrsVideoCodecId codec)
 
     std::string codec_name = srs_video_codec_id2str(codec);
 
+    SrsRand rand;
+
     // Create video track description from actual format data
     SrsUniquePtr<SrsRtcTrackDescription> video_desc(new SrsRtcTrackDescription());
     video_desc->type_ = "video";
-    video_desc->id_ = "video-" + codec_name + "-" + srs_rand_gen_str(8);
+    video_desc->id_ = "video-" + codec_name + "-" + rand.gen_str(8);
     video_desc->direction_ = "recvonly";
 
     // Generate SSRC for this track

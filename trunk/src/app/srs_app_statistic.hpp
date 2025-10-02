@@ -140,6 +140,11 @@ public:
 public:
     virtual void on_disconnect(std::string id, srs_error_t err) = 0;
     virtual srs_error_t on_client(std::string id, ISrsRequest *req, ISrsExpire *conn, SrsRtmpConnType type) = 0;
+    virtual srs_error_t on_video_info(ISrsRequest *req, SrsVideoCodecId vcodec, int avc_profile, int avc_level, int width, int height) = 0;
+    virtual srs_error_t on_audio_info(ISrsRequest *req, SrsAudioCodecId acodec, SrsAudioSampleRate asample_rate,
+                                      SrsAudioChannels asound_type, SrsAacObjectType aac_object) = 0;
+    virtual void on_stream_publish(ISrsRequest *req, std::string publisher_id) = 0;
+    virtual void on_stream_close(ISrsRequest *req) = 0;
 };
 
 // The global statistic instance.

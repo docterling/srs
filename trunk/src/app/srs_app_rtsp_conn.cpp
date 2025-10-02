@@ -549,7 +549,8 @@ srs_error_t SrsRtspConnection::do_cycle()
         } else if (req->is_describe()) {
             // create session.
             if (session_id_.empty()) {
-                session_id_ = srs_rand_gen_str(8);
+                SrsRand rand;
+                session_id_ = rand.gen_str(8);
             }
 
             SrsUniquePtr<SrsRtspDescribeResponse> res(new SrsRtspDescribeResponse((int)req->seq_));

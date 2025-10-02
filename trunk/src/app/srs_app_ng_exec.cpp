@@ -20,6 +20,14 @@ using namespace std;
 #include <srs_protocol_rtmp_stack.hpp>
 #include <srs_protocol_utility.hpp>
 
+ISrsNgExec::ISrsNgExec()
+{
+}
+
+ISrsNgExec::~ISrsNgExec()
+{
+}
+
 SrsNgExec::SrsNgExec()
 {
     trd_ = new SrsDummyCoroutine();

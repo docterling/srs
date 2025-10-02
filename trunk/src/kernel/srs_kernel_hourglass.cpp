@@ -30,6 +30,14 @@ extern SrsPps *_srs_pps_clock_80ms;
 extern SrsPps *_srs_pps_clock_160ms;
 extern SrsPps *_srs_pps_timer_s;
 
+ISrsHourGlassHandler::ISrsHourGlassHandler()
+{
+}
+
+ISrsHourGlassHandler::~ISrsHourGlassHandler()
+{
+}
+
 ISrsHourGlass::ISrsHourGlass()
 {
 }
@@ -38,7 +46,7 @@ ISrsHourGlass::~ISrsHourGlass()
 {
 }
 
-SrsHourGlass::SrsHourGlass(string label, ISrsHourGlass *h, srs_utime_t resolution)
+SrsHourGlass::SrsHourGlass(string label, ISrsHourGlassHandler *h, srs_utime_t resolution)
 {
     label_ = label;
     handler_ = h;

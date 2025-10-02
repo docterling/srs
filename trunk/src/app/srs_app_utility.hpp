@@ -50,11 +50,20 @@ extern std::string srs_path_build_stream(std::string template_path, std::string 
 // @return the replaced path.
 extern std::string srs_path_build_timestamp(std::string template_path);
 
-// Kill the pid by SIGINT, then wait to quit,
-// Kill the pid by SIGKILL again when exceed the timeout.
-// @param pid the pid to kill. ignore for -1. set to -1 when killed.
-// @return an int error code.
-extern srs_error_t srs_kill_forced(int &pid);
+// The app utility.
+class SrsAppUtility
+{
+public:
+    SrsAppUtility();
+    virtual ~SrsAppUtility();
+
+public:
+    // Kill the pid by SIGINT, then wait to quit,
+    // Kill the pid by SIGKILL again when exceed the timeout.
+    // @param pid the pid to kill. ignore for -1. set to -1 when killed.
+    // @return an int error code.
+    virtual srs_error_t kill(int &pid);
+};
 
 // Current process resource usage.
 // @see: man getrusage

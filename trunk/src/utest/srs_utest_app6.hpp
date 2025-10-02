@@ -243,6 +243,53 @@ public:
     // ISrsConfig methods
     virtual srs_utime_t get_pithy_print();
     virtual std::string get_default_app_name();
+    virtual void subscribe(ISrsReloadHandler *handler);
+    virtual void unsubscribe(ISrsReloadHandler *handler);
+    virtual srs_error_t reload(SrsReloadState *pstate) { return srs_success; }
+    virtual srs_error_t persistence() { return srs_success; }
+    virtual std::string config() { return ""; }
+    virtual int get_max_connections() { return 1000; }
+    virtual std::string get_pid_file() { return ""; }
+    virtual bool empty_ip_ok() { return false; }
+    virtual bool get_asprocess() { return false; }
+    virtual srs_utime_t get_grace_start_wait() { return 0; }
+    virtual srs_utime_t get_grace_final_wait() { return 0; }
+    virtual bool is_force_grace_quit() { return false; }
+    virtual bool inotify_auto_reload() { return false; }
+    virtual bool auto_reload_for_docker() { return false; }
+    virtual std::vector<std::string> get_listens() { return std::vector<std::string>(); }
+    virtual bool get_rtmps_enabled() { return false; }
+    virtual std::vector<std::string> get_rtmps_listen() { return std::vector<std::string>(); }
+    virtual bool get_http_api_enabled() { return false; }
+    virtual std::vector<std::string> get_http_api_listens() { return std::vector<std::string>(); }
+    virtual bool get_https_api_enabled() { return false; }
+    virtual std::vector<std::string> get_https_api_listens() { return std::vector<std::string>(); }
+    virtual std::string get_https_api_ssl_key() { return ""; }
+    virtual std::string get_https_api_ssl_cert() { return ""; }
+    virtual bool get_http_stream_enabled() { return false; }
+    virtual std::vector<std::string> get_http_stream_listens() { return std::vector<std::string>(); }
+    virtual bool get_https_stream_enabled() { return false; }
+    virtual std::vector<std::string> get_https_stream_listens() { return std::vector<std::string>(); }
+    virtual std::string get_https_stream_ssl_key() { return ""; }
+    virtual std::string get_https_stream_ssl_cert() { return ""; }
+    virtual std::string get_http_stream_dir() { return ""; }
+    virtual bool get_rtc_server_enabled() { return false; }
+    virtual bool get_rtc_server_tcp_enabled() { return false; }
+    virtual std::vector<std::string> get_rtc_server_tcp_listens() { return std::vector<std::string>(); }
+    virtual std::string get_rtc_server_protocol() { return "udp"; }
+    virtual std::vector<std::string> get_rtc_server_listens() { return std::vector<std::string>(); }
+    virtual int get_rtc_server_reuseport() { return 1; }
+    virtual bool get_rtsp_server_enabled() { return false; }
+    virtual std::vector<std::string> get_rtsp_server_listens() { return std::vector<std::string>(); }
+    virtual std::vector<std::string> get_srt_listens() { return std::vector<std::string>(); }
+    virtual std::vector<SrsConfDirective *> get_stream_casters() { return std::vector<SrsConfDirective *>(); }
+    virtual bool get_stream_caster_enabled(SrsConfDirective *conf) { return false; }
+    virtual std::string get_stream_caster_engine(SrsConfDirective *conf) { return ""; }
+    virtual bool get_exporter_enabled() { return false; }
+    virtual std::string get_exporter_listen() { return ""; }
+    virtual bool get_stats_enabled() { return false; }
+    virtual bool get_heartbeat_enabled() { return false; }
+    virtual srs_utime_t get_heartbeat_interval() { return 0; }
     // ISrsAppConfig methods
     virtual bool get_vhost_http_hooks_enabled(std::string vhost);
     virtual SrsConfDirective *get_vhost_on_stop(std::string vhost);
@@ -289,6 +336,18 @@ public:
     virtual bool get_hls_ctx_enabled(std::string vhost);
     virtual bool get_hls_ts_ctx_enabled(std::string vhost);
     virtual bool get_hls_recover(std::string vhost);
+    virtual bool get_forward_enabled(std::string vhost);
+    virtual SrsConfDirective *get_forwards(std::string vhost);
+    virtual srs_utime_t get_queue_length(std::string vhost);
+    virtual SrsConfDirective *get_forward_backend(std::string vhost);
+    virtual bool get_atc(std::string vhost);
+    virtual int get_time_jitter(std::string vhost);
+    virtual bool get_mix_correct(std::string vhost);
+    virtual bool try_annexb_first(std::string vhost);
+    virtual bool get_vhost_is_edge(std::string vhost);
+    virtual bool get_atc_auto(std::string vhost);
+    virtual bool get_reduce_sequence_header(std::string vhost);
+    virtual bool get_parse_sps(std::string vhost);
     void set_http_hooks_enabled(bool enabled);
     void set_on_stop_urls(const std::vector<std::string> &urls);
     void clear_on_stop_directive();
@@ -358,6 +417,10 @@ public:
     virtual ~MockRtcStatistic();
     virtual void on_disconnect(std::string id, srs_error_t err);
     virtual srs_error_t on_client(std::string id, ISrsRequest *req, ISrsExpire *conn, SrsRtmpConnType type);
+    virtual srs_error_t on_video_info(ISrsRequest *req, SrsVideoCodecId vcodec, int avc_profile, int avc_level, int width, int height);
+    virtual srs_error_t on_audio_info(ISrsRequest *req, SrsAudioCodecId acodec, SrsAudioSampleRate asample_rate, SrsAudioChannels asound_type, SrsAacObjectType aac_object);
+    virtual void on_stream_publish(ISrsRequest *req, std::string publisher_id);
+    virtual void on_stream_close(ISrsRequest *req);
     void set_on_client_error(srs_error_t err);
     void reset();
 };

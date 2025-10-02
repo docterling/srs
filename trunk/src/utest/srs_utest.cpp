@@ -316,7 +316,8 @@ SrsHttpTestServer::SrsHttpTestServer(string response_body) : response_body_(resp
     fd_ = NULL;
     ip_ = "127.0.0.1";
     // Generate random port in range [30000, 60000]
-    port_ = srs_rand_integer(30000, 60000);
+    SrsRand rand;
+    port_ = rand.integer(30000, 60000);
 }
 
 SrsHttpTestServer::~SrsHttpTestServer()
@@ -339,7 +340,8 @@ srs_error_t SrsHttpTestServer::start()
         // If this is not the last retry, generate a new random port and try again
         if (retry < 2) {
             srs_freep(err);
-            port_ = srs_rand_integer(30000, 60000);
+            SrsRand rand;
+            port_ = rand.integer(30000, 60000);
             srs_trace("HTTP test server listen failed on %s:%d, retry %d with new port %d",
                       ip_.c_str(), port_, retry + 1, port_);
         }
@@ -421,7 +423,8 @@ SrsHttpsTestServer::SrsHttpsTestServer(string response_body, string key_file, st
     fd_ = NULL;
     ip_ = "127.0.0.1";
     // Generate random port in range [30000, 60000]
-    port_ = srs_rand_integer(30000, 60000);
+    SrsRand rand;
+    port_ = rand.integer(30000, 60000);
 }
 
 SrsHttpsTestServer::~SrsHttpsTestServer()
@@ -443,7 +446,8 @@ srs_error_t SrsHttpsTestServer::start()
         // If this is not the last retry, generate a new random port and try again
         if (retry < 2) {
             srs_freep(err);
-            port_ = srs_rand_integer(30000, 60000);
+            SrsRand rand;
+            port_ = rand.integer(30000, 60000);
             srs_trace("HTTPS test server listen failed on %s:%d, retry %d with new port %d",
                       ip_.c_str(), port_, retry + 1, port_);
         }
@@ -544,7 +548,8 @@ SrsRtmpTestServer::SrsRtmpTestServer(string app, string stream) : app_(app), str
     enable_publish_ = true;
     enable_play_ = true;
     // Generate random port in range [30000, 60000]
-    port_ = srs_rand_integer(30000, 60000);
+    SrsRand rand;
+    port_ = rand.integer(30000, 60000);
 }
 
 SrsRtmpTestServer::~SrsRtmpTestServer()
@@ -567,7 +572,8 @@ srs_error_t SrsRtmpTestServer::start()
         // If this is not the last retry, generate a new random port and try again
         if (retry < 2) {
             srs_freep(err);
-            port_ = srs_rand_integer(30000, 60000);
+            SrsRand rand;
+            port_ = rand.integer(30000, 60000);
             srs_trace("RTMP test server listen failed on %s:%d, retry %d with new port %d",
                       ip_.c_str(), port_, retry + 1, port_);
         }
@@ -713,7 +719,8 @@ SrsTestTcpServer::SrsTestTcpServer(string ip)
     conn_ = NULL;
     ip_ = ip;
     // Generate random port in range [30000, 60000]
-    port_ = 30000 + (srs_rand_integer() % (60000 - 30000 + 1));
+    SrsRand rand;
+    port_ = 30000 + (rand.integer() % (60000 - 30000 + 1));
 }
 
 SrsTestTcpServer::~SrsTestTcpServer()
@@ -863,7 +870,8 @@ SrsUdpTestServer::SrsUdpTestServer(string host)
     socket_ = NULL;
     started_ = false;
     // Generate random port in range [30000, 60000]
-    port_ = 30000 + (srs_rand_integer() % (60000 - 30000 + 1));
+    SrsRand rand;
+    port_ = 30000 + (rand.integer() % (60000 - 30000 + 1));
 }
 
 SrsUdpTestServer::~SrsUdpTestServer()
@@ -890,7 +898,8 @@ srs_error_t SrsUdpTestServer::start()
         // If this is not the last retry, generate a new random port and try again
         if (retry < 2) {
             srs_freep(err);
-            port_ = 30000 + (srs_rand_integer() % (60000 - 30000 + 1));
+            SrsRand rand;
+            port_ = 30000 + (rand.integer() % (60000 - 30000 + 1));
             srs_trace("UDP test server listen failed on %s:%d, retry %d with new port %d",
                       host_.c_str(), port_, retry + 1, port_);
         }

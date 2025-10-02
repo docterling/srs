@@ -83,7 +83,8 @@ srs_error_t SrsDvrSegmenter::open()
     }
 
     string path = generate_path();
-    if (srs_path_exists(path)) {
+    SrsPath path_util;
+    if (path_util.exists(path)) {
         return srs_error_new(ERROR_DVR_CANNOT_APPEND, "DVR can't append to exists path=%s", path.c_str());
     }
     fragment_->set_path(path);
@@ -901,6 +902,14 @@ srs_error_t SrsDvrSegmentPlan::update_duration(SrsMediaPacket *msg)
     }
 
     return err;
+}
+
+ISrsDvr::ISrsDvr()
+{
+}
+
+ISrsDvr::~ISrsDvr()
+{
 }
 
 SrsDvr::SrsDvr()

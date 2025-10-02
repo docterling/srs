@@ -21,6 +21,14 @@ using namespace std;
 // for encoder to detect the dead loop
 static std::vector<std::string> _transcoded_url;
 
+ISrsMediaEncoder::ISrsMediaEncoder()
+{
+}
+
+ISrsMediaEncoder::~ISrsMediaEncoder()
+{
+}
+
 SrsEncoder::SrsEncoder()
 {
     trd_ = new SrsDummyCoroutine();

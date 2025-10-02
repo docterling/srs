@@ -162,8 +162,28 @@ private:
     virtual srs_error_t refresh_init_mp4(SrsMediaPacket *msg, SrsFormat *format);
 };
 
+// The DASH interface.
+class ISrsDash
+{
+public:
+    ISrsDash();
+    virtual ~ISrsDash();
+
+public:
+    virtual void dispose() = 0;
+    virtual srs_error_t cycle() = 0;
+    virtual srs_utime_t cleanup_delay() = 0;
+
+public:
+    virtual srs_error_t initialize(SrsOriginHub *h, ISrsRequest *r) = 0;
+    virtual srs_error_t on_publish() = 0;
+    virtual srs_error_t on_audio(SrsMediaPacket *shared_audio, SrsFormat *format) = 0;
+    virtual srs_error_t on_video(SrsMediaPacket *shared_video, SrsFormat *format) = 0;
+    virtual void on_unpublish() = 0;
+};
+
 // The MPEG-DASH encoder, transmux RTMP to DASH.
-class SrsDash
+class SrsDash : public ISrsDash
 {
 private:
     bool enabled_;

@@ -89,7 +89,8 @@ void SrsBasicRtmpClient::close()
 
 srs_error_t SrsBasicRtmpClient::connect_app()
 {
-    return do_connect_app(srs_get_public_internet_address(), false);
+    SrsProtocolUtility utility;
+    return do_connect_app(utility.public_internet_address(), false);
 }
 
 srs_error_t SrsBasicRtmpClient::do_connect_app(string local_ip, bool debug)

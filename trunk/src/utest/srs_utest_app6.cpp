@@ -2170,6 +2170,16 @@ std::string MockAppConfig::get_default_app_name()
     return "live";
 }
 
+void MockAppConfig::subscribe(ISrsReloadHandler *handler)
+{
+    // Do nothing in mock
+}
+
+void MockAppConfig::unsubscribe(ISrsReloadHandler *handler)
+{
+    // Do nothing in mock
+}
+
 bool MockAppConfig::get_vhost_http_hooks_enabled(std::string vhost)
 {
     return http_hooks_enabled_;
@@ -2390,6 +2400,66 @@ bool MockAppConfig::get_hls_recover(std::string vhost)
     return true;
 }
 
+bool MockAppConfig::get_forward_enabled(std::string vhost)
+{
+    return false;
+}
+
+SrsConfDirective *MockAppConfig::get_forwards(std::string vhost)
+{
+    return NULL;
+}
+
+srs_utime_t MockAppConfig::get_queue_length(std::string vhost)
+{
+    return 30 * SRS_UTIME_SECONDS;
+}
+
+SrsConfDirective *MockAppConfig::get_forward_backend(std::string vhost)
+{
+    return NULL;
+}
+
+bool MockAppConfig::get_atc(std::string vhost)
+{
+    return false;
+}
+
+int MockAppConfig::get_time_jitter(std::string vhost)
+{
+    return SrsRtmpJitterAlgorithmFULL;
+}
+
+bool MockAppConfig::get_mix_correct(std::string vhost)
+{
+    return false;
+}
+
+bool MockAppConfig::try_annexb_first(std::string vhost)
+{
+    return true;
+}
+
+bool MockAppConfig::get_vhost_is_edge(std::string vhost)
+{
+    return false;
+}
+
+bool MockAppConfig::get_atc_auto(std::string vhost)
+{
+    return false;
+}
+
+bool MockAppConfig::get_reduce_sequence_header(std::string vhost)
+{
+    return false;
+}
+
+bool MockAppConfig::get_parse_sps(std::string vhost)
+{
+    return true;
+}
+
 void MockAppConfig::set_http_hooks_enabled(bool enabled)
 {
     http_hooks_enabled_ = enabled;
@@ -2598,6 +2668,26 @@ void MockRtcStatistic::reset()
     last_client_req_ = NULL;
     last_client_conn_ = NULL;
     last_client_type_ = SrsRtmpConnUnknown;
+}
+
+srs_error_t MockRtcStatistic::on_video_info(ISrsRequest *req, SrsVideoCodecId vcodec, int avc_profile, int avc_level, int width, int height)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcStatistic::on_audio_info(ISrsRequest *req, SrsAudioCodecId acodec, SrsAudioSampleRate asample_rate, SrsAudioChannels asound_type, SrsAacObjectType aac_object)
+{
+    return srs_success;
+}
+
+void MockRtcStatistic::on_stream_publish(ISrsRequest *req, std::string publisher_id)
+{
+    // Do nothing in mock
+}
+
+void MockRtcStatistic::on_stream_close(ISrsRequest *req)
+{
+    // Do nothing in mock
 }
 
 // Unit tests for SrsRtcAsyncCallOnStop::call()

@@ -19,9 +19,24 @@ class ISrsRequest;
 class SrsPithyPrint;
 class SrsFFMPEG;
 
+// The encoder interface.
+class ISrsMediaEncoder
+{
+public:
+    ISrsMediaEncoder();
+    virtual ~ISrsMediaEncoder();
+
+public:
+    virtual srs_error_t on_publish(ISrsRequest *req) = 0;
+    virtual void on_unpublish() = 0;
+    // Interface ISrsReusableThreadHandler.
+public:
+    virtual srs_error_t cycle() = 0;
+};
+
 // The encoder for a stream, may use multiple
 // ffmpegs to transcode the specified stream.
-class SrsEncoder : public ISrsCoroutineHandler
+class SrsEncoder : public ISrsCoroutineHandler, public ISrsMediaEncoder
 {
 private:
     std::string input_stream_name_;

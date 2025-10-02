@@ -932,12 +932,12 @@ VOID TEST(HlsMuxerTest, SegmentOverflowAndPureAudio)
     // Set up required fields
     MockHlsRequest mock_request("__defaultVhost__", "live", "test");
     muxer->req_ = &mock_request;
-    muxer->hls_fragment_ = 10 * SRS_UTIME_SECONDS;  // 10 seconds fragment
-    muxer->hls_aof_ratio_ = 2.0;  // Absolutely overflow at 2x fragment duration
+    muxer->hls_fragment_ = 10 * SRS_UTIME_SECONDS; // 10 seconds fragment
+    muxer->hls_aof_ratio_ = 2.0;                   // Absolutely overflow at 2x fragment duration
     muxer->hls_wait_keyframe_ = true;
-    muxer->hls_ts_floor_ = false;  // Disable floor for simpler testing
+    muxer->hls_ts_floor_ = false; // Disable floor for simpler testing
     muxer->deviation_ts_ = 0;
-    muxer->max_td_ = 10 * SRS_UTIME_SECONDS;  // Same as fragment for simplicity
+    muxer->max_td_ = 10 * SRS_UTIME_SECONDS; // Same as fragment for simplicity
     muxer->latest_acodec_ = SrsAudioCodecIdAAC;
     muxer->latest_vcodec_ = SrsVideoCodecIdAVC;
     muxer->writer_ = new MockSrsFileWriter();
@@ -953,22 +953,22 @@ VOID TEST(HlsMuxerTest, SegmentOverflowAndPureAudio)
 
     // Test is_segment_overflow: Segment too small (< 2 * SRS_HLS_SEGMENT_MIN_DURATION)
     segment->append(0);
-    segment->append(50);  // 50ms duration, too small
+    segment->append(50); // 50ms duration, too small
     EXPECT_FALSE(muxer->is_segment_overflow());
 
     // Test is_segment_overflow: Segment duration just below threshold
     segment->append(0);
-    segment->append(9000);  // 9 seconds, below 10 seconds threshold
+    segment->append(9000); // 9 seconds, below 10 seconds threshold
     EXPECT_FALSE(muxer->is_segment_overflow());
 
     // Test is_segment_overflow: Segment duration at threshold
     segment->append(0);
-    segment->append(10000);  // 10 seconds, at threshold
+    segment->append(10000); // 10 seconds, at threshold
     EXPECT_TRUE(muxer->is_segment_overflow());
 
     // Test is_segment_overflow: Segment duration above threshold
     segment->append(0);
-    segment->append(12000);  // 12 seconds, above threshold
+    segment->append(12000); // 12 seconds, above threshold
     EXPECT_TRUE(muxer->is_segment_overflow());
 
     // Test wait_keyframe
@@ -984,22 +984,22 @@ VOID TEST(HlsMuxerTest, SegmentOverflowAndPureAudio)
 
     // Test is_segment_absolutely_overflow: Segment too small
     segment->append(0);
-    segment->append(50);  // 50ms duration, too small
+    segment->append(50); // 50ms duration, too small
     EXPECT_FALSE(muxer->is_segment_absolutely_overflow());
 
     // Test is_segment_absolutely_overflow: Below absolute overflow threshold (2x fragment)
     segment->append(0);
-    segment->append(15000);  // 15 seconds, below 20 seconds (2x 10s)
+    segment->append(15000); // 15 seconds, below 20 seconds (2x 10s)
     EXPECT_FALSE(muxer->is_segment_absolutely_overflow());
 
     // Test is_segment_absolutely_overflow: At absolute overflow threshold
     segment->append(0);
-    segment->append(20000);  // 20 seconds, at 2x threshold
+    segment->append(20000); // 20 seconds, at 2x threshold
     EXPECT_TRUE(muxer->is_segment_absolutely_overflow());
 
     // Test is_segment_absolutely_overflow: Above absolute overflow threshold
     segment->append(0);
-    segment->append(25000);  // 25 seconds, above 2x threshold
+    segment->append(25000); // 25 seconds, above 2x threshold
     EXPECT_TRUE(muxer->is_segment_absolutely_overflow());
 
     // Test pure_audio: With video codec enabled (not pure audio)
@@ -1121,8 +1121,16 @@ VOID TEST(AppHlsTest, HlsControllerWriteAudioTypicalScenario)
 
     // Create audio payload (AAC raw data) - must be heap allocated for wrap()
     char *audio_data = new char[10];
-    audio_data[0] = 0x01; audio_data[1] = 0x02; audio_data[2] = 0x03; audio_data[3] = 0x04; audio_data[4] = 0x05;
-    audio_data[5] = 0x06; audio_data[6] = 0x07; audio_data[7] = 0x08; audio_data[8] = 0x09; audio_data[9] = 0x0a;
+    audio_data[0] = 0x01;
+    audio_data[1] = 0x02;
+    audio_data[2] = 0x03;
+    audio_data[3] = 0x04;
+    audio_data[4] = 0x05;
+    audio_data[5] = 0x06;
+    audio_data[6] = 0x07;
+    audio_data[7] = 0x08;
+    audio_data[8] = 0x09;
+    audio_data[9] = 0x0a;
     audio_packet->wrap(audio_data, 10);
 
     // Add sample to format->audio_
@@ -1150,8 +1158,16 @@ VOID TEST(AppHlsTest, HlsControllerWriteAudioTypicalScenario)
 
     // Create audio payload - must be heap allocated for wrap()
     char *audio_data2 = new char[10];
-    audio_data2[0] = 0x0b; audio_data2[1] = 0x0c; audio_data2[2] = 0x0d; audio_data2[3] = 0x0e; audio_data2[4] = 0x0f;
-    audio_data2[5] = 0x10; audio_data2[6] = 0x11; audio_data2[7] = 0x12; audio_data2[8] = 0x13; audio_data2[9] = 0x14;
+    audio_data2[0] = 0x0b;
+    audio_data2[1] = 0x0c;
+    audio_data2[2] = 0x0d;
+    audio_data2[3] = 0x0e;
+    audio_data2[4] = 0x0f;
+    audio_data2[5] = 0x10;
+    audio_data2[6] = 0x11;
+    audio_data2[7] = 0x12;
+    audio_data2[8] = 0x13;
+    audio_data2[9] = 0x14;
     audio_packet2->wrap(audio_data2, 10);
 
     format->audio_->nb_samples_ = 1;
@@ -1328,19 +1344,19 @@ VOID TEST(AppHlsTest, HlsMuxerDoRefreshM3u8TypicalScenario)
     segment1->sequence_no_ = 100;
     segment1->uri_ = "stream1-100.ts";
     segment1->append(0);
-    segment1->append(10000);  // 10 seconds duration
+    segment1->append(10000); // 10 seconds duration
 
     SrsHlsSegment *segment2 = new SrsHlsSegment(context.get(), SrsAudioCodecIdAAC, SrsVideoCodecIdAVC, fw2.get());
     segment2->sequence_no_ = 101;
     segment2->uri_ = "stream1-101.ts";
     segment2->append(10000);
-    segment2->append(20000);  // 10 seconds duration
+    segment2->append(20000); // 10 seconds duration
 
     SrsHlsSegment *segment3 = new SrsHlsSegment(context.get(), SrsAudioCodecIdAAC, SrsVideoCodecIdAVC, fw3.get());
     segment3->sequence_no_ = 102;
     segment3->uri_ = "stream1-102.ts";
     segment3->append(20000);
-    segment3->append(28000);  // 8 seconds duration
+    segment3->append(28000); // 8 seconds duration
 
     // Add segments to the fragment window (ownership transferred to segments_)
     muxer->segments_->append(segment1);
@@ -1406,7 +1422,7 @@ VOID TEST(AppHlsTest, HlsControllerSelectionTypicalScenario)
     segment->sequence_no_ = 42;
     segment->uri_ = "stream1-42.ts";
     segment->append(0);
-    segment->append(10000);  // 10 seconds duration in milliseconds
+    segment->append(10000); // 10 seconds duration in milliseconds
 
     // Set the current segment in the muxer
     controller->muxer_->current_ = segment;
@@ -1624,7 +1640,6 @@ VOID TEST(AppHlsTest, HlsControllerWriteVideoTypicalScenario)
     // Verify that the codec was set correctly
     EXPECT_EQ(SrsVideoCodecIdAVC, controller->muxer_->latest_vcodec());
 }
-
 
 // Unit test for SrsHlsController::reap_segment typical scenario
 VOID TEST(AppHlsTest, HlsControllerReapSegmentTypicalScenario)
@@ -1937,8 +1952,16 @@ VOID TEST(AppHlsTest, HlsOnAudioTypicalScenario)
 
     // Create audio payload (AAC raw data) - must be heap allocated for wrap()
     char *audio_data = new char[10];
-    audio_data[0] = 0x01; audio_data[1] = 0x02; audio_data[2] = 0x03; audio_data[3] = 0x04; audio_data[4] = 0x05;
-    audio_data[5] = 0x06; audio_data[6] = 0x07; audio_data[7] = 0x08; audio_data[8] = 0x09; audio_data[9] = 0x0a;
+    audio_data[0] = 0x01;
+    audio_data[1] = 0x02;
+    audio_data[2] = 0x03;
+    audio_data[3] = 0x04;
+    audio_data[4] = 0x05;
+    audio_data[5] = 0x06;
+    audio_data[6] = 0x07;
+    audio_data[7] = 0x08;
+    audio_data[8] = 0x09;
+    audio_data[9] = 0x0a;
     audio_packet->wrap(audio_data, 10);
 
     // Add sample to format->audio_

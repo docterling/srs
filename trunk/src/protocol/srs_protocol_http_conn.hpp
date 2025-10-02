@@ -20,6 +20,7 @@ class ISrsRequest;
 class ISrsReader;
 class SrsHttpResponseReader;
 class ISrsProtocolReadWriter;
+class SrsProtocolUtility;
 
 // A wrapper for llhttp,
 // provides HTTP message originted service.
@@ -261,6 +262,8 @@ private:
     // (*response).wroteHeader, which tells only whether it was
     // logically written.
     bool header_sent_;
+    // Protocol utility for writing large iovs.
+    SrsProtocolUtility *protocol_utility_;
 
 public:
     SrsHttpMessageWriter(ISrsProtocolReadWriter *io, ISrsHttpFirstLineWriter *flw);

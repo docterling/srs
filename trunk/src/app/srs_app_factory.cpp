@@ -7,11 +7,12 @@
 #include <srs_app_factory.hpp>
 
 #include <srs_app_config.hpp>
+#include <srs_app_rtmp_source.hpp>
 #include <srs_app_st.hpp>
 #include <srs_kernel_file.hpp>
-#include <srs_protocol_st.hpp>
 #include <srs_kernel_ts.hpp>
 #include <srs_kernel_utility.hpp>
+#include <srs_protocol_st.hpp>
 
 SrsAppFactory::SrsAppFactory()
 {
@@ -39,6 +40,18 @@ ISrsFileReader *SrsAppFactory::create_file_reader()
 SrsPath *SrsAppFactory::create_path()
 {
     return new SrsPath();
+}
+
+SrsLiveSource *SrsAppFactory::create_live_source()
+{
+    return new SrsLiveSource();
+}
+
+ISrsOriginHub *SrsAppFactory::create_origin_hub()
+{
+    SrsOriginHub *hub = new SrsOriginHub();
+    hub->assemble();
+    return hub;
 }
 
 SrsFinalFactory::SrsFinalFactory()

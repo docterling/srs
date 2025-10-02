@@ -527,17 +527,18 @@ srs_error_t SrsHlsFmp4Muxer::write_init_mp4(SrsFormat *format, bool has_video, b
     init_file = srs_path_build_stream(init_file, vhost, app, stream);
 
     std::string hls_path = config_->get_hls_path(vhost);
-    std::string path = hls_path + "/" + init_file;
+    std::string filepath = hls_path + "/" + init_file;
 
     // Create directory for the init file
-    std::string init_dir = srs_path_filepath_dir(path);
-    if ((err = srs_os_mkdir_all(init_dir)) != srs_success) {
+    SrsPath path;
+    std::string init_dir = path.filepath_dir(filepath);
+    if ((err = path.mkdir_all(init_dir)) != srs_success) {
         return srs_error_wrap(err, "Create init mp4 dir failed, dir=%s", init_dir.c_str());
     }
 
     SrsUniquePtr<SrsInitMp4Segment> init_mp4(new SrsInitMp4Segment(writer_));
 
-    init_mp4->set_path(path);
+    init_mp4->set_path(filepath);
 
     if (hls_keys_) {
         init_mp4->config_cipher(kid_, iv_, 16);
@@ -578,7 +579,7 @@ srs_error_t SrsHlsFmp4Muxer::write_init_mp4(SrsFormat *format, bool has_video, b
         init_mp4_uri += "/";
 
         // add the http dir to uri.
-        string http_dir = srs_path_filepath_dir(m3u8_url_);
+        string http_dir = path.filepath_dir(m3u8_url_);
         if (!http_dir.empty()) {
             init_mp4_uri += http_dir + "/";
         }
@@ -587,7 +588,7 @@ srs_error_t SrsHlsFmp4Muxer::write_init_mp4(SrsFormat *format, bool has_video, b
 
     // Convert to relative URI for m3u8 playlist.
     // TODO: Need to resolve the relative URI from m3u8 and init file.
-    init_mp4_uri_ = srs_path_filepath_base(init_file);
+    init_mp4_uri_ = path.filepath_base(init_file);
 
     // use async to call the http hooks, for it will cause thread switch.
     if ((err = async_->execute(new SrsDvrAsyncCallOnHls(_srs_context->get_id(), req_, init_mp4->fullpath(),
@@ -708,16 +709,17 @@ srs_error_t SrsHlsFmp4Muxer::update_config(ISrsRequest *r)
     max_td_ = hls_fragment_ * hls_td_ratio;
 
     // create m3u8 dir once.
-    m3u8_dir_ = srs_path_filepath_dir(m3u8_);
-    if ((err = srs_os_mkdir_all(m3u8_dir_)) != srs_success) {
+    SrsPath path;
+    m3u8_dir_ = path.filepath_dir(m3u8_);
+    if ((err = path.mkdir_all(m3u8_dir_)) != srs_success) {
         return srs_error_wrap(err, "create dir");
     }
 
     if (hls_keys_ && (hls_path_ != hls_key_file_path_)) {
         string key_file = srs_path_build_stream(hls_key_file_, vhost, app, stream);
         string key_url = hls_key_file_path_ + "/" + key_file;
-        string key_dir = srs_path_filepath_dir(key_url);
-        if ((err = srs_os_mkdir_all(key_dir)) != srs_success) {
+        string key_dir = path.filepath_dir(key_url);
+        if ((err = path.mkdir_all(key_dir)) != srs_success) {
             return srs_error_wrap(err, "create dir");
         }
     }
@@ -806,7 +808,8 @@ srs_error_t SrsHlsFmp4Muxer::segment_open(srs_utime_t basetime)
         current_->uri_ += "/";
 
         // add the http dir to uri.
-        string http_dir = srs_path_filepath_dir(m3u8_url_);
+        SrsPath path;
+        string http_dir = path.filepath_dir(m3u8_url_);
         if (!http_dir.empty()) {
             current_->uri_ += http_dir + "/";
         }
@@ -1062,6 +1065,7 @@ srs_error_t SrsHlsFmp4Muxer::do_refresh_m3u8(std::string m3u8_file)
 
         // {file name}\n
         // TODO get segment name in relative path.
+        SrsPath path;
         std::string seg_uri = segment->fullpath();
         if (true) {
             std::stringstream stemp;
@@ -1069,7 +1073,7 @@ srs_error_t SrsHlsFmp4Muxer::do_refresh_m3u8(std::string m3u8_file)
             seg_uri = srs_strings_replace(seg_uri, "[duration]", stemp.str());
         }
         // ss << segment->uri << SRS_CONSTS_LF;
-        ss << srs_path_filepath_base(seg_uri) << SRS_CONSTS_LF;
+        ss << path.filepath_base(seg_uri) << SRS_CONSTS_LF;
     }
 
     // write m3u8 to writer.
@@ -1279,16 +1283,17 @@ srs_error_t SrsHlsMuxer::update_config(ISrsRequest *r, string entry_prefix,
     max_td_ = fragment * config_->get_hls_td_ratio(r->vhost_);
 
     // create m3u8 dir once.
-    m3u8_dir_ = srs_path_filepath_dir(m3u8_);
-    if ((err = srs_os_mkdir_all(m3u8_dir_)) != srs_success) {
+    SrsPath path_util;
+    m3u8_dir_ = path_util.filepath_dir(m3u8_);
+    if ((err = path_util.mkdir_all(m3u8_dir_)) != srs_success) {
         return srs_error_wrap(err, "create dir");
     }
 
     if (hls_keys_ && (hls_path_ != hls_key_file_path_)) {
         string key_file = srs_path_build_stream(hls_key_file_, req_->vhost_, req_->app_, req_->stream_);
         string key_url = hls_key_file_path_ + "/" + key_file;
-        string key_dir = srs_path_filepath_dir(key_url);
-        if ((err = srs_os_mkdir_all(key_dir)) != srs_success) {
+        string key_dir = path_util.filepath_dir(key_url);
+        if ((err = path_util.mkdir_all(key_dir)) != srs_success) {
             return srs_error_wrap(err, "create dir");
         }
     }
@@ -1549,7 +1554,8 @@ srs_error_t SrsHlsMuxer::segment_open()
         current_->uri_ += "/";
 
         // add the http dir to uri.
-        string http_dir = srs_path_filepath_dir(m3u8_url_);
+        SrsPath path;
+        string http_dir = path.filepath_dir(m3u8_url_);
         if (!http_dir.empty()) {
             current_->uri_ += http_dir + "/";
         }
@@ -2453,6 +2459,14 @@ srs_utime_t SrsHlsMp4Controller::duration()
 int SrsHlsMp4Controller::deviation()
 {
     return muxer_->deviation();
+}
+
+ISrsHls::ISrsHls()
+{
+}
+
+ISrsHls::~ISrsHls()
+{
 }
 
 SrsHls::SrsHls()

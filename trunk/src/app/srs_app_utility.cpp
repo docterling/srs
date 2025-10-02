@@ -154,7 +154,15 @@ string srs_path_build_timestamp(string template_path)
     return path;
 }
 
-srs_error_t srs_kill_forced(int &pid)
+SrsAppUtility::SrsAppUtility()
+{
+}
+
+SrsAppUtility::~SrsAppUtility()
+{
+}
+
+srs_error_t SrsAppUtility::kill(int &pid)
 {
     srs_error_t err = srs_success;
 
@@ -163,7 +171,7 @@ srs_error_t srs_kill_forced(int &pid)
     }
 
     // first, try kill by SIGTERM.
-    if (kill(pid, SIGTERM) < 0) {
+    if (::kill(pid, SIGTERM) < 0) {
         return srs_error_new(ERROR_SYSTEM_KILL, "kill");
     }
 
@@ -190,7 +198,7 @@ srs_error_t srs_kill_forced(int &pid)
     }
 
     // then, try kill by SIGKILL.
-    if (kill(pid, SIGKILL) < 0) {
+    if (::kill(pid, SIGKILL) < 0) {
         return srs_error_new(ERROR_SYSTEM_KILL, "kill");
     }
 
@@ -1302,7 +1310,8 @@ void srs_api_dump_summaries(SrsJsonObject *obj)
         n_sample_time = o.sample_time_;
 
         // stat the intranet bytes.
-        if (inter == "lo" || !srs_net_device_is_internet(inter)) {
+        SrsProtocolUtility utility;
+        if (inter == "lo" || !utility.is_internet(inter)) {
             nri_bytes += o.rbytes_;
             nsi_bytes += o.sbytes_;
             continue;

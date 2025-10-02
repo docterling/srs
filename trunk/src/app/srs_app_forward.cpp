@@ -30,6 +30,14 @@ using namespace std;
 #include <srs_protocol_rtmp_stack.hpp>
 #include <srs_protocol_utility.hpp>
 
+ISrsForwarder::ISrsForwarder()
+{
+}
+
+ISrsForwarder::~ISrsForwarder()
+{
+}
+
 SrsForwarder::SrsForwarder(SrsOriginHub *h)
 {
     hub_ = h;
