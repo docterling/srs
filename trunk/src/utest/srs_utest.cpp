@@ -91,6 +91,9 @@ srs_error_t prepare_main()
 
     // Prevent the output of srt logs in utest.
     srt_setloghandler(NULL, srs_srt_utest_null_log_handler);
+    // Set SRT log level to FATAL to suppress ERROR and WARNING logs in unit tests.
+    // LOG_CRIT (2) is the highest level that suppresses most logs.
+    srt_setloglevel(LOG_CRIT);
 
     _srt_eventloop = new SrsSrtEventLoop();
     if ((err = _srt_eventloop->initialize()) != srs_success) {

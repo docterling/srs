@@ -674,67 +674,6 @@ void SrsStatistic::dumps_hints_kv(std::stringstream &ss)
     }
 }
 
-#ifdef SRS_APM
-void SrsStatistic::dumps_cls_summaries(SrsClsSugar *sugar)
-{
-    if (!vhosts_.empty()) {
-        sugar->kv("vhosts", srs_fmt_sprintf("%d", (int)vhosts_.size()));
-    }
-    if (!streams_.empty()) {
-        sugar->kv("streams", srs_fmt_sprintf("%d", (int)streams_.size()));
-    }
-    if (!clients_.empty()) {
-        sugar->kv("clients", srs_fmt_sprintf("%d", (int)clients_.size()));
-    }
-}
-
-void SrsStatistic::dumps_cls_streams(SrsClsSugars *sugars)
-{
-    for (std::map<std::string, SrsStatisticStream *>::iterator it = streams_.begin(); it != streams_.end(); ++it) {
-        SrsStatisticStream *stream = it->second;
-        if (!stream->active_ || !stream->nb_clients_) {
-            continue;
-        }
-
-        SrsClsSugar *sugar = sugars->create();
-        sugar->kv("hint", "stream");
-        sugar->kv("version", RTMP_SIG_SRS_VERSION);
-        sugar->kv("pid", srs_fmt_sprintf("%d", getpid()));
-
-        sugar->kv("sid", stream->id_);
-        sugar->kv("url", stream->url_);
-
-        if (stream->frames_->r30s()) {
-            sugar->kv("fps", srs_fmt_sprintf("%d", stream->frames_->r30s()));
-        }
-        if (stream->width_) {
-            sugar->kv("width", srs_fmt_sprintf("%d", stream->width_));
-        }
-        if (stream->height_) {
-            sugar->kv("height", srs_fmt_sprintf("%d", stream->height_));
-        }
-
-        SrsStatisticClient *pub = find_client(stream->publisher_id_);
-        if (pub) {
-            if (pub->kbps_->get_recv_kbps_30s()) {
-                sugar->kv("recv", srs_fmt_sprintf("%d", pub->kbps_->get_recv_kbps_30s()));
-            }
-            if (pub->kbps_->get_send_kbps_30s()) {
-                sugar->kv("send", srs_fmt_sprintf("%d", pub->kbps_->get_send_kbps_30s()));
-            }
-        }
-
-        sugar->kv("clients", srs_fmt_sprintf("%d", stream->nb_clients_));
-        if (stream->kbps_->get_recv_kbps_30s()) {
-            sugar->kv("recv2", srs_fmt_sprintf("%d", stream->kbps_->get_recv_kbps_30s()));
-        }
-        if (stream->kbps_->get_send_kbps_30s()) {
-            sugar->kv("send2", srs_fmt_sprintf("%d", stream->kbps_->get_send_kbps_30s()));
-        }
-    }
-}
-#endif
-
 SrsStatisticVhost *SrsStatistic::create_vhost(ISrsRequest *req)
 {
     SrsStatisticVhost *vhost = NULL;

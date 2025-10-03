@@ -1901,6 +1901,21 @@ void MockStatisticForOriginHub::on_stream_close(ISrsRequest *req)
 {
 }
 
+void MockStatisticForOriginHub::kbps_add_delta(std::string id, ISrsKbpsDelta *delta)
+{
+    // Do nothing in mock
+}
+
+void MockStatisticForOriginHub::kbps_sample()
+{
+    // Do nothing in mock
+}
+
+srs_error_t MockStatisticForOriginHub::on_video_frames(ISrsRequest *req, int nb_frames)
+{
+    return srs_success;
+}
+
 // Mock ISrsNgExec implementation
 MockNgExecForOriginHub::MockNgExecForOriginHub()
 {

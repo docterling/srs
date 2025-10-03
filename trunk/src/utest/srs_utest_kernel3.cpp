@@ -1301,6 +1301,10 @@ VOID TEST(KernelErrorTest, AsanReportCallback)
 {
 #ifdef SRS_SANITIZER_LOG
     // Test asan_report_callback function with various input formats
+    // Temporarily disable log output to avoid cluttering test results
+    MockEmptyLog* mock_log = dynamic_cast<MockEmptyLog*>(_srs_log);
+    SrsLogLevel original_level = mock_log->level_;
+    mock_log->level_ = SrsLogLevelDisabled;
 
     // Test with simple backtrace line
     const char *simple_trace = "    #0 0x555555555820 in foo /path/to/file.cpp:123";
@@ -1349,6 +1353,9 @@ VOID TEST(KernelErrorTest, AsanReportCallback)
     asan_report_callback(malformed_trace);
     // Function should not crash with malformed input
     EXPECT_TRUE(true);
+
+    // Restore original log level
+    mock_log->level_ = original_level;
 #else
     // On builds without SRS_SANITIZER_LOG, just pass the test
     EXPECT_TRUE(true);

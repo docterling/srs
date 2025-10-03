@@ -35,10 +35,21 @@ public:
     virtual std::string to_string() = 0;
 };
 
+// The async call worker, used to execute the task in async mode.
+class ISrsAsyncCallWorker
+{
+public:
+    ISrsAsyncCallWorker();
+    virtual ~ISrsAsyncCallWorker();
+
+public:
+    virtual srs_error_t start() = 0;
+};
+
 // The async callback for dvr, callback and other async worker.
 // When worker call with the task, the worker will do it in isolate thread.
 // That is, the task is execute/call in async mode.
-class SrsAsyncCallWorker : public ISrsCoroutineHandler
+class SrsAsyncCallWorker : public ISrsCoroutineHandler, public ISrsAsyncCallWorker
 {
 private:
     ISrsCoroutine *trd_;

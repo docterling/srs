@@ -39,12 +39,23 @@ class ISrsWakable;
 class SrsRtmpCommonMessage;
 class SrsRtmpCommand;
 class SrsNetworkDelta;
-
+class ISrsAppConfig;
 class SrsSslConnection;
+class ISrsResourceManager;
+class ISrsStreamPublishTokenManager;
+class ISrsLiveSourceManager;
+class ISrsStatistic;
+class ISrsHttpHooks;
+class ISrsRtcSourceManager;
+class ISrsSrtSourceManager;
+class ISrsRtspSourceManager;
 
 // The simple rtmp client for SRS.
 class SrsSimpleRtmpClient : public SrsBasicRtmpClient
 {
+private:
+    ISrsAppConfig *config_;
+
 public:
     SrsSimpleRtmpClient(std::string u, srs_utime_t ctm, srs_utime_t stm);
     virtual ~SrsSimpleRtmpClient();
@@ -104,6 +115,9 @@ public:
 class SrsRtmpsTransport : public SrsRtmpTransport
 {
 private:
+    ISrsAppConfig *config_;
+
+private:
     SrsSslConnection *ssl_;
 
 public:
@@ -123,6 +137,17 @@ class SrsRtmpConn : public ISrsConnection, public ISrsStartable, public ISrsRelo
 {
     // For the thread to directly access any field of connection.
     friend class SrsPublishRecvThread;
+
+private:
+    ISrsResourceManager *manager_;
+    ISrsAppConfig *config_;
+    ISrsStreamPublishTokenManager *stream_publish_tokens_;
+    ISrsLiveSourceManager *live_sources_;
+    ISrsStatistic *stat_;
+    ISrsHttpHooks *hooks_;
+    ISrsRtcSourceManager *rtc_sources_;
+    ISrsSrtSourceManager *srt_sources_;
+    ISrsRtspSourceManager *rtsp_sources_;
 
 private:
     SrsServer *server_;
@@ -158,8 +183,6 @@ private:
     // Each connection start a green thread,
     // when thread stop, the connection will be delete by server.
     ISrsCoroutine *trd_;
-    // The manager object to manage the connection.
-    ISrsResourceManager *manager_;
     // The ip and port of client.
     std::string ip_;
     int port_;
@@ -172,6 +195,7 @@ private:
 
 public:
     SrsRtmpConn(SrsServer *svr, SrsRtmpTransport *transport, std::string cip, int port);
+    void assemble();
     virtual ~SrsRtmpConn();
     // Interface ISrsResource.
 public:

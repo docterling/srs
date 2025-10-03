@@ -288,8 +288,43 @@ public:
     virtual bool get_exporter_enabled() { return false; }
     virtual std::string get_exporter_listen() { return ""; }
     virtual bool get_stats_enabled() { return false; }
+    virtual int get_stats_network() { return 0; }
     virtual bool get_heartbeat_enabled() { return false; }
     virtual srs_utime_t get_heartbeat_interval() { return 0; }
+    virtual std::string get_rtmps_ssl_cert() { return ""; }
+    virtual std::string get_rtmps_ssl_key() { return ""; }
+    virtual SrsConfDirective *get_vhost(std::string vhost, bool try_default_vhost = true) { return NULL; }
+    virtual bool get_vhost_enabled(std::string vhost) { return true; }
+    virtual bool get_debug_srs_upnode(std::string vhost) { return true; }
+    virtual int get_out_ack_size(std::string vhost) { return 2500000; }
+    virtual int get_in_ack_size(std::string vhost) { return 2500000; }
+    virtual int get_chunk_size(std::string vhost) { return 60000; }
+    virtual bool get_gop_cache(std::string vhost) { return true; }
+    virtual int get_gop_cache_max_frames(std::string vhost) { return 2500; }
+    virtual bool get_tcp_nodelay(std::string vhost) { return false; }
+    virtual srs_utime_t get_mw_sleep(std::string vhost, bool is_rtc = false) { return 350 * SRS_UTIME_MILLISECONDS; }
+    virtual srs_utime_t get_send_min_interval(std::string vhost) { return 0; }
+    virtual bool get_mr_enabled(std::string vhost) { return false; }
+    virtual srs_utime_t get_mr_sleep(std::string vhost) { return 350 * SRS_UTIME_MILLISECONDS; }
+    virtual srs_utime_t get_publish_1stpkt_timeout(std::string vhost) { return 20000 * SRS_UTIME_MILLISECONDS; }
+    virtual srs_utime_t get_publish_normal_timeout(std::string vhost) { return 5000 * SRS_UTIME_MILLISECONDS; }
+    virtual srs_utime_t get_publish_kickoff_for_idle(std::string vhost) { return 0; }
+    virtual bool get_refer_enabled(std::string vhost) { return false; }
+    virtual SrsConfDirective *get_refer_all(std::string vhost) { return NULL; }
+    virtual SrsConfDirective *get_refer_play(std::string vhost) { return NULL; }
+    virtual SrsConfDirective *get_refer_publish(std::string vhost) { return NULL; }
+    virtual bool get_vhost_origin_cluster(std::string vhost) { return false; }
+    virtual std::vector<std::string> get_vhost_coworkers(std::string vhost) { return std::vector<std::string>(); }
+    virtual bool get_vhost_edge_token_traverse(std::string vhost) { return false; }
+    virtual SrsConfDirective *get_vhost_edge_origin(std::string vhost) { return NULL; }
+    virtual SrsConfDirective *get_vhost_on_connect(std::string vhost) { return NULL; }
+    virtual SrsConfDirective *get_vhost_on_close(std::string vhost) { return NULL; }
+    virtual SrsConfDirective *get_vhost_on_publish(std::string vhost) { return NULL; }
+    virtual SrsConfDirective *get_vhost_on_play(std::string vhost) { return NULL; }
+    virtual bool get_rtc_enabled(std::string vhost) { return false; }
+    virtual bool get_rtsp_enabled(std::string vhost) { return false; }
+    virtual bool get_rtc_from_rtmp(std::string vhost) { return false; }
+    virtual bool get_rtsp_from_rtmp(std::string vhost) { return false; }
     // ISrsAppConfig methods
     virtual bool get_vhost_http_hooks_enabled(std::string vhost);
     virtual SrsConfDirective *get_vhost_on_stop(std::string vhost);
@@ -421,6 +456,9 @@ public:
     virtual srs_error_t on_audio_info(ISrsRequest *req, SrsAudioCodecId acodec, SrsAudioSampleRate asample_rate, SrsAudioChannels asound_type, SrsAacObjectType aac_object);
     virtual void on_stream_publish(ISrsRequest *req, std::string publisher_id);
     virtual void on_stream_close(ISrsRequest *req);
+    virtual void kbps_add_delta(std::string id, ISrsKbpsDelta *delta);
+    virtual void kbps_sample();
+    virtual srs_error_t on_video_frames(ISrsRequest *req, int nb_frames);
     void set_on_client_error(srs_error_t err);
     void reset();
 };
@@ -653,6 +691,8 @@ public:
     virtual ~MockLiveSourceManager();
     virtual srs_error_t fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsLiveSource> &pps);
     virtual SrsSharedPtr<SrsLiveSource> fetch(ISrsRequest *r);
+    virtual void dispose();
+    virtual srs_error_t initialize();
     void set_fetch_or_create_error(srs_error_t err);
     void set_can_publish(bool can_publish);
     void reset();

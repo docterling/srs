@@ -357,6 +357,7 @@ public:
 public:
     // Stats config
     virtual bool get_stats_enabled() = 0;
+    virtual int get_stats_network() = 0;
 
 public:
     // Heartbeat config
@@ -364,8 +365,66 @@ public:
     virtual srs_utime_t get_heartbeat_interval() = 0;
 
 public:
+    // RTMPS config
+    virtual std::string get_rtmps_ssl_cert() = 0;
+    virtual std::string get_rtmps_ssl_key() = 0;
+
+public:
+    // Vhost config
+    virtual SrsConfDirective *get_vhost(std::string vhost, bool try_default_vhost = true) = 0;
+    virtual bool get_vhost_enabled(std::string vhost) = 0;
+    virtual bool get_debug_srs_upnode(std::string vhost) = 0;
+    virtual int get_out_ack_size(std::string vhost) = 0;
+    virtual int get_in_ack_size(std::string vhost) = 0;
+    virtual int get_chunk_size(std::string vhost) = 0;
+    virtual bool get_gop_cache(std::string vhost) = 0;
+    virtual int get_gop_cache_max_frames(std::string vhost) = 0;
+    virtual bool get_tcp_nodelay(std::string vhost) = 0;
+    virtual srs_utime_t get_mw_sleep(std::string vhost, bool is_rtc = false) = 0;
+    virtual srs_utime_t get_send_min_interval(std::string vhost) = 0;
+    virtual bool get_mr_enabled(std::string vhost) = 0;
+    virtual srs_utime_t get_mr_sleep(std::string vhost) = 0;
+    virtual srs_utime_t get_publish_1stpkt_timeout(std::string vhost) = 0;
+    virtual srs_utime_t get_publish_normal_timeout(std::string vhost) = 0;
+    virtual srs_utime_t get_publish_kickoff_for_idle(std::string vhost) = 0;
+
+public:
+    // Refer config
+    virtual bool get_refer_enabled(std::string vhost) = 0;
+    virtual SrsConfDirective *get_refer_all(std::string vhost) = 0;
+    virtual SrsConfDirective *get_refer_play(std::string vhost) = 0;
+    virtual SrsConfDirective *get_refer_publish(std::string vhost) = 0;
+
+public:
+    // Edge config
+    virtual bool get_vhost_origin_cluster(std::string vhost) = 0;
+    virtual std::vector<std::string> get_vhost_coworkers(std::string vhost) = 0;
+    virtual bool get_vhost_edge_token_traverse(std::string vhost) = 0;
+    virtual SrsConfDirective *get_vhost_edge_origin(std::string vhost) = 0;
+
+public:
+    // HTTP hooks config
     virtual bool get_vhost_http_hooks_enabled(std::string vhost) = 0;
+    virtual SrsConfDirective *get_vhost_on_connect(std::string vhost) = 0;
+    virtual SrsConfDirective *get_vhost_on_close(std::string vhost) = 0;
+    virtual SrsConfDirective *get_vhost_on_publish(std::string vhost) = 0;
+    virtual SrsConfDirective *get_vhost_on_play(std::string vhost) = 0;
     virtual SrsConfDirective *get_vhost_on_stop(std::string vhost) = 0;
+
+public:
+    // RTC config
+    virtual bool get_rtc_enabled(std::string vhost) = 0;
+
+public:
+    // RTSP config
+    virtual bool get_rtsp_enabled(std::string vhost) = 0;
+
+public:
+    // Stream bridge config
+    virtual bool get_rtc_from_rtmp(std::string vhost) = 0;
+    virtual bool get_rtsp_from_rtmp(std::string vhost) = 0;
+
+public:
     virtual bool get_rtc_nack_enabled(std::string vhost) = 0;
     virtual bool get_rtc_nack_no_copy(std::string vhost) = 0;
     virtual bool get_realtime_enabled(std::string vhost, bool is_rtc) = 0;

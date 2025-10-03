@@ -187,6 +187,14 @@ SSL_CTX *srs_build_dtls_ctx(SrsDtlsVersion version, std::string role)
 }
 #pragma GCC diagnostic pop
 
+ISrsDtlsCertificate::ISrsDtlsCertificate()
+{
+}
+
+ISrsDtlsCertificate::~ISrsDtlsCertificate()
+{
+}
+
 SrsDtlsCertificate::SrsDtlsCertificate()
 {
     ecdsa_mode_ = true;

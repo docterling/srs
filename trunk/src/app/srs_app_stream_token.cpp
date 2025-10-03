@@ -56,6 +56,14 @@ void SrsStreamPublishToken::set_publisher_cid(const SrsContextId &cid)
     publisher_cid_ = cid;
 }
 
+ISrsStreamPublishTokenManager::ISrsStreamPublishTokenManager()
+{
+}
+
+ISrsStreamPublishTokenManager::~ISrsStreamPublishTokenManager()
+{
+}
+
 SrsStreamPublishTokenManager::SrsStreamPublishTokenManager()
 {
     mutex_ = srs_mutex_new();

@@ -16,6 +16,8 @@ class ISrsFileReader;
 class SrsPath;
 class SrsLiveSource;
 class ISrsOriginHub;
+class ISrsHourGlass;
+class ISrsHourGlassHandler;
 
 // The factory to create app objects.
 class SrsAppFactory
@@ -31,6 +33,7 @@ public:
     virtual SrsPath *create_path();
     virtual SrsLiveSource *create_live_source();
     virtual ISrsOriginHub *create_origin_hub();
+    virtual ISrsHourGlass *create_hourglass(const std::string &name, ISrsHourGlassHandler *handler, srs_utime_t interval);
 };
 
 extern SrsAppFactory *_srs_app_factory;

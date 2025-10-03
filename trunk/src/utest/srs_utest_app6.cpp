@@ -2690,6 +2690,21 @@ void MockRtcStatistic::on_stream_close(ISrsRequest *req)
     // Do nothing in mock
 }
 
+void MockRtcStatistic::kbps_add_delta(std::string id, ISrsKbpsDelta *delta)
+{
+    // Do nothing in mock
+}
+
+void MockRtcStatistic::kbps_sample()
+{
+    // Do nothing in mock
+}
+
+srs_error_t MockRtcStatistic::on_video_frames(ISrsRequest *req, int nb_frames)
+{
+    return srs_success;
+}
+
 // Unit tests for SrsRtcAsyncCallOnStop::call()
 VOID TEST(RtcAsyncCallOnStopTest, CallWithHttpHooksDisabled)
 {
@@ -4301,6 +4316,17 @@ srs_error_t MockLiveSourceManager::fetch_or_create(ISrsRequest *r, SrsSharedPtr<
 SrsSharedPtr<SrsLiveSource> MockLiveSourceManager::fetch(ISrsRequest *r)
 {
     return mock_source_;
+}
+
+void MockLiveSourceManager::dispose()
+{
+    // Mock implementation - no-op for testing
+}
+
+srs_error_t MockLiveSourceManager::initialize()
+{
+    // Mock implementation - always succeeds
+    return srs_success;
 }
 
 void MockLiveSourceManager::set_fetch_or_create_error(srs_error_t err)

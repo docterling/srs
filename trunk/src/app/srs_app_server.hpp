@@ -57,6 +57,18 @@ class SrsSrtEventLoop;
 class SrsRtcSessionManager;
 class SrsPidFileLocker;
 class ISrsAppConfig;
+class ISrsLiveSourceManager;
+class ISrsResourceManager;
+class ISrsDtlsCertificate;
+class ISrsAsyncCallWorker;
+class ISrsCircuitBreaker;
+class ISrsSrtSourceManager;
+class ISrsRtcSourceManager;
+class ISrsRtspSourceManager;
+class ISrsLog;
+class ISrsStatistic;
+class ISrsHourGlass;
+class SrsAppFactory;
 
 // Initialize global shared variables cross all threads.
 extern srs_error_t srs_global_initialize();
@@ -73,6 +85,20 @@ class SrsServer : public ISrsReloadHandler, // Reload framework for permormance 
 {
 private:
     ISrsAppConfig *config_;
+    ISrsLiveSourceManager *live_sources_;
+    ISrsResourceManager *conn_manager_;
+    ISrsDtlsCertificate *rtc_dtls_certificate_;
+    ISrsAsyncCallWorker *dvr_async_;
+    ISrsCircuitBreaker *circuit_breaker_;
+    ISrsSrtSourceManager *srt_sources_;
+    ISrsRtcSourceManager *rtc_sources_;
+    ISrsRtspSourceManager *rtsp_sources_;
+#ifdef SRS_GB28181
+    ISrsResourceManager *gb_manager_;
+#endif
+    ISrsLog *log_;
+    ISrsStatistic *stat_;
+    SrsAppFactory *app_factory_;
 
 private:
     ISrsHttpServeMux *http_api_mux_;
@@ -81,7 +107,7 @@ private:
 private:
     SrsHttpHeartbeat *http_heartbeat_;
     SrsIngester *ingester_;
-    SrsHourGlass *timer_;
+    ISrsHourGlass *timer_;
 
 private:
     // PID file manager for process identification and locking.
@@ -210,6 +236,7 @@ private:
     // update the global static data, for instance, the current time,
     // the cpu/mem/network statistic.
     virtual srs_error_t do_cycle();
+    virtual srs_error_t do2_cycle();
 
     // interface ISrsHourGlassHandler
 private:
@@ -299,6 +326,9 @@ private:
 class SrsInotifyWorker : public ISrsCoroutineHandler
 {
 private:
+    ISrsAppConfig *config_;
+
+private:
     SrsServer *server_;
     ISrsCoroutine *trd_;
     srs_netfd_t inotify_fd_;
@@ -319,7 +349,7 @@ class SrsPidFileLocker
 {
 private:
     ISrsAppConfig *config_;
-    
+
 private:
     int pid_fd_;
     std::string pid_file_;

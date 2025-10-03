@@ -83,6 +83,20 @@ public:
     virtual ~ISrsResourceManager();
 
 public:
+    // Start the resource manager.
+    virtual srs_error_t start() = 0;
+    // Check if the resource manager is empty.
+    virtual bool empty() = 0;
+    // Get the number of resources.
+    virtual size_t size() = 0;
+
+public:
+    // Add a resource to the manager.
+    virtual void add(ISrsResource *conn, bool *exists = NULL) = 0;
+    // Get resource at specified index.
+    virtual ISrsResource *at(int index) = 0;
+
+public:
     // Remove then free the specified connection. Note that the manager always free c resource,
     // in the same coroutine or another coroutine. Some manager may support add c to a map, it
     // should always free it even if it's in the map.

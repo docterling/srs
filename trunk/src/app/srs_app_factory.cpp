@@ -13,6 +13,7 @@
 #include <srs_kernel_ts.hpp>
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_st.hpp>
+#include <srs_kernel_hourglass.hpp>
 
 SrsAppFactory::SrsAppFactory()
 {
@@ -52,6 +53,11 @@ ISrsOriginHub *SrsAppFactory::create_origin_hub()
     SrsOriginHub *hub = new SrsOriginHub();
     hub->assemble();
     return hub;
+}
+
+ISrsHourGlass *SrsAppFactory::create_hourglass(const std::string &name, ISrsHourGlassHandler *handler, srs_utime_t interval)
+{
+    return new SrsHourGlass(name, handler, interval);
 }
 
 SrsFinalFactory::SrsFinalFactory()

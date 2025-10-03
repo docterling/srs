@@ -53,10 +53,22 @@ public:
     void set_publisher_cid(const SrsContextId &cid);
 };
 
+// The interface for stream publish token manager
+class ISrsStreamPublishTokenManager
+{
+public:
+    ISrsStreamPublishTokenManager();
+    virtual ~ISrsStreamPublishTokenManager();
+
+public:
+    virtual srs_error_t acquire_token(ISrsRequest *req, SrsStreamPublishToken *&token) = 0;
+    virtual void release_token(const std::string &stream_url) = 0;
+};
+
 // The global stream publish token manager ensures only one publisher
 // can acquire a token for a given stream URL at any time.
 // This prevents race conditions across all protocols.
-class SrsStreamPublishTokenManager
+class SrsStreamPublishTokenManager : public ISrsStreamPublishTokenManager
 {
 private:
     // Map of stream URL to token

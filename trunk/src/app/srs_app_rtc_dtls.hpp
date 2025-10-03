@@ -19,7 +19,19 @@
 
 class ISrsRequest;
 
-class SrsDtlsCertificate
+// The interface for DTLS certificate.
+class ISrsDtlsCertificate
+{
+public:
+    ISrsDtlsCertificate();
+    virtual ~ISrsDtlsCertificate();
+
+public:
+    virtual srs_error_t initialize() = 0;
+};
+
+// The DTLS certificate.
+class SrsDtlsCertificate : public ISrsDtlsCertificate
 {
 private:
     std::string fingerprint_;

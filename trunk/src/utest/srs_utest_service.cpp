@@ -1352,6 +1352,30 @@ MockConnectionManager::~MockConnectionManager()
 {
 }
 
+srs_error_t MockConnectionManager::start()
+{
+    return srs_success;
+}
+
+bool MockConnectionManager::empty()
+{
+    return true;
+}
+
+size_t MockConnectionManager::size()
+{
+    return 0;
+}
+
+void MockConnectionManager::add(ISrsResource * /*conn*/, bool * /*exists*/)
+{
+}
+
+ISrsResource *MockConnectionManager::at(int /*index*/)
+{
+    return NULL;
+}
+
 void MockConnectionManager::remove(ISrsResource * /*c*/)
 {
 }

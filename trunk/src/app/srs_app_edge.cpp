@@ -388,9 +388,6 @@ SrsEdgeIngester::SrsEdgeIngester()
     source_ = NULL;
     edge_ = NULL;
     req_ = NULL;
-#ifdef SRS_APM
-    span_main_ = NULL;
-#endif
 
     upstream_ = new SrsEdgeRtmpUpstream("");
     lb_ = new SrsLbRoundRobin();
@@ -401,9 +398,6 @@ SrsEdgeIngester::~SrsEdgeIngester()
 {
     stop();
 
-#ifdef SRS_APM
-    srs_freep(span_main_);
-#endif
     srs_freep(upstream_);
     srs_freep(lb_);
     srs_freep(trd_);
@@ -455,14 +449,6 @@ void SrsEdgeIngester::stop()
     }
 }
 
-#ifdef SRS_APM
-ISrsApmSpan *SrsEdgeIngester::span()
-{
-    srs_assert(span_main_);
-    return span_main_;
-}
-#endif
-
 // when error, edge ingester sleep for a while and retry.
 #define SRS_EDGE_INGESTER_CIMS (3 * SRS_UTIME_SECONDS)
 
@@ -477,22 +463,10 @@ srs_error_t SrsEdgeIngester::cycle()
             return srs_error_wrap(err, "edge ingester");
         }
 
-#ifdef SRS_APM
-        srs_assert(span_main_);
-        ISrsApmSpan *start = _srs_apm->span("edge-start")->set_kind(SrsApmKindConsumer)->as_child(span_main_)->end();
-        srs_freep(start);
-#endif
-
         if ((err = do_cycle()) != srs_success) {
             srs_warn("EdgeIngester: Ignore error, %s", srs_error_desc(err).c_str());
             srs_freep(err);
         }
-
-#ifdef SRS_APM
-        srs_assert(span_main_);
-        ISrsApmSpan *stop = _srs_apm->span("edge-stop")->set_kind(SrsApmKindConsumer)->as_child(span_main_)->end();
-        srs_freep(stop);
-#endif
 
         // Check whether coroutine is stopped, see https://github.com/ossrs/srs/issues/2901
         if ((err = trd_->pull()) != srs_success) {

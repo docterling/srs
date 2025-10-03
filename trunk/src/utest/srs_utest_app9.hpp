@@ -198,6 +198,9 @@ public:
     virtual srs_error_t on_audio_info(ISrsRequest *req, SrsAudioCodecId acodec, SrsAudioSampleRate asample_rate, SrsAudioChannels asound_type, SrsAacObjectType aac_object);
     virtual void on_stream_publish(ISrsRequest *req, std::string publisher_id);
     virtual void on_stream_close(ISrsRequest *req);
+    virtual void kbps_add_delta(std::string id, ISrsKbpsDelta *delta);
+    virtual void kbps_sample();
+    virtual srs_error_t on_video_frames(ISrsRequest *req, int nb_frames);
 };
 
 // Mock ISrsNgExec for testing SrsOriginHub::on_publish

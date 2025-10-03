@@ -19,6 +19,14 @@ ISrsAsyncCallTask::~ISrsAsyncCallTask()
 {
 }
 
+ISrsAsyncCallWorker::ISrsAsyncCallWorker()
+{
+}
+
+ISrsAsyncCallWorker::~ISrsAsyncCallWorker()
+{
+}
+
 SrsAsyncCallWorker::SrsAsyncCallWorker()
 {
     trd_ = new SrsDummyCoroutine();

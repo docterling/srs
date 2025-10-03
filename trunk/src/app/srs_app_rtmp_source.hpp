@@ -529,6 +529,10 @@ public:
     virtual srs_error_t fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsLiveSource> &pps) = 0;
     // Get the exists source, NULL when not exists.
     virtual SrsSharedPtr<SrsLiveSource> fetch(ISrsRequest *r) = 0;
+
+public:
+    virtual void dispose() = 0;
+    virtual srs_error_t initialize() = 0;
 };
 
 // The source manager to create and refresh all stream sources.

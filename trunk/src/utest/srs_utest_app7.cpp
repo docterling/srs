@@ -1002,6 +1002,30 @@ MockConnectionManagerForExpire::~MockConnectionManagerForExpire()
 {
 }
 
+srs_error_t MockConnectionManagerForExpire::start()
+{
+    return srs_success;
+}
+
+bool MockConnectionManagerForExpire::empty()
+{
+    return true;
+}
+
+size_t MockConnectionManagerForExpire::size()
+{
+    return 0;
+}
+
+void MockConnectionManagerForExpire::add(ISrsResource * /*conn*/, bool * /*exists*/)
+{
+}
+
+ISrsResource *MockConnectionManagerForExpire::at(int /*index*/)
+{
+    return NULL;
+}
+
 void MockConnectionManagerForExpire::remove(ISrsResource *c)
 {
     removed_resource_ = c;

@@ -145,6 +145,9 @@ public:
                                       SrsAudioChannels asound_type, SrsAacObjectType aac_object) = 0;
     virtual void on_stream_publish(ISrsRequest *req, std::string publisher_id) = 0;
     virtual void on_stream_close(ISrsRequest *req) = 0;
+    virtual void kbps_add_delta(std::string id, ISrsKbpsDelta *delta) = 0;
+    virtual void kbps_sample() = 0;
+    virtual srs_error_t on_video_frames(ISrsRequest *req, int nb_frames) = 0;
 };
 
 // The global statistic instance.
@@ -255,12 +258,6 @@ public:
     virtual srs_error_t dumps_clients(SrsJsonArray *arr, int start, int count);
     // Dumps the hints about SRS server.
     void dumps_hints_kv(std::stringstream &ss);
-#ifdef SRS_APM
-public:
-    // Dumps the CLS summary.
-    void dumps_cls_summaries(SrsClsSugar *sugar);
-    void dumps_cls_streams(SrsClsSugars *sugars);
-#endif
 private:
     virtual SrsStatisticVhost *create_vhost(ISrsRequest *req);
     virtual SrsStatisticStream *create_stream(SrsStatisticVhost *vhost, ISrsRequest *req);

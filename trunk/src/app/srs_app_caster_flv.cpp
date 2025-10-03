@@ -140,6 +140,31 @@ srs_error_t SrsAppCasterFlv::on_tcp_client(ISrsListener *listener, srs_netfd_t s
     return err;
 }
 
+srs_error_t SrsAppCasterFlv::start()
+{
+    return manager_->start();
+}
+
+bool SrsAppCasterFlv::empty()
+{
+    return manager_->empty();
+}
+
+size_t SrsAppCasterFlv::size()
+{
+    return manager_->size();
+}
+
+void SrsAppCasterFlv::add(ISrsResource *conn, bool *exists)
+{
+    manager_->add(conn, exists);
+}
+
+ISrsResource *SrsAppCasterFlv::at(int index)
+{
+    return manager_->at(index);
+}
+
 void SrsAppCasterFlv::remove(ISrsResource *c)
 {
     ISrsConnection *conn = dynamic_cast<ISrsConnection *>(c);

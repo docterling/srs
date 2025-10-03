@@ -111,6 +111,14 @@ void SrsRtspConsumer::on_stream_change(SrsRtcSourceDescription *desc)
     }
 }
 
+ISrsRtspSourceManager::ISrsRtspSourceManager()
+{
+}
+
+ISrsRtspSourceManager::~ISrsRtspSourceManager()
+{
+}
+
 SrsRtspSourceManager::SrsRtspSourceManager()
 {
     lock_ = srs_mutex_new();

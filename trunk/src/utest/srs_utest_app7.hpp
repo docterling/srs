@@ -101,6 +101,11 @@ public:
     virtual ~MockConnectionManagerForExpire();
 
 public:
+    virtual srs_error_t start();
+    virtual bool empty();
+    virtual size_t size();
+    virtual void add(ISrsResource *conn, bool *exists = NULL);
+    virtual ISrsResource *at(int index);
     virtual void remove(ISrsResource *c);
     virtual void subscribe(ISrsDisposingHandler *h);
     virtual void unsubscribe(ISrsDisposingHandler *h);

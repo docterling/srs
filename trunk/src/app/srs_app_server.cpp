@@ -62,6 +62,7 @@ using namespace std;
 #include <srs_app_rtsp_conn.hpp>
 #include <srs_app_rtsp_source.hpp>
 #endif
+#include <srs_app_factory.hpp>
 
 SrsServer *_srs_server = NULL;
 
@@ -186,6 +187,22 @@ SrsServer::SrsServer()
     rtc_session_manager_ = new SrsRtcSessionManager();
 
     config_ = _srs_config;
+    live_sources_ = _srs_sources;
+    conn_manager_ = _srs_conn_manager;
+    rtc_dtls_certificate_ = _srs_rtc_dtls_certificate;
+    dvr_async_ = _srs_dvr_async;
+    circuit_breaker_ = _srs_circuit_breaker;
+    srt_sources_ = _srs_srt_sources;
+    rtc_sources_ = _srs_rtc_sources;
+#ifdef SRS_RTSP
+    rtsp_sources_ = _srs_rtsp_sources;
+#endif
+#ifdef SRS_GB28181
+    gb_manager_ = _srs_gb_manager;
+#endif
+    log_ = _srs_log;
+    stat_ = _srs_stat;
+    app_factory_ = _srs_app_factory;
 }
 
 SrsServer::~SrsServer()
@@ -238,6 +255,20 @@ SrsServer::~SrsServer()
     srs_freep(rtc_session_manager_);
 
     config_ = NULL;
+    live_sources_ = NULL;
+    conn_manager_ = NULL;
+    rtc_dtls_certificate_ = NULL;
+    dvr_async_ = NULL;
+    circuit_breaker_ = NULL;
+    srt_sources_ = NULL;
+    rtc_sources_ = NULL;
+    rtsp_sources_ = NULL;
+#ifdef SRS_GB28181
+    gb_manager_ = NULL;
+#endif
+    log_ = NULL;
+    stat_ = NULL;
+    app_factory_ = NULL;
 }
 
 void SrsServer::dispose()
@@ -267,7 +298,7 @@ void SrsServer::dispose()
     ingester_->dispose();
 
     // dispose the source for hls and dvr.
-    _srs_sources->dispose();
+    live_sources_->dispose();
 
     // @remark don't dispose all connections, for too slow.
 }
@@ -307,17 +338,17 @@ void SrsServer::gracefully_dispose()
     // Wait for connections to quit.
     // While gracefully quiting, user can requires SRS to fast quit.
     int wait_step = 1;
-    while (!_srs_conn_manager->empty() && !signal_fast_quit_) {
-        for (int i = 0; i < wait_step && !_srs_conn_manager->empty() && !signal_fast_quit_; i++) {
+    while (!conn_manager_->empty() && !signal_fast_quit_) {
+        for (int i = 0; i < wait_step && !conn_manager_->empty() && !signal_fast_quit_; i++) {
             srs_usleep(1000 * SRS_UTIME_MILLISECONDS);
         }
 
         wait_step = (wait_step * 2) % 33;
-        srs_trace("wait for %d conns to quit", (int)_srs_conn_manager->size());
+        srs_trace("wait for %d conns to quit", (int)conn_manager_->size());
     }
 
     // dispose the source for hls and dvr.
-    _srs_sources->dispose();
+    live_sources_->dispose();
     srs_trace("source disposed");
 
     srs_usleep(config_->get_grace_final_wait());
@@ -355,12 +386,12 @@ srs_error_t SrsServer::initialize()
     }
 
     // Initialize WebRTC DTLS certificate
-    if ((err = _srs_rtc_dtls_certificate->initialize()) != srs_success) {
+    if ((err = rtc_dtls_certificate_->initialize()) != srs_success) {
         return srs_error_wrap(err, "rtc dtls certificate initialize");
     }
 
     // Start the DVR async call.
-    if ((err = _srs_dvr_async->start()) != srs_success) {
+    if ((err = dvr_async_->start()) != srs_success) {
         return srs_error_wrap(err, "dvr async");
     }
 
@@ -431,7 +462,7 @@ srs_error_t SrsServer::run()
     srs_error_t err = srs_success;
 
     // Circuit breaker to protect server, which depends on server.
-    if ((err = _srs_circuit_breaker->initialize()) != srs_success) {
+    if ((err = circuit_breaker_->initialize()) != srs_success) {
         return srs_error_wrap(err, "init circuit breaker");
     }
 
@@ -460,20 +491,20 @@ srs_error_t SrsServer::run()
         return srs_error_wrap(err, "ingest");
     }
 
-    if ((err = _srs_sources->initialize()) != srs_success) {
+    if ((err = live_sources_->initialize()) != srs_success) {
         return srs_error_wrap(err, "live sources");
     }
 
-    if ((err = _srs_srt_sources->initialize()) != srs_success) {
+    if ((err = srt_sources_->initialize()) != srs_success) {
         return srs_error_wrap(err, "srt sources");
     }
 
-    if ((err = _srs_rtc_sources->initialize()) != srs_success) {
+    if ((err = rtc_sources_->initialize()) != srs_success) {
         return srs_error_wrap(err, "rtc sources");
     }
 
 #ifdef SRS_RTSP
-    if ((err = _srs_rtsp_sources->initialize()) != srs_success) {
+    if ((err = rtsp_sources_->initialize()) != srs_success) {
         return srs_error_wrap(err, "rtsp sources");
     }
 #endif
@@ -483,7 +514,7 @@ srs_error_t SrsServer::run()
     }
 
 #ifdef SRS_GB28181
-    if ((err = _srs_gb_manager->start()) != srs_success) {
+    if ((err = gb_manager_->start()) != srs_success) {
         return srs_error_wrap(err, "start manager");
     }
 #endif
@@ -659,7 +690,7 @@ srs_error_t SrsServer::listen()
         return srs_error_wrap(err, "rtc udp listen");
     }
 
-    if ((err = _srs_conn_manager->start()) != srs_success) {
+    if ((err = conn_manager_->start()) != srs_success) {
         return srs_error_wrap(err, "connection manager");
     }
 
@@ -873,7 +904,7 @@ void SrsServer::on_signal(int signo)
 
 #ifndef SRS_GPERF_MC
     if (signo == SRS_SIGNAL_REOPEN_LOG) {
-        _srs_log->reopen();
+        log_->reopen();
 
         srs_warn("reopen log file, signo=%d", signo);
         return;
@@ -924,6 +955,72 @@ srs_error_t _srs_reload_err;
 SrsReloadState _srs_reload_state;
 std::string _srs_reload_id;
 
+srs_error_t SrsServer::do2_cycle()
+{
+    srs_error_t err = srs_success;
+
+    // gracefully quit for SIGINT or SIGTERM or SIGQUIT.
+    if (signal_fast_quit_ || signal_gracefully_quit_) {
+        srs_trace("cleanup for quit signal fast=%d, grace=%d", signal_fast_quit_, signal_gracefully_quit_);
+        return err;
+    }
+
+    // for gperf heap checker,
+    // @see: research/gperftools/heap-checker/heap_checker.cc
+    // if user interrupt the program, exit to check mem leak.
+    // but, if gperf, use reload to ensure main return normally,
+    // because directly exit will cause core-dump.
+#ifdef SRS_GPERF_MC
+    if (signal_gmc_stop_) {
+        srs_warn("gmc got singal to stop server.");
+        return err;
+    }
+#endif
+
+    // do persistence config to file.
+    if (signal_persistence_config_) {
+        signal_persistence_config_ = false;
+        srs_info("get signal to persistence config to file.");
+
+        if ((err = config_->persistence()) != srs_success) {
+            return srs_error_wrap(err, "config persistence to file");
+        }
+        srs_trace("persistence config to file success.");
+    }
+
+    // do reload the config.
+    if (signal_reload_) {
+        signal_reload_ = false;
+        srs_trace("starting reload config.");
+
+        SrsReloadState state = SrsReloadStateInit;
+        _srs_reload_state = SrsReloadStateInit;
+        srs_freep(_srs_reload_err);
+        SrsRand rand;
+        _srs_reload_id = rand.gen_str(7);
+        err = config_->reload(&state);
+        _srs_reload_state = state;
+        _srs_reload_err = srs_error_copy(err);
+        if (err != srs_success) {
+            // If the parsing and transformation of the configuration fail, we can tolerate it by simply
+            // ignoring the new configuration and continuing to use the current one. However, if the
+            // application of the new configuration fails, some configurations may be applied while
+            // others may not. For instance, the listening port may be closed when the configuration
+            // is set to listen on an unavailable port. In such cases, we should terminate the service.
+            if (state == SrsReloadStateApplying) {
+                return srs_error_wrap(err, "reload fatal error state=%d", state);
+            }
+
+            srs_warn("reload failed, state=%d, err %s", state, srs_error_desc(err).c_str());
+            srs_freep(err);
+        } else {
+            srs_trace("reload config success, state=%d.", state);
+        }
+    }
+    
+    return err;
+}
+
 srs_error_t SrsServer::do_cycle()
 {
     srs_error_t err = srs_success;
@@ -937,63 +1034,8 @@ srs_error_t SrsServer::do_cycle()
             return srs_error_new(ERROR_ASPROCESS_PPID, "asprocess ppid changed from %d to %d", ppid_, ::getppid());
         }
 
-        // gracefully quit for SIGINT or SIGTERM or SIGQUIT.
-        if (signal_fast_quit_ || signal_gracefully_quit_) {
-            srs_trace("cleanup for quit signal fast=%d, grace=%d", signal_fast_quit_, signal_gracefully_quit_);
-            return err;
-        }
-
-        // for gperf heap checker,
-        // @see: research/gperftools/heap-checker/heap_checker.cc
-        // if user interrupt the program, exit to check mem leak.
-        // but, if gperf, use reload to ensure main return normally,
-        // because directly exit will cause core-dump.
-#ifdef SRS_GPERF_MC
-        if (signal_gmc_stop_) {
-            srs_warn("gmc got singal to stop server.");
-            return err;
-        }
-#endif
-
-        // do persistence config to file.
-        if (signal_persistence_config_) {
-            signal_persistence_config_ = false;
-            srs_info("get signal to persistence config to file.");
-
-            if ((err = config_->persistence()) != srs_success) {
-                return srs_error_wrap(err, "config persistence to file");
-            }
-            srs_trace("persistence config to file success.");
-        }
-
-        // do reload the config.
-        if (signal_reload_) {
-            signal_reload_ = false;
-            srs_trace("starting reload config.");
-
-            SrsReloadState state = SrsReloadStateInit;
-            _srs_reload_state = SrsReloadStateInit;
-            srs_freep(_srs_reload_err);
-            SrsRand rand;
-            _srs_reload_id = rand.gen_str(7);
-            err = config_->reload(&state);
-            _srs_reload_state = state;
-            _srs_reload_err = srs_error_copy(err);
-            if (err != srs_success) {
-                // If the parsing and transformation of the configuration fail, we can tolerate it by simply
-                // ignoring the new configuration and continuing to use the current one. However, if the
-                // application of the new configuration fails, some configurations may be applied while
-                // others may not. For instance, the listening port may be closed when the configuration
-                // is set to listen on an unavailable port. In such cases, we should terminate the service.
-                if (state == SrsReloadStateApplying) {
-                    return srs_error_wrap(err, "reload fatal error state=%d", state);
-                }
-
-                srs_warn("reload failed, state=%d, err %s", state, srs_error_desc(err).c_str());
-                srs_freep(err);
-            } else {
-                srs_trace("reload config success, state=%d.", state);
-            }
+        if ((err = do2_cycle()) != srs_success) {
+            return srs_error_wrap(err, "cycle");
         }
 
         srs_usleep(1 * SRS_UTIME_SECONDS);
@@ -1007,7 +1049,7 @@ srs_error_t SrsServer::setup_ticks()
     srs_error_t err = srs_success;
 
     srs_freep(timer_);
-    timer_ = new SrsHourGlass("srs", this, 1 * SRS_UTIME_SECONDS);
+    timer_ = app_factory_->create_hourglass("srs", this, 1 * SRS_UTIME_SECONDS);
 
     if (config_->get_stats_enabled()) {
         if ((err = timer_->tick(2, 3 * SRS_UTIME_SECONDS)) != srs_success) {
@@ -1098,47 +1140,45 @@ srs_error_t SrsServer::notify(int event, srs_utime_t interval, srs_utime_t tick)
 
 void SrsServer::resample_kbps()
 {
-    SrsStatistic *stat = _srs_stat;
-
     // collect delta from all clients.
-    for (int i = 0; i < (int)_srs_conn_manager->size(); i++) {
-        ISrsResource *c = _srs_conn_manager->at(i);
+    for (int i = 0; i < (int)conn_manager_->size(); i++) {
+        ISrsResource *c = conn_manager_->at(i);
 
         SrsRtmpConn *rtmp = dynamic_cast<SrsRtmpConn *>(c);
         if (rtmp) {
-            stat->kbps_add_delta(c->get_id().c_str(), rtmp->delta());
+            stat_->kbps_add_delta(c->get_id().c_str(), rtmp->delta());
             continue;
         }
 
         SrsHttpxConn *httpx = dynamic_cast<SrsHttpxConn *>(c);
         if (httpx) {
-            stat->kbps_add_delta(c->get_id().c_str(), httpx->delta());
+            stat_->kbps_add_delta(c->get_id().c_str(), httpx->delta());
             continue;
         }
 
 #ifdef SRS_RTSP
         SrsRtspConnection *rtsp = dynamic_cast<SrsRtspConnection *>(c);
         if (rtsp) {
-            stat->kbps_add_delta(c->get_id().c_str(), rtsp->delta());
+            stat_->kbps_add_delta(c->get_id().c_str(), rtsp->delta());
             continue;
         }
 #endif
 
         SrsRtcTcpConn *tcp = dynamic_cast<SrsRtcTcpConn *>(c);
         if (tcp) {
-            stat->kbps_add_delta(c->get_id().c_str(), tcp->delta());
+            stat_->kbps_add_delta(c->get_id().c_str(), tcp->delta());
             continue;
         }
 
         SrsMpegtsSrtConn *srt = dynamic_cast<SrsMpegtsSrtConn *>(c);
         if (srt) {
-            stat->kbps_add_delta(c->get_id().c_str(), srt->delta());
+            stat_->kbps_add_delta(c->get_id().c_str(), srt->delta());
             continue;
         }
 
         SrsRtcConnection *rtc = dynamic_cast<SrsRtcConnection *>(c);
         if (rtc) {
-            stat->kbps_add_delta(c->get_id().c_str(), rtc->delta());
+            stat_->kbps_add_delta(c->get_id().c_str(), rtc->delta());
             continue;
         }
 
@@ -1147,7 +1187,7 @@ void SrsServer::resample_kbps()
     }
 
     // Update the global server level statistics.
-    stat->kbps_sample();
+    stat_->kbps_sample();
 }
 
 srs_error_t SrsServer::listen_srt_mpegts()
@@ -1212,9 +1252,9 @@ srs_error_t SrsServer::accept_srt_client(srs_srt_t srt_fd)
     srs_assert(resource);
 
     // directly enqueue, the cycle thread will remove the client.
-    _srs_conn_manager->add(resource);
+    conn_manager_->add(resource);
 
-    // Note that conn is managed by _srs_conn_manager, so we don't need to free it.
+    // Note that conn is managed by conn_manager_, so we don't need to free it.
     ISrsStartable *conn = dynamic_cast<ISrsStartable *>(resource);
     if ((err = conn->start()) != srs_success) {
         return srs_error_wrap(err, "start srt conn coroutine");
@@ -1242,7 +1282,7 @@ srs_error_t SrsServer::srt_fd_to_resource(srs_srt_t srt_fd, ISrsResource **pr)
     SrsContextRestore(_srs_context->get_id());
 
     // Convert to SRT connection.
-    *pr = new SrsMpegtsSrtConn(_srs_conn_manager, srt_fd, ip, port);
+    *pr = new SrsMpegtsSrtConn(conn_manager_, srt_fd, ip, port);
 
     return err;
 }
@@ -1459,7 +1499,7 @@ srs_error_t SrsServer::do_on_tcp_client(ISrsListener *listener, srs_netfd_t &stf
         } else {
             string key = listener == https_listener_ ? config_->get_https_stream_ssl_key() : "";
             string cert = listener == https_listener_ ? config_->get_https_stream_ssl_cert() : "";
-            resource = new SrsHttpxConn(_srs_conn_manager, io, http_server_, ip, port, key, cert);
+            resource = new SrsHttpxConn(conn_manager_, io, http_server_, ip, port, key, cert);
         }
     }
 
@@ -1467,27 +1507,31 @@ srs_error_t SrsServer::do_on_tcp_client(ISrsListener *listener, srs_netfd_t &stf
     if (!resource) {
         if (listener == rtmp_listener_) {
             SrsRtmpTransport *transport = new SrsRtmpTransport(stfd2);
-            resource = new SrsRtmpConn(this, transport, ip, port);
+            SrsRtmpConn *conn = new SrsRtmpConn(this, transport, ip, port);
+            conn->assemble();
+            resource = conn;
         } else if (listener == rtmps_listener_) {
             SrsRtmpTransport *transport = new SrsRtmpsTransport(stfd2);
-            resource = new SrsRtmpConn(this, transport, ip, port);
+            SrsRtmpConn *conn = new SrsRtmpConn(this, transport, ip, port);
+            conn->assemble();
+            resource = conn;
         } else if (listener == api_listener_ || listener == apis_listener_) {
             string key = listener == apis_listener_ ? config_->get_https_api_ssl_key() : "";
             string cert = listener == apis_listener_ ? config_->get_https_api_ssl_cert() : "";
-            resource = new SrsHttpxConn(_srs_conn_manager, new SrsTcpConnection(stfd2), http_api_mux_, ip, port, key, cert);
+            resource = new SrsHttpxConn(conn_manager_, new SrsTcpConnection(stfd2), http_api_mux_, ip, port, key, cert);
         } else if (listener == http_listener_ || listener == https_listener_) {
             string key = listener == https_listener_ ? config_->get_https_stream_ssl_key() : "";
             string cert = listener == https_listener_ ? config_->get_https_stream_ssl_cert() : "";
-            resource = new SrsHttpxConn(_srs_conn_manager, new SrsTcpConnection(stfd2), http_server_, ip, port, key, cert);
+            resource = new SrsHttpxConn(conn_manager_, new SrsTcpConnection(stfd2), http_server_, ip, port, key, cert);
         } else if (listener == webrtc_listener_) {
             resource = new SrsRtcTcpConn(new SrsTcpConnection(stfd2), ip, port);
 #ifdef SRS_RTSP
         } else if (listener == rtsp_listener_) {
-            resource = new SrsRtspConnection(_srs_conn_manager, new SrsTcpConnection(stfd2), ip, port);
+            resource = new SrsRtspConnection(conn_manager_, new SrsTcpConnection(stfd2), ip, port);
 #endif
         } else if (listener == exporter_listener_) {
             // TODO: FIXME: Maybe should support https metrics.
-            resource = new SrsHttpxConn(_srs_conn_manager, new SrsTcpConnection(stfd2), http_api_mux_, ip, port, "", "");
+            resource = new SrsHttpxConn(conn_manager_, new SrsTcpConnection(stfd2), http_api_mux_, ip, port, "", "");
         } else {
             srs_close_stfd(stfd2);
             srs_warn("Close for invalid fd=%d, ip=%s:%d", fd, ip.c_str(), port);
@@ -1499,7 +1543,7 @@ srs_error_t SrsServer::do_on_tcp_client(ISrsListener *listener, srs_netfd_t &stf
     SrsRtcTcpConn *raw_conn = dynamic_cast<SrsRtcTcpConn *>(resource);
     if (raw_conn) {
         SrsSharedResource<SrsRtcTcpConn> *conn = new SrsSharedResource<SrsRtcTcpConn>(raw_conn);
-        SrsExecutorCoroutine *executor = new SrsExecutorCoroutine(_srs_conn_manager, conn, raw_conn, raw_conn);
+        SrsExecutorCoroutine *executor = new SrsExecutorCoroutine(conn_manager_, conn, raw_conn, raw_conn);
         raw_conn->setup_owner(conn, executor, executor);
         if ((err = executor->start()) != srs_success) {
             srs_freep(executor);
@@ -1510,7 +1554,7 @@ srs_error_t SrsServer::do_on_tcp_client(ISrsListener *listener, srs_netfd_t &stf
 
     // Use connection manager to manage all the resources.
     srs_assert(resource);
-    _srs_conn_manager->add(resource);
+    conn_manager_->add(resource);
 
     // If connection is a resource to start, start a coroutine to handle it.
     // Note that conn is managed by conn_manager, so we don't need to free it.
@@ -1530,9 +1574,9 @@ srs_error_t SrsServer::on_before_connection(const char *label, int fd, const std
     // Failed if exceed the connection limitation.
     int max_connections = config_->get_max_connections();
 
-    if ((int)_srs_conn_manager->size() >= max_connections) {
+    if ((int)conn_manager_->size() >= max_connections) {
         return srs_error_new(ERROR_EXCEED_CONNECTIONS, "drop %s fd=%d, ip=%s:%d, max=%d, cur=%d for exceed connection limits",
-                             label, fd, ip.c_str(), port, max_connections, (int)_srs_conn_manager->size());
+                             label, fd, ip.c_str(), port, max_connections, (int)conn_manager_->size());
     }
 
     return err;
@@ -1697,12 +1741,16 @@ SrsInotifyWorker::SrsInotifyWorker(SrsServer *s)
     server_ = s;
     trd_ = new SrsSTCoroutine("inotify", this);
     inotify_fd_ = NULL;
+
+    config_ = _srs_config;
 }
 
 SrsInotifyWorker::~SrsInotifyWorker()
 {
     srs_freep(trd_);
     srs_close_stfd(inotify_fd_);
+
+    config_ = NULL;
 }
 
 srs_error_t SrsInotifyWorker::start()

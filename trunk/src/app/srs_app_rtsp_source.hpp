@@ -67,7 +67,21 @@ public:
     void on_stream_change(SrsRtcSourceDescription *desc);
 };
 
-class SrsRtspSourceManager : public ISrsHourGlassHandler
+// The RTSP source manager interface.
+class ISrsRtspSourceManager
+{
+public:
+    ISrsRtspSourceManager();
+    virtual ~ISrsRtspSourceManager();
+
+public:
+    virtual srs_error_t initialize() = 0;
+    virtual srs_error_t fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsRtspSource> &pps) = 0;
+    virtual SrsSharedPtr<SrsRtspSource> fetch(ISrsRequest *r) = 0;
+};
+
+// The RTSP source manager.
+class SrsRtspSourceManager : public ISrsHourGlassHandler, public ISrsRtspSourceManager
 {
 private:
     srs_mutex_t lock_;
