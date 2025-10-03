@@ -7621,7 +7621,7 @@ string SrsConfig::get_srt_default_streamid()
 {
     SRS_OVERWRITE_BY_ENV_STRING("srs.srt_server.default_streamid"); // SRS_SRT_SERVER_DEFAULT_STREAMID
 
-    static string DEFAULT = "#!::r=live/livestream,m=publish";
+    static string DEFAULT = "#!::r=live/livestream,m=request";
     SrsConfDirective *conf = root_->get("srt_server");
     if (!conf) {
         return DEFAULT;
