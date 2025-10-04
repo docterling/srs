@@ -660,10 +660,47 @@ public:
     }
 };
 
+// The rtmp server interface.
+class ISrsRtmpServer
+{
+public:
+    ISrsRtmpServer();
+    virtual ~ISrsRtmpServer();
+
+public:
+    virtual void set_recv_timeout(srs_utime_t tm) = 0;
+    virtual void set_send_timeout(srs_utime_t tm) = 0;
+    virtual srs_error_t handshake() = 0;
+    virtual srs_error_t connect_app(ISrsRequest *req) = 0;
+    virtual uint32_t proxy_real_ip() = 0;
+    virtual srs_error_t set_window_ack_size(int ack_size) = 0;
+    virtual srs_error_t set_peer_bandwidth(int bandwidth, int type) = 0;
+    virtual srs_error_t set_chunk_size(int chunk_size) = 0;
+    virtual srs_error_t response_connect_app(ISrsRequest *req, const char *server_ip = NULL) = 0;
+    virtual srs_error_t on_bw_done() = 0;
+    virtual srs_error_t identify_client(int stream_id, SrsRtmpConnType &type, std::string &stream_name, srs_utime_t &duration) = 0;
+    virtual srs_error_t start_play(int stream_id) = 0;
+    virtual srs_error_t start_fmle_publish(int stream_id) = 0;
+    virtual srs_error_t start_haivision_publish(int stream_id) = 0;
+    virtual srs_error_t fmle_unpublish(int stream_id, double unpublish_tid) = 0;
+    virtual srs_error_t start_flash_publish(int stream_id) = 0;
+    virtual srs_error_t start_publishing(int stream_id) = 0;
+    virtual srs_error_t redirect(ISrsRequest *r, std::string url, bool &accepted) = 0;
+    virtual srs_error_t send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs, int stream_id) = 0;
+    virtual srs_error_t decode_message(SrsRtmpCommonMessage *msg, SrsRtmpCommand **ppacket) = 0;
+    virtual srs_error_t send_and_free_packet(SrsRtmpCommand *packet, int stream_id) = 0;
+    virtual srs_error_t on_play_client_pause(int stream_id, bool is_pause) = 0;
+    virtual srs_error_t set_in_window_ack_size(int ack_size) = 0;
+    virtual srs_error_t recv_message(SrsRtmpCommonMessage **pmsg) = 0;
+    virtual void set_auto_response(bool v) = 0;
+    virtual void set_merge_read(bool v, IMergeReadHandler *handler) = 0;
+    virtual void set_recv_buffer(int buffer_size) = 0;
+};
+
 // The rtmp provices rtmp-command-protocol services,
 // a high level protocol, media stream oriented services,
 // such as connect to vhost/app, play stream, get audio/video data.
-class SrsRtmpServer
+class SrsRtmpServer : public ISrsRtmpServer
 {
 private:
     SrsHandshakeBytes *hs_bytes_;

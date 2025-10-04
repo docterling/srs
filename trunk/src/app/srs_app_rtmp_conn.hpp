@@ -49,6 +49,9 @@ class ISrsHttpHooks;
 class ISrsRtcSourceManager;
 class ISrsSrtSourceManager;
 class ISrsRtspSourceManager;
+class ISrsRtmpServer;
+class ISrsRtmpTransport;
+class ISrsSecurity;
 
 // The simple rtmp client for SRS.
 class SrsSimpleRtmpClient : public SrsBasicRtmpClient
@@ -82,8 +85,26 @@ public:
     virtual ~SrsClientInfo();
 };
 
+// The transport layer for RTMP connections.
+class ISrsRtmpTransport
+{
+public:
+    ISrsRtmpTransport();
+    virtual ~ISrsRtmpTransport();
+
+public:
+    virtual srs_netfd_t fd() = 0;
+    virtual ISrsProtocolReadWriter *io() = 0;
+    virtual srs_error_t handshake() = 0;
+    virtual const char *transport_type() = 0;
+    virtual srs_error_t set_socket_buffer(srs_utime_t buffer_v) = 0;
+    virtual srs_error_t set_tcp_nodelay(bool v) = 0;
+    virtual int64_t get_recv_bytes() = 0;
+    virtual int64_t get_send_bytes() = 0;
+};
+
 // The base transport layer for RTMP connections over plain TCP.
-class SrsRtmpTransport
+class SrsRtmpTransport : public ISrsRtmpTransport
 {
 protected:
     srs_netfd_t stfd_;
@@ -147,14 +168,15 @@ private:
     ISrsHttpHooks *hooks_;
     ISrsRtcSourceManager *rtc_sources_;
     ISrsSrtSourceManager *srt_sources_;
+#ifdef SRS_RTSP
     ISrsRtspSourceManager *rtsp_sources_;
+#endif
 
 private:
-    SrsServer *server_;
-    SrsRtmpServer *rtmp_;
+    ISrsRtmpServer *rtmp_;
     SrsRefer *refer_;
     SrsBandwidth *bandwidth_;
-    SrsSecurity *security_;
+    ISrsSecurity *security_;
     // The wakable handler, maybe NULL.
     // TODO: FIXME: Should refine the state for receiving thread.
     ISrsWakable *wakable_;
@@ -179,7 +201,7 @@ private:
     SrsClientInfo *info_;
 
 private:
-    SrsRtmpTransport *transport_;
+    ISrsRtmpTransport *transport_;
     // Each connection start a green thread,
     // when thread stop, the connection will be delete by server.
     ISrsCoroutine *trd_;
@@ -194,7 +216,7 @@ private:
     int64_t create_time_;
 
 public:
-    SrsRtmpConn(SrsServer *svr, SrsRtmpTransport *transport, std::string cip, int port);
+    SrsRtmpConn(ISrsRtmpTransport *transport, std::string cip, int port);
     void assemble();
     virtual ~SrsRtmpConn();
     // Interface ISrsResource.

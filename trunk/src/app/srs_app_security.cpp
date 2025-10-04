@@ -11,6 +11,14 @@
 
 using namespace std;
 
+ISrsSecurity::ISrsSecurity()
+{
+}
+
+ISrsSecurity::~ISrsSecurity()
+{
+}
+
 SrsSecurity::SrsSecurity()
 {
 }

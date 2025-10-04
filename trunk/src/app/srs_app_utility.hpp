@@ -336,6 +336,9 @@ extern SrsProcSelfStat *srs_get_self_proc_stat();
 extern SrsProcSystemStat *srs_get_system_proc_stat();
 // The daemon st-thread will update it.
 extern void srs_update_proc_stat();
+// Read process self stat from /proc/self/stat (Linux only).
+// @return true on success, false on failure.
+extern bool get_proc_self_stat(SrsProcSelfStat &r);
 
 // Stat disk iops
 // @see: http://stackoverflow.com/questions/4458183/how-the-util-of-iostat-is-computed
@@ -443,6 +446,10 @@ public:
 extern SrsDiskStat *srs_get_disk_stat();
 // The daemon st-thread will update it.
 extern void srs_update_disk_stat();
+// Internal helper function to read disk stats from /proc/diskstats
+// @param r the disk stat object to fill
+// @return true on success, false on failure
+extern bool srs_get_disk_diskstats_stat(SrsDiskStat &r);
 
 // Stat system memory info
 // @see: cat /proc/meminfo

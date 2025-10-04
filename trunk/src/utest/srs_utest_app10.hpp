@@ -17,6 +17,8 @@
 #include <srs_app_factory.hpp>
 #include <srs_app_rtc_server.hpp>
 #include <srs_app_heartbeat.hpp>
+#include <srs_app_rtmp_conn.hpp>
+#include <srs_app_security.hpp>
 
 // Mock config for testing SrsServer::listen()
 class MockAppConfigForServerListen : public MockAppConfig
@@ -291,6 +293,453 @@ public:
     virtual void remove(ISrsResource *c);
     virtual void subscribe(ISrsDisposingHandler *h);
     virtual void unsubscribe(ISrsDisposingHandler *h);
+};
+
+// Mock config for testing SrsRtmpConn constructor and assemble()
+class MockAppConfigForRtmpConn : public MockAppConfig
+{
+public:
+    int subscribe_count_;
+    int unsubscribe_count_;
+    ISrsReloadHandler *last_subscribed_handler_;
+    SrsConfDirective *vhost_directive_;
+
+public:
+    MockAppConfigForRtmpConn();
+    virtual ~MockAppConfigForRtmpConn();
+
+public:
+    virtual void subscribe(ISrsReloadHandler *handler);
+    virtual void unsubscribe(ISrsReloadHandler *handler);
+    virtual SrsConfDirective *get_vhost(std::string vhost, bool try_default_vhost = true);
+    virtual bool get_vhost_is_edge(std::string vhost);
+    void reset();
+};
+
+// Mock ISrsRtmpServer for testing SrsRtmpConn::stream_service_cycle()
+class MockRtmpServerForStreamService : public ISrsRtmpServer
+{
+public:
+    SrsRtmpConnType identify_type_;
+    std::string identify_stream_;
+    srs_utime_t identify_duration_;
+    int start_play_count_;
+    int start_fmle_publish_count_;
+    int start_flash_publish_count_;
+    int start_haivision_publish_count_;
+
+public:
+    MockRtmpServerForStreamService();
+    virtual ~MockRtmpServerForStreamService();
+
+public:
+    virtual void set_recv_timeout(srs_utime_t tm);
+    virtual void set_send_timeout(srs_utime_t tm);
+    virtual srs_error_t handshake();
+    virtual srs_error_t connect_app(ISrsRequest *req);
+    virtual uint32_t proxy_real_ip();
+    virtual srs_error_t set_window_ack_size(int ack_size);
+    virtual srs_error_t set_peer_bandwidth(int bandwidth, int type);
+    virtual srs_error_t set_chunk_size(int chunk_size);
+    virtual srs_error_t response_connect_app(ISrsRequest *req, const char *server_ip);
+    virtual srs_error_t on_bw_done();
+    virtual srs_error_t identify_client(int stream_id, SrsRtmpConnType &type, std::string &stream_name, srs_utime_t &duration);
+    virtual srs_error_t start_play(int stream_id);
+    virtual srs_error_t start_fmle_publish(int stream_id);
+    virtual srs_error_t start_haivision_publish(int stream_id);
+    virtual srs_error_t fmle_unpublish(int stream_id, double unpublish_tid);
+    virtual srs_error_t start_flash_publish(int stream_id);
+    virtual srs_error_t start_publishing(int stream_id);
+    virtual srs_error_t redirect(ISrsRequest *r, std::string url, bool &accepted);
+    virtual srs_error_t send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs, int stream_id);
+    virtual srs_error_t decode_message(SrsRtmpCommonMessage *msg, SrsRtmpCommand **ppacket);
+    virtual srs_error_t send_and_free_packet(SrsRtmpCommand *packet, int stream_id);
+    virtual srs_error_t on_play_client_pause(int stream_id, bool is_pause);
+    virtual srs_error_t set_in_window_ack_size(int ack_size);
+    virtual srs_error_t recv_message(SrsRtmpCommonMessage **pmsg);
+    virtual void set_auto_response(bool v);
+    virtual void set_merge_read(bool v, IMergeReadHandler *handler);
+    virtual void set_recv_buffer(int buffer_size);
+};
+
+// Mock ISrsCoroutine for testing SrsRtmpConn::service_cycle()
+class MockCoroutineForRtmpConn : public ISrsCoroutine
+{
+public:
+    srs_error_t pull_error_;
+    int pull_count_;
+
+public:
+    MockCoroutineForRtmpConn();
+    virtual ~MockCoroutineForRtmpConn();
+
+public:
+    virtual srs_error_t start();
+    virtual void stop();
+    virtual void interrupt();
+    virtual srs_error_t pull();
+    virtual const SrsContextId &cid();
+    virtual void set_cid(const SrsContextId &cid);
+};
+
+// Mock ISrsRtmpTransport for testing SrsRtmpConn::do_cycle()
+class MockRtmpTransportForDoCycle : public ISrsRtmpTransport
+{
+public:
+    MockRtmpTransportForDoCycle();
+    virtual ~MockRtmpTransportForDoCycle();
+
+public:
+    virtual srs_netfd_t fd();
+    virtual ISrsProtocolReadWriter *io();
+    virtual srs_error_t handshake();
+    virtual const char *transport_type();
+    virtual srs_error_t set_socket_buffer(srs_utime_t buffer_v);
+    virtual srs_error_t set_tcp_nodelay(bool v);
+    virtual int64_t get_recv_bytes();
+    virtual int64_t get_send_bytes();
+};
+
+// Mock ISrsSecurity for testing SrsRtmpConn::stream_service_cycle()
+class MockSecurityForStreamService : public ISrsSecurity
+{
+public:
+    MockSecurityForStreamService();
+    virtual ~MockSecurityForStreamService();
+
+public:
+    virtual srs_error_t check(SrsRtmpConnType type, std::string ip, ISrsRequest *req);
+};
+
+// Mock ISrsRtmpServer for testing SrsRtmpConn::handle_publish_message()
+class MockRtmpServerForHandlePublishMessage : public ISrsRtmpServer
+{
+public:
+    srs_error_t decode_message_error_;
+    SrsRtmpCommand* decode_message_packet_;
+    int decode_message_count_;
+    srs_error_t fmle_unpublish_error_;
+    int fmle_unpublish_count_;
+
+public:
+    MockRtmpServerForHandlePublishMessage();
+    virtual ~MockRtmpServerForHandlePublishMessage();
+
+public:
+    virtual void set_recv_timeout(srs_utime_t tm);
+    virtual void set_send_timeout(srs_utime_t tm);
+    virtual srs_error_t handshake();
+    virtual srs_error_t connect_app(ISrsRequest *req);
+    virtual uint32_t proxy_real_ip();
+    virtual srs_error_t set_window_ack_size(int ack_size);
+    virtual srs_error_t set_peer_bandwidth(int bandwidth, int type);
+    virtual srs_error_t set_chunk_size(int chunk_size);
+    virtual srs_error_t response_connect_app(ISrsRequest *req, const char *server_ip);
+    virtual srs_error_t on_bw_done();
+    virtual srs_error_t identify_client(int stream_id, SrsRtmpConnType &type, std::string &stream_name, srs_utime_t &duration);
+    virtual srs_error_t start_play(int stream_id);
+    virtual srs_error_t start_fmle_publish(int stream_id);
+    virtual srs_error_t start_haivision_publish(int stream_id);
+    virtual srs_error_t fmle_unpublish(int stream_id, double unpublish_tid);
+    virtual srs_error_t start_flash_publish(int stream_id);
+    virtual srs_error_t start_publishing(int stream_id);
+    virtual srs_error_t redirect(ISrsRequest *r, std::string url, bool &accepted);
+    virtual srs_error_t send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs, int stream_id);
+    virtual srs_error_t decode_message(SrsRtmpCommonMessage *msg, SrsRtmpCommand **ppacket);
+    virtual srs_error_t send_and_free_packet(SrsRtmpCommand *packet, int stream_id);
+    virtual srs_error_t on_play_client_pause(int stream_id, bool is_pause);
+    virtual srs_error_t set_in_window_ack_size(int ack_size);
+    virtual srs_error_t recv_message(SrsRtmpCommonMessage **pmsg);
+    virtual void set_auto_response(bool v);
+    virtual void set_merge_read(bool v, IMergeReadHandler *handler);
+    virtual void set_recv_buffer(int buffer_size);
+
+    void reset();
+};
+
+// Mock ISrsRtmpServer for testing SrsRtmpConn::process_play_control_msg()
+class MockRtmpServerForPlayControl : public ISrsRtmpServer
+{
+public:
+    SrsRtmpCommand* decode_message_packet_;
+    int decode_message_count_;
+    int send_and_free_packet_count_;
+    int on_play_client_pause_count_;
+    bool last_pause_state_;
+
+public:
+    MockRtmpServerForPlayControl();
+    virtual ~MockRtmpServerForPlayControl();
+
+public:
+    virtual void set_recv_timeout(srs_utime_t tm);
+    virtual void set_send_timeout(srs_utime_t tm);
+    virtual srs_error_t handshake();
+    virtual srs_error_t connect_app(ISrsRequest *req);
+    virtual uint32_t proxy_real_ip();
+    virtual srs_error_t set_window_ack_size(int ack_size);
+    virtual srs_error_t set_peer_bandwidth(int bandwidth, int type);
+    virtual srs_error_t set_chunk_size(int chunk_size);
+    virtual srs_error_t response_connect_app(ISrsRequest *req, const char *server_ip);
+    virtual srs_error_t on_bw_done();
+    virtual srs_error_t identify_client(int stream_id, SrsRtmpConnType &type, std::string &stream_name, srs_utime_t &duration);
+    virtual srs_error_t start_play(int stream_id);
+    virtual srs_error_t start_fmle_publish(int stream_id);
+    virtual srs_error_t start_haivision_publish(int stream_id);
+    virtual srs_error_t fmle_unpublish(int stream_id, double unpublish_tid);
+    virtual srs_error_t start_flash_publish(int stream_id);
+    virtual srs_error_t start_publishing(int stream_id);
+    virtual srs_error_t redirect(ISrsRequest *r, std::string url, bool &accepted);
+    virtual srs_error_t send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs, int stream_id);
+    virtual srs_error_t decode_message(SrsRtmpCommonMessage *msg, SrsRtmpCommand **ppacket);
+    virtual srs_error_t send_and_free_packet(SrsRtmpCommand *packet, int stream_id);
+    virtual srs_error_t on_play_client_pause(int stream_id, bool is_pause);
+    virtual srs_error_t set_in_window_ack_size(int ack_size);
+    virtual srs_error_t recv_message(SrsRtmpCommonMessage **pmsg);
+    virtual void set_auto_response(bool v);
+    virtual void set_merge_read(bool v, IMergeReadHandler *handler);
+    virtual void set_recv_buffer(int buffer_size);
+
+    void reset();
+};
+
+// Mock SrsLiveConsumer for testing SrsRtmpConn::process_play_control_msg()
+class MockLiveConsumerForPlayControl : public SrsLiveConsumer
+{
+public:
+    int on_play_client_pause_count_;
+    bool last_pause_state_;
+
+public:
+    MockLiveConsumerForPlayControl(ISrsLiveSource *source);
+    virtual ~MockLiveConsumerForPlayControl();
+
+public:
+    virtual srs_error_t on_play_client_pause(bool is_pause);
+};
+
+// Mock ISrsAppConfig for testing SrsRtmpConn::http_hooks_on_connect()
+class MockAppConfigForHttpHooksOnConnect : public MockAppConfig
+{
+public:
+    bool http_hooks_enabled_;
+    SrsConfDirective *on_connect_directive_;
+
+public:
+    MockAppConfigForHttpHooksOnConnect();
+    virtual ~MockAppConfigForHttpHooksOnConnect();
+
+public:
+    virtual bool get_vhost_http_hooks_enabled(std::string vhost);
+    virtual SrsConfDirective *get_vhost_on_connect(std::string vhost);
+};
+
+// Mock ISrsHttpHooks for testing SrsRtmpConn::http_hooks_on_connect() and http_hooks_on_close()
+class MockHttpHooksForOnConnect : public ISrsHttpHooks
+{
+public:
+    std::vector<std::pair<std::string, ISrsRequest *> > on_connect_calls_;
+    int on_connect_count_;
+    srs_error_t on_connect_error_;
+
+    // For on_close tracking
+    struct OnCloseCall {
+        std::string url_;
+        ISrsRequest *req_;
+        int64_t send_bytes_;
+        int64_t recv_bytes_;
+    };
+    std::vector<OnCloseCall> on_close_calls_;
+    int on_close_count_;
+
+    // For on_unpublish tracking
+    std::vector<std::pair<std::string, ISrsRequest *> > on_unpublish_calls_;
+    int on_unpublish_count_;
+
+    // For on_stop tracking
+    std::vector<std::pair<std::string, ISrsRequest *> > on_stop_calls_;
+    int on_stop_count_;
+
+public:
+    MockHttpHooksForOnConnect();
+    virtual ~MockHttpHooksForOnConnect();
+
+public:
+    virtual srs_error_t on_connect(std::string url, ISrsRequest *req);
+    virtual void on_close(std::string url, ISrsRequest *req, int64_t send_bytes, int64_t recv_bytes);
+    virtual srs_error_t on_publish(std::string url, ISrsRequest *req);
+    virtual void on_unpublish(std::string url, ISrsRequest *req);
+    virtual srs_error_t on_play(std::string url, ISrsRequest *req);
+    virtual void on_stop(std::string url, ISrsRequest *req);
+    virtual srs_error_t on_dvr(SrsContextId cid, std::string url, ISrsRequest *req, std::string file);
+    virtual srs_error_t on_hls(SrsContextId cid, std::string url, ISrsRequest *req, std::string file, std::string ts_url,
+                               std::string m3u8, std::string m3u8_url, int sn, srs_utime_t duration);
+    virtual srs_error_t on_hls_notify(SrsContextId cid, std::string url, ISrsRequest *req, std::string ts_url, int nb_notify);
+    virtual srs_error_t discover_co_workers(std::string url, std::string &host, int &port);
+    virtual srs_error_t on_forward_backend(std::string url, ISrsRequest *req, std::vector<std::string> &rtmp_urls);
+
+    void reset();
+};
+
+// Mock ISrsAppConfig for testing SrsRtmpConn::http_hooks_on_close()
+class MockAppConfigForHttpHooksOnClose : public MockAppConfig
+{
+public:
+    bool http_hooks_enabled_;
+    SrsConfDirective *on_close_directive_;
+
+public:
+    MockAppConfigForHttpHooksOnClose();
+    virtual ~MockAppConfigForHttpHooksOnClose();
+
+public:
+    virtual bool get_vhost_http_hooks_enabled(std::string vhost);
+    virtual SrsConfDirective *get_vhost_on_close(std::string vhost);
+};
+
+// Mock ISrsAppConfig for testing SrsRtmpConn::http_hooks_on_publish()
+class MockAppConfigForHttpHooksOnPublish : public MockAppConfig
+{
+public:
+    bool http_hooks_enabled_;
+    SrsConfDirective *on_publish_directive_;
+
+public:
+    MockAppConfigForHttpHooksOnPublish();
+    virtual ~MockAppConfigForHttpHooksOnPublish();
+
+public:
+    virtual bool get_vhost_http_hooks_enabled(std::string vhost);
+    virtual SrsConfDirective *get_vhost_on_publish(std::string vhost);
+};
+
+// Mock ISrsHttpHooks for testing SrsRtmpConn::http_hooks_on_publish()
+class MockHttpHooksForOnPublish : public ISrsHttpHooks
+{
+public:
+    std::vector<std::pair<std::string, ISrsRequest *> > on_publish_calls_;
+    int on_publish_count_;
+    srs_error_t on_publish_error_;
+
+public:
+    MockHttpHooksForOnPublish();
+    virtual ~MockHttpHooksForOnPublish();
+
+public:
+    virtual srs_error_t on_connect(std::string url, ISrsRequest *req);
+    virtual void on_close(std::string url, ISrsRequest *req, int64_t send_bytes, int64_t recv_bytes);
+    virtual srs_error_t on_publish(std::string url, ISrsRequest *req);
+    virtual void on_unpublish(std::string url, ISrsRequest *req);
+    virtual srs_error_t on_play(std::string url, ISrsRequest *req);
+    virtual void on_stop(std::string url, ISrsRequest *req);
+    virtual srs_error_t on_dvr(SrsContextId cid, std::string url, ISrsRequest *req, std::string file);
+    virtual srs_error_t on_hls(SrsContextId cid, std::string url, ISrsRequest *req, std::string file, std::string ts_url,
+                               std::string m3u8, std::string m3u8_url, int sn, srs_utime_t duration);
+    virtual srs_error_t on_hls_notify(SrsContextId cid, std::string url, ISrsRequest *req, std::string ts_url, int nb_notify);
+    virtual srs_error_t discover_co_workers(std::string url, std::string &host, int &port);
+    virtual srs_error_t on_forward_backend(std::string url, ISrsRequest *req, std::vector<std::string> &rtmp_urls);
+
+    void reset();
+};
+
+// Mock ISrsAppConfig for testing SrsRtmpConn::http_hooks_on_unpublish()
+class MockAppConfigForHttpHooksOnUnpublish : public MockAppConfig
+{
+public:
+    bool http_hooks_enabled_;
+    SrsConfDirective *on_unpublish_directive_;
+
+public:
+    MockAppConfigForHttpHooksOnUnpublish();
+    virtual ~MockAppConfigForHttpHooksOnUnpublish();
+
+public:
+    virtual bool get_vhost_http_hooks_enabled(std::string vhost);
+    virtual SrsConfDirective *get_vhost_on_unpublish(std::string vhost);
+};
+
+// Mock ISrsAppConfig for testing SrsRtmpConn::http_hooks_on_stop()
+class MockAppConfigForHttpHooksOnStop : public MockAppConfig
+{
+public:
+    bool http_hooks_enabled_;
+    SrsConfDirective *on_stop_directive_;
+
+public:
+    MockAppConfigForHttpHooksOnStop();
+    virtual ~MockAppConfigForHttpHooksOnStop();
+
+public:
+    virtual bool get_vhost_http_hooks_enabled(std::string vhost);
+    virtual SrsConfDirective *get_vhost_on_stop(std::string vhost);
+};
+
+// Mock ISrsAppConfig for testing SrsRtmpConn::http_hooks_on_play()
+class MockAppConfigForHttpHooksOnPlay : public MockAppConfig
+{
+public:
+    bool http_hooks_enabled_;
+    SrsConfDirective *on_play_directive_;
+
+public:
+    MockAppConfigForHttpHooksOnPlay();
+    virtual ~MockAppConfigForHttpHooksOnPlay();
+
+public:
+    virtual bool get_vhost_http_hooks_enabled(std::string vhost);
+    virtual SrsConfDirective *get_vhost_on_play(std::string vhost);
+};
+
+// Mock ISrsHttpHooks for testing SrsRtmpConn::http_hooks_on_play()
+class MockHttpHooksForOnPlay : public ISrsHttpHooks
+{
+public:
+    std::vector<std::pair<std::string, ISrsRequest *> > on_play_calls_;
+    int on_play_count_;
+    srs_error_t on_play_error_;
+
+public:
+    MockHttpHooksForOnPlay();
+    virtual ~MockHttpHooksForOnPlay();
+
+public:
+    virtual srs_error_t on_connect(std::string url, ISrsRequest *req);
+    virtual void on_close(std::string url, ISrsRequest *req, int64_t send_bytes, int64_t recv_bytes);
+    virtual srs_error_t on_publish(std::string url, ISrsRequest *req);
+    virtual void on_unpublish(std::string url, ISrsRequest *req);
+    virtual srs_error_t on_play(std::string url, ISrsRequest *req);
+    virtual void on_stop(std::string url, ISrsRequest *req);
+    virtual srs_error_t on_dvr(SrsContextId cid, std::string url, ISrsRequest *req, std::string file);
+    virtual srs_error_t on_hls(SrsContextId cid, std::string url, ISrsRequest *req, std::string file, std::string ts_url,
+                               std::string m3u8, std::string m3u8_url, int sn, srs_utime_t duration);
+    virtual srs_error_t on_hls_notify(SrsContextId cid, std::string url, ISrsRequest *req, std::string ts_url, int nb_notify);
+    virtual srs_error_t discover_co_workers(std::string url, std::string &host, int &port);
+    virtual srs_error_t on_forward_backend(std::string url, ISrsRequest *req, std::vector<std::string> &rtmp_urls);
+
+    void reset();
+};
+
+// Mock ISrsAppConfig for testing SrsRtmpConn::acquire_publish()
+class MockAppConfigForAcquirePublish : public MockAppConfigForRtmpConn
+{
+public:
+    bool rtc_server_enabled_;
+    bool rtc_enabled_;
+    bool srt_enabled_;
+    bool rtsp_server_enabled_;
+    bool rtsp_enabled_;
+
+public:
+    MockAppConfigForAcquirePublish();
+    virtual ~MockAppConfigForAcquirePublish();
+
+public:
+    virtual bool get_rtc_server_enabled();
+    virtual bool get_rtc_enabled(std::string vhost);
+    virtual bool get_srt_enabled();
+    virtual bool get_srt_enabled(std::string vhost);
+    virtual bool get_rtsp_server_enabled();
+    virtual bool get_rtsp_enabled(std::string vhost);
 };
 
 #endif

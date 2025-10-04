@@ -26,6 +26,7 @@ class ISrsRequest;
 class SrsLiveConsumer;
 class SrsHttpConn;
 class SrsHttpxConn;
+class ISrsRtmpServer;
 
 // The message consumer which consume a message.
 class ISrsMessageConsumer
@@ -66,15 +67,15 @@ class SrsRecvThread : public ISrsCoroutineHandler
 protected:
     ISrsCoroutine *trd_;
     ISrsMessagePumper *pumper_;
-    SrsRtmpServer *rtmp_;
-    SrsContextId _parent_cid;
+    ISrsRtmpServer *rtmp_;
+    SrsContextId parent_cid_;
     // The recv timeout in srs_utime_t.
     srs_utime_t timeout_;
 
 public:
     // Constructor.
     // @param tm The receive timeout in srs_utime_t.
-    SrsRecvThread(ISrsMessagePumper *p, SrsRtmpServer *r, srs_utime_t tm, SrsContextId parent_cid);
+    SrsRecvThread(ISrsMessagePumper *p, ISrsRtmpServer *r, srs_utime_t tm, SrsContextId parent_cid);
     virtual ~SrsRecvThread();
 
 public:
@@ -101,14 +102,14 @@ class SrsQueueRecvThread : public ISrsMessagePumper
 private:
     std::vector<SrsRtmpCommonMessage *> queue_;
     SrsRecvThread trd_;
-    SrsRtmpServer *rtmp_;
+    ISrsRtmpServer *rtmp_;
     // The recv thread error code.
     srs_error_t recv_error_;
     SrsLiveConsumer *_consumer;
 
 public:
     // TODO: FIXME: Refine timeout in time unit.
-    SrsQueueRecvThread(SrsLiveConsumer *consumer, SrsRtmpServer *rtmp_sdk, srs_utime_t tm, SrsContextId parent_cid);
+    SrsQueueRecvThread(SrsLiveConsumer *consumer, ISrsRtmpServer *rtmp_sdk, srs_utime_t tm, SrsContextId parent_cid);
     virtual ~SrsQueueRecvThread();
 
 public:
@@ -140,7 +141,7 @@ class SrsPublishRecvThread : public ISrsMessagePumper, public ISrsReloadHandler
 private:
     uint32_t nn_msgs_for_yield_;
     SrsRecvThread trd_;
-    SrsRtmpServer *rtmp_;
+    ISrsRtmpServer *rtmp_;
     ISrsRequest *req_;
     // The msgs already got.
     int64_t _nb_msgs;
@@ -165,7 +166,7 @@ private:
     SrsContextId ncid_;
 
 public:
-    SrsPublishRecvThread(SrsRtmpServer *rtmp_sdk, ISrsRequest *_req,
+    SrsPublishRecvThread(ISrsRtmpServer *rtmp_sdk, ISrsRequest *_req,
                          int mr_sock_fd, srs_utime_t tm, SrsRtmpConn *conn, SrsSharedPtr<SrsLiveSource> source, SrsContextId parent_cid);
     virtual ~SrsPublishRecvThread();
 

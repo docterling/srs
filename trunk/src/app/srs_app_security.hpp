@@ -16,8 +16,19 @@
 
 class SrsConfDirective;
 
+// The security interface.
+class ISrsSecurity
+{
+public:
+    ISrsSecurity();
+    virtual ~ISrsSecurity();
+
+public:
+    virtual srs_error_t check(SrsRtmpConnType type, std::string ip, ISrsRequest *req) = 0;
+};
+
 // The security apply on vhost.
-class SrsSecurity
+class SrsSecurity : public ISrsSecurity
 {
 public:
     SrsSecurity();

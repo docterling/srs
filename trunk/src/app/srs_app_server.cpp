@@ -1507,12 +1507,12 @@ srs_error_t SrsServer::do_on_tcp_client(ISrsListener *listener, srs_netfd_t &stf
     if (!resource) {
         if (listener == rtmp_listener_) {
             SrsRtmpTransport *transport = new SrsRtmpTransport(stfd2);
-            SrsRtmpConn *conn = new SrsRtmpConn(this, transport, ip, port);
+            SrsRtmpConn *conn = new SrsRtmpConn(transport, ip, port);
             conn->assemble();
             resource = conn;
         } else if (listener == rtmps_listener_) {
             SrsRtmpTransport *transport = new SrsRtmpsTransport(stfd2);
-            SrsRtmpConn *conn = new SrsRtmpConn(this, transport, ip, port);
+            SrsRtmpConn *conn = new SrsRtmpConn(transport, ip, port);
             conn->assemble();
             resource = conn;
         } else if (listener == api_listener_ || listener == apis_listener_) {

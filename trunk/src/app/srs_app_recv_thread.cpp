@@ -39,12 +39,12 @@ ISrsMessagePumper::~ISrsMessagePumper()
 {
 }
 
-SrsRecvThread::SrsRecvThread(ISrsMessagePumper *p, SrsRtmpServer *r, srs_utime_t tm, SrsContextId parent_cid)
+SrsRecvThread::SrsRecvThread(ISrsMessagePumper *p, ISrsRtmpServer *r, srs_utime_t tm, SrsContextId parent_cid)
 {
     rtmp_ = r;
     pumper_ = p;
     timeout_ = tm;
-    _parent_cid = parent_cid;
+    parent_cid_ = parent_cid;
     trd_ = new SrsDummyCoroutine();
 }
 
@@ -63,7 +63,7 @@ srs_error_t SrsRecvThread::start()
     srs_error_t err = srs_success;
 
     srs_freep(trd_);
-    trd_ = new SrsSTCoroutine("recv", this, _parent_cid);
+    trd_ = new SrsSTCoroutine("recv", this, parent_cid_);
 
     // change stack size to 256K, fix crash when call some 3rd-part api.
     ((SrsSTCoroutine *)trd_)->set_stack_size(1 << 18);
@@ -144,7 +144,7 @@ srs_error_t SrsRecvThread::do_cycle()
     return err;
 }
 
-SrsQueueRecvThread::SrsQueueRecvThread(SrsLiveConsumer *consumer, SrsRtmpServer *rtmp_sdk, srs_utime_t tm, SrsContextId parent_cid)
+SrsQueueRecvThread::SrsQueueRecvThread(SrsLiveConsumer *consumer, ISrsRtmpServer *rtmp_sdk, srs_utime_t tm, SrsContextId parent_cid)
     : trd_(this, rtmp_sdk, tm, parent_cid)
 {
     _consumer = consumer;
@@ -257,7 +257,7 @@ void SrsQueueRecvThread::on_stop()
     rtmp_->set_auto_response(true);
 }
 
-SrsPublishRecvThread::SrsPublishRecvThread(SrsRtmpServer *rtmp_sdk, ISrsRequest *_req,
+SrsPublishRecvThread::SrsPublishRecvThread(ISrsRtmpServer *rtmp_sdk, ISrsRequest *_req,
                                            int mr_sock_fd, srs_utime_t tm, SrsRtmpConn *conn, SrsSharedPtr<SrsLiveSource> source, SrsContextId parent_cid)
     : trd_(this, rtmp_sdk, tm, parent_cid)
 {

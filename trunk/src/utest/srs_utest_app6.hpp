@@ -709,6 +709,8 @@ public:
     virtual ~MockLiveSource();
     virtual bool can_publish(bool is_edge);
     void set_can_publish(bool can_publish);
+    virtual srs_error_t on_publish();
+    virtual srs_error_t on_edge_start_publish();
 };
 
 // Mock SRT source for testing SrsRtcPublishStream

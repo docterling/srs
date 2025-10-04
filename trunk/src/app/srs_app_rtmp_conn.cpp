@@ -48,6 +48,14 @@ using namespace std;
 // the timeout in srs_utime_t to wait encoder to republish
 // if timeout, close the connection.
 #define SRS_REPUBLISH_SEND_TIMEOUT (3 * SRS_UTIME_MINUTES)
+
+ISrsRtmpTransport::ISrsRtmpTransport()
+{
+}
+
+ISrsRtmpTransport::~ISrsRtmpTransport()
+{
+}
 // if timeout, close the connection.
 #define SRS_REPUBLISH_RECV_TIMEOUT (3 * SRS_UTIME_MINUTES)
 
@@ -183,12 +191,10 @@ const char *SrsRtmpsTransport::transport_type()
     return "ssl";
 }
 
-SrsRtmpConn::SrsRtmpConn(SrsServer *svr, SrsRtmpTransport *transport, string cip, int cport)
+SrsRtmpConn::SrsRtmpConn(ISrsRtmpTransport *transport, string cip, int cport)
 {
     // Create a identify for this client.
     _srs_context->set_id(_srs_context->generate_id());
-
-    server_ = svr;
 
     transport_ = transport;
     ip_ = cip;
@@ -226,7 +232,9 @@ SrsRtmpConn::SrsRtmpConn(SrsServer *svr, SrsRtmpTransport *transport, string cip
     hooks_ = _srs_hooks;
     rtc_sources_ = _srs_rtc_sources;
     srt_sources_ = _srs_srt_sources;
+#ifdef SRS_RTSP
     rtsp_sources_ = _srs_rtsp_sources;
+#endif
 }
 
 void SrsRtmpConn::assemble()
@@ -261,7 +269,9 @@ SrsRtmpConn::~SrsRtmpConn()
     hooks_ = NULL;
     rtc_sources_ = NULL;
     srt_sources_ = NULL;
+#ifdef SRS_RTSP
     rtsp_sources_ = NULL;
+#endif
 }
 
 std::string SrsRtmpConn::desc()
@@ -635,6 +645,11 @@ srs_error_t SrsRtmpConn::playing(SrsSharedPtr<SrsLiveSource> source)
 {
     srs_error_t err = srs_success;
 
+    // Check whether thread is quiting.
+    if ((err = trd_->pull()) != srs_success) {
+        return srs_error_wrap(err, "thread");
+    }
+
     // Check page referer of player.
     ISrsRequest *req = info_->req_;
     if (config_->get_refer_enabled(req->vhost_)) {
@@ -845,6 +860,11 @@ srs_error_t SrsRtmpConn::do_playing(SrsSharedPtr<SrsLiveSource> source, SrsLiveC
 srs_error_t SrsRtmpConn::publishing(SrsSharedPtr<SrsLiveSource> source)
 {
     srs_error_t err = srs_success;
+
+    // Check whether thread is quiting.
+    if ((err = trd_->pull()) != srs_success) {
+        return srs_error_wrap(err, "thread");
+    }
 
     ISrsRequest *req = info_->req_;
 

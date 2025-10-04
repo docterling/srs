@@ -4374,6 +4374,18 @@ void MockLiveSource::set_can_publish(bool can_publish)
     can_publish_result_ = can_publish;
 }
 
+srs_error_t MockLiveSource::on_publish()
+{
+    // Mock implementation - just return success
+    return srs_success;
+}
+
+srs_error_t MockLiveSource::on_edge_start_publish()
+{
+    // Mock implementation - just return success
+    return srs_success;
+}
+
 // Mock SRT source implementation
 MockSrtSource::MockSrtSource()
 {

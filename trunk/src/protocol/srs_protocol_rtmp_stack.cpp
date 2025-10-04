@@ -2150,6 +2150,14 @@ srs_error_t SrsRtmpClient::fmle_publish(string stream, int &stream_id)
     return err;
 }
 
+ISrsRtmpServer::ISrsRtmpServer()
+{
+}
+
+ISrsRtmpServer::~ISrsRtmpServer()
+{
+}
+
 SrsRtmpServer::SrsRtmpServer(ISrsProtocolReadWriter *skt)
 {
     io_ = skt;
