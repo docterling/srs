@@ -438,7 +438,7 @@ ISrsHttpRequestWriter::~ISrsHttpRequestWriter()
 
 ISrsHttpHandler::ISrsHttpHandler()
 {
-    entry = NULL;
+    entry_ = NULL;
 }
 
 ISrsHttpHandler::~ISrsHttpHandler()
@@ -555,25 +555,25 @@ void SrsHttpFileServer::set_path(SrsPath *v)
 
 srs_error_t SrsHttpFileServer::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r)
 {
-    srs_assert(entry);
+    srs_assert(entry_);
 
     // For each HTTP session, we use short-term HTTP connection.
     SrsHttpHeader *hdr = w->header();
     hdr->set("Connection", "Close");
 
     string upath = r->path();
-    string fullpath = srs_http_fs_fullpath(dir, entry->pattern, upath);
+    string fullpath = srs_http_fs_fullpath(dir, entry_->pattern, upath);
     SrsPath path;
     string basename = path.filepath_base(upath);
 
     // stat current dir, if exists, return error.
     if (!path_->exists(fullpath)) {
         srs_warn("http miss file=%s, pattern=%s, upath=%s",
-                 fullpath.c_str(), entry->pattern.c_str(), upath.c_str());
+                 fullpath.c_str(), entry_->pattern.c_str(), upath.c_str());
         return SrsHttpNotFoundHandler().serve_http(w, r);
     }
     srs_trace("http match file=%s, pattern=%s, upath=%s",
-              fullpath.c_str(), entry->pattern.c_str(), upath.c_str());
+              fullpath.c_str(), entry_->pattern.c_str(), upath.c_str());
 
     // handle file according to its extension.
     // use vod stream for .flv/.fhv
@@ -879,7 +879,7 @@ srs_error_t SrsHttpServeMux::handle(std::string pattern, ISrsHttpHandler *handle
         entry->explicit_match = true;
         entry->handler = handler;
         entry->pattern = pattern;
-        entry->handler->entry = entry;
+        entry->handler->entry_ = entry;
 
         if (static_matchers_.find(pattern) != static_matchers_.end()) {
             SrsHttpMuxEntry *exists = static_matchers_[pattern];
@@ -908,7 +908,7 @@ srs_error_t SrsHttpServeMux::handle(std::string pattern, ISrsHttpHandler *handle
             entry->explicit_match = false;
             entry->handler = new SrsHttpRedirectHandler(pattern, SRS_CONSTS_HTTP_Found);
             entry->pattern = pattern;
-            entry->handler->entry = entry;
+            entry->handler->entry_ = entry;
 
             static_matchers_[rpattern] = entry;
         }

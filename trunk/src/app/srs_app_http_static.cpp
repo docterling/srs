@@ -599,9 +599,8 @@ srs_error_t SrsVodStream::serve_ts_ctx(ISrsHttpResponseWriter *w, ISrsHttpMessag
     return err;
 }
 
-SrsHttpStaticServer::SrsHttpStaticServer(SrsServer *svr)
+SrsHttpStaticServer::SrsHttpStaticServer()
 {
-    server_ = svr;
     _srs_config->subscribe(this);
 }
 

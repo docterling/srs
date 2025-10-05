@@ -287,6 +287,7 @@ public:
     virtual srs_error_t reload(SrsReloadState *pstate) = 0;
     virtual srs_error_t persistence() = 0;
     virtual std::string config() = 0;
+    virtual SrsConfDirective *get_root() = 0;
 
 public:
     // Global server config
@@ -373,6 +374,7 @@ public:
     // Vhost config
     virtual SrsConfDirective *get_vhost(std::string vhost, bool try_default_vhost = true) = 0;
     virtual bool get_vhost_enabled(std::string vhost) = 0;
+    virtual bool get_vhost_enabled(SrsConfDirective *conf) = 0;
     virtual bool get_debug_srs_upnode(std::string vhost) = 0;
     virtual int get_out_ack_size(std::string vhost) = 0;
     virtual int get_in_ack_size(std::string vhost) = 0;
@@ -479,6 +481,17 @@ public:
     virtual bool get_atc_auto(std::string vhost) = 0;
     virtual bool get_reduce_sequence_header(std::string vhost) = 0;
     virtual bool get_parse_sps(std::string vhost) = 0;
+
+public:
+    // HTTP remux config
+    virtual bool get_vhost_http_remux_enabled(std::string vhost) = 0;
+    virtual bool get_vhost_http_remux_enabled(SrsConfDirective *vhost) = 0;
+    virtual srs_utime_t get_vhost_http_remux_fast_cache(std::string vhost) = 0;
+    virtual bool get_vhost_http_remux_drop_if_not_match(std::string vhost) = 0;
+    virtual bool get_vhost_http_remux_has_audio(std::string vhost) = 0;
+    virtual bool get_vhost_http_remux_has_video(std::string vhost) = 0;
+    virtual bool get_vhost_http_remux_guess_has_av(std::string vhost) = 0;
+    virtual std::string get_vhost_http_remux_mount(std::string vhost) = 0;
 };
 
 // The config service provider.

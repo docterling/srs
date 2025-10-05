@@ -16,8 +16,19 @@
 class SrsBuffer;
 class ISrsStreamWriter;
 
+class ISrsAacTransmuxer
+{
+public:
+    ISrsAacTransmuxer();
+    virtual ~ISrsAacTransmuxer();
+
+public:
+    virtual srs_error_t initialize(ISrsStreamWriter *fs) = 0;
+    virtual srs_error_t write_audio(int64_t timestamp, char *data, int size) = 0;
+};
+
 // Transmux the RTMP packets to AAC stream.
-class SrsAacTransmuxer
+class SrsAacTransmuxer : public ISrsAacTransmuxer
 {
 private:
     ISrsStreamWriter *writer_;

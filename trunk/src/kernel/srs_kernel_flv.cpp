@@ -331,6 +331,14 @@ void SrsRtmpCommonMessage::to_msg(SrsMediaPacket *msg)
     msg->message_type_ = (SrsFrameType)header_.message_type_;
 }
 
+ISrsFlvTransmuxer::ISrsFlvTransmuxer()
+{
+}
+
+ISrsFlvTransmuxer::~ISrsFlvTransmuxer()
+{
+}
+
 SrsFlvTransmuxer::SrsFlvTransmuxer()
 {
     writer_ = NULL;
@@ -777,7 +785,7 @@ srs_error_t SrsFlvVodStreamDecoder::initialize(ISrsReader *fr)
     srs_error_t err = srs_success;
 
     srs_assert(fr);
-    reader_ = dynamic_cast<SrsFileReader *>(fr);
+    reader_ = dynamic_cast<ISrsFileReader *>(fr);
     if (!reader_) {
         return srs_error_new(ERROR_EXPECT_FILE_IO, "stream is not file io");
     }

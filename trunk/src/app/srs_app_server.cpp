@@ -175,7 +175,7 @@ SrsServer::SrsServer()
     stream_caster_gb28181_ = new SrsGbListener();
 #endif
 
-    http_server_ = new SrsHttpServer(this);
+    http_server_ = new SrsHttpServer();
     reuse_api_over_server_ = false;
     reuse_rtc_over_server_ = false;
 
@@ -1017,7 +1017,7 @@ srs_error_t SrsServer::do2_cycle()
             srs_trace("reload config success, state=%d.", state);
         }
     }
-    
+
     return err;
 }
 

@@ -224,6 +224,14 @@ void SrsFastVector::free()
 }
 #endif
 
+ISrsMessageQueue::ISrsMessageQueue()
+{
+}
+
+ISrsMessageQueue::~ISrsMessageQueue()
+{
+}
+
 SrsMessageQueue::SrsMessageQueue(bool ignore_shrink)
 {
     _ignore_shrink = ignore_shrink;
@@ -316,7 +324,7 @@ srs_error_t SrsMessageQueue::dump_packets(int max_count, SrsMediaPacket **pmsgs,
     return err;
 }
 
-srs_error_t SrsMessageQueue::dump_packets(SrsLiveConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm ag)
+srs_error_t SrsMessageQueue::dump_packets(ISrsLiveConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm ag)
 {
     srs_error_t err = srs_success;
 
@@ -401,6 +409,14 @@ ISrsWakable::ISrsWakable()
 }
 
 ISrsWakable::~ISrsWakable()
+{
+}
+
+ISrsLiveConsumer::ISrsLiveConsumer()
+{
+}
+
+ISrsLiveConsumer::~ISrsLiveConsumer()
 {
 }
 
@@ -681,7 +697,7 @@ void SrsGopCache::clear()
     audio_after_last_video_count_ = 0;
 }
 
-srs_error_t SrsGopCache::dump(SrsLiveConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm jitter_algorithm)
+srs_error_t SrsGopCache::dump(ISrsLiveConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm jitter_algorithm)
 {
     srs_error_t err = srs_success;
 
@@ -1441,7 +1457,7 @@ SrsFormat *SrsMetaCache::ash_format()
     return aformat_;
 }
 
-srs_error_t SrsMetaCache::dumps(SrsLiveConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm ag, bool dm, bool ds)
+srs_error_t SrsMetaCache::dumps(ISrsLiveConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm ag, bool dm, bool ds)
 {
     srs_error_t err = srs_success;
 
@@ -2495,7 +2511,7 @@ srs_error_t SrsLiveSource::create_consumer(SrsLiveConsumer *&consumer)
     return err;
 }
 
-srs_error_t SrsLiveSource::consumer_dumps(SrsLiveConsumer *consumer, bool ds, bool dm, bool dg)
+srs_error_t SrsLiveSource::consumer_dumps(ISrsLiveConsumer *consumer, bool ds, bool dm, bool dg)
 {
     srs_error_t err = srs_success;
 

@@ -56,6 +56,7 @@ SrsPps::SrsPps()
 
 SrsPps::~SrsPps()
 {
+    clk_ = NULL;
 }
 
 void SrsPps::update()
@@ -100,6 +101,14 @@ int SrsPps::r10s()
 int SrsPps::r30s()
 {
     return sample_30s_.rate_;
+}
+
+ISrsClock::ISrsClock()
+{
+}
+
+ISrsClock::~ISrsClock()
+{
 }
 
 SrsWallClock::SrsWallClock()
@@ -548,7 +557,7 @@ void srs_global_rtc_update(SrsKbsRtcStats *stats)
     }
 }
 
-SrsKbpsSlice::SrsKbpsSlice(SrsWallClock *c)
+SrsKbpsSlice::SrsKbpsSlice(ISrsClock *c)
 {
     clk_ = c;
     starttime_ = 0;
@@ -557,6 +566,7 @@ SrsKbpsSlice::SrsKbpsSlice(SrsWallClock *c)
 
 SrsKbpsSlice::~SrsKbpsSlice()
 {
+    clk_ = NULL;
 }
 
 void SrsKbpsSlice::sample()
@@ -674,7 +684,7 @@ void SrsNetworkDelta::remark(int64_t *in, int64_t *out)
     in_delta_ = out_delta_ = 0;
 }
 
-SrsKbps::SrsKbps(SrsWallClock *c)
+SrsKbps::SrsKbps(ISrsClock *c)
 {
     clk_ = c ? c : _srs_clock;
     is_ = new SrsKbpsSlice(clk_);
@@ -685,6 +695,7 @@ SrsKbps::~SrsKbps()
 {
     srs_freep(is_);
     srs_freep(os_);
+    clk_ = NULL;
 }
 
 int SrsKbps::get_send_kbps()
@@ -764,7 +775,7 @@ int64_t SrsKbps::get_recv_bytes()
     return is_->bytes_;
 }
 
-SrsNetworkKbps::SrsNetworkKbps(SrsWallClock *clock)
+SrsNetworkKbps::SrsNetworkKbps(ISrsClock *clock)
 {
     delta_ = new SrsNetworkDelta();
     kbps_ = new SrsKbps(clock);

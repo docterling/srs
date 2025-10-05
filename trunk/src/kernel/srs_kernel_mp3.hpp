@@ -12,15 +12,28 @@
 #include <string>
 
 class SrsBuffer;
-class SrsFileWriter;
+class ISrsFileWriter;
+
+// The interface for MP3 transmuxer.
+class ISrsMp3Transmuxer
+{
+public:
+    ISrsMp3Transmuxer();
+    virtual ~ISrsMp3Transmuxer();
+
+public:
+    virtual srs_error_t initialize(ISrsFileWriter *fw) = 0;
+    virtual srs_error_t write_header() = 0;
+    virtual srs_error_t write_audio(int64_t timestamp, char *data, int size) = 0;
+};
 
 /**
  * Transmux RTMP packet to MP3 stream.
  */
-class SrsMp3Transmuxer
+class SrsMp3Transmuxer : public ISrsMp3Transmuxer
 {
 private:
-    SrsFileWriter *writer_;
+    ISrsFileWriter *writer_;
 
 public:
     SrsMp3Transmuxer();
@@ -32,7 +45,7 @@ public:
      * @remark user can initialize multiple times to encode multiple mp3 files.
      * @remark, user must free the @param fw, mp3 encoder never close/free it.
      */
-    virtual srs_error_t initialize(SrsFileWriter *fw);
+    virtual srs_error_t initialize(ISrsFileWriter *fw);
 
 public:
     /**

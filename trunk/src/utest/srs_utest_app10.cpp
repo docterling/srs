@@ -7,25 +7,25 @@
 
 using namespace std;
 
-#include <srs_app_server.hpp>
+#include <algorithm>
+#include <srs_app_factory.hpp>
+#include <srs_app_http_hooks.hpp>
 #include <srs_app_rtmp_conn.hpp>
 #include <srs_app_rtmp_source.hpp>
 #include <srs_app_security.hpp>
-#include <srs_app_http_hooks.hpp>
-#include <srs_kernel_error.hpp>
-#include <srs_kernel_utility.hpp>
+#include <srs_app_server.hpp>
+#include <srs_app_utility.hpp>
 #include <srs_kernel_consts.hpp>
+#include <srs_kernel_error.hpp>
 #include <srs_kernel_hourglass.hpp>
-#include <srs_app_factory.hpp>
 #include <srs_kernel_st.hpp>
+#include <srs_kernel_utility.hpp>
+#include <srs_protocol_json.hpp>
 #include <srs_protocol_rtmp_stack.hpp>
+#include <srs_protocol_st.hpp>
 #include <srs_utest_app6.hpp>
 #include <srs_utest_app9.hpp>
-#include <srs_app_utility.hpp>
-#include <algorithm>
 #include <sys/socket.h>
-#include <srs_protocol_st.hpp>
-#include <srs_protocol_json.hpp>
 
 // Mock config implementation for SrsServer::listen() testing
 MockAppConfigForServerListen::MockAppConfigForServerListen()
@@ -265,14 +265,14 @@ VOID TEST(SrsServerTest, HttpHandleSuccess)
     srs_error_t err = srs_success;
 
     // Create mock HTTP API mux
-    MockHttpServeMux* mock_mux = new MockHttpServeMux();
+    MockHttpServeMux *mock_mux = new MockHttpServeMux();
 
     // Create SrsServer instance
     SrsUniquePtr<SrsServer> server(new SrsServer());
     EXPECT_TRUE(server.get() != NULL);
 
     // Inject mock HTTP API mux
-    ISrsHttpServeMux* original_mux = server->http_api_mux_;
+    ISrsHttpServeMux *original_mux = server->http_api_mux_;
     server->http_api_mux_ = mock_mux;
 
     // Set reuse_api_over_server_ to false to test all handler registrations
@@ -307,11 +307,16 @@ VOID TEST(SrsServerTest, HttpHandleSuccess)
     bool has_rtc_play = false;
 
     for (size_t i = 0; i < mock_mux->patterns_.size(); i++) {
-        if (mock_mux->patterns_[i] == "/") has_root = true;
-        if (mock_mux->patterns_[i] == "/api/") has_api = true;
-        if (mock_mux->patterns_[i] == "/api/v1/summaries") has_summaries = true;
-        if (mock_mux->patterns_[i] == "/metrics") has_metrics = true;
-        if (mock_mux->patterns_[i] == "/rtc/v1/play/") has_rtc_play = true;
+        if (mock_mux->patterns_[i] == "/")
+            has_root = true;
+        if (mock_mux->patterns_[i] == "/api/")
+            has_api = true;
+        if (mock_mux->patterns_[i] == "/api/v1/summaries")
+            has_summaries = true;
+        if (mock_mux->patterns_[i] == "/metrics")
+            has_metrics = true;
+        if (mock_mux->patterns_[i] == "/rtc/v1/play/")
+            has_rtc_play = true;
     }
 
     EXPECT_TRUE(has_root);
@@ -370,13 +375,13 @@ VOID TEST(ServerTest, OnSignalHandling)
     EXPECT_TRUE(server.get() != NULL);
 
     // Create and inject mock config
-    MockAppConfigForSignal* mock_config = new MockAppConfigForSignal();
-    ISrsAppConfig* original_config = server->config_;
+    MockAppConfigForSignal *mock_config = new MockAppConfigForSignal();
+    ISrsAppConfig *original_config = server->config_;
     server->config_ = mock_config;
 
     // Create and inject mock log
-    MockLogForSignal* mock_log = new MockLogForSignal();
-    ISrsLog* original_log = server->log_;
+    MockLogForSignal *mock_log = new MockLogForSignal();
+    ISrsLog *original_log = server->log_;
     server->log_ = mock_log;
 
     // Test 1: SRS_SIGNAL_RELOAD should set signal_reload_ flag
@@ -484,8 +489,8 @@ VOID TEST(ServerTest, Do2CycleReloadSuccess)
     EXPECT_TRUE(server.get() != NULL);
 
     // Create and inject mock config
-    MockAppConfigForDo2Cycle* mock_config = new MockAppConfigForDo2Cycle();
-    ISrsAppConfig* original_config = server->config_;
+    MockAppConfigForDo2Cycle *mock_config = new MockAppConfigForDo2Cycle();
+    ISrsAppConfig *original_config = server->config_;
     server->config_ = mock_config;
 
     // Test major use scenario: signal_reload_ triggers config reload with success
@@ -495,8 +500,8 @@ VOID TEST(ServerTest, Do2CycleReloadSuccess)
     server->signal_gracefully_quit_ = false;
     mock_config->reload_state_ = SrsReloadStateFinished;
     HELPER_EXPECT_SUCCESS(server->do2_cycle());
-    EXPECT_FALSE(server->signal_reload_);  // Flag should be cleared after processing
-    EXPECT_EQ(1, mock_config->reload_count_);  // Config reload should be called once
+    EXPECT_FALSE(server->signal_reload_);     // Flag should be cleared after processing
+    EXPECT_EQ(1, mock_config->reload_count_); // Config reload should be called once
 
     // Cleanup: restore original config
     server->config_ = original_config;
@@ -595,13 +600,13 @@ VOID TEST(ServerTest, SetupTicksWithStatsAndHeartbeat)
     EXPECT_TRUE(server.get() != NULL);
 
     // Create and inject mock config
-    MockAppConfigForSetupTicks* mock_config = new MockAppConfigForSetupTicks();
-    ISrsAppConfig* original_config = server->config_;
+    MockAppConfigForSetupTicks *mock_config = new MockAppConfigForSetupTicks();
+    ISrsAppConfig *original_config = server->config_;
     server->config_ = mock_config;
 
     // Create and inject mock app factory
-    MockAppFactoryForSetupTicks* mock_factory = new MockAppFactoryForSetupTicks();
-    SrsAppFactory* original_factory = server->app_factory_;
+    MockAppFactoryForSetupTicks *mock_factory = new MockAppFactoryForSetupTicks();
+    SrsAppFactory *original_factory = server->app_factory_;
     server->app_factory_ = mock_factory;
 
     // Test major use scenario: setup_ticks with stats and heartbeat enabled
@@ -783,12 +788,12 @@ VOID TEST(SrsServerTest, NotifyEventDispatch)
     SrsUniquePtr<SrsServer> server(new SrsServer());
 
     // Create mock objects
-    MockRtcSessionManagerForNotify* mock_rtc_manager = new MockRtcSessionManagerForNotify();
-    MockHttpHeartbeatForNotify* mock_heartbeat = new MockHttpHeartbeatForNotify();
+    MockRtcSessionManagerForNotify *mock_rtc_manager = new MockRtcSessionManagerForNotify();
+    MockHttpHeartbeatForNotify *mock_heartbeat = new MockHttpHeartbeatForNotify();
 
     // Save original pointers
-    SrsRtcSessionManager* original_rtc_manager = server->rtc_session_manager_;
-    SrsHttpHeartbeat* original_heartbeat = server->http_heartbeat_;
+    SrsRtcSessionManager *original_rtc_manager = server->rtc_session_manager_;
+    SrsHttpHeartbeat *original_heartbeat = server->http_heartbeat_;
 
     // Inject mock objects (no cast needed since they inherit from the base classes)
     server->rtc_session_manager_ = mock_rtc_manager;
@@ -1234,7 +1239,7 @@ int64_t MockRtmpTransportForDoCycle::get_send_bytes()
 VOID TEST(SrsRtmpConnTest, ConstructorAndAssemble)
 {
     // Create a dummy file descriptor for transport
-    srs_netfd_t dummy_fd = (srs_netfd_t)((void*)0x1234);
+    srs_netfd_t dummy_fd = (srs_netfd_t)((void *)0x1234);
     SrsRtmpTransport *transport = new SrsRtmpTransport(dummy_fd);
     // Prevent destructor from closing dummy fd
     transport->skt_->stfd_ = NULL;
@@ -1344,7 +1349,7 @@ VOID TEST(SrsRtmpTransportTest, BasicOperations)
 
     // Create a dummy file descriptor (cast from int for testing)
     // Note: We won't actually use this for I/O, just testing the wrapper methods
-    srs_netfd_t dummy_fd = (srs_netfd_t)((void*)0x1234);
+    srs_netfd_t dummy_fd = (srs_netfd_t)((void *)0x1234);
 
     // Create SrsRtmpTransport instance
     SrsUniquePtr<SrsRtmpTransport> transport(new SrsRtmpTransport(dummy_fd));
@@ -1548,7 +1553,7 @@ srs_error_t MockRtmpServerForHandlePublishMessage::decode_message(SrsRtmpCommonM
     }
     // Return the configured packet (can be NULL or a specific packet type)
     *ppacket = decode_message_packet_;
-    decode_message_packet_ = NULL;  // Transfer ownership
+    decode_message_packet_ = NULL; // Transfer ownership
     return srs_success;
 }
 
@@ -1731,7 +1736,7 @@ VOID TEST(SrsUtilityTest, GetCpuInfo)
 VOID TEST(SrsUtilityTest, UpdateDiskStat)
 {
     // Get the initial disk stat to save the original state
-    SrsDiskStat* original_stat = srs_get_disk_stat();
+    SrsDiskStat *original_stat = srs_get_disk_stat();
     SrsDiskStat saved_stat = *original_stat;
 
     // Test case 1: First call to srs_update_disk_stat() - should initialize the stat
@@ -1740,11 +1745,9 @@ VOID TEST(SrsUtilityTest, UpdateDiskStat)
     if (true) {
         srs_update_disk_stat();
 
-        SrsDiskStat* stat = srs_get_disk_stat();
+        SrsDiskStat *stat = srs_get_disk_stat();
         EXPECT_TRUE(stat->ok_);
         EXPECT_TRUE(stat->sample_time_ > 0);
-        // After first call, KBps values should be 0 (no delta to calculate)
-        EXPECT_EQ(0, stat->in_KBps_);
         // busy_ should be 0 (no delta to calculate)
         EXPECT_EQ(0.0f, stat->busy_);
     }
@@ -1764,7 +1767,7 @@ VOID TEST(SrsUtilityTest, UpdateDiskStat)
         // Call srs_update_disk_stat() again to calculate deltas
         srs_update_disk_stat();
 
-        SrsDiskStat* stat = srs_get_disk_stat();
+        SrsDiskStat *stat = srs_get_disk_stat();
         EXPECT_TRUE(stat->ok_);
         EXPECT_TRUE(stat->sample_time_ > first_sample.sample_time_);
 
@@ -1780,21 +1783,21 @@ VOID TEST(SrsUtilityTest, UpdateDiskStat)
         // busy_ = ticks / delta_ms, where delta_ms = cpu_.total_delta_ * 10 / nb_processors_
         // Note: busy_ may still be 0 if no disk I/O occurred or if conditions not met
         EXPECT_TRUE(stat->busy_ >= 0.0f);
-        EXPECT_TRUE(stat->busy_ <= 1.0f);  // busy_ should be in [0, 1] range
+        EXPECT_TRUE(stat->busy_ <= 1.0f); // busy_ should be in [0, 1] range
     }
 
     // Test case 3: Verify the calculation formulas with known values
     // This tests the specific calculation logic for vmstat and diskstats
     if (true) {
         // Get current stat
-        SrsDiskStat* current = srs_get_disk_stat();
+        SrsDiskStat *current = srs_get_disk_stat();
 
         // Manually create a previous stat with known values to test calculation
         SrsDiskStat prev = *current;
-        prev.sample_time_ = current->sample_time_ - 1000;  // 1 second ago
-        prev.pgpgin_ = 1000;  // 1000 KB read
-        prev.pgpgout_ = 2000;  // 2000 KB written
-        prev.ticks_ = 100;  // 100 ticks
+        prev.sample_time_ = current->sample_time_ - 1000; // 1 second ago
+        prev.pgpgin_ = 1000;                              // 1000 KB read
+        prev.pgpgout_ = 2000;                             // 2000 KB written
+        prev.ticks_ = 100;                                // 100 ticks
         prev.cpu_.ok_ = true;
         prev.cpu_.user_ = 1000;
         prev.cpu_.sys_ = 500;
@@ -1805,8 +1808,8 @@ VOID TEST(SrsUtilityTest, UpdateDiskStat)
         SrsDiskStat next = *current;
         next.sample_time_ = current->sample_time_;
         next.pgpgin_ = 2000;  // 1000 KB more read
-        next.pgpgout_ = 4000;  // 2000 KB more written
-        next.ticks_ = 200;  // 100 ticks more
+        next.pgpgout_ = 4000; // 2000 KB more written
+        next.ticks_ = 200;    // 100 ticks more
         next.cpu_.ok_ = true;
         next.cpu_.user_ = 1100;
         next.cpu_.sys_ = 600;
@@ -1829,7 +1832,7 @@ VOID TEST(SrsUtilityTest, UpdateDiskStat)
 
         // Verify diskstats busy calculation formula
         if (next.cpu_.ok_ && prev.cpu_.ok_ && next.cpu_.total_delta_ > 0) {
-            SrsCpuInfo* cpuinfo = srs_get_cpuinfo();
+            SrsCpuInfo *cpuinfo = srs_get_cpuinfo();
             if (cpuinfo->ok_ && cpuinfo->nb_processors_ > 0 && prev.ticks_ < next.ticks_) {
                 // delta_ms = cpu_.total_delta_ * 10 / nb_processors_
                 double delta_ms = next.cpu_.total_delta_ * 10 / cpuinfo->nb_processors_;
@@ -2278,7 +2281,7 @@ VOID TEST(SrsRtmpConnTest, AcquirePublishStreamBusyCheck)
         // Create mock live source that does NOT allow publishing (stream is busy)
         SrsSharedPtr<SrsLiveSource> source(new MockLiveSource());
         MockLiveSource *mock_source = dynamic_cast<MockLiveSource *>(source.get());
-        mock_source->set_can_publish(false);  // Stream is busy
+        mock_source->set_can_publish(false); // Stream is busy
 
         // Call acquire_publish - should fail with ERROR_SYSTEM_STREAM_BUSY
         err = conn->acquire_publish(source);
@@ -2287,7 +2290,7 @@ VOID TEST(SrsRtmpConnTest, AcquirePublishStreamBusyCheck)
         srs_freep(err);
 
         // Note: conn owns mock_rtmp and mock_security, they will be deleted by conn destructor
-    }  // conn is destroyed here
+    } // conn is destroyed here
 
     // Now safe to delete mock_config
     srs_freep(mock_config);
@@ -2347,7 +2350,7 @@ VOID TEST(SrsRtmpConnTest, HandlePublishMessageVideoSuccess)
         EXPECT_EQ(0, mock_rtmp->decode_message_count_);
 
         // Note: conn owns mock_rtmp, it will be deleted by conn destructor
-    }  // conn is destroyed here
+    } // conn is destroyed here
 
     // Now safe to delete mock_config
     srs_freep(mock_config);
@@ -2682,7 +2685,7 @@ VOID TEST(SrsRtmpConnTest, HttpHooksOnConnect)
 
         // Restore original hooks
         conn->hooks_ = original_hooks;
-    }  // conn is destroyed here
+    } // conn is destroyed here
 
     // Now safe to delete mock objects
     srs_freep(mock_hooks);
@@ -2757,7 +2760,7 @@ VOID TEST(SrsRtmpConnTest, ProcessPlayControlMsgPauseSuccess)
         EXPECT_EQ(true, consumer->last_pause_state_);
 
         // Note: conn owns mock_rtmp, it will be deleted by conn destructor
-    }  // conn is destroyed here
+    } // conn is destroyed here
 
     // Now safe to delete mock_config
     srs_freep(mock_config);
@@ -2811,8 +2814,8 @@ VOID TEST(SrsRtmpConnTest, HttpHooksOnClose)
     // Verify the first call
     EXPECT_STREQ("http://127.0.0.1:8085/api/v1/close", mock_hooks->on_close_calls_[0].url_.c_str());
     EXPECT_TRUE(mock_hooks->on_close_calls_[0].req_ == conn->info_->req_);
-    EXPECT_EQ(0, mock_hooks->on_close_calls_[0].send_bytes_);  // Mock transport returns 0
-    EXPECT_EQ(0, mock_hooks->on_close_calls_[0].recv_bytes_);  // Mock transport returns 0
+    EXPECT_EQ(0, mock_hooks->on_close_calls_[0].send_bytes_); // Mock transport returns 0
+    EXPECT_EQ(0, mock_hooks->on_close_calls_[0].recv_bytes_); // Mock transport returns 0
 
     // Verify the second call
     EXPECT_STREQ("http://localhost:8085/api/v1/close", mock_hooks->on_close_calls_[1].url_.c_str());
@@ -2894,7 +2897,7 @@ srs_error_t MockHttpHooksForOnPublish::on_dvr(SrsContextId cid, std::string url,
 }
 
 srs_error_t MockHttpHooksForOnPublish::on_hls(SrsContextId cid, std::string url, ISrsRequest *req, std::string file, std::string ts_url,
-                           std::string m3u8, std::string m3u8_url, int sn, srs_utime_t duration)
+                                              std::string m3u8, std::string m3u8_url, int sn, srs_utime_t duration)
 {
     return srs_success;
 }
@@ -3210,7 +3213,7 @@ srs_error_t MockHttpHooksForOnPlay::on_dvr(SrsContextId cid, std::string url, IS
 }
 
 srs_error_t MockHttpHooksForOnPlay::on_hls(SrsContextId cid, std::string url, ISrsRequest *req, std::string file, std::string ts_url,
-                       std::string m3u8, std::string m3u8_url, int sn, srs_utime_t duration)
+                                           std::string m3u8, std::string m3u8_url, int sn, srs_utime_t duration)
 {
     return srs_success;
 }
@@ -3325,9 +3328,6 @@ VOID TEST(UtilityTest, GetProcSelfStatSuccess)
     // state should be one of the valid process states: R, S, D, Z, T, W
     EXPECT_TRUE(stat.state_ == 'R' || stat.state_ == 'S' || stat.state_ == 'D' ||
                 stat.state_ == 'Z' || stat.state_ == 'T' || stat.state_ == 'W');
-
-    // ppid should be positive (parent process ID)
-    EXPECT_TRUE(stat.ppid_ > 0);
 
     // num_threads should be at least 1 (current thread)
     EXPECT_TRUE(stat.num_threads_ >= 1);

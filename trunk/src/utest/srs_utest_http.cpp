@@ -935,7 +935,7 @@ VOID TEST(ProtocolHTTPTest, HTTPServerMuxerBasic)
         MockHttpHandler *h1 = new MockHttpHandler("Done");
         HELPER_ASSERT_SUCCESS(s.handle("/api/", h1));
 
-        h1->entry->enabled = false;
+        h1->entry_->enabled = false;
 
         MockResponseWriter w;
         SrsHttpMessage r(NULL, NULL);
@@ -1480,7 +1480,7 @@ VOID TEST(ProtocolHTTPTest, VodStreamHandlers)
         SrsVodStream h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory(fs));
         h.set_path(new MockSrsPathAlwaysExists());
-        h.entry = &e;
+        h.entry_ = &e;
 
         MockResponseWriter w;
         SrsHttpMessage r(NULL, NULL);
@@ -1503,7 +1503,7 @@ VOID TEST(ProtocolHTTPTest, VodStreamHandlers)
         SrsVodStream h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("Hello, world!"));
         h.set_path(new MockSrsPathAlwaysExists());
-        h.entry = &e;
+        h.entry_ = &e;
 
         MockResponseWriter w;
         SrsHttpMessage r(NULL, NULL);
@@ -1520,7 +1520,7 @@ VOID TEST(ProtocolHTTPTest, VodStreamHandlers)
         SrsVodStream h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("Hello, world!"));
         h.set_path(new MockSrsPathAlwaysExists());
-        h.entry = &e;
+        h.entry_ = &e;
 
         MockResponseWriter w;
         SrsHttpMessage r(NULL, NULL);
@@ -1538,7 +1538,7 @@ VOID TEST(ProtocolHTTPTest, VodStreamHandlers)
         SrsVodStream h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("Hello, world!"));
         h.set_path(new MockSrsPathAlwaysExists());
-        h.entry = &e;
+        h.entry_ = &e;
 
         MockResponseWriter w;
         SrsHttpMessage r(NULL, NULL);
@@ -1556,7 +1556,7 @@ VOID TEST(ProtocolHTTPTest, VodStreamHandlers)
         SrsVodStream h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("Hello, world!"));
         h.set_path(new MockSrsPathAlwaysExists());
-        h.entry = &e;
+        h.entry_ = &e;
 
         MockResponseWriter w;
         SrsHttpMessage r(NULL, NULL);
@@ -1574,7 +1574,7 @@ VOID TEST(ProtocolHTTPTest, VodStreamHandlers)
         SrsVodStream h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("Hello, world!"));
         h.set_path(new MockSrsPathAlwaysExists());
-        h.entry = &e;
+        h.entry_ = &e;
 
         MockResponseWriter w;
         SrsHttpMessage r(NULL, NULL);
@@ -1592,7 +1592,7 @@ VOID TEST(ProtocolHTTPTest, VodStreamHandlers)
         SrsVodStream h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("Hello, world!"));
         h.set_path(new MockSrsPathAlwaysExists());
-        h.entry = &e;
+        h.entry_ = &e;
 
         MockResponseWriter w;
         SrsHttpMessage r(NULL, NULL);
@@ -1614,7 +1614,7 @@ VOID TEST(ProtocolHTTPTest, VodStreamHandlers)
         SrsVodStream h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("livestream-13.ts"));
         h.set_path(new MockSrsPathAlwaysExists());
-        h.entry = &e;
+        h.entry_ = &e;
 
         MockResponseWriter w;
         SrsHttpMessage r(NULL, NULL);
@@ -1636,7 +1636,7 @@ VOID TEST(ProtocolHTTPTest, VodStreamHandlers)
         SrsVodStream h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("livestream-13.m4s"));
         h.set_path(new MockSrsPathAlwaysExists());
-        h.entry = &e;
+        h.entry_ = &e;
 
         MockResponseWriter w;
         SrsHttpMessage r(NULL, NULL);
@@ -1658,7 +1658,7 @@ VOID TEST(ProtocolHTTPTest, VodStreamHandlers)
         SrsVodStream h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("init.mp4"));
         h.set_path(new MockSrsPathAlwaysExists());
-        h.entry = &e;
+        h.entry_ = &e;
 
         MockResponseWriter w;
         SrsHttpMessage r(NULL, NULL);
@@ -1684,7 +1684,7 @@ VOID TEST(ProtocolHTTPTest, BasicHandlers)
         SrsHttpFileServer h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("Hello, world!"));
         h.set_path(new MockSrsPathAlwaysExists());
-        h.entry = &e;
+        h.entry_ = &e;
 
         MockResponseWriter w;
         SrsHttpMessage r(NULL, NULL);
@@ -1701,7 +1701,7 @@ VOID TEST(ProtocolHTTPTest, BasicHandlers)
         SrsHttpFileServer h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("Hello, world!"));
         h.set_path(new MockSrsPathAlwaysExists());
-        h.entry = &e;
+        h.entry_ = &e;
 
         MockResponseWriter w;
         SrsHttpMessage r(NULL, NULL);
@@ -1718,7 +1718,7 @@ VOID TEST(ProtocolHTTPTest, BasicHandlers)
         SrsHttpFileServer h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("Hello, world!"));
         h.set_path(new MockSrsPathAlwaysExists());
-        h.entry = &e;
+        h.entry_ = &e;
 
         MockResponseWriter w;
         SrsHttpMessage r(NULL, NULL);
@@ -1735,7 +1735,7 @@ VOID TEST(ProtocolHTTPTest, BasicHandlers)
         SrsHttpFileServer h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("Hello, world!"));
         h.set_path(new MockSrsPathAlwaysExists());
-        h.entry = &e;
+        h.entry_ = &e;
 
         MockResponseWriter w;
         SrsHttpMessage r(NULL, NULL);
@@ -1752,7 +1752,7 @@ VOID TEST(ProtocolHTTPTest, BasicHandlers)
         SrsHttpFileServer h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("Hello, world!"));
         h.set_path(new MockSrsPathAlwaysExists());
-        h.entry = &e;
+        h.entry_ = &e;
 
         MockResponseWriter w;
         SrsHttpMessage r(NULL, NULL);
@@ -1769,7 +1769,7 @@ VOID TEST(ProtocolHTTPTest, BasicHandlers)
         SrsHttpFileServer h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("Hello, world!"));
         h.set_path(new MockSrsPathAlwaysExists());
-        h.entry = &e;
+        h.entry_ = &e;
 
         MockResponseWriter w;
         SrsHttpMessage r(NULL, NULL);
@@ -1786,7 +1786,7 @@ VOID TEST(ProtocolHTTPTest, BasicHandlers)
         SrsHttpFileServer h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("Hello, world!"));
         h.set_path(new MockSrsPathAlwaysExists());
-        h.entry = &e;
+        h.entry_ = &e;
 
         MockResponseWriter w;
         SrsHttpMessage r(NULL, NULL);
@@ -1803,7 +1803,7 @@ VOID TEST(ProtocolHTTPTest, BasicHandlers)
         SrsHttpFileServer h("/tmp");
         h.set_fs_factory(new MockFileReaderFactory("Hello, world!"));
         h.set_path(new MockSrsPathNotExists());
-        h.entry = &e;
+        h.entry_ = &e;
 
         MockResponseWriter w;
         SrsHttpMessage r(NULL, NULL);

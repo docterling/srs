@@ -29,6 +29,7 @@ public:
 public:
     virtual srs_error_t open(std::string p) = 0;
     virtual void close() = 0;
+    virtual bool is_open() = 0;
 };
 
 // file writer, to write to file.
@@ -89,6 +90,13 @@ public:
 public:
     virtual srs_error_t open(std::string p) = 0;
     virtual void close() = 0;
+
+public:
+    virtual bool is_open() = 0;
+    virtual int64_t tellg() = 0;
+    virtual void skip(int64_t size) = 0;
+    virtual int64_t seek2(int64_t offset) = 0;
+    virtual int64_t filesize() = 0;
 };
 
 /**

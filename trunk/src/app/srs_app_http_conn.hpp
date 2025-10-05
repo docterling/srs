@@ -183,12 +183,11 @@ public:
 class SrsHttpServer : public ISrsHttpServeMux
 {
 private:
-    SrsServer *server_;
     SrsHttpStaticServer *http_static_;
     SrsHttpStreamServer *http_stream_;
 
 public:
-    SrsHttpServer(SrsServer *svr);
+    SrsHttpServer();
     virtual ~SrsHttpServer();
 
 public:

@@ -61,6 +61,7 @@ class ISrsHds;
 class ISrsNgExec;
 class ISrsForwarder;
 class SrsAppFactory;
+class ISrsLiveConsumer;
 
 // The time jitter algorithm:
 // 1. full, to ensure stream start at zero, and ensure stream monotonically increasing.
@@ -118,9 +119,26 @@ public:
 };
 #endif
 
+// The message queue interface.
+class ISrsMessageQueue
+{
+public:
+    ISrsMessageQueue();
+    virtual ~ISrsMessageQueue();
+
+public:
+    virtual int size() = 0;
+    virtual srs_utime_t duration() = 0;
+    virtual void set_queue_size(srs_utime_t queue_size) = 0;
+    virtual srs_error_t enqueue(SrsMediaPacket *msg, bool *is_overflow = NULL) = 0;
+    // virtual srs_error_t dump_packets(int max_count, SrsMediaPacket **pmsgs, int &count) = 0;
+    virtual srs_error_t dump_packets(ISrsLiveConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm ag) = 0;
+    // virtual void clear() = 0;
+};
+
 // The message queue for the consumer(client), forwarder.
 // We limit the size in seconds, drop old messages(the whole gop) if full.
-class SrsMessageQueue
+class SrsMessageQueue : public ISrsMessageQueue
 {
 private:
     // The start and end time.
@@ -162,7 +180,7 @@ public:
     virtual srs_error_t dump_packets(int max_count, SrsMediaPacket **pmsgs, int &count);
     // Dumps packets to consumer, use specified args.
     // @remark the atc/tba/tbv/ag are same to SrsLiveConsumer.enqueue().
-    virtual srs_error_t dump_packets(SrsLiveConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm ag);
+    virtual srs_error_t dump_packets(ISrsLiveConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm ag);
 
 private:
     // Remove a gop from the front.
@@ -189,8 +207,22 @@ public:
     virtual void wakeup() = 0;
 };
 
+// The consumer interface.
+class ISrsLiveConsumer
+{
+public:
+    ISrsLiveConsumer();
+    virtual ~ISrsLiveConsumer();
+
+public:
+    virtual srs_error_t enqueue(SrsMediaPacket *shared_msg, bool atc, SrsRtmpJitterAlgorithm ag) = 0;
+    virtual srs_error_t dump_packets(SrsMessageArray *msgs, int &count) = 0;
+    virtual void set_queue_size(srs_utime_t queue_size) = 0;
+    virtual int64_t get_time() = 0;
+};
+
 // The consumer for SrsLiveSource, that is a play client.
-class SrsLiveConsumer : public ISrsWakable
+class SrsLiveConsumer : public ISrsWakable, public ISrsLiveConsumer
 {
 private:
     // Because source references to this object, so we should directly use the source ptr.
@@ -297,7 +329,7 @@ public:
     // clear the gop cache.
     virtual void clear();
     // dump the cached gop to consumer.
-    virtual srs_error_t dump(SrsLiveConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm jitter_algorithm);
+    virtual srs_error_t dump(ISrsLiveConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm jitter_algorithm);
     // used for atc to get the time of gop cache,
     // The atc will adjust the sequence header timestamp to gop cache.
     virtual bool empty();
@@ -495,7 +527,7 @@ public:
     // Dumps cached metadata to consumer.
     // @param dm Whether dumps the metadata.
     // @param ds Whether dumps the sequence header.
-    virtual srs_error_t dumps(SrsLiveConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm ag, bool dm, bool ds);
+    virtual srs_error_t dumps(ISrsLiveConsumer *consumer, bool atc, SrsRtmpJitterAlgorithm ag, bool dm, bool ds);
 
 public:
     // Previous exists sequence header.
@@ -720,7 +752,7 @@ public:
     // @param ds, whether dumps the sequence header.
     // @param dm, whether dumps the metadata.
     // @param dg, whether dumps the gop cache.
-    virtual srs_error_t consumer_dumps(SrsLiveConsumer *consumer, bool ds = true, bool dm = true, bool dg = true);
+    virtual srs_error_t consumer_dumps(ISrsLiveConsumer *consumer, bool ds = true, bool dm = true, bool dg = true);
     virtual void on_consumer_destroy(SrsLiveConsumer *consumer);
     virtual void set_cache(bool enabled);
     virtual void set_gop_cache_max_frames(int v);

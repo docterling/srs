@@ -55,7 +55,7 @@ private:
     // The underlayer st fd handler.
     srs_netfd_t stfd_;
     // The underlayer socket.
-    SrsStSocket *skt_;
+    ISrsProtocolReadWriter *skt_;
 
 public:
     SrsTcpConnection(srs_netfd_t c);

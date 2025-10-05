@@ -89,14 +89,11 @@ protected:
 // serve http static file and flv/mp4 vod stream.
 class SrsHttpStaticServer : public ISrsReloadHandler
 {
-private:
-    SrsServer *server_;
-
 public:
     SrsHttpServeMux mux_;
 
 public:
-    SrsHttpStaticServer(SrsServer *svr);
+    SrsHttpStaticServer();
     virtual ~SrsHttpStaticServer();
 
 public:

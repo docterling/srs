@@ -19,15 +19,19 @@
 
 class SrsBuffer;
 class SrsTsMessageCache;
+class ISrsTsMessageCache;
 class SrsTsContextWriter;
+class ISrsTsContextWriter;
 class ISrsStreamWriter;
 class SrsFileReader;
 class SrsFormat;
+class ISrsFormat;
 class SrsSimpleStream;
 class SrsTsAdaptationField;
 class SrsTsPayload;
 class SrsTsMessage;
 class SrsTsPacket;
+class ISrsTsContext;
 class SrsTsContext;
 class SrsPsPacket;
 
@@ -142,7 +146,7 @@ struct SrsTsChannel {
     SrsTsPidApply apply_;
     SrsTsStream stream_;
     SrsTsMessage *msg_;
-    SrsTsContext *context_;
+    ISrsTsContext *context_;
     // for encoder.
     uint8_t continuity_counter_;
 
@@ -291,8 +295,48 @@ public:
     virtual srs_error_t on_ts_message(SrsTsMessage *msg) = 0;
 };
 
+// The interface for ts context.
+class ISrsTsContext
+{
+public:
+    ISrsTsContext();
+    virtual ~ISrsTsContext();
+
+public:
+    // Whether the hls stream is pure audio stream.
+    virtual bool is_pure_audio() = 0;
+    // When PMT table parsed, we know some info about stream.
+    virtual void on_pmt_parsed() = 0;
+    // Reset the context for a new ts segment start.
+    virtual void reset() = 0;
+
+public:
+    // Get the pid apply, the parsed pid.
+    // @return the apply channel; NULL for invalid.
+    virtual SrsTsChannel *get(int pid) = 0;
+    // Set the pid apply, the parsed pid.
+    virtual void set(int pid, SrsTsPidApply apply_pid, SrsTsStream stream = SrsTsStreamReserved) = 0;
+
+public:
+    // Feed with ts packets, decode as ts message, callback handler if got one ts message.
+    //      A ts video message can be decoded to NALUs by SrsRawH264Stream::annexb_demux.
+    //      A ts audio message can be decoded to RAW frame by SrsRawAacStream::adts_demux.
+    // @param handler The ts message handler to process the msg.
+    // @remark We will consume all bytes in stream.
+    virtual srs_error_t decode(SrsBuffer *stream, ISrsTsHandler *handler) = 0;
+
+public:
+    // Encode ts video/audio messages to the PES packets, as PES stream.
+    // @param msg The video/audio msg to write to ts.
+    //      A ts video message is a frame with one or more NALUs, generally encoded by SrsTsMessageCache.cache_video.
+    //      A ts audio message is an audio packet, encoded by SrsTsMessageCache.cache_audio to ADTS for AAC.
+    // @param vc The video codec, write the PAT/PMT table when changed.
+    // @param ac The audio codec, write the PAT/PMT table when changed.
+    virtual srs_error_t encode(ISrsStreamWriter *writer, SrsTsMessage *msg, SrsVideoCodecId vc, SrsAudioCodecId ac) = 0;
+};
+
 // The context of ts, to decode the ts stream.
-class SrsTsContext
+class SrsTsContext : public ISrsTsContext
 {
 private:
     // Whether context is ready, failed if try to write data when not ready.
@@ -432,10 +476,10 @@ private:
     SrsTsPayload *payload_;
 
 public:
-    SrsTsContext *context_;
+    ISrsTsContext *context_;
 
 public:
-    SrsTsPacket(SrsTsContext *c);
+    SrsTsPacket(ISrsTsContext *c);
     virtual ~SrsTsPacket();
 
 public:
@@ -447,12 +491,12 @@ public:
     virtual void padding(int nb_stuffings);
 
 public:
-    static SrsTsPacket *create_pat(SrsTsContext *context, int16_t pmt_number, int16_t pmt_pid);
-    static SrsTsPacket *create_pmt(SrsTsContext *context, int16_t pmt_number, int16_t pmt_pid,
+    static SrsTsPacket *create_pat(ISrsTsContext *context, int16_t pmt_number, int16_t pmt_pid);
+    static SrsTsPacket *create_pmt(ISrsTsContext *context, int16_t pmt_number, int16_t pmt_pid,
                                    int16_t vpid, SrsTsStream vs, int16_t apid, SrsTsStream as);
-    static SrsTsPacket *create_pes_first(SrsTsContext *context, int16_t pid, SrsTsPESStreamId sid,
+    static SrsTsPacket *create_pes_first(ISrsTsContext *context, int16_t pid, SrsTsPESStreamId sid,
                                          uint8_t continuity_counter, bool discontinuity, int64_t pcr, int64_t dts, int64_t pts, int size);
-    static SrsTsPacket *create_pes_continue(SrsTsContext *context,
+    static SrsTsPacket *create_pes_continue(ISrsTsContext *context,
                                             int16_t pid, SrsTsPESStreamId sid, uint8_t continuity_counter);
 };
 
@@ -1295,8 +1339,32 @@ protected:
     virtual srs_error_t psi_encode(SrsBuffer *stream);
 };
 
+// Interface for writing TS messages to TS context.
+class ISrsTsContextWriter
+{
+public:
+    ISrsTsContextWriter();
+    virtual ~ISrsTsContextWriter();
+
+public:
+    // Write an audio frame to ts,
+    virtual srs_error_t write_audio(SrsTsMessage *audio) = 0;
+    // Write a video frame to ts,
+    virtual srs_error_t write_video(SrsTsMessage *video) = 0;
+
+public:
+    // Get or update the video codec of ts muxer.
+    virtual SrsVideoCodecId vcodec() = 0;
+    virtual void set_vcodec(SrsVideoCodecId v) = 0;
+
+public:
+    // Get and set the audio codec.
+    virtual SrsAudioCodecId acodec() = 0;
+    virtual void set_acodec(SrsAudioCodecId v) = 0;
+};
+
 // Write the TS message to TS context.
-class SrsTsContextWriter
+class SrsTsContextWriter : public ISrsTsContextWriter
 {
 private:
     // User must config the codec in right way.
@@ -1304,12 +1372,12 @@ private:
     SrsAudioCodecId acodec_;
 
 private:
-    SrsTsContext *context_;
+    ISrsTsContext *context_;
     ISrsStreamWriter *writer_;
     std::string path_;
 
 public:
-    SrsTsContextWriter(ISrsStreamWriter *w, SrsTsContext *c, SrsAudioCodecId ac, SrsVideoCodecId vc);
+    SrsTsContextWriter(ISrsStreamWriter *w, ISrsTsContext *c, SrsAudioCodecId ac, SrsVideoCodecId vc);
     virtual ~SrsTsContextWriter();
 
 public:
@@ -1352,9 +1420,32 @@ private:
     int nb_buf;
 };
 
+// Interface for TS messages cache.
 // TS messages cache, to group frames to TS message,
 // for example, we may write multiple AAC RAW frames to a TS message.
-class SrsTsMessageCache
+class ISrsTsMessageCache
+{
+public:
+    ISrsTsMessageCache();
+    virtual ~ISrsTsMessageCache();
+
+public:
+    // Write audio to cache
+    virtual srs_error_t cache_audio(SrsParsedAudioPacket *frame, int64_t dts) = 0;
+    // Write video to muxer.
+    virtual srs_error_t cache_video(SrsParsedVideoPacket *frame, int64_t dts) = 0;
+
+public:
+    // Getters and setters for cached messages
+    virtual SrsTsMessage* audio() = 0;
+    virtual void set_audio(SrsTsMessage* msg) = 0;
+    virtual SrsTsMessage* video() = 0;
+    virtual void set_video(SrsTsMessage* msg) = 0;
+};
+
+// TS messages cache, to group frames to TS message,
+// for example, we may write multiple AAC RAW frames to a TS message.
+class SrsTsMessageCache : public ISrsTsMessageCache
 {
 public:
     // The current ts message.
@@ -1371,6 +1462,13 @@ public:
     // Write video to muxer.
     virtual srs_error_t cache_video(SrsParsedVideoPacket *frame, int64_t dts);
 
+public:
+    // Getters and setters for cached messages
+    virtual SrsTsMessage* audio();
+    virtual void set_audio(SrsTsMessage* msg);
+    virtual SrsTsMessage* video();
+    virtual void set_video(SrsTsMessage* msg);
+
 private:
     virtual srs_error_t do_cache_mp3(SrsParsedAudioPacket *frame);
     virtual srs_error_t do_cache_aac(SrsParsedAudioPacket *frame);
@@ -1378,20 +1476,38 @@ private:
     virtual srs_error_t do_cache_hevc(SrsParsedVideoPacket *frame);
 };
 
+// The interface for ts transmuxer.
+class ISrsTsTransmuxer
+{
+public:
+    ISrsTsTransmuxer();
+    virtual ~ISrsTsTransmuxer();
+
+public:
+    virtual srs_error_t initialize(ISrsStreamWriter *fw) = 0;
+    virtual srs_error_t write_audio(int64_t timestamp, char *data, int size) = 0;
+    virtual srs_error_t write_video(int64_t timestamp, char *data, int size) = 0;
+
+public:
+    virtual void set_has_audio(bool v) = 0;
+    virtual void set_has_video(bool v) = 0;
+    virtual void set_guess_has_av(bool v) = 0;
+};
+
 // Transmux the RTMP stream to HTTP-TS stream.
-class SrsTsTransmuxer
+class SrsTsTransmuxer : public ISrsTsTransmuxer
 {
 private:
-    ISrsStreamWriter *writer;
+    ISrsStreamWriter *writer_;
     bool has_audio_;
     bool has_video_;
     bool guess_has_av_;
 
 private:
-    SrsFormat *format;
-    SrsTsMessageCache *tsmc;
-    SrsTsContextWriter *tscw;
-    SrsTsContext *context;
+    ISrsFormat *format_;
+    ISrsTsMessageCache *tsmc_;
+    ISrsTsContextWriter *tscw_;
+    ISrsTsContext *context_;
 
 public:
     SrsTsTransmuxer();

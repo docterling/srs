@@ -1302,7 +1302,7 @@ VOID TEST(KernelErrorTest, AsanReportCallback)
 #ifdef SRS_SANITIZER_LOG
     // Test asan_report_callback function with various input formats
     // Temporarily disable log output to avoid cluttering test results
-    MockEmptyLog* mock_log = dynamic_cast<MockEmptyLog*>(_srs_log);
+    MockEmptyLog *mock_log = dynamic_cast<MockEmptyLog *>(_srs_log);
     SrsLogLevel original_level = mock_log->level_;
     mock_log->level_ = SrsLogLevelDisabled;
 

@@ -22,6 +22,14 @@ using namespace std;
 #include <srs_kernel_io.hpp>
 #include <srs_kernel_log.hpp>
 
+ISrsAacTransmuxer::ISrsAacTransmuxer()
+{
+}
+
+ISrsAacTransmuxer::~ISrsAacTransmuxer()
+{
+}
+
 SrsAacTransmuxer::SrsAacTransmuxer()
 {
     writer_ = NULL;

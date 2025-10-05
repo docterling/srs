@@ -383,6 +383,16 @@ public:
     virtual bool get_atc_auto(std::string vhost);
     virtual bool get_reduce_sequence_header(std::string vhost);
     virtual bool get_parse_sps(std::string vhost);
+    virtual SrsConfDirective *get_root() { return NULL; }
+    virtual bool get_vhost_enabled(SrsConfDirective *conf) { return true; }
+    virtual bool get_vhost_http_remux_enabled(std::string vhost) { return false; }
+    virtual bool get_vhost_http_remux_enabled(SrsConfDirective *vhost) { return false; }
+    virtual srs_utime_t get_vhost_http_remux_fast_cache(std::string vhost) { return 0; }
+    virtual bool get_vhost_http_remux_drop_if_not_match(std::string vhost) { return false; }
+    virtual bool get_vhost_http_remux_has_audio(std::string vhost) { return true; }
+    virtual bool get_vhost_http_remux_has_video(std::string vhost) { return true; }
+    virtual bool get_vhost_http_remux_guess_has_av(std::string vhost) { return true; }
+    virtual std::string get_vhost_http_remux_mount(std::string vhost) { return ""; }
     void set_http_hooks_enabled(bool enabled);
     void set_on_stop_urls(const std::vector<std::string> &urls);
     void clear_on_stop_directive();

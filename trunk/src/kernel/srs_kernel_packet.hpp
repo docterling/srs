@@ -162,11 +162,49 @@ public:
 };
 
 /**
+ * Interface for codec format.
  * A codec format, including one or many stream, each stream identified by a frame.
  * For example, a typical RTMP stream format, consits of a video and audio frame.
  * Maybe some RTMP stream only has a audio stream, for instance, redio application.
  */
-class SrsFormat
+class ISrsFormat
+{
+public:
+    ISrsFormat();
+    virtual ~ISrsFormat();
+
+public:
+    // Initialize the format.
+    virtual srs_error_t initialize() = 0;
+    // When got a parsed audio packet.
+    // @param data The data in FLV format.
+    virtual srs_error_t on_audio(int64_t timestamp, char *data, int size) = 0;
+    // When got a parsed video packet.
+    // @param data The data in FLV format.
+    virtual srs_error_t on_video(int64_t timestamp, char *data, int size) = 0;
+    // When got a audio aac sequence header.
+    virtual srs_error_t on_aac_sequence_header(char *data, int size) = 0;
+
+public:
+    virtual bool is_aac_sequence_header() = 0;
+    virtual bool is_mp3_sequence_header() = 0;
+    // TODO: is avc|hevc|av1 sequence header
+    virtual bool is_avc_sequence_header() = 0;
+
+public:
+    // Getters for codec and packet information
+    virtual SrsParsedAudioPacket* audio() = 0;
+    virtual SrsAudioCodecConfig* acodec() = 0;
+    virtual SrsParsedVideoPacket* video() = 0;
+    virtual SrsVideoCodecConfig* vcodec() = 0;
+};
+
+/**
+ * A codec format, including one or many stream, each stream identified by a frame.
+ * For example, a typical RTMP stream format, consits of a video and audio frame.
+ * Maybe some RTMP stream only has a audio stream, for instance, redio application.
+ */
+class SrsFormat : public ISrsFormat
 {
 public:
     SrsParsedAudioPacket *audio_;
@@ -206,6 +244,13 @@ public:
     virtual bool is_mp3_sequence_header();
     // TODO: is avc|hevc|av1 sequence header
     virtual bool is_avc_sequence_header();
+
+public:
+    // Getters for codec and packet information
+    virtual SrsParsedAudioPacket* audio();
+    virtual SrsAudioCodecConfig* acodec();
+    virtual SrsParsedVideoPacket* video();
+    virtual SrsVideoCodecConfig* vcodec();
 
 private:
     // Demux the video packet in H.264 codec.

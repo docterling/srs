@@ -707,7 +707,7 @@ srs_error_t SrsGoApiVhosts::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessag
 
     // path: {pattern}{vhost_id}
     // e.g. /api/v1/vhosts/100     pattern= /api/v1/vhosts/, vhost_id=100
-    string vid = r->parse_rest_id(entry->pattern);
+    string vid = r->parse_rest_id(entry_->pattern);
     SrsStatisticVhost *vhost = NULL;
 
     if (!vid.empty() && (vhost = stat->find_vhost_by_id(vid)) == NULL) {
@@ -765,7 +765,7 @@ srs_error_t SrsGoApiStreams::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessa
 
     // path: {pattern}{stream_id}
     // e.g. /api/v1/streams/100     pattern= /api/v1/streams/, stream_id=100
-    string sid = r->parse_rest_id(entry->pattern);
+    string sid = r->parse_rest_id(entry_->pattern);
 
     SrsStatisticStream *stream = NULL;
     if (!sid.empty() && (stream = stat->find_stream(sid)) == NULL) {
@@ -827,7 +827,7 @@ srs_error_t SrsGoApiClients::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessa
 
     // path: {pattern}{client_id}
     // e.g. /api/v1/clients/100     pattern= /api/v1/clients/, client_id=100
-    string client_id = r->parse_rest_id(entry->pattern);
+    string client_id = r->parse_rest_id(entry_->pattern);
 
     SrsStatisticClient *client = NULL;
     if (!client_id.empty() && (client = stat->find_client(client_id)) == NULL) {

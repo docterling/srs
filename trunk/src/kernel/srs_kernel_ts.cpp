@@ -311,6 +311,14 @@ ISrsTsHandler::~ISrsTsHandler()
 {
 }
 
+ISrsTsContext::ISrsTsContext()
+{
+}
+
+ISrsTsContext::~ISrsTsContext()
+{
+}
+
 SrsTsContext::SrsTsContext()
 {
     ready_ = false;
@@ -652,7 +660,7 @@ srs_error_t SrsTsContext::encode_pes(ISrsStreamWriter *writer, SrsTsMessage *msg
     return err;
 }
 
-SrsTsPacket::SrsTsPacket(SrsTsContext *c)
+SrsTsPacket::SrsTsPacket(ISrsTsContext *c)
 {
     context_ = c;
 
@@ -834,7 +842,7 @@ void SrsTsPacket::padding(int nb_stuffings)
     }
 }
 
-SrsTsPacket *SrsTsPacket::create_pat(SrsTsContext *context, int16_t pmt_number, int16_t pmt_pid)
+SrsTsPacket *SrsTsPacket::create_pat(ISrsTsContext *context, int16_t pmt_number, int16_t pmt_pid)
 {
     SrsTsPacket *pkt = new SrsTsPacket(context);
     pkt->sync_byte_ = 0x47;
@@ -863,7 +871,7 @@ SrsTsPacket *SrsTsPacket::create_pat(SrsTsContext *context, int16_t pmt_number, 
     return pkt;
 }
 
-SrsTsPacket *SrsTsPacket::create_pmt(SrsTsContext *context,
+SrsTsPacket *SrsTsPacket::create_pmt(ISrsTsContext *context,
                                      int16_t pmt_number, int16_t pmt_pid, int16_t vpid, SrsTsStream vs, int16_t apid, SrsTsStream as)
 {
     SrsTsPacket *pkt = new SrsTsPacket(context);
@@ -915,7 +923,7 @@ SrsTsPacket *SrsTsPacket::create_pmt(SrsTsContext *context,
     return pkt;
 }
 
-SrsTsPacket *SrsTsPacket::create_pes_first(SrsTsContext *context,
+SrsTsPacket *SrsTsPacket::create_pes_first(ISrsTsContext *context,
                                            int16_t pid, SrsTsPESStreamId sid, uint8_t continuity_counter, bool discontinuity,
                                            int64_t pcr, int64_t dts, int64_t pts, int size)
 {
@@ -974,7 +982,7 @@ SrsTsPacket *SrsTsPacket::create_pes_first(SrsTsContext *context,
     return pkt;
 }
 
-SrsTsPacket *SrsTsPacket::create_pes_continue(SrsTsContext *context, int16_t pid, SrsTsPESStreamId sid, uint8_t continuity_counter)
+SrsTsPacket *SrsTsPacket::create_pes_continue(ISrsTsContext *context, int16_t pid, SrsTsPESStreamId sid, uint8_t continuity_counter)
 {
     SrsTsPacket *pkt = new SrsTsPacket(context);
     pkt->sync_byte_ = 0x47;
@@ -2757,7 +2765,15 @@ srs_error_t SrsTsPayloadPMT::psi_encode(SrsBuffer *stream)
     return err;
 }
 
-SrsTsContextWriter::SrsTsContextWriter(ISrsStreamWriter *w, SrsTsContext *c, SrsAudioCodecId ac, SrsVideoCodecId vc)
+ISrsTsContextWriter::ISrsTsContextWriter()
+{
+}
+
+ISrsTsContextWriter::~ISrsTsContextWriter()
+{
+}
+
+SrsTsContextWriter::SrsTsContextWriter(ISrsStreamWriter *w, ISrsTsContext *c, SrsAudioCodecId ac, SrsVideoCodecId vc)
 {
     writer_ = w;
     context_ = c;
@@ -2905,6 +2921,14 @@ void SrsEncFileWriter::close()
     SrsFileWriter::close();
 }
 
+ISrsTsMessageCache::ISrsTsMessageCache()
+{
+}
+
+ISrsTsMessageCache::~ISrsTsMessageCache()
+{
+}
+
 SrsTsMessageCache::SrsTsMessageCache()
 {
     audio_ = NULL;
@@ -2977,6 +3001,26 @@ srs_error_t SrsTsMessageCache::cache_video(SrsParsedVideoPacket *frame, int64_t 
     }
 
     return err;
+}
+
+SrsTsMessage* SrsTsMessageCache::audio()
+{
+    return audio_;
+}
+
+void SrsTsMessageCache::set_audio(SrsTsMessage* msg)
+{
+    audio_ = msg;
+}
+
+SrsTsMessage* SrsTsMessageCache::video()
+{
+    return video_;
+}
+
+void SrsTsMessageCache::set_video(SrsTsMessage* msg)
+{
+    video_ = msg;
 }
 
 srs_error_t SrsTsMessageCache::do_cache_mp3(SrsParsedAudioPacket *frame)
@@ -3246,31 +3290,39 @@ srs_error_t SrsTsMessageCache::do_cache_hevc(SrsParsedVideoPacket *frame)
     return err;
 }
 
+ISrsTsTransmuxer::ISrsTsTransmuxer()
+{
+}
+
+ISrsTsTransmuxer::~ISrsTsTransmuxer()
+{
+}
+
 SrsTsTransmuxer::SrsTsTransmuxer()
 {
-    writer = NULL;
-    format = new SrsFormat();
-    tsmc = new SrsTsMessageCache();
-    context = new SrsTsContext();
-    tscw = NULL;
+    writer_ = NULL;
+    format_ = new SrsFormat();
+    tsmc_ = new SrsTsMessageCache();
+    context_ = new SrsTsContext();
+    tscw_ = NULL;
     has_audio_ = has_video_ = true;
     guess_has_av_ = true;
 }
 
 SrsTsTransmuxer::~SrsTsTransmuxer()
 {
-    srs_freep(format);
-    srs_freep(tsmc);
-    srs_freep(tscw);
-    srs_freep(context);
+    srs_freep(format_);
+    srs_freep(tsmc_);
+    srs_freep(tscw_);
+    srs_freep(context_);
 }
 
 void SrsTsTransmuxer::set_has_audio(bool v)
 {
     has_audio_ = v;
 
-    if (tscw != NULL && !v) {
-        tscw->set_acodec(SrsAudioCodecIdForbidden);
+    if (tscw_ != NULL && !v) {
+        tscw_->set_acodec(SrsAudioCodecIdForbidden);
     }
 }
 
@@ -3278,17 +3330,17 @@ void SrsTsTransmuxer::set_has_video(bool v)
 {
     has_video_ = v;
 
-    if (tscw != NULL && !v) {
-        tscw->set_vcodec(SrsVideoCodecIdForbidden);
+    if (tscw_ != NULL && !v) {
+        tscw_->set_vcodec(SrsVideoCodecIdForbidden);
     }
 }
 
 void SrsTsTransmuxer::set_guess_has_av(bool v)
 {
     guess_has_av_ = v;
-    if (tscw != NULL && v) {
-        tscw->set_acodec(SrsAudioCodecIdForbidden);
-        tscw->set_vcodec(SrsVideoCodecIdForbidden);
+    if (tscw_ != NULL && v) {
+        tscw_->set_acodec(SrsAudioCodecIdForbidden);
+        tscw_->set_vcodec(SrsVideoCodecIdForbidden);
     }
 }
 
@@ -3296,13 +3348,13 @@ srs_error_t SrsTsTransmuxer::initialize(ISrsStreamWriter *fw)
 {
     srs_error_t err = srs_success;
 
-    if ((err = format->initialize()) != srs_success) {
+    if ((err = format_->initialize()) != srs_success) {
         return srs_error_wrap(err, "ts: init format");
     }
 
     srs_assert(fw);
 
-    writer = fw;
+    writer_ = fw;
 
     SrsAudioCodecId acodec = has_audio_ ? SrsAudioCodecIdAAC : SrsAudioCodecIdForbidden;
     SrsVideoCodecId vcodec = has_video_ ? SrsVideoCodecIdAVC : SrsVideoCodecIdForbidden;
@@ -3312,8 +3364,8 @@ srs_error_t SrsTsTransmuxer::initialize(ISrsStreamWriter *fw)
         vcodec = SrsVideoCodecIdForbidden;
     }
 
-    srs_freep(tscw);
-    tscw = new SrsTsContextWriter(fw, context, acodec, vcodec);
+    srs_freep(tscw_);
+    tscw_ = new SrsTsContextWriter(fw, context_, acodec, vcodec);
 
     return err;
 }
@@ -3322,30 +3374,30 @@ srs_error_t SrsTsTransmuxer::write_audio(int64_t timestamp, char *data, int size
 {
     srs_error_t err = srs_success;
 
-    if ((err = format->on_audio(timestamp, data, size)) != srs_success) {
+    if ((err = format_->on_audio(timestamp, data, size)) != srs_success) {
         return srs_error_wrap(err, "ts: format on audio");
     }
 
-    if (!format->acodec_) {
+    if (!format_->acodec()) {
         return err;
     }
 
     // ts support audio codec: aac/mp3
-    srs_assert(format->acodec_ && format->audio_);
-    if (format->acodec_->id_ != SrsAudioCodecIdAAC && format->acodec_->id_ != SrsAudioCodecIdMP3) {
+    srs_assert(format_->acodec() && format_->audio());
+    if (format_->acodec()->id_ != SrsAudioCodecIdAAC && format_->acodec()->id_ != SrsAudioCodecIdMP3) {
         return err;
     }
 
     // for aac: ignore sequence header
-    if (format->acodec_->id_ == SrsAudioCodecIdAAC && format->audio_->aac_packet_type_ == SrsAudioAacFrameTraitSequenceHeader) {
+    if (format_->acodec()->id_ == SrsAudioCodecIdAAC && format_->audio()->aac_packet_type_ == SrsAudioAacFrameTraitSequenceHeader) {
         return err;
     }
 
     // Switch audio codec if not AAC.
-    if (tscw->acodec() != format->acodec_->id_) {
-        srs_trace("TS: Switch audio codec %d(%s) to %d(%s)", tscw->acodec(), srs_audio_codec_id2str(tscw->acodec()).c_str(),
-                  format->acodec_->id_, srs_audio_codec_id2str(format->acodec_->id_).c_str());
-        tscw->set_acodec(format->acodec_->id_);
+    if (tscw_->acodec() != format_->acodec()->id_) {
+        srs_trace("TS: Switch audio codec %d(%s) to %d(%s)", tscw_->acodec(), srs_audio_codec_id2str(tscw_->acodec()).c_str(),
+                  format_->acodec()->id_, srs_audio_codec_id2str(format_->acodec()->id_).c_str());
+        tscw_->set_acodec(format_->acodec()->id_);
     }
 
     // the dts calc from rtmp/flv header.
@@ -3354,7 +3406,7 @@ srs_error_t SrsTsTransmuxer::write_audio(int64_t timestamp, char *data, int size
     int64_t dts = timestamp * 90;
 
     // write audio to cache.
-    if ((err = tsmc->cache_audio(format->audio_, dts)) != srs_success) {
+    if ((err = tsmc_->cache_audio(format_->audio(), dts)) != srs_success) {
         return srs_error_wrap(err, "ts: cache audio");
     }
 
@@ -3369,39 +3421,39 @@ srs_error_t SrsTsTransmuxer::write_video(int64_t timestamp, char *data, int size
 {
     srs_error_t err = srs_success;
 
-    if ((err = format->on_video(timestamp, data, size)) != srs_success) {
+    if ((err = format_->on_video(timestamp, data, size)) != srs_success) {
         return srs_error_wrap(err, "ts: on video");
     }
 
-    if (!format->vcodec_) {
+    if (!format_->vcodec()) {
         return err;
     }
 
     // ignore info frame,
     // @see https://github.com/ossrs/srs/issues/288#issuecomment-69863909
-    srs_assert(format->video_ && format->vcodec_);
-    if (format->video_->frame_type_ == SrsVideoAvcFrameTypeVideoInfoFrame) {
+    srs_assert(format_->video() && format_->vcodec());
+    if (format_->video()->frame_type_ == SrsVideoAvcFrameTypeVideoInfoFrame) {
         return err;
     }
 
-    bool codec_ok = (format->vcodec_->id_ == SrsVideoCodecIdAVC);
-    codec_ok = codec_ok ? true : (format->vcodec_->id_ == SrsVideoCodecIdHEVC);
+    bool codec_ok = (format_->vcodec()->id_ == SrsVideoCodecIdAVC);
+    codec_ok = codec_ok ? true : (format_->vcodec()->id_ == SrsVideoCodecIdHEVC);
     if (!codec_ok) {
         return err;
     }
 
     // The video codec might change during streaming.
-    tscw->set_vcodec(format->vcodec_->id_);
+    tscw_->set_vcodec(format_->vcodec()->id_);
 
     // ignore sequence header
-    if (format->video_->frame_type_ == SrsVideoAvcFrameTypeKeyFrame && format->video_->avc_packet_type_ == SrsVideoAvcFrameTraitSequenceHeader) {
+    if (format_->video()->frame_type_ == SrsVideoAvcFrameTypeKeyFrame && format_->video()->avc_packet_type_ == SrsVideoAvcFrameTraitSequenceHeader) {
         return err;
     }
 
     int64_t dts = timestamp * 90;
 
     // write video to cache.
-    if ((err = tsmc->cache_video(format->video_, dts)) != srs_success) {
+    if ((err = tsmc_->cache_video(format_->video(), dts)) != srs_success) {
         return srs_error_wrap(err, "ts: cache video");
     }
 
@@ -3412,12 +3464,14 @@ srs_error_t SrsTsTransmuxer::flush_audio()
 {
     srs_error_t err = srs_success;
 
-    if ((err = tscw->write_audio(tsmc->audio_)) != srs_success) {
+    if ((err = tscw_->write_audio(tsmc_->audio())) != srs_success) {
         return srs_error_wrap(err, "ts: write audio");
     }
 
     // write success, clear and free the ts message.
-    srs_freep(tsmc->audio_);
+    SrsTsMessage* audio_msg = tsmc_->audio();
+    srs_freep(audio_msg);
+    tsmc_->set_audio(NULL);
 
     return err;
 }
@@ -3426,12 +3480,14 @@ srs_error_t SrsTsTransmuxer::flush_video()
 {
     srs_error_t err = srs_success;
 
-    if ((err = tscw->write_video(tsmc->video_)) != srs_success) {
+    if ((err = tscw_->write_video(tsmc_->video())) != srs_success) {
         return srs_error_wrap(err, "ts: write video");
     }
 
     // write success, clear and free the ts message.
-    srs_freep(tsmc->video_);
+    SrsTsMessage* video_msg = tsmc_->video();
+    srs_freep(video_msg);
+    tsmc_->set_video(NULL);
 
     return err;
 }

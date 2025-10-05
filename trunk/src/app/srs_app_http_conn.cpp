@@ -474,11 +474,12 @@ ISrsKbpsDelta *SrsHttpxConn::delta()
     return conn_->delta();
 }
 
-SrsHttpServer::SrsHttpServer(SrsServer *svr)
+SrsHttpServer::SrsHttpServer()
 {
-    server_ = svr;
-    http_stream_ = new SrsHttpStreamServer(svr);
-    http_static_ = new SrsHttpStaticServer(svr);
+    http_stream_ = new SrsHttpStreamServer();
+    http_stream_->assemble();
+
+    http_static_ = new SrsHttpStaticServer();
 }
 
 SrsHttpServer::~SrsHttpServer()

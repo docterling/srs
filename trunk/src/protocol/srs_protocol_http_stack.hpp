@@ -290,7 +290,7 @@ public:
 class ISrsHttpHandler
 {
 public:
-    SrsHttpMuxEntry *entry;
+    SrsHttpMuxEntry *entry_;
 
 public:
     ISrsHttpHandler();

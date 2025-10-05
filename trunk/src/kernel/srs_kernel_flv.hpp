@@ -25,7 +25,7 @@
 class SrsBuffer;
 class ISrsWriter;
 class ISrsReader;
-class SrsFileReader;
+class ISrsFileReader;
 class SrsRtmpCommand;
 class SrsNaluSample;
 
@@ -223,8 +223,50 @@ public:
     void to_msg(SrsMediaPacket *msg);
 };
 
+// The interface for FLV transmuxer.
+class ISrsFlvTransmuxer
+{
+public:
+    ISrsFlvTransmuxer();
+    virtual ~ISrsFlvTransmuxer();
+
+public:
+    // Initialize the underlayer file stream.
+    // @remark user can initialize multiple times to encode multiple flv files.
+    // @remark, user must free the @param fw, flv encoder never close/free it.
+    virtual srs_error_t initialize(ISrsWriter *fw) = 0;
+    // Drop packet if not match FLV header.
+    virtual void set_drop_if_not_match(bool v) = 0;
+    virtual bool drop_if_not_match() = 0;
+
+public:
+    // Write flv header.
+    // Write following:
+    //   1. E.2 The FLV header
+    //   2. PreviousTagSize0 UI32 Always 0
+    // that is, 9+4=13bytes.
+    virtual srs_error_t write_header(bool has_video = true, bool has_audio = true) = 0;
+    virtual srs_error_t write_header(char flv_header[9]) = 0;
+    // Write flv metadata.
+    // @param type, the type of data, or other message type.
+    //       @see SrsFrameType
+    // @param data, the amf0 metadata which serialize from:
+    //   AMF0 string: onMetaData,
+    //   AMF0 object: the metadata object.
+    // @remark assert data is not NULL.
+    virtual srs_error_t write_metadata(char type, char *data, int size) = 0;
+    // Write audio/video packet.
+    // @remark assert data is not NULL.
+    virtual srs_error_t write_audio(int64_t timestamp, char *data, int size) = 0;
+    virtual srs_error_t write_video(int64_t timestamp, char *data, int size) = 0;
+
+public:
+    // Write the tags in a time.
+    virtual srs_error_t write_tags(SrsMediaPacket **msgs, int count) = 0;
+};
+
 // Transmux RTMP packets to FLV stream.
-class SrsFlvTransmuxer
+class SrsFlvTransmuxer : public ISrsFlvTransmuxer
 {
 private:
     bool has_audio_;
@@ -335,7 +377,7 @@ public:
 class SrsFlvVodStreamDecoder
 {
 private:
-    SrsFileReader *reader_;
+    ISrsFileReader *reader_;
 
 public:
     SrsFlvVodStreamDecoder();

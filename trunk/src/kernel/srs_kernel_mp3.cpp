@@ -21,6 +21,14 @@ using namespace std;
 #include <srs_kernel_file.hpp>
 #include <srs_kernel_log.hpp>
 
+ISrsMp3Transmuxer::ISrsMp3Transmuxer()
+{
+}
+
+ISrsMp3Transmuxer::~ISrsMp3Transmuxer()
+{
+}
+
 SrsMp3Transmuxer::SrsMp3Transmuxer()
 {
     writer_ = NULL;
@@ -30,7 +38,7 @@ SrsMp3Transmuxer::~SrsMp3Transmuxer()
 {
 }
 
-srs_error_t SrsMp3Transmuxer::initialize(SrsFileWriter *fw)
+srs_error_t SrsMp3Transmuxer::initialize(ISrsFileWriter *fw)
 {
     srs_error_t err = srs_success;
 

@@ -13,8 +13,43 @@
 
 #include <string>
 
-class SrsWallClock;
 class ISrsProtocolStatistic;
+
+/**
+ * Interface for clock abstraction to provide wall clock time.
+ * This interface enables dependency injection and testability.
+ */
+class ISrsClock
+{
+public:
+    ISrsClock();
+    virtual ~ISrsClock();
+
+public:
+    /**
+     * Current time in srs_utime_t.
+     */
+    virtual srs_utime_t now() = 0;
+};
+
+/**
+ * A time source to provide wall clock.
+ */
+class SrsWallClock : public ISrsClock
+{
+public:
+    SrsWallClock();
+    virtual ~SrsWallClock();
+
+public:
+    /**
+     * Current time in srs_utime_t.
+     */
+    virtual srs_utime_t now();
+};
+
+// The global clock.
+extern SrsWallClock *_srs_clock;
 
 // A sample for rate-based stat, such as kbps or kps.
 class SrsRateSample
@@ -37,7 +72,7 @@ public:
 class SrsPps
 {
 private:
-    SrsWallClock *clk_;
+    ISrsClock *clk_;
 
 private:
     // samples
@@ -65,25 +100,6 @@ public:
     // Get the 30s average stat.
     int r30s();
 };
-
-/**
- * A time source to provide wall clock.
- */
-class SrsWallClock
-{
-public:
-    SrsWallClock();
-    virtual ~SrsWallClock();
-
-public:
-    /**
-     * Current time in srs_utime_t.
-     */
-    virtual srs_utime_t now();
-};
-
-// The global clock.
-extern SrsWallClock *_srs_clock;
 
 // Global SrsPps statistics variables
 // I/O operations statistics
@@ -237,7 +253,7 @@ void srs_global_rtc_update(SrsKbsRtcStats *stats);
 class SrsKbpsSlice
 {
 private:
-    SrsWallClock *clk_;
+    ISrsClock *clk_;
 
 public:
     // session startup bytes
@@ -252,7 +268,7 @@ public:
     SrsRateSample sample_60m_;
 
 public:
-    SrsKbpsSlice(SrsWallClock *c);
+    SrsKbpsSlice(ISrsClock *c);
     virtual ~SrsKbpsSlice();
 
 public:
@@ -340,11 +356,11 @@ class SrsKbps
 private:
     SrsKbpsSlice *is_;
     SrsKbpsSlice *os_;
-    SrsWallClock *clk_;
+    ISrsClock *clk_;
 
 public:
     // Note that we won't free the clock c.
-    SrsKbps(SrsWallClock *c = NULL);
+    SrsKbps(ISrsClock *c = NULL);
     virtual ~SrsKbps();
 
 public:
@@ -378,7 +394,7 @@ private:
     SrsKbps *kbps_;
 
 public:
-    SrsNetworkKbps(SrsWallClock *c = NULL);
+    SrsNetworkKbps(ISrsClock *c = NULL);
     virtual ~SrsNetworkKbps();
 
 public:

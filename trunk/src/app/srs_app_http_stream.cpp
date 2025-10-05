@@ -40,15 +40,23 @@ using namespace std;
 #include <srs_protocol_stream.hpp>
 #include <srs_protocol_utility.hpp>
 
-SrsBufferCache::SrsBufferCache(SrsServer *s, ISrsRequest *r)
+ISrsBufferCache::ISrsBufferCache()
+{
+}
+
+ISrsBufferCache::~ISrsBufferCache()
+{
+}
+
+SrsBufferCache::SrsBufferCache(ISrsRequest *r)
 {
     req_ = r->copy()->as_http();
     queue_ = new SrsMessageQueue(true);
     trd_ = new SrsSTCoroutine("http-stream", this);
+    fast_cache_ = 0;
 
-    // TODO: FIXME: support reload.
-    fast_cache_ = _srs_config->get_vhost_http_remux_fast_cache(req_->vhost_);
-    server_ = s;
+    config_ = _srs_config;
+    live_sources_ = _srs_sources;
 }
 
 SrsBufferCache::~SrsBufferCache()
@@ -57,6 +65,9 @@ SrsBufferCache::~SrsBufferCache()
 
     srs_freep(queue_);
     srs_freep(req_);
+
+    config_ = NULL;
+    live_sources_ = NULL;
 }
 
 srs_error_t SrsBufferCache::update_auth(ISrsRequest *r)
@@ -70,6 +81,8 @@ srs_error_t SrsBufferCache::update_auth(ISrsRequest *r)
 srs_error_t SrsBufferCache::start()
 {
     srs_error_t err = srs_success;
+
+    fast_cache_ = config_->get_vhost_http_remux_fast_cache(req_->vhost_);
 
     // Not enabled.
     if (fast_cache_ <= 0) {
@@ -109,7 +122,7 @@ bool SrsBufferCache::alive()
     return false;
 }
 
-srs_error_t SrsBufferCache::dump_cache(SrsLiveConsumer *consumer, SrsRtmpJitterAlgorithm jitter)
+srs_error_t SrsBufferCache::dump_cache(ISrsLiveConsumer *consumer, SrsRtmpJitterAlgorithm jitter)
 {
     srs_error_t err = srs_success;
 
@@ -133,7 +146,7 @@ srs_error_t SrsBufferCache::cycle()
     srs_error_t err = srs_success;
 
     SrsSharedPtr<SrsLiveSource> live_source;
-    if ((err = _srs_sources->fetch_or_create(req_, live_source)) != srs_success) {
+    if ((err = live_sources_->fetch_or_create(req_, live_source)) != srs_success) {
         return srs_error_wrap(err, "source create");
     }
     srs_assert(live_source.get() != NULL);
@@ -214,7 +227,7 @@ SrsTsStreamEncoder::~SrsTsStreamEncoder()
     srs_freep(enc_);
 }
 
-srs_error_t SrsTsStreamEncoder::initialize(SrsFileWriter *w, SrsBufferCache * /*c*/)
+srs_error_t SrsTsStreamEncoder::initialize(SrsFileWriter *w, ISrsBufferCache * /*c*/)
 {
     srs_error_t err = srs_success;
 
@@ -258,7 +271,7 @@ bool SrsTsStreamEncoder::has_cache()
     return false;
 }
 
-srs_error_t SrsTsStreamEncoder::dump_cache(SrsLiveConsumer * /*consumer*/, SrsRtmpJitterAlgorithm /*jitter*/)
+srs_error_t SrsTsStreamEncoder::dump_cache(ISrsLiveConsumer * /*consumer*/, SrsRtmpJitterAlgorithm /*jitter*/)
 {
     // for ts stream, ignore cache.
     return srs_success;
@@ -293,7 +306,7 @@ SrsFlvStreamEncoder::~SrsFlvStreamEncoder()
     srs_freep(enc_);
 }
 
-srs_error_t SrsFlvStreamEncoder::initialize(SrsFileWriter *w, SrsBufferCache * /*c*/)
+srs_error_t SrsFlvStreamEncoder::initialize(SrsFileWriter *w, ISrsBufferCache * /*c*/)
 {
     srs_error_t err = srs_success;
 
@@ -363,7 +376,7 @@ bool SrsFlvStreamEncoder::has_cache()
     return false;
 }
 
-srs_error_t SrsFlvStreamEncoder::dump_cache(SrsLiveConsumer * /*consumer*/, SrsRtmpJitterAlgorithm /*jitter*/)
+srs_error_t SrsFlvStreamEncoder::dump_cache(ISrsLiveConsumer * /*consumer*/, SrsRtmpJitterAlgorithm /*jitter*/)
 {
     // for flv stream, ignore cache.
     return srs_success;
@@ -458,7 +471,7 @@ SrsAacStreamEncoder::~SrsAacStreamEncoder()
     srs_freep(enc_);
 }
 
-srs_error_t SrsAacStreamEncoder::initialize(SrsFileWriter *w, SrsBufferCache *c)
+srs_error_t SrsAacStreamEncoder::initialize(SrsFileWriter *w, ISrsBufferCache *c)
 {
     srs_error_t err = srs_success;
 
@@ -493,7 +506,7 @@ bool SrsAacStreamEncoder::has_cache()
     return true;
 }
 
-srs_error_t SrsAacStreamEncoder::dump_cache(SrsLiveConsumer *consumer, SrsRtmpJitterAlgorithm jitter)
+srs_error_t SrsAacStreamEncoder::dump_cache(ISrsLiveConsumer *consumer, SrsRtmpJitterAlgorithm jitter)
 {
     srs_assert(cache_);
     return cache_->dump_cache(consumer, jitter);
@@ -510,7 +523,7 @@ SrsMp3StreamEncoder::~SrsMp3StreamEncoder()
     srs_freep(enc_);
 }
 
-srs_error_t SrsMp3StreamEncoder::initialize(SrsFileWriter *w, SrsBufferCache *c)
+srs_error_t SrsMp3StreamEncoder::initialize(SrsFileWriter *w, ISrsBufferCache *c)
 {
     srs_error_t err = srs_success;
 
@@ -549,7 +562,7 @@ bool SrsMp3StreamEncoder::has_cache()
     return true;
 }
 
-srs_error_t SrsMp3StreamEncoder::dump_cache(SrsLiveConsumer *consumer, SrsRtmpJitterAlgorithm jitter)
+srs_error_t SrsMp3StreamEncoder::dump_cache(ISrsLiveConsumer *consumer, SrsRtmpJitterAlgorithm jitter)
 {
     srs_assert(cache_);
     return cache_->dump_cache(consumer, jitter);
@@ -596,12 +609,24 @@ srs_error_t SrsBufferWriter::writev(const iovec *iov, int iovcnt, ssize_t *pnwri
     return writer_->writev(iov, iovcnt, pnwrite);
 }
 
-SrsLiveStream::SrsLiveStream(SrsServer *s, ISrsRequest *r, SrsBufferCache *c)
+ISrsLiveStream::ISrsLiveStream()
+{
+}
+
+ISrsLiveStream::~ISrsLiveStream()
+{
+}
+
+SrsLiveStream::SrsLiveStream(ISrsRequest *r, ISrsBufferCache *c)
 {
     cache_ = c;
     req_ = r->copy()->as_http();
     security_ = new SrsSecurity();
-    server_ = s;
+
+    config_ = _srs_config;
+    live_sources_ = _srs_sources;
+    stat_ = _srs_stat;
+    hooks_ = _srs_hooks;
 }
 
 SrsLiveStream::~SrsLiveStream()
@@ -611,6 +636,11 @@ SrsLiveStream::~SrsLiveStream()
 
     // The live stream should never be destroyed when it's serving any viewers.
     srs_assert(viewers_.empty());
+
+    config_ = NULL;
+    live_sources_ = NULL;
+    stat_ = NULL;
+    hooks_ = NULL;
 }
 
 srs_error_t SrsLiveStream::update_auth(ISrsRequest *r)
@@ -664,8 +694,7 @@ srs_error_t SrsLiveStream::serve_http_impl(ISrsHttpResponseWriter *w, ISrsHttpMe
     req_->ip_ = hc->remote_ip();
 
     // We must do stat the client before hooks, because hooks depends on it.
-    SrsStatistic *stat = _srs_stat;
-    if ((err = stat->on_client(_srs_context->get_id().c_str(), req_, hc, SrsFlvPlay)) != srs_success) {
+    if ((err = stat_->on_client(_srs_context->get_id().c_str(), req_, hc, SrsFlvPlay)) != srs_success) {
         return srs_error_wrap(err, "stat on client");
     }
 
@@ -679,19 +708,19 @@ srs_error_t SrsLiveStream::serve_http_impl(ISrsHttpResponseWriter *w, ISrsHttpMe
     }
 
     // Fast check whether stream is still available.
-    if (!entry->enabled) {
+    if (!entry_->enabled) {
         return srs_error_new(ERROR_RTMP_STREAM_NOT_FOUND, "stream not found");
     }
 
     // Always try to create the source, because http handler won't create it.
     SrsSharedPtr<SrsLiveSource> live_source;
-    if ((err = _srs_sources->fetch_or_create(req_, live_source)) != srs_success) {
+    if ((err = live_sources_->fetch_or_create(req_, live_source)) != srs_success) {
         return srs_error_wrap(err, "source create");
     }
     srs_assert(live_source.get() != NULL);
 
-    bool enabled_cache = _srs_config->get_gop_cache(req_->vhost_);
-    int gcmf = _srs_config->get_gop_cache_max_frames(req_->vhost_);
+    bool enabled_cache = config_->get_gop_cache(req_->vhost_);
+    int gcmf = config_->get_gop_cache_max_frames(req_->vhost_);
     live_source->set_cache(enabled_cache);
     live_source->set_gop_cache_max_frames(gcmf);
 
@@ -706,7 +735,7 @@ srs_error_t SrsLiveStream::serve_http_impl(ISrsHttpResponseWriter *w, ISrsHttpMe
     SrsUniquePtr<SrsLiveConsumer> consumer(consumer_raw);
 
     // Fast check whether stream is still available.
-    if (!entry->enabled) {
+    if (!entry_->enabled) {
         return srs_error_new(ERROR_RTMP_STREAM_NOT_FOUND, "stream not found");
     }
 
@@ -733,20 +762,20 @@ void SrsLiveStream::expire()
     }
 }
 
-srs_error_t SrsLiveStream::do_serve_http(SrsLiveSource *source, SrsLiveConsumer *consumer, ISrsHttpResponseWriter *w, ISrsHttpMessage *r)
+srs_error_t SrsLiveStream::do_serve_http(SrsLiveSource *source, ISrsLiveConsumer *consumer, ISrsHttpResponseWriter *w, ISrsHttpMessage *r)
 {
     srs_error_t err = srs_success;
 
     string enc_desc;
     ISrsBufferEncoder *enc_raw = NULL;
 
-    srs_assert(entry);
-    bool drop_if_not_match = _srs_config->get_vhost_http_remux_drop_if_not_match(req_->vhost_);
-    bool has_audio = _srs_config->get_vhost_http_remux_has_audio(req_->vhost_);
-    bool has_video = _srs_config->get_vhost_http_remux_has_video(req_->vhost_);
-    bool guess_has_av = _srs_config->get_vhost_http_remux_guess_has_av(req_->vhost_);
+    srs_assert(entry_);
+    bool drop_if_not_match = config_->get_vhost_http_remux_drop_if_not_match(req_->vhost_);
+    bool has_audio = config_->get_vhost_http_remux_has_audio(req_->vhost_);
+    bool has_video = config_->get_vhost_http_remux_has_video(req_->vhost_);
+    bool guess_has_av = config_->get_vhost_http_remux_guess_has_av(req_->vhost_);
 
-    if (srs_strings_ends_with(entry->pattern, ".flv")) {
+    if (srs_strings_ends_with(entry_->pattern, ".flv")) {
         w->header()->set_content_type("video/x-flv");
         enc_desc = "FLV";
         enc_raw = new SrsFlvStreamEncoder();
@@ -754,15 +783,15 @@ srs_error_t SrsLiveStream::do_serve_http(SrsLiveSource *source, SrsLiveConsumer 
         ((SrsFlvStreamEncoder *)enc_raw)->set_has_audio(has_audio);
         ((SrsFlvStreamEncoder *)enc_raw)->set_has_video(has_video);
         ((SrsFlvStreamEncoder *)enc_raw)->set_guess_has_av(guess_has_av);
-    } else if (srs_strings_ends_with(entry->pattern, ".aac")) {
+    } else if (srs_strings_ends_with(entry_->pattern, ".aac")) {
         w->header()->set_content_type("audio/x-aac");
         enc_desc = "AAC";
         enc_raw = new SrsAacStreamEncoder();
-    } else if (srs_strings_ends_with(entry->pattern, ".mp3")) {
+    } else if (srs_strings_ends_with(entry_->pattern, ".mp3")) {
         w->header()->set_content_type("audio/mpeg");
         enc_desc = "MP3";
         enc_raw = new SrsMp3StreamEncoder();
-    } else if (srs_strings_ends_with(entry->pattern, ".ts")) {
+    } else if (srs_strings_ends_with(entry_->pattern, ".ts")) {
         w->header()->set_content_type("video/MP2T");
         enc_desc = "TS";
         enc_raw = new SrsTsStreamEncoder();
@@ -770,7 +799,7 @@ srs_error_t SrsLiveStream::do_serve_http(SrsLiveSource *source, SrsLiveConsumer 
         ((SrsTsStreamEncoder *)enc_raw)->set_has_video(has_video);
         ((SrsTsStreamEncoder *)enc_raw)->set_guess_has_av(guess_has_av);
     } else {
-        return srs_error_new(ERROR_HTTP_LIVE_STREAM_EXT, "invalid pattern=%s", entry->pattern.c_str());
+        return srs_error_new(ERROR_HTTP_LIVE_STREAM_EXT, "invalid pattern=%s", entry_->pattern.c_str());
     }
     SrsUniquePtr<ISrsBufferEncoder> enc(enc_raw);
 
@@ -817,14 +846,14 @@ srs_error_t SrsLiveStream::do_serve_http(SrsLiveSource *source, SrsLiveConsumer 
         return srs_error_wrap(err, "start recv thread");
     }
 
-    srs_utime_t mw_sleep = _srs_config->get_mw_sleep(req_->vhost_);
+    srs_utime_t mw_sleep = config_->get_mw_sleep(req_->vhost_);
     srs_trace("FLV %s, encoder=%s, mw_sleep=%dms, cache=%d, msgs=%d, dinm=%d, guess_av=%d/%d/%d",
-              entry->pattern.c_str(), enc_desc.c_str(), srsu2msi(mw_sleep), enc->has_cache(), msgs.max_, drop_if_not_match,
+              entry_->pattern.c_str(), enc_desc.c_str(), srsu2msi(mw_sleep), enc->has_cache(), msgs.max_, drop_if_not_match,
               has_audio, has_video, guess_has_av);
 
     // TODO: free and erase the disabled entry after all related connections is closed.
     // TODO: FXIME: Support timeout for player, quit infinite-loop.
-    while (entry->enabled) {
+    while (entry_->enabled) {
         // Whether client closed the FD.
         if ((err = trd->pull()) != srs_success) {
             return srs_error_wrap(err, "recv thread");
@@ -882,7 +911,7 @@ srs_error_t SrsLiveStream::http_hooks_on_play(ISrsHttpMessage *r)
 {
     srs_error_t err = srs_success;
 
-    if (!_srs_config->get_vhost_http_hooks_enabled(req_->vhost_)) {
+    if (!config_->get_vhost_http_hooks_enabled(req_->vhost_)) {
         return err;
     }
 
@@ -896,7 +925,7 @@ srs_error_t SrsLiveStream::http_hooks_on_play(ISrsHttpMessage *r)
     vector<string> hooks;
 
     if (true) {
-        SrsConfDirective *conf = _srs_config->get_vhost_on_play(nreq->vhost_);
+        SrsConfDirective *conf = config_->get_vhost_on_play(nreq->vhost_);
 
         if (!conf) {
             return err;
@@ -907,7 +936,7 @@ srs_error_t SrsLiveStream::http_hooks_on_play(ISrsHttpMessage *r)
 
     for (int i = 0; i < (int)hooks.size(); i++) {
         std::string url = hooks.at(i);
-        if ((err = _srs_hooks->on_play(url, nreq.get())) != srs_success) {
+        if ((err = hooks_->on_play(url, nreq.get())) != srs_success) {
             return srs_error_wrap(err, "http on_play %s", url.c_str());
         }
     }
@@ -917,7 +946,7 @@ srs_error_t SrsLiveStream::http_hooks_on_play(ISrsHttpMessage *r)
 
 void SrsLiveStream::http_hooks_on_stop(ISrsHttpMessage *r)
 {
-    if (!_srs_config->get_vhost_http_hooks_enabled(req_->vhost_)) {
+    if (!config_->get_vhost_http_hooks_enabled(req_->vhost_)) {
         return;
     }
 
@@ -931,7 +960,7 @@ void SrsLiveStream::http_hooks_on_stop(ISrsHttpMessage *r)
     vector<string> hooks;
 
     if (true) {
-        SrsConfDirective *conf = _srs_config->get_vhost_on_stop(nreq->vhost_);
+        SrsConfDirective *conf = config_->get_vhost_on_stop(nreq->vhost_);
 
         if (!conf) {
             srs_info("ignore the empty http callback: on_stop");
@@ -943,7 +972,7 @@ void SrsLiveStream::http_hooks_on_stop(ISrsHttpMessage *r)
 
     for (int i = 0; i < (int)hooks.size(); i++) {
         std::string url = hooks.at(i);
-        _srs_hooks->on_stop(url, nreq.get());
+        hooks_->on_stop(url, nreq.get());
     }
 
     return;
@@ -1017,19 +1046,24 @@ bool SrsLiveEntry::is_mp3()
     return is_mp3_;
 }
 
-SrsHttpStreamServer::SrsHttpStreamServer(SrsServer *svr)
+SrsHttpStreamServer::SrsHttpStreamServer()
 {
-    server_ = svr;
     async_ = new SrsAsyncCallWorker();
 
     mux_.add_dynamic_matcher(this);
-    _srs_config->subscribe(this);
+
+    config_ = _srs_config;
+}
+
+void SrsHttpStreamServer::assemble()
+{
+    config_->subscribe(this);
 }
 
 SrsHttpStreamServer::~SrsHttpStreamServer()
 {
     mux_.remove_dynamic_matcher(this);
-    _srs_config->unsubscribe(this);
+    config_->unsubscribe(this);
 
     async_->stop();
     srs_freep(async_);
@@ -1050,6 +1084,8 @@ SrsHttpStreamServer::~SrsHttpStreamServer()
         }
         streamHandlers_.clear();
     }
+
+    config_ = NULL;
 }
 
 srs_error_t SrsHttpStreamServer::initialize()
@@ -1098,8 +1134,8 @@ srs_error_t SrsHttpStreamServer::http_mount(ISrsRequest *r)
         entry = new SrsLiveEntry(mount);
 
         entry->req_ = r->copy()->as_http();
-        entry->cache_ = new SrsBufferCache(server_, r);
-        entry->stream_ = new SrsLiveStream(server_, r, entry->cache_);
+        entry->cache_ = new SrsBufferCache(r);
+        entry->stream_ = new SrsLiveStream(r, entry->cache_);
 
         // TODO: FIXME: maybe refine the logic of http remux service.
         // if user push streams followed:
@@ -1139,7 +1175,7 @@ srs_error_t SrsHttpStreamServer::http_mount(ISrsRequest *r)
     }
 
     if (entry->stream_) {
-        entry->stream_->entry->enabled = true;
+        entry->stream_->entry_->enabled = true;
         return err;
     }
 
@@ -1176,7 +1212,7 @@ srs_error_t SrsHttpStreamServer::dynamic_match(ISrsHttpMessage *request, ISrsHtt
 
     // when handler not the root, we think the handler is ok.
     ISrsHttpHandler *h = *ph ? *ph : NULL;
-    if (h && h->entry && h->entry->pattern != "/") {
+    if (h && h->entry_ && h->entry_->pattern != "/") {
         return err;
     }
 
@@ -1187,8 +1223,8 @@ srs_error_t SrsHttpStreamServer::dynamic_match(ISrsHttpMessage *request, ISrsHtt
     }
 
     // find the actually request vhost.
-    SrsConfDirective *vhost = _srs_config->get_vhost(request->host());
-    if (!vhost || !_srs_config->get_vhost_enabled(vhost)) {
+    SrsConfDirective *vhost = config_->get_vhost(request->host());
+    if (!vhost || !config_->get_vhost_enabled(vhost)) {
         return err;
     }
 
@@ -1254,11 +1290,11 @@ srs_error_t SrsHttpStreamServer::dynamic_match(ISrsHttpMessage *request, ISrsHtt
     // for example, user disable the http flv then reload.
     if (streamHandlers_.find(sid) != streamHandlers_.end()) {
         SrsLiveEntry *s_entry = streamHandlers_[sid];
-        if (!s_entry->stream_->entry->enabled) {
+        if (!s_entry->stream_->entry_->enabled) {
             // only when the http entry is disabled, check the config whether http flv disable,
             // for the http flv edge use match to trigger the edge ingester, we always mount it
             // eventhough the origin does not exists the specified stream.
-            if (!_srs_config->get_vhost_http_remux_enabled(r->vhost_)) {
+            if (!config_->get_vhost_http_remux_enabled(r->vhost_)) {
                 return srs_error_new(ERROR_HTTP_DYNAMIC_MATCH, "stream disabled");
             }
         }
@@ -1285,7 +1321,7 @@ srs_error_t SrsHttpStreamServer::initialize_flv_streaming()
     srs_error_t err = srs_success;
 
     // http flv live stream mount for each vhost.
-    SrsConfDirective *root = _srs_config->get_root();
+    SrsConfDirective *root = config_->get_root();
     for (int i = 0; i < (int)root->directives_.size(); i++) {
         SrsConfDirective *conf = root->at(i);
 
@@ -1305,11 +1341,11 @@ srs_error_t SrsHttpStreamServer::initialize_flv_entry(std::string vhost)
 {
     srs_error_t err = srs_success;
 
-    if (!_srs_config->get_vhost_http_remux_enabled(vhost)) {
+    if (!config_->get_vhost_http_remux_enabled(vhost)) {
         return err;
     }
 
-    SrsLiveEntry *entry = new SrsLiveEntry(_srs_config->get_vhost_http_remux_mount(vhost));
+    SrsLiveEntry *entry = new SrsLiveEntry(config_->get_vhost_http_remux_mount(vhost));
 
     templateHandlers_[vhost] = entry;
     srs_trace("http flv live stream, vhost=%s, mount=%s", vhost.c_str(), entry->mount_.c_str());
@@ -1341,12 +1377,12 @@ srs_error_t SrsHttpStreamDestroy::call()
     SrsUniquePtr<SrsLiveEntry> entry(it->second);
     srs_assert(entry->disposing_);
 
-    SrsUniquePtr<SrsLiveStream> stream(entry->stream_);
-    SrsUniquePtr<SrsBufferCache> cache(entry->cache_);
+    SrsUniquePtr<ISrsLiveStream> stream(entry->stream_);
+    SrsUniquePtr<ISrsBufferCache> cache(entry->cache_);
 
     // Notify cache and stream to stop.
-    if (stream->entry)
-        stream->entry->enabled = false;
+    if (stream->entry_)
+        stream->entry_->enabled = false;
     stream->expire();
     cache->stop();
 

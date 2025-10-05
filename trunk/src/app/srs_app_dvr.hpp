@@ -19,7 +19,7 @@ class SrsBuffer;
 class SrsRtmpJitter;
 class SrsMediaPacket;
 class SrsFileWriter;
-class SrsFlvTransmuxer;
+class ISrsFlvTransmuxer;
 class SrsDvrPlan;
 class SrsJsonAny;
 class SrsJsonObject;
@@ -99,7 +99,7 @@ class SrsDvrFlvSegmenter : public SrsDvrSegmenter
 {
 private:
     // The FLV encoder, for FLV target.
-    SrsFlvTransmuxer *enc_;
+    ISrsFlvTransmuxer *enc_;
 
 private:
     // The offset of file for duration value.

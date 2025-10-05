@@ -43,7 +43,9 @@ public:
     virtual ~ISrsAsyncCallWorker();
 
 public:
+    virtual srs_error_t execute(ISrsAsyncCallTask *t) = 0;
     virtual srs_error_t start() = 0;
+    virtual void stop() = 0;
 };
 
 // The async callback for dvr, callback and other async worker.

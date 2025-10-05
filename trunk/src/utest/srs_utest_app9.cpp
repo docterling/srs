@@ -70,6 +70,12 @@ void MockLiveSourceForQueue::update_auth(ISrsRequest *r)
     // Mock update_auth - do nothing to avoid accessing null req_
 }
 
+srs_error_t MockLiveSourceForQueue::consumer_dumps(ISrsLiveConsumer *consumer, bool ds, bool dm, bool dg)
+{
+    // Mock consumer_dumps - just return success without doing anything
+    return srs_success;
+}
+
 MockLiveConsumerForQueue::MockLiveConsumerForQueue(MockLiveSourceForQueue *source)
     : SrsLiveConsumer(source)
 {

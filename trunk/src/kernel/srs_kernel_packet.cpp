@@ -352,6 +352,14 @@ srs_error_t SrsParsedVideoPacket::parse_hevc_bframe(const SrsNaluSample *sample,
     return err;
 }
 
+ISrsFormat::ISrsFormat()
+{
+}
+
+ISrsFormat::~ISrsFormat()
+{
+}
+
 SrsFormat::SrsFormat()
 {
     acodec_ = NULL;
@@ -480,6 +488,26 @@ bool SrsFormat::is_avc_sequence_header()
     bool h265 = (vcodec_ && vcodec_->id_ == SrsVideoCodecIdHEVC);
     bool av1 = (vcodec_ && vcodec_->id_ == SrsVideoCodecIdAV1);
     return vcodec_ && (h264 || h265 || av1) && video_ && video_->avc_packet_type_ == SrsVideoAvcFrameTraitSequenceHeader;
+}
+
+SrsParsedAudioPacket* SrsFormat::audio()
+{
+    return audio_;
+}
+
+SrsAudioCodecConfig* SrsFormat::acodec()
+{
+    return acodec_;
+}
+
+SrsParsedVideoPacket* SrsFormat::video()
+{
+    return video_;
+}
+
+SrsVideoCodecConfig* SrsFormat::vcodec()
+{
+    return vcodec_;
 }
 
 // Remove the emulation bytes from stream, and return num of bytes of the rbsp.

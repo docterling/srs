@@ -11,14 +11,15 @@
 #include <srs_utest_app10.hpp>
 */
 #include <srs_utest.hpp>
-#include <srs_utest_app6.hpp>
-#include <srs_protocol_http_stack.hpp>
-#include <srs_kernel_hourglass.hpp>
+
 #include <srs_app_factory.hpp>
-#include <srs_app_rtc_server.hpp>
 #include <srs_app_heartbeat.hpp>
+#include <srs_app_rtc_server.hpp>
 #include <srs_app_rtmp_conn.hpp>
 #include <srs_app_security.hpp>
+#include <srs_kernel_hourglass.hpp>
+#include <srs_protocol_http_stack.hpp>
+#include <srs_utest_app6.hpp>
 
 // Mock config for testing SrsServer::listen()
 class MockAppConfigForServerListen : public MockAppConfig
@@ -416,7 +417,7 @@ class MockRtmpServerForHandlePublishMessage : public ISrsRtmpServer
 {
 public:
     srs_error_t decode_message_error_;
-    SrsRtmpCommand* decode_message_packet_;
+    SrsRtmpCommand *decode_message_packet_;
     int decode_message_count_;
     srs_error_t fmle_unpublish_error_;
     int fmle_unpublish_count_;
@@ -461,7 +462,7 @@ public:
 class MockRtmpServerForPlayControl : public ISrsRtmpServer
 {
 public:
-    SrsRtmpCommand* decode_message_packet_;
+    SrsRtmpCommand *decode_message_packet_;
     int decode_message_count_;
     int send_and_free_packet_count_;
     int on_play_client_pause_count_;

@@ -258,6 +258,7 @@ public:
     virtual srs_error_t dumps_clients(SrsJsonArray *arr, int start, int count);
     // Dumps the hints about SRS server.
     void dumps_hints_kv(std::stringstream &ss);
+
 private:
     virtual SrsStatisticVhost *create_vhost(ISrsRequest *req);
     virtual SrsStatisticStream *create_stream(SrsStatisticVhost *vhost, ISrsRequest *req);
