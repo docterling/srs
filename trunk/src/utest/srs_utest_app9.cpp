@@ -1922,6 +1922,62 @@ srs_error_t MockStatisticForOriginHub::on_video_frames(ISrsRequest *req, int nb_
     return srs_success;
 }
 
+std::string MockStatisticForOriginHub::server_id()
+{
+    return "mock_server_id";
+}
+
+std::string MockStatisticForOriginHub::service_id()
+{
+    return "mock_service_id";
+}
+
+std::string MockStatisticForOriginHub::service_pid()
+{
+    return "mock_pid";
+}
+
+SrsStatisticVhost *MockStatisticForOriginHub::find_vhost_by_id(std::string vid)
+{
+    return NULL;
+}
+
+SrsStatisticStream *MockStatisticForOriginHub::find_stream(std::string sid)
+{
+    return NULL;
+}
+
+SrsStatisticClient *MockStatisticForOriginHub::find_client(std::string client_id)
+{
+    return NULL;
+}
+
+srs_error_t MockStatisticForOriginHub::dumps_vhosts(SrsJsonArray *arr)
+{
+    return srs_success;
+}
+
+srs_error_t MockStatisticForOriginHub::dumps_streams(SrsJsonArray *arr, int start, int count)
+{
+    return srs_success;
+}
+
+srs_error_t MockStatisticForOriginHub::dumps_clients(SrsJsonArray *arr, int start, int count)
+{
+    return srs_success;
+}
+
+srs_error_t MockStatisticForOriginHub::dumps_metrics(int64_t &send_bytes, int64_t &recv_bytes, int64_t &nstreams, int64_t &nclients, int64_t &total_nclients, int64_t &nerrs)
+{
+    send_bytes = 0;
+    recv_bytes = 0;
+    nstreams = 0;
+    nclients = 0;
+    total_nclients = 0;
+    nerrs = 0;
+    return srs_success;
+}
+
 // Mock ISrsNgExec implementation
 MockNgExecForOriginHub::MockNgExecForOriginHub()
 {

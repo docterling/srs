@@ -315,6 +315,16 @@ public:
     virtual std::vector<std::string> get_https_api_listens() = 0;
     virtual std::string get_https_api_ssl_key() = 0;
     virtual std::string get_https_api_ssl_cert() = 0;
+    // Whether enable the HTTP RAW API.
+    virtual bool get_raw_api() = 0;
+    // Whether allow rpc reload.
+    virtual bool get_raw_api_allow_reload() = 0;
+    // Whether allow rpc query.
+    virtual bool get_raw_api_allow_query() = 0;
+    // Whether allow rpc update.
+    virtual bool get_raw_api_allow_update() = 0;
+    // Dumps the http_api sections to json for raw api info.
+    virtual srs_error_t raw_to_json(SrsJsonObject *obj) = 0;
 
 public:
     // HTTP Server config
@@ -354,6 +364,8 @@ public:
     // Exporter config
     virtual bool get_exporter_enabled() = 0;
     virtual std::string get_exporter_listen() = 0;
+    virtual std::string get_exporter_label() = 0;
+    virtual std::string get_exporter_tag() = 0;
 
 public:
     // Stats config

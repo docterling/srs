@@ -33,7 +33,7 @@ class SrsTcpClient;
 class SrsSslClient : public ISrsReader, public ISrsStreamWriter
 {
 private:
-    SrsTcpClient *transport_;
+    ISrsProtocolReadWriter *transport_;
 
 private:
     SSL_CTX *ssl_ctx_;

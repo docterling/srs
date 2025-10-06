@@ -193,10 +193,10 @@ public:
 
 public:
     // Getters for codec and packet information
-    virtual SrsParsedAudioPacket* audio() = 0;
-    virtual SrsAudioCodecConfig* acodec() = 0;
-    virtual SrsParsedVideoPacket* video() = 0;
-    virtual SrsVideoCodecConfig* vcodec() = 0;
+    virtual SrsParsedAudioPacket *audio() = 0;
+    virtual SrsAudioCodecConfig *acodec() = 0;
+    virtual SrsParsedVideoPacket *video() = 0;
+    virtual SrsVideoCodecConfig *vcodec() = 0;
 };
 
 /**
@@ -247,10 +247,10 @@ public:
 
 public:
     // Getters for codec and packet information
-    virtual SrsParsedAudioPacket* audio();
-    virtual SrsAudioCodecConfig* acodec();
-    virtual SrsParsedVideoPacket* video();
-    virtual SrsVideoCodecConfig* vcodec();
+    virtual SrsParsedAudioPacket *audio();
+    virtual SrsAudioCodecConfig *acodec();
+    virtual SrsParsedVideoPacket *video();
+    virtual SrsVideoCodecConfig *vcodec();
 
 private:
     // Demux the video packet in H.264 codec.

@@ -1437,10 +1437,10 @@ public:
 
 public:
     // Getters and setters for cached messages
-    virtual SrsTsMessage* audio() = 0;
-    virtual void set_audio(SrsTsMessage* msg) = 0;
-    virtual SrsTsMessage* video() = 0;
-    virtual void set_video(SrsTsMessage* msg) = 0;
+    virtual SrsTsMessage *audio() = 0;
+    virtual void set_audio(SrsTsMessage *msg) = 0;
+    virtual SrsTsMessage *video() = 0;
+    virtual void set_video(SrsTsMessage *msg) = 0;
 };
 
 // TS messages cache, to group frames to TS message,
@@ -1464,10 +1464,10 @@ public:
 
 public:
     // Getters and setters for cached messages
-    virtual SrsTsMessage* audio();
-    virtual void set_audio(SrsTsMessage* msg);
-    virtual SrsTsMessage* video();
-    virtual void set_video(SrsTsMessage* msg);
+    virtual SrsTsMessage *audio();
+    virtual void set_audio(SrsTsMessage *msg);
+    virtual SrsTsMessage *video();
+    virtual void set_video(SrsTsMessage *msg);
 
 private:
     virtual srs_error_t do_cache_mp3(SrsParsedAudioPacket *frame);

@@ -73,6 +73,17 @@ class SrsAppFactory;
 // Initialize global shared variables cross all threads.
 extern srs_error_t srs_global_initialize();
 
+// The signal handler interface.
+class ISrsSignalHandler
+{
+public:
+    ISrsSignalHandler();
+    virtual ~ISrsSignalHandler();
+
+public:
+    virtual void on_signal(int signo) = 0;
+};
+
 // SrsServer is the main server class of SRS (Simple Realtime Server) that provides comprehensive
 // streaming media server functionality. It serves as the central orchestrator for all streaming
 // protocols and services in a single-threaded, coroutine-based architecture.
@@ -81,7 +92,8 @@ class SrsServer : public ISrsReloadHandler, // Reload framework for permormance 
                   public ISrsTcpHandler,
                   public ISrsHourGlassHandler,
                   public ISrsSrtClientHandler,
-                  public ISrsUdpMuxHandler
+                  public ISrsUdpMuxHandler,
+                  public ISrsSignalHandler
 {
 private:
     ISrsAppConfig *config_;

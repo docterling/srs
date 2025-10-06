@@ -258,6 +258,16 @@ public:
     virtual void kbps_add_delta(std::string id, ISrsKbpsDelta *delta);
     virtual void kbps_sample();
     virtual srs_error_t on_video_frames(ISrsRequest *req, int nb_frames);
+    virtual std::string server_id();
+    virtual std::string service_id();
+    virtual std::string service_pid();
+    virtual SrsStatisticVhost *find_vhost_by_id(std::string vid);
+    virtual SrsStatisticStream *find_stream(std::string sid);
+    virtual SrsStatisticClient *find_client(std::string client_id);
+    virtual srs_error_t dumps_vhosts(SrsJsonArray *arr);
+    virtual srs_error_t dumps_streams(SrsJsonArray *arr, int start, int count);
+    virtual srs_error_t dumps_clients(SrsJsonArray *arr, int start, int count);
+    virtual srs_error_t dumps_metrics(int64_t &send_bytes, int64_t &recv_bytes, int64_t &nstreams, int64_t &nclients, int64_t &total_nclients, int64_t &nerrs);
     void reset();
 };
 

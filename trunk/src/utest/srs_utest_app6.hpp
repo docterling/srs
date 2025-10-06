@@ -248,6 +248,7 @@ public:
     virtual srs_error_t reload(SrsReloadState *pstate) { return srs_success; }
     virtual srs_error_t persistence() { return srs_success; }
     virtual std::string config() { return ""; }
+    virtual SrsConfDirective *get_root() { return NULL; }
     virtual int get_max_connections() { return 1000; }
     virtual std::string get_pid_file() { return ""; }
     virtual bool empty_ip_ok() { return false; }
@@ -266,6 +267,11 @@ public:
     virtual std::vector<std::string> get_https_api_listens() { return std::vector<std::string>(); }
     virtual std::string get_https_api_ssl_key() { return ""; }
     virtual std::string get_https_api_ssl_cert() { return ""; }
+    virtual bool get_raw_api() { return false; }
+    virtual bool get_raw_api_allow_reload() { return false; }
+    virtual bool get_raw_api_allow_query() { return false; }
+    virtual bool get_raw_api_allow_update() { return false; }
+    virtual srs_error_t raw_to_json(SrsJsonObject *obj) { return srs_success; }
     virtual bool get_http_stream_enabled() { return false; }
     virtual std::vector<std::string> get_http_stream_listens() { return std::vector<std::string>(); }
     virtual bool get_https_stream_enabled() { return false; }
@@ -287,6 +293,8 @@ public:
     virtual std::string get_stream_caster_engine(SrsConfDirective *conf) { return ""; }
     virtual bool get_exporter_enabled() { return false; }
     virtual std::string get_exporter_listen() { return ""; }
+    virtual std::string get_exporter_label() { return ""; }
+    virtual std::string get_exporter_tag() { return ""; }
     virtual bool get_stats_enabled() { return false; }
     virtual int get_stats_network() { return 0; }
     virtual bool get_heartbeat_enabled() { return false; }
@@ -383,7 +391,6 @@ public:
     virtual bool get_atc_auto(std::string vhost);
     virtual bool get_reduce_sequence_header(std::string vhost);
     virtual bool get_parse_sps(std::string vhost);
-    virtual SrsConfDirective *get_root() { return NULL; }
     virtual bool get_vhost_enabled(SrsConfDirective *conf) { return true; }
     virtual bool get_vhost_http_remux_enabled(std::string vhost) { return false; }
     virtual bool get_vhost_http_remux_enabled(SrsConfDirective *vhost) { return false; }
@@ -469,6 +476,16 @@ public:
     virtual void kbps_add_delta(std::string id, ISrsKbpsDelta *delta);
     virtual void kbps_sample();
     virtual srs_error_t on_video_frames(ISrsRequest *req, int nb_frames);
+    virtual std::string server_id();
+    virtual std::string service_id();
+    virtual std::string service_pid();
+    virtual SrsStatisticVhost *find_vhost_by_id(std::string vid);
+    virtual SrsStatisticStream *find_stream(std::string sid);
+    virtual SrsStatisticClient *find_client(std::string client_id);
+    virtual srs_error_t dumps_vhosts(SrsJsonArray *arr);
+    virtual srs_error_t dumps_streams(SrsJsonArray *arr, int start, int count);
+    virtual srs_error_t dumps_clients(SrsJsonArray *arr, int start, int count);
+    virtual srs_error_t dumps_metrics(int64_t &send_bytes, int64_t &recv_bytes, int64_t &nstreams, int64_t &nclients, int64_t &total_nclients, int64_t &nerrs);
     void set_on_client_error(srs_error_t err);
     void reset();
 };

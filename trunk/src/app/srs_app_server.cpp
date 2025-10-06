@@ -142,6 +142,14 @@ srs_error_t srs_global_initialize()
     return err;
 }
 
+ISrsSignalHandler::ISrsSignalHandler()
+{
+}
+
+ISrsSignalHandler::~ISrsSignalHandler()
+{
+}
+
 SrsServer::SrsServer()
 {
     signal_reload_ = false;
@@ -758,9 +766,13 @@ srs_error_t SrsServer::http_handle()
     if ((err = http_api_mux_->handle("/api/v1/clients/", new SrsGoApiClients())) != srs_success) {
         return srs_error_wrap(err, "handle clients");
     }
-    if ((err = http_api_mux_->handle("/api/v1/raw", new SrsGoApiRaw(this))) != srs_success) {
+
+    SrsGoApiRaw *raw_api = new SrsGoApiRaw(this);
+    raw_api->assemble();
+    if ((err = http_api_mux_->handle("/api/v1/raw", raw_api)) != srs_success) {
         return srs_error_wrap(err, "handle raw");
     }
+
     if ((err = http_api_mux_->handle("/api/v1/clusters", new SrsGoApiClusters())) != srs_success) {
         return srs_error_wrap(err, "handle clusters");
     }
@@ -805,7 +817,9 @@ srs_error_t SrsServer::http_handle()
 #endif
 
     // metrics by prometheus
-    if ((err = http_api_mux_->handle("/metrics", new SrsGoApiMetrics())) != srs_success) {
+    SrsGoApiMetrics *metrics = new SrsGoApiMetrics();
+    metrics->assemble();
+    if ((err = http_api_mux_->handle("/metrics", metrics)) != srs_success) {
         return srs_error_wrap(err, "handle tests errors");
     }
 

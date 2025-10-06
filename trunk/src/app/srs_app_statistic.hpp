@@ -148,6 +148,29 @@ public:
     virtual void kbps_add_delta(std::string id, ISrsKbpsDelta *delta) = 0;
     virtual void kbps_sample() = 0;
     virtual srs_error_t on_video_frames(ISrsRequest *req, int nb_frames) = 0;
+
+public:
+    // Get the server id, used to identify the server.
+    // For example, when restart, the server id must changed.
+    virtual std::string server_id() = 0;
+    // Get the service id, used to identify the restart of service.
+    virtual std::string service_id() = 0;
+    // Get the service pid, used to identify the service process.
+    virtual std::string service_pid() = 0;
+    // Find vhost by id.
+    virtual SrsStatisticVhost *find_vhost_by_id(std::string vid) = 0;
+    // Find stream by id.
+    virtual SrsStatisticStream *find_stream(std::string sid) = 0;
+    // Find client by id.
+    virtual SrsStatisticClient *find_client(std::string client_id) = 0;
+    // Dumps the vhosts to json array.
+    virtual srs_error_t dumps_vhosts(SrsJsonArray *arr) = 0;
+    // Dumps the streams to json array.
+    virtual srs_error_t dumps_streams(SrsJsonArray *arr, int start, int count) = 0;
+    // Dumps the clients to json array.
+    virtual srs_error_t dumps_clients(SrsJsonArray *arr, int start, int count) = 0;
+    // Dumps exporter metrics.
+    virtual srs_error_t dumps_metrics(int64_t &send_bytes, int64_t &recv_bytes, int64_t &nstreams, int64_t &nclients, int64_t &total_nclients, int64_t &nerrs) = 0;
 };
 
 // The global statistic instance.

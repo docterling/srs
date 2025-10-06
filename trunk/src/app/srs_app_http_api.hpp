@@ -19,6 +19,9 @@ class SrsSdp;
 class ISrsRequest;
 class ISrsHttpResponseWriter;
 class SrsHttpConn;
+class ISrsSignalHandler;
+class ISrsStatistic;
+class ISrsAppConfig;
 
 #include <string>
 
@@ -35,6 +38,9 @@ extern srs_error_t srs_api_response_code(ISrsHttpResponseWriter *w, ISrsHttpMess
 // For http root.
 class SrsGoApiRoot : public ISrsHttpHandler
 {
+private:
+    ISrsStatistic *stat_;
+
 public:
     SrsGoApiRoot();
     virtual ~SrsGoApiRoot();
@@ -45,6 +51,9 @@ public:
 
 class SrsGoApiApi : public ISrsHttpHandler
 {
+private:
+    ISrsStatistic *stat_;
+
 public:
     SrsGoApiApi();
     virtual ~SrsGoApiApi();
@@ -55,6 +64,9 @@ public:
 
 class SrsGoApiV1 : public ISrsHttpHandler
 {
+private:
+    ISrsStatistic *stat_;
+
 public:
     SrsGoApiV1();
     virtual ~SrsGoApiV1();
@@ -65,6 +77,9 @@ public:
 
 class SrsGoApiVersion : public ISrsHttpHandler
 {
+private:
+    ISrsStatistic *stat_;
+
 public:
     SrsGoApiVersion();
     virtual ~SrsGoApiVersion();
@@ -75,6 +90,9 @@ public:
 
 class SrsGoApiSummaries : public ISrsHttpHandler
 {
+private:
+    ISrsStatistic *stat_;
+
 public:
     SrsGoApiSummaries();
     virtual ~SrsGoApiSummaries();
@@ -85,6 +103,9 @@ public:
 
 class SrsGoApiRusages : public ISrsHttpHandler
 {
+private:
+    ISrsStatistic *stat_;
+
 public:
     SrsGoApiRusages();
     virtual ~SrsGoApiRusages();
@@ -95,6 +116,9 @@ public:
 
 class SrsGoApiSelfProcStats : public ISrsHttpHandler
 {
+private:
+    ISrsStatistic *stat_;
+
 public:
     SrsGoApiSelfProcStats();
     virtual ~SrsGoApiSelfProcStats();
@@ -105,6 +129,9 @@ public:
 
 class SrsGoApiSystemProcStats : public ISrsHttpHandler
 {
+private:
+    ISrsStatistic *stat_;
+
 public:
     SrsGoApiSystemProcStats();
     virtual ~SrsGoApiSystemProcStats();
@@ -115,6 +142,9 @@ public:
 
 class SrsGoApiMemInfos : public ISrsHttpHandler
 {
+private:
+    ISrsStatistic *stat_;
+
 public:
     SrsGoApiMemInfos();
     virtual ~SrsGoApiMemInfos();
@@ -125,6 +155,9 @@ public:
 
 class SrsGoApiAuthors : public ISrsHttpHandler
 {
+private:
+    ISrsStatistic *stat_;
+
 public:
     SrsGoApiAuthors();
     virtual ~SrsGoApiAuthors();
@@ -135,6 +168,9 @@ public:
 
 class SrsGoApiFeatures : public ISrsHttpHandler
 {
+private:
+    ISrsStatistic *stat_;
+
 public:
     SrsGoApiFeatures();
     virtual ~SrsGoApiFeatures();
@@ -145,6 +181,9 @@ public:
 
 class SrsGoApiRequests : public ISrsHttpHandler
 {
+private:
+    ISrsStatistic *stat_;
+
 public:
     SrsGoApiRequests();
     virtual ~SrsGoApiRequests();
@@ -155,6 +194,9 @@ public:
 
 class SrsGoApiVhosts : public ISrsHttpHandler
 {
+private:
+    ISrsStatistic *stat_;
+
 public:
     SrsGoApiVhosts();
     virtual ~SrsGoApiVhosts();
@@ -165,6 +207,9 @@ public:
 
 class SrsGoApiStreams : public ISrsHttpHandler
 {
+private:
+    ISrsStatistic *stat_;
+
 public:
     SrsGoApiStreams();
     virtual ~SrsGoApiStreams();
@@ -175,6 +220,9 @@ public:
 
 class SrsGoApiClients : public ISrsHttpHandler
 {
+private:
+    ISrsStatistic *stat_;
+
 public:
     SrsGoApiClients();
     virtual ~SrsGoApiClients();
@@ -186,7 +234,11 @@ public:
 class SrsGoApiRaw : public ISrsHttpHandler, public ISrsReloadHandler
 {
 private:
-    SrsServer *server_;
+    ISrsStatistic *stat_;
+    ISrsAppConfig *config_;
+
+private:
+    ISrsSignalHandler *handler_;
 
 private:
     bool raw_api_;
@@ -195,7 +247,8 @@ private:
     bool allow_update_;
 
 public:
-    SrsGoApiRaw(SrsServer *svr);
+    SrsGoApiRaw(ISrsSignalHandler *handler);
+    void assemble();
     virtual ~SrsGoApiRaw();
 
 public:
@@ -204,6 +257,9 @@ public:
 
 class SrsGoApiClusters : public ISrsHttpHandler
 {
+private:
+    ISrsStatistic *stat_;
+
 public:
     SrsGoApiClusters();
     virtual ~SrsGoApiClusters();
@@ -214,6 +270,9 @@ public:
 
 class SrsGoApiError : public ISrsHttpHandler
 {
+private:
+    ISrsStatistic *stat_;
+
 public:
     SrsGoApiError();
     virtual ~SrsGoApiError();
@@ -225,6 +284,9 @@ public:
 #ifdef SRS_GPERF
 class SrsGoApiTcmalloc : public ISrsHttpHandler
 {
+private:
+    ISrsStatistic *stat_;
+
 public:
     SrsGoApiTcmalloc();
     virtual ~SrsGoApiTcmalloc();
@@ -237,6 +299,9 @@ public:
 #ifdef SRS_VALGRIND
 class SrsGoApiValgrind : public ISrsHttpHandler, public ISrsCoroutineHandler
 {
+private:
+    ISrsStatistic *stat_;
+
 private:
     ISrsCoroutine *trd_;
     std::string task_;
@@ -256,6 +321,9 @@ public:
 #ifdef SRS_SIGNAL_API
 class SrsGoApiSignal : public ISrsHttpHandler
 {
+private:
+    ISrsStatistic *stat_;
+
 public:
     SrsGoApiSignal();
     virtual ~SrsGoApiSignal();
@@ -268,12 +336,17 @@ public:
 class SrsGoApiMetrics : public ISrsHttpHandler
 {
 private:
+    ISrsStatistic *stat_;
+    ISrsAppConfig *config_;
+
+private:
     bool enabled_;
     std::string label_;
     std::string tag_;
 
 public:
     SrsGoApiMetrics();
+    void assemble();
     virtual ~SrsGoApiMetrics();
 
 public:

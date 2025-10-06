@@ -774,6 +774,62 @@ srs_error_t MockStatisticForResampleKbps::on_video_frames(ISrsRequest *req, int 
     return srs_success;
 }
 
+std::string MockStatisticForResampleKbps::server_id()
+{
+    return "mock_server_id";
+}
+
+std::string MockStatisticForResampleKbps::service_id()
+{
+    return "mock_service_id";
+}
+
+std::string MockStatisticForResampleKbps::service_pid()
+{
+    return "mock_pid";
+}
+
+SrsStatisticVhost *MockStatisticForResampleKbps::find_vhost_by_id(std::string vid)
+{
+    return NULL;
+}
+
+SrsStatisticStream *MockStatisticForResampleKbps::find_stream(std::string sid)
+{
+    return NULL;
+}
+
+SrsStatisticClient *MockStatisticForResampleKbps::find_client(std::string client_id)
+{
+    return NULL;
+}
+
+srs_error_t MockStatisticForResampleKbps::dumps_vhosts(SrsJsonArray *arr)
+{
+    return srs_success;
+}
+
+srs_error_t MockStatisticForResampleKbps::dumps_streams(SrsJsonArray *arr, int start, int count)
+{
+    return srs_success;
+}
+
+srs_error_t MockStatisticForResampleKbps::dumps_clients(SrsJsonArray *arr, int start, int count)
+{
+    return srs_success;
+}
+
+srs_error_t MockStatisticForResampleKbps::dumps_metrics(int64_t &send_bytes, int64_t &recv_bytes, int64_t &nstreams, int64_t &nclients, int64_t &total_nclients, int64_t &nerrs)
+{
+    send_bytes = 0;
+    recv_bytes = 0;
+    nstreams = 0;
+    nclients = 0;
+    total_nclients = 0;
+    nerrs = 0;
+    return srs_success;
+}
+
 void MockStatisticForResampleKbps::reset()
 {
     kbps_add_delta_count_ = 0;
