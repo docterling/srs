@@ -33,6 +33,15 @@ class SrsHttpClient;
 class ISrsHttpMessage;
 class SrsHttpFileReader;
 class SrsFlvDecoder;
+class ISrsAppConfig;
+class ISrsBasicRtmpClient;
+class ISrsHttpClient;
+class ISrsFileReader;
+class ISrsFlvDecoder;
+class ISrsLiveSource;
+class ISrsPlayEdge;
+class ISrsPublishEdge;
+class ISrsAppFactory;
 
 // The state of edge, auto machine
 enum SrsEdgeState {
@@ -57,11 +66,11 @@ enum SrsEdgeUserState {
 };
 
 // The upstream of edge, can be rtmp or http.
-class SrsEdgeUpstream
+class ISrsEdgeUpstream
 {
 public:
-    SrsEdgeUpstream();
-    virtual ~SrsEdgeUpstream();
+    ISrsEdgeUpstream();
+    virtual ~ISrsEdgeUpstream();
 
 public:
     virtual srs_error_t connect(ISrsRequest *r, ISrsLbRoundRobin *lb) = 0;
@@ -75,13 +84,18 @@ public:
     virtual void kbps_sample(const char *label, srs_utime_t age) = 0;
 };
 
-class SrsEdgeRtmpUpstream : public SrsEdgeUpstream
+// The RTMP upstream of edge.
+class SrsEdgeRtmpUpstream : public ISrsEdgeUpstream
 {
+private:
+    ISrsAppConfig *config_;
+    ISrsAppFactory *app_factory_;
+
 private:
     // For RTMP 302, if not empty,
     // use this <ip[:port]> as upstream.
     std::string redirect_;
-    SrsSimpleRtmpClient *sdk_;
+    ISrsBasicRtmpClient *sdk_;
 
 private:
     // Current selected server, the ip:port.
@@ -105,16 +119,21 @@ public:
     virtual void kbps_sample(const char *label, srs_utime_t age);
 };
 
-class SrsEdgeFlvUpstream : public SrsEdgeUpstream
+// The HTTP FLV upstream of edge.
+class SrsEdgeFlvUpstream : public ISrsEdgeUpstream
 {
 private:
+    ISrsAppConfig *config_;
+    ISrsAppFactory *app_factory_;
+
+private:
     std::string schema_;
-    SrsHttpClient *sdk_;
+    ISrsHttpClient *sdk_;
     ISrsHttpMessage *hr_;
 
 private:
-    SrsHttpFileReader *reader_;
-    SrsFlvDecoder *decoder_;
+    ISrsFileReader *reader_;
+    ISrsFlvDecoder *decoder_;
 
 private:
     // We might modify the request by HTTP redirect.
@@ -144,26 +163,45 @@ public:
     virtual void kbps_sample(const char *label, srs_utime_t age);
 };
 
+// The interface for edge ingester.
+class ISrsEdgeIngester
+{
+public:
+    ISrsEdgeIngester();
+    virtual ~ISrsEdgeIngester();
+
+public:
+    // Initialize the ingester.
+    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> s, ISrsPlayEdge *e, ISrsRequest *r) = 0;
+    // Start the ingester.
+    virtual srs_error_t start() = 0;
+    // Stop the ingester.
+    virtual void stop() = 0;
+};
+
 // The edge used to ingest stream from origin.
-class SrsEdgeIngester : public ISrsCoroutineHandler
+class SrsEdgeIngester : public ISrsCoroutineHandler, public ISrsEdgeIngester
 {
 private:
-    // Because source references to this object, so we should directly use the source ptr.
-    SrsLiveSource *source_;
+    ISrsAppConfig *config_;
 
 private:
-    SrsPlayEdge *edge_;
+    // Because source references to this object, so we should directly use the source ptr.
+    ISrsLiveSource *source_;
+
+private:
+    ISrsPlayEdge *edge_;
     ISrsRequest *req_;
     ISrsCoroutine *trd_;
     ISrsLbRoundRobin *lb_;
-    SrsEdgeUpstream *upstream_;
+    ISrsEdgeUpstream *upstream_;
 
 public:
     SrsEdgeIngester();
     virtual ~SrsEdgeIngester();
 
 public:
-    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> s, SrsPlayEdge *e, ISrsRequest *r);
+    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> s, ISrsPlayEdge *e, ISrsRequest *r);
     virtual srs_error_t start();
     virtual void stop();
 
@@ -179,15 +217,38 @@ private:
     virtual srs_error_t process_publish_message(SrsRtmpCommonMessage *msg, std::string &redirect);
 };
 
+// The interface for edge forwarder.
+class ISrsEdgeForwarder
+{
+public:
+    ISrsEdgeForwarder();
+    virtual ~ISrsEdgeForwarder();
+
+public:
+    // Set the queue size.
+    virtual void set_queue_size(srs_utime_t queue_size) = 0;
+    // Initialize the forwarder.
+    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> s, ISrsPublishEdge *e, ISrsRequest *r) = 0;
+    // Start the forwarder.
+    virtual srs_error_t start() = 0;
+    // Stop the forwarder.
+    virtual void stop() = 0;
+    // Proxy publish stream to edge.
+    virtual srs_error_t proxy(SrsRtmpCommonMessage *msg) = 0;
+};
+
 // The edge used to forward stream to origin.
-class SrsEdgeForwarder : public ISrsCoroutineHandler
+class SrsEdgeForwarder : public ISrsCoroutineHandler, public ISrsEdgeForwarder
 {
 private:
-    // Because source references to this object, so we should directly use the source ptr.
-    SrsLiveSource *source_;
+    ISrsAppConfig *config_;
 
 private:
-    SrsPublishEdge *edge_;
+    // Because source references to this object, so we should directly use the source ptr.
+    ISrsLiveSource *source_;
+
+private:
+    ISrsPublishEdge *edge_;
     ISrsRequest *req_;
     ISrsCoroutine *trd_;
     SrsSimpleRtmpClient *sdk_;
@@ -208,7 +269,7 @@ public:
     virtual void set_queue_size(srs_utime_t queue_size);
 
 public:
-    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> s, SrsPublishEdge *e, ISrsRequest *r);
+    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> s, ISrsPublishEdge *e, ISrsRequest *r);
     virtual srs_error_t start();
     virtual void stop();
     // Interface ISrsReusableThread2Handler
@@ -222,12 +283,24 @@ public:
     virtual srs_error_t proxy(SrsRtmpCommonMessage *msg);
 };
 
+// The interface for play edge.
+class ISrsPlayEdge
+{
+public:
+    ISrsPlayEdge();
+    virtual ~ISrsPlayEdge();
+
+public:
+    // When ingester start to play stream.
+    virtual srs_error_t on_ingest_play() = 0;
+};
+
 // The play edge control service.
-class SrsPlayEdge
+class SrsPlayEdge : public ISrsPlayEdge
 {
 private:
     SrsEdgeState state_;
-    SrsEdgeIngester *ingester_;
+    ISrsEdgeIngester *ingester_;
 
 public:
     SrsPlayEdge();
@@ -248,12 +321,22 @@ public:
     virtual srs_error_t on_ingest_play();
 };
 
+// The interface for publish edge.
+class ISrsPublishEdge
+{
+public:
+    ISrsPublishEdge();
+    virtual ~ISrsPublishEdge();
+
+public:
+};
+
 // The publish edge control service.
-class SrsPublishEdge
+class SrsPublishEdge : public ISrsPublishEdge
 {
 private:
     SrsEdgeState state_;
-    SrsEdgeForwarder *forwarder_;
+    ISrsEdgeForwarder *forwarder_;
 
 public:
     SrsPublishEdge();

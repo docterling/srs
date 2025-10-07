@@ -38,7 +38,7 @@ class SrsTsContext;
 class SrsFmp4SegmentEncoder;
 class ISrsHttpHooks;
 class ISrsAppConfig;
-class SrsAppFactory;
+class ISrsAppFactory;
 
 // The wrapper of m3u8 segment from specification:
 //
@@ -186,7 +186,7 @@ class SrsHlsMuxer
 {
 private:
     ISrsAppConfig *config_;
-    SrsAppFactory *app_factory_;
+    ISrsAppFactory *app_factory_;
 
 private:
     ISrsRequest *req_;
@@ -329,7 +329,7 @@ class SrsHlsFmp4Muxer
 {
 private:
     ISrsAppConfig *config_;
-    SrsAppFactory *app_factory_;
+    ISrsAppFactory *app_factory_;
 
 private:
     ISrsRequest *req_;

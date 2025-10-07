@@ -60,7 +60,7 @@ class ISrsHds;
 #endif
 class ISrsNgExec;
 class ISrsForwarder;
-class SrsAppFactory;
+class ISrsAppFactory;
 class ISrsLiveConsumer;
 
 // The time jitter algorithm:
@@ -571,7 +571,7 @@ public:
 class SrsLiveSourceManager : public ISrsHourGlassHandler, public ISrsLiveSourceManager
 {
 private:
-    SrsAppFactory *app_factory_;
+    ISrsAppFactory *app_factory_;
 
 private:
     srs_mutex_t lock_;
@@ -624,6 +624,16 @@ public:
     virtual SrsContextId pre_source_id() = 0;
     virtual SrsMetaCache *meta() = 0;
     virtual SrsRtmpFormat *format() = 0;
+    // The source id changed.
+    virtual srs_error_t on_source_id_changed(SrsContextId id) = 0;
+    // Publish stream event notify.
+    virtual srs_error_t on_publish() = 0;
+    virtual void on_unpublish() = 0;
+    // Handle media messages.
+    virtual srs_error_t on_audio(SrsRtmpCommonMessage *audio) = 0;
+    virtual srs_error_t on_video(SrsRtmpCommonMessage *video) = 0;
+    virtual srs_error_t on_aggregate(SrsRtmpCommonMessage *msg) = 0;
+    virtual srs_error_t on_meta_data(SrsRtmpCommonMessage *msg, SrsOnMetaDataPacket *metadata) = 0;
 };
 
 // The live streaming source.
@@ -633,7 +643,7 @@ private:
     ISrsAppConfig *config_;
     ISrsStatistic *stat_;
     ISrsLiveSourceHandler *handler_;
-    SrsAppFactory *app_factory_;
+    ISrsAppFactory *app_factory_;
 
 private:
     // For publish, it's the publish client id.

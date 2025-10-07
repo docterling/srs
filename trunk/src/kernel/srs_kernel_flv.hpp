@@ -340,8 +340,28 @@ private:
     virtual srs_error_t write_tag(char *header, int header_size, char *tag, int tag_size);
 };
 
+// The interface for FLV decoder.
+class ISrsFlvDecoder
+{
+public:
+    ISrsFlvDecoder();
+    virtual ~ISrsFlvDecoder();
+
+public:
+    // Initialize the underlayer file stream.
+    virtual srs_error_t initialize(ISrsReader *fr) = 0;
+    // Read the flv header.
+    virtual srs_error_t read_header(char header[9]) = 0;
+    // Read the tag header infos.
+    virtual srs_error_t read_tag_header(char *ptype, int32_t *pdata_size, uint32_t *ptime) = 0;
+    // Read the tag data.
+    virtual srs_error_t read_tag_data(char *data, int32_t size) = 0;
+    // Read the 4bytes previous tag size.
+    virtual srs_error_t read_previous_tag_size(char previous_tag_size[4]) = 0;
+};
+
 // Decode flv file.
-class SrsFlvDecoder
+class SrsFlvDecoder : public ISrsFlvDecoder
 {
 private:
     ISrsReader *reader_;

@@ -1541,7 +1541,9 @@ srs_error_t SrsServer::do_on_tcp_client(ISrsListener *listener, srs_netfd_t &stf
             resource = new SrsRtcTcpConn(new SrsTcpConnection(stfd2), ip, port);
 #ifdef SRS_RTSP
         } else if (listener == rtsp_listener_) {
-            resource = new SrsRtspConnection(conn_manager_, new SrsTcpConnection(stfd2), ip, port);
+            SrsRtspConnection *conn = new SrsRtspConnection(conn_manager_, new SrsTcpConnection(stfd2), ip, port);
+            conn->assemble();
+            resource = conn;
 #endif
         } else if (listener == exporter_listener_) {
             // TODO: FIXME: Maybe should support https metrics.

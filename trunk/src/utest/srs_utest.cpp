@@ -51,7 +51,7 @@ bool _srs_config_by_env = false;
 
 // @global kernel factory.
 ISrsKernelFactory *_srs_kernel_factory = new SrsFinalFactory();
-SrsAppFactory *_srs_app_factory = new SrsAppFactory();
+ISrsAppFactory *_srs_app_factory = new SrsAppFactory();
 
 // The binary name of SRS.
 const char *_srs_binary = NULL;

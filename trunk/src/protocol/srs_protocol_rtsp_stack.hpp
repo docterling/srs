@@ -345,8 +345,27 @@ protected:
     virtual srs_error_t encode_header(std::stringstream &ss);
 };
 
+// The interface for rtsp stack.
+class ISrsRtspStack
+{
+public:
+    ISrsRtspStack();
+    virtual ~ISrsRtspStack();
+
+public:
+    // Recv rtsp message from underlayer io.
+    // @param preq the output rtsp request message, which user must free it.
+    // @return an int error code.
+    //       ERROR_RTSP_REQUEST_HEADER_EOF indicates request header EOF.
+    virtual srs_error_t recv_message(SrsRtspRequest **preq) = 0;
+    // Send rtsp message over underlayer io.
+    // @param res the rtsp response message, which user should never free it.
+    // @return an int error code.
+    virtual srs_error_t send_message(SrsRtspResponse *res) = 0;
+};
+
 // The rtsp protocol stack to parse the rtsp packets.
-class SrsRtspStack
+class SrsRtspStack : public ISrsRtspStack
 {
 private:
     // The cached bytes buffer.

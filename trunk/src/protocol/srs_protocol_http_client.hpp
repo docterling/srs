@@ -53,6 +53,26 @@ public:
     virtual srs_error_t write(void *buf, size_t size, ssize_t *nwrite);
 };
 
+// The interface for http client.
+class ISrsHttpClient
+{
+public:
+    ISrsHttpClient();
+    virtual ~ISrsHttpClient();
+
+public:
+    // Initialize the client.
+    virtual srs_error_t initialize(std::string schema, std::string h, int p, srs_utime_t tm = SRS_HTTP_CLIENT_TIMEOUT) = 0;
+    // Get data from the uri.
+    virtual srs_error_t get(std::string path, std::string req, ISrsHttpMessage **ppmsg) = 0;
+    // Post data to the uri.
+    virtual srs_error_t post(std::string path, std::string req, ISrsHttpMessage **ppmsg) = 0;
+    // Set receive timeout.
+    virtual void set_recv_timeout(srs_utime_t tm) = 0;
+    // Sample kbps for statistics.
+    virtual void kbps_sample(const char *label, srs_utime_t age) = 0;
+};
+
 // The client to GET/POST/PUT/DELETE over HTTP.
 // @remark We will reuse the TCP transport until initialize or channel error,
 //      such as send/recv failed.
@@ -60,7 +80,7 @@ public:
 //      SrsHttpClient hc;
 //      hc.initialize("127.0.0.1", 80, 9000);
 //      hc.post("/api/v1/version", "Hello world!", NULL);
-class SrsHttpClient
+class SrsHttpClient : public ISrsHttpClient
 {
 private:
     // The underlayer TCP transport, set to NULL when disconnect, or never not NULL when connected.

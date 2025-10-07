@@ -31,37 +31,67 @@ class SrsRtspConnection;
 class SrsSecurity;
 class SrsRtspRequest;
 class SrsRtspStack;
+class ISrsRtspConnection;
+class ISrsRtspSendTrack;
+class ISrsRtspStack;
+class ISrsAppFactory;
+class ISrsEphemeralDelta;
+class ISrsSecurity;
+class ISrsStatistic;
+class ISrsRtspSourceManager;
+class ISrsHttpHooks;
+class ISrsAppConfig;
+
+// The handler for RTSP play stream.
+class ISrsRtspPlayStream
+{
+public:
+    ISrsRtspPlayStream();
+    virtual ~ISrsRtspPlayStream();
+
+public:
+    virtual srs_error_t initialize(ISrsRequest *request, std::map<uint32_t, SrsRtcTrackDescription *> sub_relations) = 0;
+    virtual srs_error_t start() = 0;
+    virtual void stop() = 0;
+    // Directly set the status of track, generally for init to set the default value.
+    virtual void set_all_tracks_status(bool status) = 0;
+};
 
 // A RTSP play stream, client pull and play stream from SRS.
-class SrsRtspPlayStream : public ISrsCoroutineHandler, public ISrsRtcSourceChangeCallback
+class SrsRtspPlayStream : public ISrsRtspPlayStream, public ISrsCoroutineHandler, public ISrsRtcSourceChangeCallback
 {
+private:
+    ISrsAppFactory *app_factory_;
+    ISrsStatistic *stat_;
+    ISrsRtspSourceManager *rtsp_sources_;
+
 private:
     SrsContextId cid_;
     ISrsCoroutine *trd_;
-    SrsRtspConnection *session_;
+    ISrsRtspConnection *session_;
 
 private:
     ISrsRequest *req_;
     SrsSharedPtr<SrsRtspSource> source_;
     // key: publish_ssrc, value: send track to process rtp/rtcp
-    std::map<uint32_t, SrsRtspAudioSendTrack *> audio_tracks_;
-    std::map<uint32_t, SrsRtspVideoSendTrack *> video_tracks_;
+    std::map<uint32_t, ISrsRtspSendTrack *> audio_tracks_;
+    std::map<uint32_t, ISrsRtspSendTrack *> video_tracks_;
 
 private:
     // Fast cache for tracks.
     uint32_t cache_ssrc0_;
     uint32_t cache_ssrc1_;
     uint32_t cache_ssrc2_;
-    SrsRtspSendTrack *cache_track0_;
-    SrsRtspSendTrack *cache_track1_;
-    SrsRtspSendTrack *cache_track2_;
+    ISrsRtspSendTrack *cache_track0_;
+    ISrsRtspSendTrack *cache_track1_;
+    ISrsRtspSendTrack *cache_track2_;
 
 private:
     // Whether player started.
     bool is_started;
 
 public:
-    SrsRtspPlayStream(SrsRtspConnection *s, const SrsContextId &cid);
+    SrsRtspPlayStream(ISrsRtspConnection *s, const SrsContextId &cid);
     virtual ~SrsRtspPlayStream();
 
 public:
@@ -89,7 +119,7 @@ public:
 };
 
 // The handler for RTSP connection send packet.
-class ISrsRtspConnection
+class ISrsRtspConnection : public ISrsExpire
 {
 public:
     ISrsRtspConnection();
@@ -102,11 +132,17 @@ public:
 // A RTSP session, client request and response with RTSP.
 class SrsRtspConnection : public ISrsResource, // It's a resource.
                           public ISrsDisposingHandler,
-                          public ISrsExpire,
                           public ISrsCoroutineHandler,
                           public ISrsStartable,
                           public ISrsRtspConnection
 {
+private:
+    ISrsRtspSourceManager *rtsp_sources_;
+    ISrsResourceManager *rtsp_manager_;
+    ISrsStatistic *stat_;
+    ISrsAppConfig *config_;
+    ISrsHttpHooks *hooks_;
+
 private:
     bool disposing_;
 
@@ -126,22 +162,23 @@ private:
     // The ip and port of client.
     std::string ip_;
     int port_;
-    SrsRtspStack *rtsp_;
+    ISrsRtspStack *rtsp_;
     std::string session_id_;
     SrsSharedPtr<SrsRtspSource> source_;
-    SrsEphemeralDelta *delta_;
+    ISrsEphemeralDelta *delta_;
     ISrsProtocolReadWriter *skt_;
-    SrsSecurity *security_;
+    ISrsSecurity *security_;
     iovec *cache_iov_;
     SrsBuffer *cache_buffer_;
     // key: ssrc
     std::map<uint32_t, SrsRtcTrackDescription *> tracks_;
     // key: ssrc
     std::map<uint32_t, ISrsStreamWriter *> networks_;
-    SrsRtspPlayStream *player_;
+    ISrsRtspPlayStream *player_;
 
 public:
     SrsRtspConnection(ISrsResourceManager *cm, ISrsProtocolReadWriter *skt, std::string cip, int port);
+    void assemble(); // Construct object, to avoid call function in constructor.
     virtual ~SrsRtspConnection();
     // interface ISrsDisposingHandler
 public:
@@ -179,6 +216,11 @@ public:
     // Interface ISrsCoroutineHandler
 public:
     virtual srs_error_t cycle();
+
+private:
+    srs_error_t do_cycle();
+    srs_error_t on_rtsp_request(SrsRtspRequest *req_raw);
+
     // Interface ISrsExpire.
 public:
     virtual void expire();
@@ -190,9 +232,6 @@ public:
 public:
     bool is_alive();
     void alive();
-
-private:
-    srs_error_t do_cycle();
 
 private:
     srs_error_t http_hooks_on_play(ISrsRequest *req);

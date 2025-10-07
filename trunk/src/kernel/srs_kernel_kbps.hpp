@@ -300,9 +300,20 @@ public:
     virtual void remark(int64_t *in, int64_t *out) = 0;
 };
 
+// The interface which provices delta of bytes. For example, we got a delta from a UDP client:
+class ISrsEphemeralDelta : public ISrsKbpsDelta
+{
+public:
+    ISrsEphemeralDelta();
+    virtual ~ISrsEphemeralDelta();
+
+public:
+    virtual void add_delta(int64_t in, int64_t out) = 0;
+};
+
 // A delta data source for SrsKbps, used in ephemeral case, for example, UDP server to increase stat when received or
 // sent out each UDP packet.
-class SrsEphemeralDelta : public ISrsKbpsDelta
+class SrsEphemeralDelta : public ISrsEphemeralDelta
 {
 private:
     uint64_t in_;
@@ -319,8 +330,19 @@ public:
     virtual void remark(int64_t *in, int64_t *out);
 };
 
+// The interface which provices delta of bytes. For example, we got a delta from a TCP client:
+class ISrsNetworkDelta : public ISrsKbpsDelta
+{
+public:
+    ISrsNetworkDelta();
+    virtual ~ISrsNetworkDelta();
+
+public:
+    virtual void set_io(ISrsProtocolStatistic *in, ISrsProtocolStatistic *out) = 0;
+};
+
 // A network delta data source for SrsKbps.
-class SrsNetworkDelta : public ISrsKbpsDelta
+class SrsNetworkDelta : public ISrsNetworkDelta
 {
 private:
     ISrsProtocolStatistic *in_;

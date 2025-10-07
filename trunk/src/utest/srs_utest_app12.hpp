@@ -152,6 +152,7 @@ public:
     MockRtspConnection();
     virtual ~MockRtspConnection();
     virtual srs_error_t do_send_packet(SrsRtpPacket *pkt);
+    virtual void expire();
     void set_send_error(srs_error_t err);
     void reset();
 };

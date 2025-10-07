@@ -267,7 +267,20 @@ private:
     srs_error_t consume_packets(std::vector<SrsRtpPacket *> &pkts);
 };
 
-class SrsRtspSendTrack
+class ISrsRtspSendTrack
+{
+public:
+    ISrsRtspSendTrack();
+    virtual ~ISrsRtspSendTrack();
+
+public:
+    virtual bool set_track_status(bool active) = 0;
+    virtual std::string get_track_id() = 0;
+    virtual SrsRtcTrackDescription *track_desc() = 0;
+    virtual srs_error_t on_rtp(SrsRtpPacket *pkt) = 0;
+};
+
+class SrsRtspSendTrack : public ISrsRtspSendTrack
 {
 public:
     // send track description
@@ -287,9 +300,7 @@ public:
     bool set_track_status(bool active);
     bool get_track_status();
     std::string get_track_id();
-
-public:
-    virtual srs_error_t on_rtp(SrsRtpPacket *pkt) = 0;
+    virtual SrsRtcTrackDescription *track_desc();
 };
 
 class SrsRtspAudioSendTrack : public SrsRtspSendTrack

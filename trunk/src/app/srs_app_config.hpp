@@ -504,6 +504,11 @@ public:
     virtual bool get_vhost_http_remux_has_video(std::string vhost) = 0;
     virtual bool get_vhost_http_remux_guess_has_av(std::string vhost) = 0;
     virtual std::string get_vhost_http_remux_mount(std::string vhost) = 0;
+
+public:
+    virtual std::string get_vhost_edge_protocol(std::string vhost) = 0;
+    virtual bool get_vhost_edge_follow_client(std::string vhost) = 0;
+    virtual std::string get_vhost_edge_transform_vhost(std::string vhost) = 0;
 };
 
 // The config service provider.

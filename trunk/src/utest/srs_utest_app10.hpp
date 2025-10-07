@@ -156,7 +156,7 @@ public:
     virtual void untick(int event);
 };
 
-// Mock SrsAppFactory for testing SrsServer::setup_ticks()
+// Mock ISrsAppFactory for testing SrsServer::setup_ticks()
 class MockAppFactoryForSetupTicks : public SrsAppFactory
 {
 public:

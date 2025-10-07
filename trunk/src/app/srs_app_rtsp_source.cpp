@@ -1005,6 +1005,14 @@ srs_error_t SrsRtspRtpBuilder::consume_packets(vector<SrsRtpPacket *> &pkts)
     return err;
 }
 
+ISrsRtspSendTrack::ISrsRtspSendTrack()
+{
+}
+
+ISrsRtspSendTrack::~ISrsRtspSendTrack()
+{
+}
+
 SrsRtspSendTrack::SrsRtspSendTrack(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc, bool is_audio)
 {
     session_ = session;
@@ -1037,6 +1045,11 @@ bool SrsRtspSendTrack::get_track_status()
 std::string SrsRtspSendTrack::get_track_id()
 {
     return track_desc_->id_;
+}
+
+SrsRtcTrackDescription *SrsRtspSendTrack::track_desc()
+{
+    return track_desc_;
 }
 
 SrsRtspAudioSendTrack::SrsRtspAudioSendTrack(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc)

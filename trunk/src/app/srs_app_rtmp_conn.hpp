@@ -154,7 +154,12 @@ public:
     virtual const char *transport_type();
 };
 
-class SrsRtmpConn : public ISrsConnection, public ISrsStartable, public ISrsReloadHandler, public ISrsCoroutineHandler, public ISrsExpire
+// The RTMP connection, for client to publish or play stream.
+class SrsRtmpConn : public ISrsConnection, // It's a resource.
+                    public ISrsStartable,
+                    public ISrsReloadHandler,
+                    public ISrsCoroutineHandler,
+                    public ISrsExpire
 {
     // For the thread to directly access any field of connection.
     friend class SrsPublishRecvThread;

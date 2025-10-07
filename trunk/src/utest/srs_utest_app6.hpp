@@ -400,6 +400,9 @@ public:
     virtual bool get_vhost_http_remux_has_video(std::string vhost) { return true; }
     virtual bool get_vhost_http_remux_guess_has_av(std::string vhost) { return true; }
     virtual std::string get_vhost_http_remux_mount(std::string vhost) { return ""; }
+    virtual std::string get_vhost_edge_protocol(std::string vhost) { return "rtmp"; }
+    virtual bool get_vhost_edge_follow_client(std::string vhost) { return false; }
+    virtual std::string get_vhost_edge_transform_vhost(std::string vhost) { return ""; }
     void set_http_hooks_enabled(bool enabled);
     void set_on_stop_urls(const std::vector<std::string> &urls);
     void clear_on_stop_directive();

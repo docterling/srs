@@ -6,14 +6,27 @@
 
 #include <srs_app_factory.hpp>
 
+#include <srs_app_caster_flv.hpp>
 #include <srs_app_config.hpp>
+#include <srs_app_rtmp_conn.hpp>
 #include <srs_app_rtmp_source.hpp>
 #include <srs_app_st.hpp>
 #include <srs_kernel_file.hpp>
+#include <srs_kernel_flv.hpp>
 #include <srs_kernel_hourglass.hpp>
 #include <srs_kernel_ts.hpp>
 #include <srs_kernel_utility.hpp>
+#include <srs_protocol_http_client.hpp>
 #include <srs_protocol_st.hpp>
+#include <srs_app_rtsp_source.hpp>
+
+ISrsAppFactory::ISrsAppFactory()
+{
+}
+
+ISrsAppFactory::~ISrsAppFactory()
+{
+}
 
 SrsAppFactory::SrsAppFactory()
 {
@@ -58,6 +71,36 @@ ISrsOriginHub *SrsAppFactory::create_origin_hub()
 ISrsHourGlass *SrsAppFactory::create_hourglass(const std::string &name, ISrsHourGlassHandler *handler, srs_utime_t interval)
 {
     return new SrsHourGlass(name, handler, interval);
+}
+
+ISrsBasicRtmpClient *SrsAppFactory::create_rtmp_client(std::string url, srs_utime_t cto, srs_utime_t sto)
+{
+    return new SrsSimpleRtmpClient(url, cto, sto);
+}
+
+ISrsHttpClient *SrsAppFactory::create_http_client()
+{
+    return new SrsHttpClient();
+}
+
+ISrsFileReader *SrsAppFactory::create_http_file_reader(ISrsHttpResponseReader *r)
+{
+    return new SrsHttpFileReader(r);
+}
+
+ISrsFlvDecoder *SrsAppFactory::create_flv_decoder()
+{
+    return new SrsFlvDecoder();
+}
+
+ISrsRtspSendTrack *SrsAppFactory::create_rtsp_audio_send_track(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc)
+{
+    return new SrsRtspAudioSendTrack(session, track_desc);
+}
+
+ISrsRtspSendTrack *SrsAppFactory::create_rtsp_video_send_track(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc)
+{
+    return new SrsRtspVideoSendTrack(session, track_desc);
 }
 
 SrsFinalFactory::SrsFinalFactory()

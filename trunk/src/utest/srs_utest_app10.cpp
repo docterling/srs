@@ -606,7 +606,7 @@ VOID TEST(ServerTest, SetupTicksWithStatsAndHeartbeat)
 
     // Create and inject mock app factory
     MockAppFactoryForSetupTicks *mock_factory = new MockAppFactoryForSetupTicks();
-    SrsAppFactory *original_factory = server->app_factory_;
+    ISrsAppFactory *original_factory = server->app_factory_;
     server->app_factory_ = mock_factory;
 
     // Test major use scenario: setup_ticks with stats and heartbeat enabled

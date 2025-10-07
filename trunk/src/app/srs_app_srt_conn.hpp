@@ -77,7 +77,11 @@ private:
     srs_error_t recv_err_;
 };
 
-class SrsMpegtsSrtConn : public ISrsConnection, public ISrsStartable, public ISrsCoroutineHandler, public ISrsExpire
+// The SRT connection, for client to publish or play stream.
+class SrsMpegtsSrtConn : public ISrsConnection, // It's a resource.
+                         public ISrsStartable,
+                         public ISrsCoroutineHandler,
+                         public ISrsExpire
 {
 public:
     SrsMpegtsSrtConn(ISrsResourceManager *resource_manager, srs_srt_t srt_fd, std::string ip, int port);

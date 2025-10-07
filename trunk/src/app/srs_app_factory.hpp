@@ -18,9 +18,40 @@ class SrsLiveSource;
 class ISrsOriginHub;
 class ISrsHourGlass;
 class ISrsHourGlassHandler;
+class ISrsBasicRtmpClient;
+class ISrsHttpClient;
+class ISrsFileReader;
+class ISrsFlvDecoder;
+class ISrsHttpResponseReader;
+class ISrsRtspSendTrack;
+class ISrsRtspConnection;
+class SrsRtcTrackDescription;
 
 // The factory to create app objects.
-class SrsAppFactory
+class ISrsAppFactory
+{
+public:
+    ISrsAppFactory();
+    virtual ~ISrsAppFactory();
+
+public:
+    virtual ISrsFileWriter *create_file_writer() = 0;
+    virtual ISrsFileWriter *create_enc_file_writer() = 0;
+    virtual ISrsFileReader *create_file_reader() = 0;
+    virtual SrsPath *create_path() = 0;
+    virtual SrsLiveSource *create_live_source() = 0;
+    virtual ISrsOriginHub *create_origin_hub() = 0;
+    virtual ISrsHourGlass *create_hourglass(const std::string &name, ISrsHourGlassHandler *handler, srs_utime_t interval) = 0;
+    virtual ISrsBasicRtmpClient *create_rtmp_client(std::string url, srs_utime_t cto, srs_utime_t sto) = 0;
+    virtual ISrsHttpClient *create_http_client() = 0;
+    virtual ISrsFileReader *create_http_file_reader(ISrsHttpResponseReader *r) = 0;
+    virtual ISrsFlvDecoder *create_flv_decoder() = 0;
+    virtual ISrsRtspSendTrack *create_rtsp_audio_send_track(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc) = 0;
+    virtual ISrsRtspSendTrack *create_rtsp_video_send_track(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc) = 0;
+};
+
+// The factory to create app objects.
+class SrsAppFactory : public ISrsAppFactory
 {
 public:
     SrsAppFactory();
@@ -34,9 +65,15 @@ public:
     virtual SrsLiveSource *create_live_source();
     virtual ISrsOriginHub *create_origin_hub();
     virtual ISrsHourGlass *create_hourglass(const std::string &name, ISrsHourGlassHandler *handler, srs_utime_t interval);
+    virtual ISrsBasicRtmpClient *create_rtmp_client(std::string url, srs_utime_t cto, srs_utime_t sto);
+    virtual ISrsHttpClient *create_http_client();
+    virtual ISrsFileReader *create_http_file_reader(ISrsHttpResponseReader *r);
+    virtual ISrsFlvDecoder *create_flv_decoder();
+    virtual ISrsRtspSendTrack *create_rtsp_audio_send_track(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc);
+    virtual ISrsRtspSendTrack *create_rtsp_video_send_track(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc);
 };
 
-extern SrsAppFactory *_srs_app_factory;
+extern ISrsAppFactory *_srs_app_factory;
 
 // The factory to create kernel objects.
 class SrsFinalFactory : public ISrsKernelFactory

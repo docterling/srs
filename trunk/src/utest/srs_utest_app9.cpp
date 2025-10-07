@@ -1580,6 +1580,40 @@ SrsRtmpFormat *MockLiveSourceForOriginHub::format()
     return format_;
 }
 
+srs_error_t MockLiveSourceForOriginHub::on_source_id_changed(SrsContextId id)
+{
+    return srs_success;
+}
+
+srs_error_t MockLiveSourceForOriginHub::on_publish()
+{
+    return srs_success;
+}
+
+void MockLiveSourceForOriginHub::on_unpublish()
+{
+}
+
+srs_error_t MockLiveSourceForOriginHub::on_audio(SrsRtmpCommonMessage *audio)
+{
+    return srs_success;
+}
+
+srs_error_t MockLiveSourceForOriginHub::on_video(SrsRtmpCommonMessage *video)
+{
+    return srs_success;
+}
+
+srs_error_t MockLiveSourceForOriginHub::on_aggregate(SrsRtmpCommonMessage *msg)
+{
+    return srs_success;
+}
+
+srs_error_t MockLiveSourceForOriginHub::on_meta_data(SrsRtmpCommonMessage *msg, SrsOnMetaDataPacket *metadata)
+{
+    return srs_success;
+}
+
 // Unit test for SrsOriginHub::initialize typical scenario
 VOID TEST(AppOriginHubTest, InitializeTypicalScenario)
 {

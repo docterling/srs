@@ -181,6 +181,13 @@ public:
     virtual SrsContextId pre_source_id();
     virtual SrsMetaCache *meta();
     virtual SrsRtmpFormat *format();
+    virtual srs_error_t on_source_id_changed(SrsContextId id);
+    virtual srs_error_t on_publish();
+    virtual void on_unpublish();
+    virtual srs_error_t on_audio(SrsRtmpCommonMessage *audio);
+    virtual srs_error_t on_video(SrsRtmpCommonMessage *video);
+    virtual srs_error_t on_aggregate(SrsRtmpCommonMessage *msg);
+    virtual srs_error_t on_meta_data(SrsRtmpCommonMessage *msg, SrsOnMetaDataPacket *metadata);
 };
 
 // Mock ISrsStatistic for testing SrsOriginHub::on_video
@@ -297,7 +304,7 @@ public:
     virtual void untick(int event);
 };
 
-// Mock SrsAppFactory for testing SrsLiveSourceManager::fetch_or_create
+// Mock ISrsAppFactory for testing SrsLiveSourceManager::fetch_or_create
 class MockAppFactoryForSourceManager : public SrsAppFactory
 {
 public:
@@ -331,7 +338,7 @@ public:
     virtual void on_unpublish();
 };
 
-// Mock SrsAppFactory for testing SrsLiveSource::initialize
+// Mock ISrsAppFactory for testing SrsLiveSource::initialize
 class MockAppFactoryForLiveSource : public SrsAppFactory
 {
 public:

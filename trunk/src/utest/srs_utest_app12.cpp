@@ -3372,6 +3372,11 @@ srs_error_t MockRtspConnection::do_send_packet(SrsRtpPacket *pkt)
     return srs_error_copy(send_error_);
 }
 
+void MockRtspConnection::expire()
+{
+    // Mock implementation - does nothing for testing purposes
+}
+
 void MockRtspConnection::set_send_error(srs_error_t err)
 {
     srs_freep(send_error_);

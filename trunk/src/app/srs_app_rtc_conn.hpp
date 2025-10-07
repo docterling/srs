@@ -556,7 +556,12 @@ public:
 //
 // For performance, we use non-public from resource,
 // see https://stackoverflow.com/questions/3747066/c-cannot-convert-from-base-a-to-derived-type-b-via-virtual-base-a
-class SrsRtcConnection : public ISrsResource, public ISrsDisposingHandler, public ISrsExpire, public ISrsRtcPacketSender, public ISrsRtcPacketReceiver, public ISrsRtcConnectionNackTimerHandler
+class SrsRtcConnection : public ISrsResource, // It's a resource.
+                         public ISrsDisposingHandler,
+                         public ISrsExpire,
+                         public ISrsRtcPacketSender,
+                         public ISrsRtcPacketReceiver,
+                         public ISrsRtcConnectionNackTimerHandler
 {
     friend class SrsSecurityTransport;
 

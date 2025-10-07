@@ -68,7 +68,7 @@ class ISrsRtspSourceManager;
 class ISrsLog;
 class ISrsStatistic;
 class ISrsHourGlass;
-class SrsAppFactory;
+class ISrsAppFactory;
 
 // Initialize global shared variables cross all threads.
 extern srs_error_t srs_global_initialize();
@@ -110,7 +110,7 @@ private:
 #endif
     ISrsLog *log_;
     ISrsStatistic *stat_;
-    SrsAppFactory *app_factory_;
+    ISrsAppFactory *app_factory_;
 
 private:
     ISrsHttpServeMux *http_api_mux_;
