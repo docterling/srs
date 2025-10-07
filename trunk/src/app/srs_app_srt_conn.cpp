@@ -524,13 +524,14 @@ srs_error_t SrsMpegtsSrtConn::do_playing()
 {
     srs_error_t err = srs_success;
 
-    SrsSrtConsumer *consumer_raw = NULL;
+    ISrsSrtConsumer *consumer_raw = NULL;
     if ((err = srt_source_->create_consumer(consumer_raw)) != srs_success) {
         return srs_error_wrap(err, "create consumer, ts source=%s", req_->get_stream_url().c_str());
     }
 
     srs_assert(consumer_raw);
-    SrsUniquePtr<SrsSrtConsumer> consumer(consumer_raw);
+    SrsUniquePtr<ISrsSrtConsumer> consumer(consumer_raw);
+    SrsSrtConsumer *consumer_impl = dynamic_cast<SrsSrtConsumer *>(consumer_raw);
 
     // TODO: FIXME: Dumps the SPS/PPS from gop cache, without other frames.
     if ((err = srt_source_->consumer_dumps(consumer.get())) != srs_success) {

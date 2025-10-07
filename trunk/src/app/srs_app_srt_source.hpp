@@ -24,6 +24,9 @@ class SrsLiveSource;
 class SrsSrtSource;
 class SrsAlonePithyPrint;
 class SrsSrtFrameBuilder;
+class ISrsStatistic;
+class ISrsSrtConsumer;
+class ISrsSrtSource;
 
 // The SRT packet with shared message.
 class SrsSrtPacket
@@ -97,15 +100,29 @@ public:
 // Global singleton instance.
 extern SrsSrtSourceManager *_srs_srt_sources;
 
-class SrsSrtConsumer
+// The SRT consumer interface.
+class ISrsSrtConsumer
 {
 public:
-    SrsSrtConsumer(SrsSrtSource *source);
-    virtual ~SrsSrtConsumer();
+    ISrsSrtConsumer();
+    virtual ~ISrsSrtConsumer();
 
+public:
+    virtual srs_error_t enqueue(SrsSrtPacket *packet) = 0;
+    virtual srs_error_t dump_packet(SrsSrtPacket **ppkt) = 0;
+    virtual void wait(int nb_msgs, srs_utime_t timeout) = 0;
+};
+
+// The SRT consumer, consume packets from SRT stream source.
+class SrsSrtConsumer : public ISrsSrtConsumer
+{
 private:
     // Because source references to this object, so we should directly use the source ptr.
-    SrsSrtSource *source_;
+    ISrsSrtSource *source_;
+
+public:
+    SrsSrtConsumer(ISrsSrtSource *source);
+    virtual ~SrsSrtConsumer();
 
 private:
     std::vector<SrsSrtPacket *> queue_;
@@ -185,9 +202,25 @@ private:
     SrsAlonePithyPrint *pp_audio_duration_;
 };
 
-// A SRT source is a stream, to publish and to play with.
-class SrsSrtSource : public ISrsSrtTarget
+// The SRT source interface.
+class ISrsSrtSource : public ISrsSrtTarget
 {
+public:
+    ISrsSrtSource();
+    virtual ~ISrsSrtSource();
+
+public:
+    virtual SrsContextId source_id() = 0;
+    virtual SrsContextId pre_source_id() = 0;
+    virtual void on_consumer_destroy(ISrsSrtConsumer *consumer) = 0;
+};
+
+// A SRT source is a stream, to publish and to play with.
+class SrsSrtSource : public ISrsSrtSource
+{
+private:
+    ISrsStatistic *stat_;
+
 public:
     SrsSrtSource();
     virtual ~SrsSrtSource();
@@ -214,10 +247,10 @@ public:
 public:
     // Create consumer
     // @param consumer, output the create consumer.
-    virtual srs_error_t create_consumer(SrsSrtConsumer *&consumer);
+    virtual srs_error_t create_consumer(ISrsSrtConsumer *&consumer);
     // Dumps packets in cache to consumer.
-    virtual srs_error_t consumer_dumps(SrsSrtConsumer *consumer);
-    virtual void on_consumer_destroy(SrsSrtConsumer *consumer);
+    virtual srs_error_t consumer_dumps(ISrsSrtConsumer *consumer);
+    virtual void on_consumer_destroy(ISrsSrtConsumer *consumer);
     // Whether we can publish stream to the source, return false if it exists.
     virtual bool can_publish();
     // When start publish stream.
@@ -235,7 +268,7 @@ private:
     SrsContextId _pre_source_id;
     ISrsRequest *req_;
     // To delivery packets to clients.
-    std::vector<SrsSrtConsumer *> consumers_;
+    std::vector<ISrsSrtConsumer *> consumers_;
     bool can_publish_;
     // The last die time, while die means neither publishers nor players.
     srs_utime_t stream_die_at_;
