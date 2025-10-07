@@ -88,7 +88,24 @@ public:
     void set_all_tracks_status(bool status);
 };
 
-class SrsRtspConnection : public ISrsResource, public ISrsDisposingHandler, public ISrsExpire, public ISrsCoroutineHandler, public ISrsStartable
+// The handler for RTSP connection send packet.
+class ISrsRtspConnection
+{
+public:
+    ISrsRtspConnection();
+    virtual ~ISrsRtspConnection();
+
+public:
+    virtual srs_error_t do_send_packet(SrsRtpPacket *pkt) = 0;
+};
+
+// A RTSP session, client request and response with RTSP.
+class SrsRtspConnection : public ISrsResource, // It's a resource.
+                          public ISrsDisposingHandler,
+                          public ISrsExpire,
+                          public ISrsCoroutineHandler,
+                          public ISrsStartable,
+                          public ISrsRtspConnection
 {
 private:
     bool disposing_;

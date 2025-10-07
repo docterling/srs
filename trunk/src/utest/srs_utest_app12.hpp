@@ -12,9 +12,10 @@
 */
 #include <srs_utest.hpp>
 
-#include <srs_utest_app6.hpp>
+#include <srs_app_rtsp_conn.hpp>
 #include <srs_app_stream_bridge.hpp>
 #include <srs_protocol_rtmp_stack.hpp>
+#include <srs_utest_app6.hpp>
 
 // Mock frame target for testing SrsSrtFrameBuilder
 class MockSrtFrameTarget : public ISrsFrameTarget
@@ -107,5 +108,52 @@ public:
     void reset();
 };
 
-#endif
+// Forward declaration
+class SrsRtspConsumer;
 
+// Mock RTSP source for testing SrsRtspConsumer
+class MockRtspSource
+{
+public:
+    int on_consumer_destroy_count_;
+
+public:
+    MockRtspSource();
+    virtual ~MockRtspSource();
+    void on_consumer_destroy(SrsRtspConsumer *consumer);
+    void reset();
+};
+
+// Mock RTP target for testing SrsRtspRtpBuilder
+class MockRtspRtpTarget : public ISrsRtpTarget
+{
+public:
+    int on_rtp_count_;
+    SrsRtpPacket *last_rtp_;
+    srs_error_t rtp_error_;
+
+public:
+    MockRtspRtpTarget();
+    virtual ~MockRtspRtpTarget();
+    virtual srs_error_t on_rtp(SrsRtpPacket *pkt);
+    void set_rtp_error(srs_error_t err);
+    void reset();
+};
+
+// Mock RTSP connection for testing SrsRtspSendTrack
+class MockRtspConnection : public ISrsRtspConnection
+{
+public:
+    int do_send_packet_count_;
+    SrsRtpPacket *last_packet_;
+    srs_error_t send_error_;
+
+public:
+    MockRtspConnection();
+    virtual ~MockRtspConnection();
+    virtual srs_error_t do_send_packet(SrsRtpPacket *pkt);
+    void set_send_error(srs_error_t err);
+    void reset();
+};
+
+#endif

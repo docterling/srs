@@ -531,7 +531,6 @@ srs_error_t SrsMpegtsSrtConn::do_playing()
 
     srs_assert(consumer_raw);
     SrsUniquePtr<ISrsSrtConsumer> consumer(consumer_raw);
-    SrsSrtConsumer *consumer_impl = dynamic_cast<SrsSrtConsumer *>(consumer_raw);
 
     // TODO: FIXME: Dumps the SPS/PPS from gop cache, without other frames.
     if ((err = srt_source_->consumer_dumps(consumer.get())) != srs_success) {

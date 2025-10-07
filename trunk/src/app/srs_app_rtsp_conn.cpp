@@ -347,6 +347,14 @@ void SrsRtspPlayStream::set_all_tracks_status(bool status)
     srs_trace("RTSP: Init tracks %s ok", merged_log.str().c_str());
 }
 
+ISrsRtspConnection::ISrsRtspConnection()
+{
+}
+
+ISrsRtspConnection::~ISrsRtspConnection()
+{
+}
+
 SrsRtspConnection::SrsRtspConnection(ISrsResourceManager *cm, ISrsProtocolReadWriter *skt, std::string cip, int port)
 {
     manager_ = cm;

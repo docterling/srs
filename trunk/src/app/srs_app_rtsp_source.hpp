@@ -26,6 +26,10 @@ class SrsRtcSourceDescription;
 class SrsResourceManager;
 class SrsRtspConnection;
 class SrsRtpVideoBuilder;
+class ISrsStatistic;
+class ISrsCircuitBreaker;
+class ISrsAppConfig;
+class ISrsRtspConnection;
 
 // The RTSP stream consumer, consume packets from RTSP stream source.
 class SrsRtspConsumer
@@ -119,6 +123,10 @@ extern SrsResourceManager *_srs_rtsp_manager;
 class SrsRtspSource : public ISrsRtpTarget
 {
 private:
+    ISrsStatistic *stat_;
+    ISrsCircuitBreaker *circuit_breaker_;
+
+private:
     // For publish, it's the publish client id.
     // For edge, it's the edge ingest id.
     // when source id changed, for example, the edge reconnect,
@@ -202,6 +210,9 @@ public:
 class SrsRtspRtpBuilder
 {
 private:
+    ISrsAppConfig *config_;
+
+private:
     ISrsRequest *req_;
     ISrsRtpTarget *rtp_target_;
     // The format, codec information.
@@ -264,10 +275,10 @@ public:
 
 protected:
     // The owner connection for this track.
-    SrsRtspConnection *session_;
+    ISrsRtspConnection *session_;
 
 public:
-    SrsRtspSendTrack(SrsRtspConnection *session, SrsRtcTrackDescription *track_desc, bool is_audio);
+    SrsRtspSendTrack(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc, bool is_audio);
     virtual ~SrsRtspSendTrack();
 
 public:
@@ -284,7 +295,7 @@ public:
 class SrsRtspAudioSendTrack : public SrsRtspSendTrack
 {
 public:
-    SrsRtspAudioSendTrack(SrsRtspConnection *session, SrsRtcTrackDescription *track_desc);
+    SrsRtspAudioSendTrack(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc);
     virtual ~SrsRtspAudioSendTrack();
 
 public:
@@ -294,7 +305,7 @@ public:
 class SrsRtspVideoSendTrack : public SrsRtspSendTrack
 {
 public:
-    SrsRtspVideoSendTrack(SrsRtspConnection *session, SrsRtcTrackDescription *track_desc);
+    SrsRtspVideoSendTrack(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc);
     virtual ~SrsRtspVideoSendTrack();
 
 public:
