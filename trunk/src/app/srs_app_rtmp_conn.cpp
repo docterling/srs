@@ -244,7 +244,9 @@ void SrsRtmpConn::assemble()
 
 SrsRtmpConn::~SrsRtmpConn()
 {
-    config_->unsubscribe(this);
+    if (config_) {
+        config_->unsubscribe(this);
+    }
 
     trd_->interrupt();
     // wakeup the handler which need to notice.
@@ -262,6 +264,7 @@ SrsRtmpConn::~SrsRtmpConn()
     srs_freep(refer_);
     srs_freep(security_);
 
+    config_ = NULL;
     manager_ = NULL;
     stream_publish_tokens_ = NULL;
     live_sources_ = NULL;

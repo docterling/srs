@@ -337,6 +337,7 @@ public:
     virtual bool get_vhost_http_hooks_enabled(std::string vhost);
     virtual SrsConfDirective *get_vhost_on_stop(std::string vhost);
     virtual SrsConfDirective *get_vhost_on_unpublish(std::string vhost);
+    virtual SrsConfDirective *get_vhost_on_dvr(std::string vhost);
     virtual bool get_rtc_nack_enabled(std::string vhost);
     virtual bool get_rtc_nack_no_copy(std::string vhost);
     virtual bool get_realtime_enabled(std::string vhost, bool is_rtc);
@@ -391,6 +392,14 @@ public:
     virtual bool get_atc_auto(std::string vhost);
     virtual bool get_reduce_sequence_header(std::string vhost);
     virtual bool get_parse_sps(std::string vhost);
+    // DVR methods
+    virtual std::string get_dvr_path(std::string vhost) { return "./[vhost]/[app]/[stream]/[2006]/[01]/[02]/[15].[04].[05].[999].flv"; }
+    virtual std::string get_dvr_plan(std::string vhost) { return "session"; }
+    virtual bool get_dvr_enabled(std::string vhost) { return false; }
+    virtual SrsConfDirective *get_dvr_apply(std::string vhost) { return NULL; }
+    virtual srs_utime_t get_dvr_duration(std::string vhost) { return 30 * SRS_UTIME_SECONDS; }
+    virtual int get_dvr_time_jitter(std::string vhost) { return 0; }
+    virtual bool get_dvr_wait_keyframe(std::string vhost) { return true; }
     virtual bool get_vhost_enabled(SrsConfDirective *conf) { return true; }
     virtual bool get_vhost_http_remux_enabled(std::string vhost) { return false; }
     virtual bool get_vhost_http_remux_enabled(SrsConfDirective *vhost) { return false; }

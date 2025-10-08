@@ -70,6 +70,7 @@ public:
 public:
     virtual srs_error_t open(std::string file);
     virtual void close();
+    virtual srs_error_t set_iobuf_size(int size);
 
 public:
     virtual bool is_open();

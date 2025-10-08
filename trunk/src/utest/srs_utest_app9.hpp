@@ -137,8 +137,9 @@ public:
 
 public:
     MockDvrForOriginHub();
+    virtual void assemble();
     virtual ~MockDvrForOriginHub();
-    virtual srs_error_t initialize(SrsOriginHub *h, ISrsRequest *r);
+    virtual srs_error_t initialize(ISrsOriginHub *h, ISrsRequest *r);
     virtual srs_error_t on_publish(ISrsRequest *r);
     virtual void on_unpublish();
     virtual srs_error_t on_meta_data(SrsMediaPacket *metadata);
@@ -336,6 +337,7 @@ public:
     virtual srs_error_t on_video(SrsMediaPacket *shared_video, bool is_sequence_header);
     virtual srs_error_t on_publish();
     virtual void on_unpublish();
+    virtual srs_error_t on_dvr_request_sh();
 };
 
 // Mock ISrsAppFactory for testing SrsLiveSource::initialize

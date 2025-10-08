@@ -2195,6 +2195,11 @@ SrsConfDirective *MockAppConfig::get_vhost_on_unpublish(std::string vhost)
     return on_unpublish_directive_;
 }
 
+SrsConfDirective *MockAppConfig::get_vhost_on_dvr(std::string vhost)
+{
+    return NULL;
+}
+
 bool MockAppConfig::get_rtc_nack_enabled(std::string vhost)
 {
     return rtc_nack_enabled_;

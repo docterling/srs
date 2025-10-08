@@ -1457,12 +1457,16 @@ MockDvrForOriginHub::MockDvrForOriginHub()
     on_video_count_ = 0;
 }
 
+void MockDvrForOriginHub::assemble()
+{
+}
+
 MockDvrForOriginHub::~MockDvrForOriginHub()
 {
     srs_freep(initialize_error_);
 }
 
-srs_error_t MockDvrForOriginHub::initialize(SrsOriginHub *h, ISrsRequest *r)
+srs_error_t MockDvrForOriginHub::initialize(ISrsOriginHub *h, ISrsRequest *r)
 {
     initialize_count_++;
     return srs_error_copy(initialize_error_);
@@ -3014,6 +3018,11 @@ srs_error_t MockOriginHubForLiveSource::on_publish()
 
 void MockOriginHubForLiveSource::on_unpublish()
 {
+}
+
+srs_error_t MockOriginHubForLiveSource::on_dvr_request_sh()
+{
+    return srs_success;
 }
 
 MockAppFactoryForLiveSource::MockAppFactoryForLiveSource()

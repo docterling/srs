@@ -19,6 +19,9 @@
 #include <srs_protocol_http_client.hpp>
 #include <srs_protocol_st.hpp>
 #include <srs_app_rtsp_source.hpp>
+#include <srs_kernel_flv.hpp>
+#include <srs_kernel_mp4.hpp>
+#include <srs_app_dvr.hpp>
 
 ISrsAppFactory::ISrsAppFactory()
 {
@@ -93,6 +96,7 @@ ISrsFlvDecoder *SrsAppFactory::create_flv_decoder()
     return new SrsFlvDecoder();
 }
 
+#ifdef SRS_RTSP
 ISrsRtspSendTrack *SrsAppFactory::create_rtsp_audio_send_track(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc)
 {
     return new SrsRtspAudioSendTrack(session, track_desc);
@@ -101,6 +105,27 @@ ISrsRtspSendTrack *SrsAppFactory::create_rtsp_audio_send_track(ISrsRtspConnectio
 ISrsRtspSendTrack *SrsAppFactory::create_rtsp_video_send_track(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc)
 {
     return new SrsRtspVideoSendTrack(session, track_desc);
+}
+#endif
+
+ISrsFlvTransmuxer *SrsAppFactory::create_flv_transmuxer()
+{
+    return new SrsFlvTransmuxer();
+}
+
+ISrsMp4Encoder *SrsAppFactory::create_mp4_encoder()
+{
+    return new SrsMp4Encoder();
+}
+
+ISrsDvrSegmenter *SrsAppFactory::create_dvr_flv_segmenter()
+{
+    return new SrsDvrFlvSegmenter();
+}
+
+ISrsDvrSegmenter *SrsAppFactory::create_dvr_mp4_segmenter()
+{
+    return new SrsDvrMp4Segmenter();
 }
 
 SrsFinalFactory::SrsFinalFactory()

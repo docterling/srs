@@ -228,9 +228,6 @@ VOID TEST(SrsServerTest, ListenRtmpSuccess)
     // - Socket binding succeeded on the random port
     // - Connection manager started successfully
     EXPECT_TRUE(server.get() != NULL);
-
-    // Cleanup: restore original config to avoid side effects
-    server->config_ = _srs_config;
 }
 
 MockHttpServeMux::MockHttpServeMux()
@@ -1713,7 +1710,7 @@ VOID TEST(SrsRtmpConnTest, StreamServiceCycleSelection)
 // Test srs_get_disk_diskstats_stat() function to verify proper disk statistics
 // collection from /proc/diskstats. This test covers the major use scenario of
 // reading disk I/O statistics for configured disk devices. The function uses
-// the global _srs_config to get disk device configuration.
+// the global config to get disk device configuration.
 VOID TEST(SrsUtilityTest, GetDiskDiskstatsStat)
 {
     // Test case 1: Call with default config - should return true with ok_ = true
@@ -2879,9 +2876,9 @@ VOID TEST(SrsRtmpConnTest, HttpHooksOnClose)
     EXPECT_EQ(0, mock_hooks->on_close_calls_[1].send_bytes_);
     EXPECT_EQ(0, mock_hooks->on_close_calls_[1].recv_bytes_);
 
-    // Cleanup: restore original config and hooks to avoid side effects
-    conn->config_ = _srs_config;
-    conn->hooks_ = _srs_hooks;
+    // Clean up injected dependencies to avoid double-free
+    conn->config_ = NULL;
+    conn->hooks_ = NULL;
     srs_freep(mock_config);
     srs_freep(mock_hooks);
 }
@@ -3033,9 +3030,9 @@ VOID TEST(SrsRtmpConnTest, HttpHooksOnPublishSuccess)
     EXPECT_STREQ("http://localhost:8085/api/v1/publish", mock_hooks->on_publish_calls_[1].first.c_str());
     EXPECT_TRUE(mock_hooks->on_publish_calls_[1].second == conn->info_->req_);
 
-    // Cleanup: restore original config and hooks to avoid side effects
-    conn->config_ = _srs_config;
-    conn->hooks_ = _srs_hooks;
+    // Clean up injected dependencies to avoid double-free
+    conn->config_ = NULL;
+    conn->hooks_ = NULL;
     srs_freep(mock_config);
     srs_freep(mock_hooks);
 }
@@ -3114,9 +3111,9 @@ VOID TEST(SrsRtmpConnTest, HttpHooksOnUnpublishSuccess)
     EXPECT_STREQ("http://localhost:8085/api/v1/unpublish", mock_hooks->on_unpublish_calls_[1].first.c_str());
     EXPECT_TRUE(mock_hooks->on_unpublish_calls_[1].second == conn->info_->req_);
 
-    // Cleanup: restore original config and hooks to avoid side effects
-    conn->config_ = _srs_config;
-    conn->hooks_ = _srs_hooks;
+    // Clean up injected dependencies to avoid double-free
+    conn->config_ = NULL;
+    conn->hooks_ = NULL;
     srs_freep(mock_config);
     srs_freep(mock_hooks);
 }
@@ -3195,9 +3192,9 @@ VOID TEST(SrsRtmpConnTest, HttpHooksOnStopSuccess)
     EXPECT_STREQ("http://localhost:8085/api/v1/stop", mock_hooks->on_stop_calls_[1].first.c_str());
     EXPECT_TRUE(mock_hooks->on_stop_calls_[1].second == conn->info_->req_);
 
-    // Cleanup: restore original config and hooks to avoid side effects
-    conn->config_ = _srs_config;
-    conn->hooks_ = _srs_hooks;
+    // Clean up injected dependencies to avoid double-free
+    conn->config_ = NULL;
+    conn->hooks_ = NULL;
     srs_freep(mock_config);
     srs_freep(mock_hooks);
 }
@@ -3349,9 +3346,9 @@ VOID TEST(SrsRtmpConnTest, HttpHooksOnPlaySuccess)
     EXPECT_STREQ("http://localhost:8085/api/v1/play", mock_hooks->on_play_calls_[1].first.c_str());
     EXPECT_TRUE(mock_hooks->on_play_calls_[1].second == conn->info_->req_);
 
-    // Cleanup: restore original config and hooks to avoid side effects
-    conn->config_ = _srs_config;
-    conn->hooks_ = _srs_hooks;
+    // Clean up injected dependencies to avoid double-free
+    conn->config_ = NULL;
+    conn->hooks_ = NULL;
     srs_freep(mock_config);
     srs_freep(mock_hooks);
 }

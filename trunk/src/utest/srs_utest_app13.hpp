@@ -13,6 +13,7 @@
 #include <srs_utest.hpp>
 
 #include <srs_app_config.hpp>
+#include <srs_app_dvr.hpp>
 #include <srs_app_edge.hpp>
 #include <srs_app_factory.hpp>
 #include <srs_app_rtc_source.hpp>
@@ -22,6 +23,7 @@
 #include <srs_app_statistic.hpp>
 #include <srs_kernel_balance.hpp>
 #include <srs_kernel_flv.hpp>
+#include <srs_kernel_mp4.hpp>
 #include <srs_protocol_http_client.hpp>
 #include <srs_protocol_http_stack.hpp>
 #include <srs_protocol_json.hpp>
@@ -64,6 +66,14 @@ public:
     virtual int get_chunk_size(std::string vhost);
     virtual srs_utime_t get_vhost_edge_origin_connect_timeout(std::string vhost);
     virtual srs_utime_t get_vhost_edge_origin_stream_timeout(std::string vhost);
+    // DVR methods
+    virtual std::string get_dvr_path(std::string vhost);
+    virtual int get_dvr_time_jitter(std::string vhost);
+    virtual bool get_dvr_wait_keyframe(std::string vhost);
+    virtual bool get_dvr_enabled(std::string vhost);
+    virtual srs_utime_t get_dvr_duration(std::string vhost);
+    virtual SrsConfDirective *get_dvr_apply(std::string vhost);
+    virtual std::string get_dvr_plan(std::string vhost);
 };
 
 // Mock RTMP client for testing edge upstream
@@ -476,6 +486,204 @@ public:
     virtual void stop();
     virtual void set_all_tracks_status(bool status);
     void reset();
+};
+
+// Mock ISrsDvrPlan for testing SrsDvrSegmenter
+class MockDvrPlan : public ISrsDvrPlan
+{
+public:
+    bool on_publish_called_;
+    bool on_unpublish_called_;
+    srs_error_t on_publish_error_;
+
+public:
+    MockDvrPlan();
+    virtual ~MockDvrPlan();
+
+public:
+    virtual srs_error_t initialize(ISrsOriginHub *h, ISrsDvrSegmenter *s, ISrsRequest *r);
+    virtual srs_error_t on_publish(ISrsRequest *r);
+    virtual void on_unpublish();
+    virtual srs_error_t on_meta_data(SrsMediaPacket *shared_metadata);
+    virtual srs_error_t on_audio(SrsMediaPacket *shared_audio, SrsFormat *format);
+    virtual srs_error_t on_video(SrsMediaPacket *shared_video, SrsFormat *format);
+    virtual srs_error_t on_reap_segment();
+};
+
+// Mock ISrsHttpHooks for testing SrsDvrAsyncCallOnDvr
+class MockHttpHooksForDvrAsyncCall : public ISrsHttpHooks
+{
+public:
+    struct OnDvrCall {
+        SrsContextId cid_;
+        std::string url_;
+        ISrsRequest *req_;
+        std::string file_;
+    };
+    std::vector<OnDvrCall> on_dvr_calls_;
+    int on_dvr_count_;
+    srs_error_t on_dvr_error_;
+
+public:
+    MockHttpHooksForDvrAsyncCall();
+    virtual ~MockHttpHooksForDvrAsyncCall();
+
+public:
+    virtual srs_error_t on_connect(std::string url, ISrsRequest *req);
+    virtual void on_close(std::string url, ISrsRequest *req, int64_t send_bytes, int64_t recv_bytes);
+    virtual srs_error_t on_publish(std::string url, ISrsRequest *req);
+    virtual void on_unpublish(std::string url, ISrsRequest *req);
+    virtual srs_error_t on_play(std::string url, ISrsRequest *req);
+    virtual void on_stop(std::string url, ISrsRequest *req);
+    virtual srs_error_t on_dvr(SrsContextId cid, std::string url, ISrsRequest *req, std::string file);
+    virtual srs_error_t on_hls(SrsContextId cid, std::string url, ISrsRequest *req, std::string file, std::string ts_url,
+                               std::string m3u8, std::string m3u8_url, int sn, srs_utime_t duration);
+    virtual srs_error_t on_hls_notify(SrsContextId cid, std::string url, ISrsRequest *req, std::string ts_url, int nb_notify);
+    virtual srs_error_t discover_co_workers(std::string url, std::string &host, int &port);
+    virtual srs_error_t on_forward_backend(std::string url, ISrsRequest *req, std::vector<std::string> &rtmp_urls);
+
+    void reset();
+};
+
+// Mock ISrsFlvTransmuxer for testing SrsDvrFlvSegmenter
+class MockFlvTransmuxer : public ISrsFlvTransmuxer
+{
+public:
+    bool write_header_called_;
+    bool write_metadata_called_;
+    char metadata_type_;
+    int metadata_size_;
+    srs_error_t write_metadata_error_;
+
+public:
+    MockFlvTransmuxer();
+    virtual ~MockFlvTransmuxer();
+
+public:
+    virtual srs_error_t initialize(ISrsWriter *fw);
+    virtual void set_drop_if_not_match(bool v);
+    virtual bool drop_if_not_match();
+    virtual srs_error_t write_header(bool has_video = true, bool has_audio = true);
+    virtual srs_error_t write_header(char flv_header[9]);
+    virtual srs_error_t write_metadata(char type, char *data, int size);
+    virtual srs_error_t write_audio(int64_t timestamp, char *data, int size);
+    virtual srs_error_t write_video(int64_t timestamp, char *data, int size);
+    virtual srs_error_t write_tags(SrsMediaPacket **msgs, int count);
+};
+
+// Mock ISrsMp4Encoder for testing SrsDvrMp4Segmenter
+class MockMp4Encoder : public ISrsMp4Encoder
+{
+public:
+    bool initialize_called_;
+    bool write_sample_called_;
+    bool flush_called_;
+    bool set_audio_codec_called_;
+    SrsMp4HandlerType last_handler_type_;
+    uint16_t last_frame_type_;
+    uint16_t last_codec_type_;
+    uint32_t last_dts_;
+    uint32_t last_pts_;
+    uint32_t last_sample_size_;
+    SrsAudioCodecId last_audio_codec_;
+    SrsAudioSampleRate last_audio_sample_rate_;
+    SrsAudioSampleBits last_audio_sound_bits_;
+    SrsAudioChannels last_audio_channels_;
+
+public:
+    MockMp4Encoder();
+    virtual ~MockMp4Encoder();
+
+public:
+    virtual srs_error_t initialize(ISrsWriteSeeker *ws);
+    virtual srs_error_t write_sample(SrsFormat *format, SrsMp4HandlerType ht, uint16_t ft, uint16_t ct,
+                                     uint32_t dts, uint32_t pts, uint8_t *sample, uint32_t nb_sample);
+    virtual srs_error_t flush();
+    virtual void set_audio_codec(SrsAudioCodecId vcodec, SrsAudioSampleRate sample_rate, SrsAudioSampleBits sound_bits, SrsAudioChannels channels);
+    void reset();
+};
+
+// Mock ISrsAppFactory for testing SrsDvrMp4Segmenter
+class MockDvrAppFactory : public ISrsAppFactory
+{
+public:
+    MockMp4Encoder *mock_mp4_encoder_;
+
+public:
+    MockDvrAppFactory();
+    virtual ~MockDvrAppFactory();
+
+public:
+    virtual ISrsFileWriter *create_file_writer();
+    virtual ISrsFileWriter *create_enc_file_writer();
+    virtual ISrsFileReader *create_file_reader();
+    virtual SrsPath *create_path();
+    virtual SrsLiveSource *create_live_source();
+    virtual ISrsOriginHub *create_origin_hub();
+    virtual ISrsHourGlass *create_hourglass(const std::string &name, ISrsHourGlassHandler *handler, srs_utime_t interval);
+    virtual ISrsBasicRtmpClient *create_rtmp_client(std::string url, srs_utime_t cto, srs_utime_t sto);
+    virtual ISrsHttpClient *create_http_client();
+    virtual ISrsHttpResponseReader *create_http_response_reader(ISrsHttpResponseReader *r);
+    virtual ISrsFileReader *create_http_file_reader(ISrsHttpResponseReader *r);
+    virtual ISrsFlvDecoder *create_flv_decoder();
+    virtual ISrsBasicRtmpClient *create_basic_rtmp_client(std::string url, srs_utime_t ctm, srs_utime_t stm);
+#ifdef SRS_RTSP
+    virtual ISrsRtspSendTrack *create_rtsp_audio_send_track(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc);
+    virtual ISrsRtspSendTrack *create_rtsp_video_send_track(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc);
+#endif
+    virtual ISrsFlvTransmuxer *create_flv_transmuxer();
+    virtual ISrsMp4Encoder *create_mp4_encoder();
+    virtual ISrsDvrSegmenter *create_dvr_flv_segmenter();
+    virtual ISrsDvrSegmenter *create_dvr_mp4_segmenter();
+};
+
+// Mock ISrsDvrSegmenter for testing SrsDvrPlan
+class MockDvrSegmenter : public ISrsDvrSegmenter
+{
+public:
+    bool write_metadata_called_;
+    bool write_audio_called_;
+    bool write_video_called_;
+    SrsFragment *fragment_;
+
+public:
+    MockDvrSegmenter();
+    virtual void assemble();
+    virtual ~MockDvrSegmenter();
+
+public:
+    virtual srs_error_t initialize(ISrsDvrPlan *p, ISrsRequest *r);
+    virtual SrsFragment *current();
+    virtual srs_error_t open();
+    virtual srs_error_t write_metadata(SrsMediaPacket *metadata);
+    virtual srs_error_t write_audio(SrsMediaPacket *shared_audio, SrsFormat *format);
+    virtual srs_error_t write_video(SrsMediaPacket *shared_video, SrsFormat *format);
+    virtual srs_error_t close();
+};
+
+// Mock ISrsOriginHub for testing SrsDvrSegmentPlan
+class MockOriginHubForDvrSegmentPlan : public ISrsOriginHub
+{
+public:
+    int on_dvr_request_sh_count_;
+    srs_error_t on_dvr_request_sh_error_;
+
+public:
+    MockOriginHubForDvrSegmentPlan();
+    virtual ~MockOriginHubForDvrSegmentPlan();
+
+public:
+    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> s, ISrsRequest *r);
+    virtual void dispose();
+    virtual srs_error_t cycle();
+    virtual bool active();
+    virtual srs_utime_t cleanup_delay();
+    virtual srs_error_t on_meta_data(SrsMediaPacket *shared_metadata, SrsOnMetaDataPacket *packet);
+    virtual srs_error_t on_audio(SrsMediaPacket *shared_audio);
+    virtual srs_error_t on_video(SrsMediaPacket *shared_video, bool is_sequence_header);
+    virtual srs_error_t on_publish();
+    virtual void on_unpublish();
+    virtual srs_error_t on_dvr_request_sh();
 };
 
 #endif

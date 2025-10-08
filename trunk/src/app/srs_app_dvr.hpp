@@ -27,17 +27,45 @@ class SrsThread;
 class SrsMp4Encoder;
 class SrsFragment;
 class SrsFormat;
+class ISrsFileWriter;
+class ISrsDvrPlan;
+class ISrsMp4Encoder;
+class ISrsOriginHub;
+class ISrsAppConfig;
+class ISrsAppFactory;
+class ISrsAsyncCallWorker;
 
 #include <srs_app_async_call.hpp>
 #include <srs_app_reload.hpp>
 #include <srs_app_rtmp_source.hpp>
 
-// The segmenter for DVR, to write a segment file in flv/mp4.
-class SrsDvrSegmenter : public ISrsReloadHandler
+// The segmenter interface.
+class ISrsDvrSegmenter
 {
+public:
+    ISrsDvrSegmenter();
+    virtual void assemble() = 0;
+    virtual ~ISrsDvrSegmenter();
+
+public:
+    virtual srs_error_t initialize(ISrsDvrPlan *p, ISrsRequest *r) = 0;
+    virtual SrsFragment *current() = 0;
+    virtual srs_error_t open() = 0;
+    virtual srs_error_t write_metadata(SrsMediaPacket *metadata) = 0;
+    virtual srs_error_t write_audio(SrsMediaPacket *shared_audio, SrsFormat *format) = 0;
+    virtual srs_error_t write_video(SrsMediaPacket *shared_video, SrsFormat *format) = 0;
+    virtual srs_error_t close() = 0;
+};
+
+// The segmenter for DVR, to write a segment file in flv/mp4.
+class SrsDvrSegmenter : public ISrsReloadHandler, public ISrsDvrSegmenter
+{
+private:
+    ISrsAppConfig *config_;
+
 protected:
     // The underlayer file object.
-    SrsFileWriter *fs_;
+    ISrsFileWriter *fs_;
     // Whether wait keyframe to reap segment.
     bool wait_keyframe_;
     // The FLV/MP4 fragment file.
@@ -45,7 +73,7 @@ protected:
 
 private:
     ISrsRequest *req_;
-    SrsDvrPlan *plan_;
+    ISrsDvrPlan *plan_;
 
 private:
     SrsRtmpJitter *jitter_;
@@ -53,11 +81,12 @@ private:
 
 public:
     SrsDvrSegmenter();
+    void assemble();
     virtual ~SrsDvrSegmenter();
 
 public:
     // Initialize the segment.
-    virtual srs_error_t initialize(SrsDvrPlan *p, ISrsRequest *r);
+    virtual srs_error_t initialize(ISrsDvrPlan *p, ISrsRequest *r);
     // Get the current framgnet.
     virtual SrsFragment *current();
     // Open new segment file.
@@ -98,6 +127,9 @@ private:
 class SrsDvrFlvSegmenter : public SrsDvrSegmenter
 {
 private:
+    ISrsAppFactory *app_factory_;
+
+private:
     // The FLV encoder, for FLV target.
     ISrsFlvTransmuxer *enc_;
 
@@ -130,8 +162,11 @@ protected:
 class SrsDvrMp4Segmenter : public SrsDvrSegmenter
 {
 private:
+    ISrsAppFactory *app_factory_;
+
+private:
     // The MP4 encoder, for MP4 target.
-    SrsMp4Encoder *enc_;
+    ISrsMp4Encoder *enc_;
 
 public:
     SrsDvrMp4Segmenter();
@@ -152,6 +187,10 @@ protected:
 class SrsDvrAsyncCallOnDvr : public ISrsAsyncCallTask
 {
 private:
+    ISrsHttpHooks *hooks_;
+    ISrsAppConfig *config_;
+
+private:
     SrsContextId cid_;
     std::string path_;
     ISrsRequest *req_;
@@ -165,15 +204,36 @@ public:
     virtual std::string to_string();
 };
 
-// The DVR plan, when and how to reap segment.
-class SrsDvrPlan : public ISrsReloadHandler
+// The DVR plan interface.
+class ISrsDvrPlan
 {
+public:
+    ISrsDvrPlan();
+    virtual ~ISrsDvrPlan();
+
+public:
+    virtual srs_error_t initialize(ISrsOriginHub *h, ISrsDvrSegmenter *s, ISrsRequest *r) = 0;
+    virtual srs_error_t on_publish(ISrsRequest *r) = 0;
+    virtual void on_unpublish() = 0;
+    virtual srs_error_t on_meta_data(SrsMediaPacket *shared_metadata) = 0;
+    virtual srs_error_t on_audio(SrsMediaPacket *shared_audio, SrsFormat *format) = 0;
+    virtual srs_error_t on_video(SrsMediaPacket *shared_video, SrsFormat *format) = 0;
+    virtual srs_error_t on_reap_segment() = 0;
+};
+
+// The DVR plan, when and how to reap segment.
+class SrsDvrPlan : public ISrsReloadHandler, public ISrsDvrPlan
+{
+protected:
+    ISrsAsyncCallWorker *async_;
+    ISrsAppConfig *config_;
+
 public:
     ISrsRequest *req_;
 
 protected:
-    SrsOriginHub *hub_;
-    SrsDvrSegmenter *segment_;
+    ISrsOriginHub *hub_;
+    ISrsDvrSegmenter *segment_;
     bool dvr_enabled_;
 
 public:
@@ -181,7 +241,7 @@ public:
     virtual ~SrsDvrPlan();
 
 public:
-    virtual srs_error_t initialize(SrsOriginHub *h, SrsDvrSegmenter *s, ISrsRequest *r);
+    virtual srs_error_t initialize(ISrsOriginHub *h, ISrsDvrSegmenter *s, ISrsRequest *r);
     virtual srs_error_t on_publish(ISrsRequest *r);
     virtual void on_unpublish();
     virtual srs_error_t on_meta_data(SrsMediaPacket *shared_metadata);
@@ -193,7 +253,7 @@ public:
     virtual srs_error_t on_reap_segment();
 
 public:
-    static srs_error_t create_plan(std::string vhost, SrsDvrPlan **pplan);
+    static srs_error_t create_plan(ISrsAppConfig *config, std::string vhost, ISrsDvrPlan **pplan);
 };
 
 // The DVR session plan: reap flv when session complete(unpublish)
@@ -223,7 +283,7 @@ public:
     virtual ~SrsDvrSegmentPlan();
 
 public:
-    virtual srs_error_t initialize(SrsOriginHub *h, SrsDvrSegmenter *s, ISrsRequest *r);
+    virtual srs_error_t initialize(ISrsOriginHub *h, ISrsDvrSegmenter *s, ISrsRequest *r);
     virtual srs_error_t on_publish(ISrsRequest *r);
     virtual void on_unpublish();
     virtual srs_error_t on_audio(SrsMediaPacket *shared_audio, SrsFormat *format);
@@ -238,10 +298,11 @@ class ISrsDvr
 {
 public:
     ISrsDvr();
+    virtual void assemble() = 0;
     virtual ~ISrsDvr();
 
 public:
-    virtual srs_error_t initialize(SrsOriginHub *h, ISrsRequest *r) = 0;
+    virtual srs_error_t initialize(ISrsOriginHub *h, ISrsRequest *r) = 0;
     virtual srs_error_t on_publish(ISrsRequest *r) = 0;
     virtual void on_unpublish() = 0;
     virtual srs_error_t on_meta_data(SrsMediaPacket *metadata) = 0;
@@ -253,8 +314,12 @@ public:
 class SrsDvr : public ISrsReloadHandler, public ISrsDvr
 {
 private:
-    SrsOriginHub *hub_;
-    SrsDvrPlan *plan_;
+    ISrsAppConfig *config_;
+    ISrsAppFactory *app_factory_;
+
+private:
+    ISrsOriginHub *hub_;
+    ISrsDvrPlan *plan_;
     ISrsRequest *req_;
 
 private:
@@ -265,13 +330,14 @@ private:
 
 public:
     SrsDvr();
+    void assemble();
     virtual ~SrsDvr();
 
 public:
     // initialize dvr, create dvr plan.
     // when system initialize(encoder publish at first time, or reload),
     // initialize the dvr will reinitialize the plan, the whole dvr framework.
-    virtual srs_error_t initialize(SrsOriginHub *h, ISrsRequest *r);
+    virtual srs_error_t initialize(ISrsOriginHub *h, ISrsRequest *r);
     // publish stream event,
     // when encoder start to publish RTMP stream.
     // @param fetch_sequence_header whether fetch sequence from source.

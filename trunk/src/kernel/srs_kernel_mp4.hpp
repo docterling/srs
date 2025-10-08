@@ -2624,8 +2624,27 @@ private:
     virtual srs_error_t do_load_next_box(SrsMp4Box **ppbox, uint32_t required_box_type);
 };
 
+// The MP4 encoder interface.
+class ISrsMp4Encoder
+{
+public:
+    ISrsMp4Encoder();
+    virtual ~ISrsMp4Encoder();
+
+public:
+    // The video codec of first track.
+    SrsVideoCodecId vcodec_;
+
+public:
+    virtual srs_error_t initialize(ISrsWriteSeeker *ws) = 0;
+    virtual srs_error_t write_sample(SrsFormat *format, SrsMp4HandlerType ht, uint16_t ft, uint16_t ct,
+                                     uint32_t dts, uint32_t pts, uint8_t *sample, uint32_t nb_sample) = 0;
+    virtual srs_error_t flush() = 0;
+    virtual void set_audio_codec(SrsAudioCodecId vcodec, SrsAudioSampleRate sample_rate, SrsAudioSampleBits sound_bits, SrsAudioChannels channels) = 0;
+};
+
 // The MP4 muxer.
-class SrsMp4Encoder
+class SrsMp4Encoder : public ISrsMp4Encoder
 {
 private:
     ISrsWriteSeeker *wsio_;
@@ -2693,6 +2712,8 @@ public:
                                      uint32_t dts, uint32_t pts, uint8_t *sample, uint32_t nb_sample);
     // Flush the encoder, to write the moov.
     virtual srs_error_t flush();
+
+    virtual void set_audio_codec(SrsAudioCodecId vcodec, SrsAudioSampleRate sample_rate, SrsAudioSampleBits sound_bits, SrsAudioChannels channels);
 
 private:
     virtual srs_error_t copy_sequence_header(SrsFormat *format, bool vsh, uint8_t *sample, uint32_t nb_sample);

@@ -495,6 +495,12 @@ public:
     virtual bool get_parse_sps(std::string vhost) = 0;
 
 public:
+    // DVR config
+    virtual std::string get_dvr_path(std::string vhost) = 0;
+    virtual int get_dvr_time_jitter(std::string vhost) = 0;
+    virtual bool get_dvr_wait_keyframe(std::string vhost) = 0;
+
+public:
     // HTTP remux config
     virtual bool get_vhost_http_remux_enabled(std::string vhost) = 0;
     virtual bool get_vhost_http_remux_enabled(SrsConfDirective *vhost) = 0;
@@ -509,6 +515,11 @@ public:
     virtual std::string get_vhost_edge_protocol(std::string vhost) = 0;
     virtual bool get_vhost_edge_follow_client(std::string vhost) = 0;
     virtual std::string get_vhost_edge_transform_vhost(std::string vhost) = 0;
+    virtual SrsConfDirective *get_vhost_on_dvr(std::string vhost) = 0;
+    virtual std::string get_dvr_plan(std::string vhost) = 0;
+    virtual bool get_dvr_enabled(std::string vhost) = 0;
+    virtual SrsConfDirective *get_dvr_apply(std::string vhost) = 0;
+    virtual srs_utime_t get_dvr_duration(std::string vhost) = 0;
 };
 
 // The config service provider.

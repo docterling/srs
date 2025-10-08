@@ -6493,6 +6493,14 @@ srs_error_t SrsMp4Decoder::do_load_next_box(SrsMp4Box **ppbox, uint32_t required
     return err;
 }
 
+ISrsMp4Encoder::ISrsMp4Encoder()
+{
+}
+
+ISrsMp4Encoder::~ISrsMp4Encoder()
+{
+}
+
 SrsMp4Encoder::SrsMp4Encoder()
 {
     wsio_ = NULL;
@@ -6887,6 +6895,14 @@ srs_error_t SrsMp4Encoder::flush()
     }
 
     return err;
+}
+
+void SrsMp4Encoder::set_audio_codec(SrsAudioCodecId vcodec, SrsAudioSampleRate sample_rate, SrsAudioSampleBits sound_bits, SrsAudioChannels channels)
+{
+    acodec_ = vcodec;
+    sample_rate_ = sample_rate;
+    sound_bits_ = sound_bits;
+    channels_ = channels;
 }
 
 srs_error_t SrsMp4Encoder::copy_sequence_header(SrsFormat *format, bool vsh, uint8_t *sample, uint32_t nb_sample)

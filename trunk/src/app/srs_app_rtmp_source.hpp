@@ -402,6 +402,8 @@ public:
     virtual srs_error_t on_publish() = 0;
     // When stop publish stream.
     virtual void on_unpublish() = 0;
+    // When DVR requests sequence header.
+    virtual srs_error_t on_dvr_request_sh() = 0;
 };
 
 // The hub for origin is a collection of utilities for origin only,

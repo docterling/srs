@@ -2452,9 +2452,6 @@ VOID TEST(SrsRtspRtpBuilderTest, InitializePublishUnpublishLifecycle)
     EXPECT_EQ(15, builder->meta_->previous_ash()->size());
     EXPECT_EQ(0, memcmp(builder->meta_->previous_vsh()->payload(), video_data, 20));
     EXPECT_EQ(0, memcmp(builder->meta_->previous_ash()->payload(), audio_data, 15));
-
-    // Restore global config
-    builder->config_ = _srs_config;
 }
 
 // Test SrsRtspRtpBuilder::on_frame and on_audio - covers the major use scenario:

@@ -26,6 +26,9 @@ class ISrsHttpResponseReader;
 class ISrsRtspSendTrack;
 class ISrsRtspConnection;
 class SrsRtcTrackDescription;
+class ISrsFlvTransmuxer;
+class ISrsMp4Encoder;
+class ISrsDvrSegmenter;
 
 // The factory to create app objects.
 class ISrsAppFactory
@@ -46,8 +49,14 @@ public:
     virtual ISrsHttpClient *create_http_client() = 0;
     virtual ISrsFileReader *create_http_file_reader(ISrsHttpResponseReader *r) = 0;
     virtual ISrsFlvDecoder *create_flv_decoder() = 0;
+#ifdef SRS_RTSP
     virtual ISrsRtspSendTrack *create_rtsp_audio_send_track(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc) = 0;
     virtual ISrsRtspSendTrack *create_rtsp_video_send_track(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc) = 0;
+#endif
+    virtual ISrsFlvTransmuxer *create_flv_transmuxer() = 0;
+    virtual ISrsMp4Encoder *create_mp4_encoder() = 0;
+    virtual ISrsDvrSegmenter *create_dvr_flv_segmenter() = 0;
+    virtual ISrsDvrSegmenter *create_dvr_mp4_segmenter() = 0;
 };
 
 // The factory to create app objects.
@@ -69,8 +78,14 @@ public:
     virtual ISrsHttpClient *create_http_client();
     virtual ISrsFileReader *create_http_file_reader(ISrsHttpResponseReader *r);
     virtual ISrsFlvDecoder *create_flv_decoder();
+#ifdef SRS_RTSP
     virtual ISrsRtspSendTrack *create_rtsp_audio_send_track(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc);
     virtual ISrsRtspSendTrack *create_rtsp_video_send_track(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc);
+#endif
+    virtual ISrsFlvTransmuxer *create_flv_transmuxer();
+    virtual ISrsMp4Encoder *create_mp4_encoder();
+    virtual ISrsDvrSegmenter *create_dvr_flv_segmenter();
+    virtual ISrsDvrSegmenter *create_dvr_mp4_segmenter();
 };
 
 extern ISrsAppFactory *_srs_app_factory;

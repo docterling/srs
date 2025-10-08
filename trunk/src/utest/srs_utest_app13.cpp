@@ -7,17 +7,24 @@
 
 using namespace std;
 
+#include <srs_app_dvr.hpp>
+#include <srs_app_fragment.hpp>
 #include <srs_app_rtc_source.hpp>
 #include <srs_app_rtsp_conn.hpp>
 #include <srs_app_rtsp_source.hpp>
+#include <srs_app_utility.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_flv.hpp>
+#include <srs_kernel_mp4.hpp>
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_amf0.hpp>
 #include <srs_protocol_utility.hpp>
 #include <srs_utest_app10.hpp>
 #include <srs_utest_app11.hpp>
+#include <srs_utest_config.hpp>
+#include <srs_utest_fmp4.hpp>
+#include <srs_utest_kernel.hpp>
 #include <srs_utest_protocol.hpp>
 
 // Mock request implementation
@@ -125,6 +132,41 @@ srs_utime_t MockEdgeConfig::get_vhost_edge_origin_connect_timeout(std::string vh
 srs_utime_t MockEdgeConfig::get_vhost_edge_origin_stream_timeout(std::string vhost)
 {
     return 30 * SRS_UTIME_SECONDS;
+}
+
+std::string MockEdgeConfig::get_dvr_path(std::string vhost)
+{
+    return "./[vhost]/[app]/[stream]/[2006]/[01]/[02]/[15].[04].[05].[999].flv";
+}
+
+int MockEdgeConfig::get_dvr_time_jitter(std::string vhost)
+{
+    return 0; // SrsRtmpJitterAlgorithmOFF
+}
+
+bool MockEdgeConfig::get_dvr_wait_keyframe(std::string vhost)
+{
+    return true;
+}
+
+bool MockEdgeConfig::get_dvr_enabled(std::string vhost)
+{
+    return true;
+}
+
+srs_utime_t MockEdgeConfig::get_dvr_duration(std::string vhost)
+{
+    return 30 * SRS_UTIME_SECONDS;
+}
+
+SrsConfDirective *MockEdgeConfig::get_dvr_apply(std::string vhost)
+{
+    return NULL;
+}
+
+std::string MockEdgeConfig::get_dvr_plan(std::string vhost)
+{
+    return "session";
 }
 
 // MockEdgeRtmpClient implementation
@@ -2863,4 +2905,1830 @@ VOID TEST(RtspTcpNetworkTest, WriteRtpPacket)
 
     // Verify the payload data (starts at offset 4)
     EXPECT_EQ(0, memcmp(rtp_packet, output + 4, kRtpPacketSize));
+}
+
+// MockDvrPlan implementation
+MockDvrPlan::MockDvrPlan()
+{
+    on_publish_called_ = false;
+    on_unpublish_called_ = false;
+    on_publish_error_ = srs_success;
+}
+
+MockDvrPlan::~MockDvrPlan()
+{
+}
+
+srs_error_t MockDvrPlan::initialize(ISrsOriginHub *h, ISrsDvrSegmenter *s, ISrsRequest *r)
+{
+    return srs_success;
+}
+
+srs_error_t MockDvrPlan::on_publish(ISrsRequest *r)
+{
+    on_publish_called_ = true;
+    return on_publish_error_;
+}
+
+void MockDvrPlan::on_unpublish()
+{
+    on_unpublish_called_ = true;
+}
+
+srs_error_t MockDvrPlan::on_meta_data(SrsMediaPacket *shared_metadata)
+{
+    return srs_success;
+}
+
+srs_error_t MockDvrPlan::on_audio(SrsMediaPacket *shared_audio, SrsFormat *format)
+{
+    return srs_success;
+}
+
+srs_error_t MockDvrPlan::on_video(SrsMediaPacket *shared_video, SrsFormat *format)
+{
+    return srs_success;
+}
+
+srs_error_t MockDvrPlan::on_reap_segment()
+{
+    return srs_success;
+}
+
+// MockFlvTransmuxer implementation
+MockFlvTransmuxer::MockFlvTransmuxer()
+{
+    write_header_called_ = false;
+    write_metadata_called_ = false;
+    metadata_type_ = 0;
+    metadata_size_ = 0;
+    write_metadata_error_ = srs_success;
+}
+
+MockFlvTransmuxer::~MockFlvTransmuxer()
+{
+}
+
+srs_error_t MockFlvTransmuxer::initialize(ISrsWriter *fw)
+{
+    return srs_success;
+}
+
+void MockFlvTransmuxer::set_drop_if_not_match(bool v)
+{
+}
+
+bool MockFlvTransmuxer::drop_if_not_match()
+{
+    return false;
+}
+
+srs_error_t MockFlvTransmuxer::write_header(bool has_video, bool has_audio)
+{
+    write_header_called_ = true;
+    return srs_success;
+}
+
+srs_error_t MockFlvTransmuxer::write_header(char flv_header[9])
+{
+    write_header_called_ = true;
+    return srs_success;
+}
+
+srs_error_t MockFlvTransmuxer::write_metadata(char type, char *data, int size)
+{
+    write_metadata_called_ = true;
+    metadata_type_ = type;
+    metadata_size_ = size;
+    return write_metadata_error_;
+}
+
+srs_error_t MockFlvTransmuxer::write_audio(int64_t timestamp, char *data, int size)
+{
+    return srs_success;
+}
+
+srs_error_t MockFlvTransmuxer::write_video(int64_t timestamp, char *data, int size)
+{
+    return srs_success;
+}
+
+srs_error_t MockFlvTransmuxer::write_tags(SrsMediaPacket **msgs, int count)
+{
+    return srs_success;
+}
+
+// MockMp4Encoder implementation
+MockMp4Encoder::MockMp4Encoder()
+{
+    initialize_called_ = false;
+    write_sample_called_ = false;
+    flush_called_ = false;
+    set_audio_codec_called_ = false;
+    last_handler_type_ = SrsMp4HandlerTypeForbidden;
+    last_frame_type_ = 0;
+    last_codec_type_ = 0;
+    last_dts_ = 0;
+    last_pts_ = 0;
+    last_sample_size_ = 0;
+    last_audio_codec_ = SrsAudioCodecIdForbidden;
+    last_audio_sample_rate_ = SrsAudioSampleRateForbidden;
+    last_audio_sound_bits_ = SrsAudioSampleBitsForbidden;
+    last_audio_channels_ = SrsAudioChannelsForbidden;
+}
+
+MockMp4Encoder::~MockMp4Encoder()
+{
+}
+
+srs_error_t MockMp4Encoder::initialize(ISrsWriteSeeker *ws)
+{
+    initialize_called_ = true;
+    return srs_success;
+}
+
+srs_error_t MockMp4Encoder::write_sample(SrsFormat *format, SrsMp4HandlerType ht, uint16_t ft, uint16_t ct,
+                                         uint32_t dts, uint32_t pts, uint8_t *sample, uint32_t nb_sample)
+{
+    write_sample_called_ = true;
+    last_handler_type_ = ht;
+    last_frame_type_ = ft;
+    last_codec_type_ = ct;
+    last_dts_ = dts;
+    last_pts_ = pts;
+    last_sample_size_ = nb_sample;
+    return srs_success;
+}
+
+srs_error_t MockMp4Encoder::flush()
+{
+    flush_called_ = true;
+    return srs_success;
+}
+
+void MockMp4Encoder::set_audio_codec(SrsAudioCodecId vcodec, SrsAudioSampleRate sample_rate, SrsAudioSampleBits sound_bits, SrsAudioChannels channels)
+{
+    set_audio_codec_called_ = true;
+    last_audio_codec_ = vcodec;
+    last_audio_sample_rate_ = sample_rate;
+    last_audio_sound_bits_ = sound_bits;
+    last_audio_channels_ = channels;
+}
+
+void MockMp4Encoder::reset()
+{
+    initialize_called_ = false;
+    write_sample_called_ = false;
+    flush_called_ = false;
+    set_audio_codec_called_ = false;
+    last_handler_type_ = SrsMp4HandlerTypeForbidden;
+    last_frame_type_ = 0;
+    last_codec_type_ = 0;
+    last_dts_ = 0;
+    last_pts_ = 0;
+    last_sample_size_ = 0;
+    last_audio_codec_ = SrsAudioCodecIdForbidden;
+    last_audio_sample_rate_ = SrsAudioSampleRateForbidden;
+    last_audio_sound_bits_ = SrsAudioSampleBitsForbidden;
+    last_audio_channels_ = SrsAudioChannelsForbidden;
+}
+
+// MockDvrAppFactory implementation
+MockDvrAppFactory::MockDvrAppFactory()
+{
+    mock_mp4_encoder_ = NULL;
+}
+
+MockDvrAppFactory::~MockDvrAppFactory()
+{
+    // Note: mock_mp4_encoder_ is NOT owned by this factory - it's freed by the caller
+    // We just keep a reference to it for testing purposes
+}
+
+ISrsFileWriter *MockDvrAppFactory::create_file_writer()
+{
+    return new SrsFileWriter();
+}
+
+ISrsFileWriter *MockDvrAppFactory::create_enc_file_writer()
+{
+    return new SrsFileWriter();
+}
+
+ISrsFileReader *MockDvrAppFactory::create_file_reader()
+{
+    return new SrsFileReader();
+}
+
+SrsPath *MockDvrAppFactory::create_path()
+{
+    return new SrsPath();
+}
+
+SrsLiveSource *MockDvrAppFactory::create_live_source()
+{
+    return NULL;
+}
+
+ISrsOriginHub *MockDvrAppFactory::create_origin_hub()
+{
+    return NULL;
+}
+
+ISrsHourGlass *MockDvrAppFactory::create_hourglass(const std::string &name, ISrsHourGlassHandler *handler, srs_utime_t interval)
+{
+    return NULL;
+}
+
+ISrsBasicRtmpClient *MockDvrAppFactory::create_rtmp_client(std::string url, srs_utime_t cto, srs_utime_t sto)
+{
+    return NULL;
+}
+
+ISrsHttpClient *MockDvrAppFactory::create_http_client()
+{
+    return NULL;
+}
+
+ISrsHttpResponseReader *MockDvrAppFactory::create_http_response_reader(ISrsHttpResponseReader *r)
+{
+    return NULL;
+}
+
+ISrsFileReader *MockDvrAppFactory::create_http_file_reader(ISrsHttpResponseReader *r)
+{
+    return NULL;
+}
+
+ISrsFlvDecoder *MockDvrAppFactory::create_flv_decoder()
+{
+    return NULL;
+}
+
+ISrsBasicRtmpClient *MockDvrAppFactory::create_basic_rtmp_client(std::string url, srs_utime_t ctm, srs_utime_t stm)
+{
+    return NULL;
+}
+
+#ifdef SRS_RTSP
+ISrsRtspSendTrack *MockDvrAppFactory::create_rtsp_audio_send_track(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc)
+{
+    return NULL;
+}
+
+ISrsRtspSendTrack *MockDvrAppFactory::create_rtsp_video_send_track(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc)
+{
+    return NULL;
+}
+#endif
+
+ISrsFlvTransmuxer *MockDvrAppFactory::create_flv_transmuxer()
+{
+    return NULL;
+}
+
+ISrsMp4Encoder *MockDvrAppFactory::create_mp4_encoder()
+{
+    // Create a new mock encoder and save reference for testing
+    MockMp4Encoder *encoder = new MockMp4Encoder();
+    mock_mp4_encoder_ = encoder;
+    return encoder;
+}
+
+ISrsDvrSegmenter *MockDvrAppFactory::create_dvr_flv_segmenter()
+{
+    SrsDvrFlvSegmenter *segmenter = new SrsDvrFlvSegmenter();
+    segmenter->assemble();
+    return segmenter;
+}
+
+ISrsDvrSegmenter *MockDvrAppFactory::create_dvr_mp4_segmenter()
+{
+    SrsDvrMp4Segmenter *segmenter = new SrsDvrMp4Segmenter();
+    segmenter->assemble();
+    return segmenter;
+}
+
+VOID TEST(DvrSegmenterTest, OpenTypicalScenario)
+{
+    srs_error_t err;
+
+    // Create mock request
+    SrsUniquePtr<MockEdgeRequest> req(new MockEdgeRequest("test.vhost", "live", "stream1"));
+
+    // Create mock plan
+    SrsUniquePtr<MockDvrPlan> plan(new MockDvrPlan());
+
+    // Create SrsDvrFlvSegmenter instance
+    SrsUniquePtr<SrsDvrFlvSegmenter> segmenter(new SrsDvrFlvSegmenter());
+    segmenter->assemble();
+
+    // Initialize the segmenter
+    HELPER_EXPECT_SUCCESS(segmenter->initialize(plan.get(), req.get()));
+
+    // Replace the file writer with mock to avoid real file operations
+    srs_freep(segmenter->fs_);
+    SrsUniquePtr<MockSrsFileWriter> mock_fs(new MockSrsFileWriter());
+    segmenter->fs_ = mock_fs.get();
+
+    // Test open() - should succeed
+    HELPER_EXPECT_SUCCESS(segmenter->open());
+
+    // Verify file writer was opened
+    EXPECT_TRUE(mock_fs->is_open());
+
+    // Verify jitter was created
+    EXPECT_TRUE(segmenter->jitter_ != NULL);
+
+    // Test open() again - should return success immediately (already open)
+    HELPER_EXPECT_SUCCESS(segmenter->open());
+
+    // Clean up - set to NULL to avoid double-free
+    segmenter->fs_ = NULL;
+}
+
+VOID TEST(DvrSegmenterTest, WriteAudioTypicalScenario)
+{
+    srs_error_t err;
+
+    // Create mock request
+    SrsUniquePtr<MockEdgeRequest> req(new MockEdgeRequest("test.vhost", "live", "stream1"));
+
+    // Create mock plan
+    SrsUniquePtr<MockDvrPlan> plan(new MockDvrPlan());
+
+    // Create SrsDvrFlvSegmenter instance
+    SrsUniquePtr<SrsDvrFlvSegmenter> segmenter(new SrsDvrFlvSegmenter());
+    segmenter->assemble();
+
+    // Initialize the segmenter
+    HELPER_EXPECT_SUCCESS(segmenter->initialize(plan.get(), req.get()));
+
+    // Replace the file writer with mock to avoid real file operations
+    srs_freep(segmenter->fs_);
+    SrsUniquePtr<MockSrsFileWriter> mock_fs(new MockSrsFileWriter());
+    segmenter->fs_ = mock_fs.get();
+
+    // Open the segmenter to initialize jitter and encoder
+    HELPER_EXPECT_SUCCESS(segmenter->open());
+
+    // Create audio format with AAC codec using MockSrsFormat
+    SrsUniquePtr<MockSrsFormat> format(new MockSrsFormat());
+
+    // Create first audio packet with timestamp 0
+    SrsUniquePtr<MockSrsMediaPacket> audio_packet1(new MockSrsMediaPacket(false, 0));
+
+    // Test write_audio() - should succeed
+    HELPER_EXPECT_SUCCESS(segmenter->write_audio(audio_packet1.get(), format.get()));
+
+    // Verify file writer has data written
+    EXPECT_TRUE(mock_fs->filesize() > 0);
+
+    // Create second audio packet with timestamp 1000ms to establish duration
+    SrsUniquePtr<MockSrsMediaPacket> audio_packet2(new MockSrsMediaPacket(false, 1000));
+
+    // Write second audio packet
+    HELPER_EXPECT_SUCCESS(segmenter->write_audio(audio_packet2.get(), format.get()));
+
+    // Verify fragment duration was updated (should be > 0 after writing packets with different timestamps)
+    // Note: Exact duration may vary due to jitter correction
+    EXPECT_TRUE(segmenter->fragment_->duration() > 0);
+
+    // Clean up - set to NULL to avoid double-free
+    segmenter->fs_ = NULL;
+}
+
+VOID TEST(DvrSegmenterTest, WriteVideoTypicalScenario)
+{
+    srs_error_t err;
+
+    // Create mock request
+    SrsUniquePtr<MockEdgeRequest> req(new MockEdgeRequest("test.vhost", "live", "stream1"));
+
+    // Create mock plan
+    SrsUniquePtr<MockDvrPlan> plan(new MockDvrPlan());
+
+    // Create SrsDvrFlvSegmenter instance
+    SrsUniquePtr<SrsDvrFlvSegmenter> segmenter(new SrsDvrFlvSegmenter());
+    segmenter->assemble();
+
+    // Initialize the segmenter
+    HELPER_EXPECT_SUCCESS(segmenter->initialize(plan.get(), req.get()));
+
+    // Replace the file writer with mock to avoid real file operations
+    srs_freep(segmenter->fs_);
+    SrsUniquePtr<MockSrsFileWriter> mock_fs(new MockSrsFileWriter());
+    segmenter->fs_ = mock_fs.get();
+
+    // Open the segmenter to initialize jitter and encoder
+    HELPER_EXPECT_SUCCESS(segmenter->open());
+
+    // Create video format with H.264 codec using MockSrsFormat
+    SrsUniquePtr<MockSrsFormat> format(new MockSrsFormat());
+
+    // Create first video packet with timestamp 0
+    SrsUniquePtr<MockSrsMediaPacket> video_packet1(new MockSrsMediaPacket(true, 0));
+
+    // Test write_video() - should succeed
+    HELPER_EXPECT_SUCCESS(segmenter->write_video(video_packet1.get(), format.get()));
+
+    // Verify file writer has data written
+    EXPECT_TRUE(mock_fs->filesize() > 0);
+
+    // Create second video packet with timestamp 1000ms to establish duration
+    SrsUniquePtr<MockSrsMediaPacket> video_packet2(new MockSrsMediaPacket(true, 1000));
+
+    // Write second video packet
+    HELPER_EXPECT_SUCCESS(segmenter->write_video(video_packet2.get(), format.get()));
+
+    // Verify fragment duration was updated (should be > 0 after writing packets with different timestamps)
+    // Note: Exact duration may vary due to jitter correction
+    EXPECT_TRUE(segmenter->fragment_->duration() > 0);
+
+    // Clean up - set to NULL to avoid double-free
+    segmenter->fs_ = NULL;
+}
+
+VOID TEST(DvrSegmenterTest, CloseTypicalScenario)
+{
+    srs_error_t err;
+
+    // Create mock request
+    SrsUniquePtr<MockEdgeRequest> req(new MockEdgeRequest("test.vhost", "live", "stream1"));
+
+    // Create mock plan
+    SrsUniquePtr<MockDvrPlan> plan(new MockDvrPlan());
+
+    // Create SrsDvrFlvSegmenter instance using real file writer for complete flow
+    SrsUniquePtr<SrsDvrFlvSegmenter> segmenter(new SrsDvrFlvSegmenter());
+    segmenter->assemble();
+
+    // Initialize the segmenter
+    HELPER_EXPECT_SUCCESS(segmenter->initialize(plan.get(), req.get()));
+
+    // Open the segmenter - this creates the file
+    HELPER_EXPECT_SUCCESS(segmenter->open());
+
+    // Verify file is open
+    EXPECT_TRUE(segmenter->fs_->is_open());
+
+    // Test close() - should succeed (closes encoder, closes file, renames, calls plan callback)
+    HELPER_EXPECT_SUCCESS(segmenter->close());
+
+    // Verify file writer was closed
+    EXPECT_FALSE(segmenter->fs_->is_open());
+
+    // Test close() again - should return success immediately (already closed)
+    HELPER_EXPECT_SUCCESS(segmenter->close());
+
+    // Clean up the created file
+    segmenter->fragment_->unlink_file();
+}
+
+VOID TEST(DvrSegmenterTest, GeneratePathTypicalScenario)
+{
+    srs_error_t err;
+
+    // Create mock request with specific vhost, app, and stream values
+    SrsUniquePtr<MockEdgeRequest> req(new MockEdgeRequest("test.vhost", "live", "stream1"));
+
+    // Create mock plan
+    SrsUniquePtr<MockDvrPlan> plan(new MockDvrPlan());
+
+    // Create SrsDvrFlvSegmenter instance
+    SrsUniquePtr<SrsDvrFlvSegmenter> segmenter(new SrsDvrFlvSegmenter());
+    segmenter->assemble();
+
+    // Initialize the segmenter
+    HELPER_EXPECT_SUCCESS(segmenter->initialize(plan.get(), req.get()));
+
+    // Test generate_path() - should replace placeholders with actual values
+    std::string path = segmenter->generate_path();
+
+    // Verify all placeholders are replaced (no brackets remain)
+    EXPECT_TRUE(path.find("[vhost]") == std::string::npos);
+    EXPECT_TRUE(path.find("[app]") == std::string::npos);
+    EXPECT_TRUE(path.find("[stream]") == std::string::npos);
+    EXPECT_TRUE(path.find("[timestamp]") == std::string::npos);
+    EXPECT_TRUE(path.find("[2006]") == std::string::npos);
+    EXPECT_TRUE(path.find("[01]") == std::string::npos);
+    EXPECT_TRUE(path.find("[02]") == std::string::npos);
+    EXPECT_TRUE(path.find("[15]") == std::string::npos);
+    EXPECT_TRUE(path.find("[04]") == std::string::npos);
+    EXPECT_TRUE(path.find("[05]") == std::string::npos);
+    EXPECT_TRUE(path.find("[999]") == std::string::npos);
+
+    // Verify path contains actual values from request
+    EXPECT_TRUE(path.find("live") != std::string::npos);
+    EXPECT_TRUE(path.find("stream1") != std::string::npos);
+
+    // Verify path ends with .flv extension
+    EXPECT_TRUE(srs_strings_ends_with(path, ".flv"));
+
+    // Verify path is not empty and has reasonable structure
+    EXPECT_TRUE(path.length() > 0);
+    EXPECT_TRUE(path.find("/") != std::string::npos);
+}
+
+VOID TEST(DvrSegmenterTest, OnUpdateDurationTypicalScenario)
+{
+    srs_error_t err;
+
+    // Create mock request
+    SrsUniquePtr<MockEdgeRequest> req(new MockEdgeRequest("test.vhost", "live", "stream1"));
+
+    // Create mock plan
+    SrsUniquePtr<MockDvrPlan> plan(new MockDvrPlan());
+
+    // Create SrsDvrFlvSegmenter instance
+    SrsUniquePtr<SrsDvrFlvSegmenter> segmenter(new SrsDvrFlvSegmenter());
+    segmenter->assemble();
+
+    // Initialize the segmenter
+    HELPER_EXPECT_SUCCESS(segmenter->initialize(plan.get(), req.get()));
+
+    // Create media packets with different timestamps to test duration tracking
+    SrsUniquePtr<SrsMediaPacket> msg1(new SrsMediaPacket());
+    msg1->timestamp_ = 1000;  // 1000ms
+
+    SrsUniquePtr<SrsMediaPacket> msg2(new SrsMediaPacket());
+    msg2->timestamp_ = 2000;  // 2000ms
+
+    SrsUniquePtr<SrsMediaPacket> msg3(new SrsMediaPacket());
+    msg3->timestamp_ = 3500;  // 3500ms
+
+    // Verify initial fragment duration is 0
+    EXPECT_EQ(0, srsu2msi(segmenter->fragment_->duration()));
+
+    // Call on_update_duration with first packet
+    HELPER_EXPECT_SUCCESS(segmenter->on_update_duration(msg1.get()));
+
+    // After first packet, duration should still be 0 (start_dts is set)
+    EXPECT_EQ(0, srsu2msi(segmenter->fragment_->duration()));
+
+    // Call on_update_duration with second packet
+    HELPER_EXPECT_SUCCESS(segmenter->on_update_duration(msg2.get()));
+
+    // Duration should be 1000ms (2000 - 1000)
+    EXPECT_EQ(1000, srsu2msi(segmenter->fragment_->duration()));
+
+    // Call on_update_duration with third packet
+    HELPER_EXPECT_SUCCESS(segmenter->on_update_duration(msg3.get()));
+
+    // Duration should be 2500ms (3500 - 1000)
+    EXPECT_EQ(2500, srsu2msi(segmenter->fragment_->duration()));
+}
+
+VOID TEST(DvrFlvSegmenterTest, RefreshMetadataTypicalScenario)
+{
+    srs_error_t err;
+
+    // Create mock request
+    SrsUniquePtr<MockEdgeRequest> req(new MockEdgeRequest("test.vhost", "live", "stream1"));
+
+    // Create mock plan
+    SrsUniquePtr<MockDvrPlan> plan(new MockDvrPlan());
+
+    // Create SrsDvrFlvSegmenter instance
+    SrsUniquePtr<SrsDvrFlvSegmenter> segmenter(new SrsDvrFlvSegmenter());
+    segmenter->assemble();
+
+    // Initialize the segmenter
+    HELPER_EXPECT_SUCCESS(segmenter->initialize(plan.get(), req.get()));
+
+    // Replace the real file writer with a mock file writer
+    srs_freep(segmenter->fs_);
+    MockSrsFileWriter *mock_fs = new MockSrsFileWriter();
+    segmenter->fs_ = mock_fs;
+
+    // Open the mock file
+    HELPER_EXPECT_SUCCESS(mock_fs->open("test.flv"));
+
+    // Simulate writing some initial data to the file (e.g., FLV header and metadata)
+    // Write 100 bytes of dummy data to simulate file content
+    char dummy_data[100];
+    memset(dummy_data, 0, sizeof(dummy_data));
+    HELPER_EXPECT_SUCCESS(mock_fs->write(dummy_data, sizeof(dummy_data), NULL));
+
+    // Set the duration and filesize offsets (simulate where metadata fields are in the file)
+    segmenter->duration_offset_ = 20;   // Duration field at offset 20
+    segmenter->filesize_offset_ = 40;   // Filesize field at offset 40
+
+    // Set up the fragment with a duration (5.5 seconds = 5500ms = 5500000us)
+    SrsUniquePtr<SrsMediaPacket> msg1(new SrsMediaPacket());
+    msg1->timestamp_ = 1000;
+    HELPER_EXPECT_SUCCESS(segmenter->on_update_duration(msg1.get()));
+
+    SrsUniquePtr<SrsMediaPacket> msg2(new SrsMediaPacket());
+    msg2->timestamp_ = 6500;  // 5500ms duration
+    HELPER_EXPECT_SUCCESS(segmenter->on_update_duration(msg2.get()));
+
+    // Verify fragment duration is 5500ms
+    EXPECT_EQ(5500, srsu2msi(segmenter->fragment_->duration()));
+
+    // Get current file position before refresh
+    int64_t pos_before = mock_fs->tellg();
+    EXPECT_EQ(100, pos_before);  // Should be at end of dummy data
+
+    // Call refresh_metadata() - this is the method under test
+    HELPER_EXPECT_SUCCESS(segmenter->refresh_metadata());
+
+    // Verify file position is restored to original position
+    int64_t pos_after = mock_fs->tellg();
+    EXPECT_EQ(pos_before, pos_after);
+
+    // Verify the filesize was written correctly at filesize_offset_
+    mock_fs->seek2(segmenter->filesize_offset_);
+    int amf0_number_size = SrsAmf0Size::number();
+    char filesize_buf[9];  // AMF0 number is always 9 bytes (1 byte marker + 8 bytes double)
+    ssize_t nread = 0;
+    HELPER_EXPECT_SUCCESS(mock_fs->uf->read(filesize_buf, amf0_number_size, &nread));
+    EXPECT_EQ(amf0_number_size, nread);
+
+    // Parse the filesize value
+    SrsBuffer filesize_stream(filesize_buf, amf0_number_size);
+    SrsUniquePtr<SrsAmf0Any> filesize_value(SrsAmf0Any::number());
+    HELPER_EXPECT_SUCCESS(filesize_value->read(&filesize_stream));
+    EXPECT_TRUE(filesize_value->is_number());
+    EXPECT_EQ(100.0, filesize_value->to_number());  // Should match file size
+
+    // Verify the duration was written correctly at duration_offset_
+    mock_fs->seek2(segmenter->duration_offset_);
+    char duration_buf[9];  // AMF0 number is always 9 bytes (1 byte marker + 8 bytes double)
+    nread = 0;
+    HELPER_EXPECT_SUCCESS(mock_fs->uf->read(duration_buf, amf0_number_size, &nread));
+    EXPECT_EQ(amf0_number_size, nread);
+
+    // Parse the duration value
+    SrsBuffer duration_stream(duration_buf, amf0_number_size);
+    SrsUniquePtr<SrsAmf0Any> duration_value(SrsAmf0Any::number());
+    HELPER_EXPECT_SUCCESS(duration_value->read(&duration_stream));
+    EXPECT_TRUE(duration_value->is_number());
+    EXPECT_EQ(5.5, duration_value->to_number());  // Should be 5.5 seconds
+
+    // Clean up - set to NULL to avoid double-free
+    segmenter->fs_ = NULL;
+    srs_freep(mock_fs);
+}
+
+// Test SrsDvrFlvSegmenter::encode_metadata() - major use scenario
+// This test covers the typical scenario where DVR writes metadata to FLV file.
+// The encode_metadata method:
+// 1. Reads AMF0 metadata (name string + object) from the input packet
+// 2. Removes existing "duration" and "filesize" properties
+// 3. Adds new properties: "service", "filesize" (0), "duration" (0)
+// 4. Calculates offsets for duration and filesize fields in the FLV file
+// 5. Writes the modified metadata to the FLV encoder
+VOID TEST(DvrFlvSegmenterTest, EncodeMetadataTypicalScenario)
+{
+    srs_error_t err;
+
+    // Create mock request
+    SrsUniquePtr<MockEdgeRequest> req(new MockEdgeRequest("test.vhost", "live", "stream1"));
+
+    // Create mock plan
+    SrsUniquePtr<MockDvrPlan> plan(new MockDvrPlan());
+
+    // Create SrsDvrFlvSegmenter instance
+    SrsUniquePtr<SrsDvrFlvSegmenter> segmenter(new SrsDvrFlvSegmenter());
+    segmenter->assemble();
+
+    // Initialize the segmenter
+    HELPER_EXPECT_SUCCESS(segmenter->initialize(plan.get(), req.get()));
+
+    // Replace the real file writer with a mock file writer
+    srs_freep(segmenter->fs_);
+    MockSrsFileWriter *mock_fs = new MockSrsFileWriter();
+    segmenter->fs_ = mock_fs;
+
+    // Open the mock file
+    HELPER_EXPECT_SUCCESS(mock_fs->open("test.flv"));
+
+    // Replace the FLV encoder with a mock encoder
+    srs_freep(segmenter->enc_);
+    MockFlvTransmuxer *mock_enc = new MockFlvTransmuxer();
+    segmenter->enc_ = mock_enc;
+
+    // Create metadata packet with typical properties
+    // AMF0 format: string "onMetaData" + object {width: 1920, height: 1080, duration: 120, filesize: 1000000}
+    SrsUniquePtr<SrsAmf0Any> name(SrsAmf0Any::str(SRS_CONSTS_RTMP_ON_METADATA));
+    SrsUniquePtr<SrsAmf0Object> metadata_obj(SrsAmf0Any::object());
+    metadata_obj->set("width", SrsAmf0Any::number(1920));
+    metadata_obj->set("height", SrsAmf0Any::number(1080));
+    metadata_obj->set("duration", SrsAmf0Any::number(120));      // Should be removed and replaced
+    metadata_obj->set("filesize", SrsAmf0Any::number(1000000));  // Should be removed and replaced
+
+    // Serialize metadata to bytes
+    int metadata_size = name->total_size() + metadata_obj->total_size();
+    char *metadata_data = new char[metadata_size];
+    SrsBuffer metadata_buf(metadata_data, metadata_size);
+    HELPER_EXPECT_SUCCESS(name->write(&metadata_buf));
+    HELPER_EXPECT_SUCCESS(metadata_obj->write(&metadata_buf));
+
+    // Create SrsMediaPacket with metadata
+    SrsUniquePtr<SrsMediaPacket> metadata_packet(new SrsMediaPacket());
+    metadata_packet->wrap(metadata_data, metadata_size);
+    metadata_packet->message_type_ = SrsFrameTypeScript;
+
+    // Verify initial state - offsets should be 0
+    EXPECT_EQ(0, segmenter->duration_offset_);
+    EXPECT_EQ(0, segmenter->filesize_offset_);
+
+    // Call encode_metadata() - this is the method under test
+    HELPER_EXPECT_SUCCESS(segmenter->encode_metadata(metadata_packet.get()));
+
+    // Verify the mock encoder's write_metadata was called
+    EXPECT_TRUE(mock_enc->write_metadata_called_);
+    EXPECT_EQ(18, (int)mock_enc->metadata_type_);  // Type should be 18 (script data)
+    EXPECT_TRUE(mock_enc->metadata_size_ > 0);     // Should have written some data
+
+    // Verify duration_offset_ and filesize_offset_ were calculated
+    EXPECT_TRUE(segmenter->duration_offset_ > 0);
+    EXPECT_TRUE(segmenter->filesize_offset_ > 0);
+    EXPECT_TRUE(segmenter->filesize_offset_ < segmenter->duration_offset_);  // filesize comes before duration
+
+    // Verify calling encode_metadata again is ignored (metadata already written)
+    int64_t saved_duration_offset = segmenter->duration_offset_;
+    int64_t saved_filesize_offset = segmenter->filesize_offset_;
+    mock_enc->write_metadata_called_ = false;
+
+    HELPER_EXPECT_SUCCESS(segmenter->encode_metadata(metadata_packet.get()));
+
+    // Should not call write_metadata again
+    EXPECT_FALSE(mock_enc->write_metadata_called_);
+    // Offsets should remain unchanged
+    EXPECT_EQ(saved_duration_offset, segmenter->duration_offset_);
+    EXPECT_EQ(saved_filesize_offset, segmenter->filesize_offset_);
+
+    // Clean up - set to NULL to avoid double-free
+    segmenter->fs_ = NULL;
+    segmenter->enc_ = NULL;
+    srs_freep(mock_fs);
+    srs_freep(mock_enc);
+}
+
+// Test SrsDvrMp4Segmenter::encode_audio() and encode_video() - major use scenario
+// This test covers the typical scenario where DVR writes audio and video samples to MP4 file.
+// The encode_audio method:
+// 1. Extracts audio codec information from format (codec id, sample rate, sample bits, channels)
+// 2. Sets audio codec on encoder when receiving sequence header
+// 3. Writes audio sample to MP4 encoder with timestamp and raw data
+// The encode_video method:
+// 1. Extracts video codec information from format (frame type, codec id, CTS)
+// 2. Sets video codec on encoder when receiving sequence header
+// 3. Calculates PTS from DTS + CTS
+// 4. Writes video sample to MP4 encoder with timestamps and raw data
+VOID TEST(DvrMp4SegmenterTest, EncodeAudioVideoTypicalScenario)
+{
+    srs_error_t err;
+
+    // Create mock request
+    SrsUniquePtr<MockEdgeRequest> req(new MockEdgeRequest("test.vhost", "live", "stream1"));
+
+    // Create mock plan
+    SrsUniquePtr<MockDvrPlan> plan(new MockDvrPlan());
+
+    // Create mock app factory
+    SrsUniquePtr<MockDvrAppFactory> mock_factory(new MockDvrAppFactory());
+
+    // Create SrsDvrMp4Segmenter instance
+    SrsUniquePtr<SrsDvrMp4Segmenter> segmenter(new SrsDvrMp4Segmenter());
+
+    // Inject mock factory
+    segmenter->app_factory_ = mock_factory.get();
+
+    // Initialize the segmenter
+    HELPER_EXPECT_SUCCESS(segmenter->initialize(plan.get(), req.get()));
+
+    // Create mock file writer
+    MockSrsFileWriter *mock_fs = new MockSrsFileWriter();
+    segmenter->fs_ = mock_fs;
+
+    // Open the encoder (this will create the mock MP4 encoder via factory)
+    HELPER_EXPECT_SUCCESS(segmenter->open_encoder());
+
+    // Get reference to the mock encoder created by factory
+    MockMp4Encoder *mock_enc = mock_factory->mock_mp4_encoder_;
+    EXPECT_TRUE(mock_enc != NULL);
+    EXPECT_TRUE(mock_enc->initialize_called_);
+
+    // Test encode_audio with AAC sequence header
+    // Create audio format with AAC codec
+    SrsUniquePtr<SrsFormat> audio_format(new SrsFormat());
+    audio_format->acodec_ = new SrsAudioCodecConfig();
+    audio_format->acodec_->id_ = SrsAudioCodecIdAAC;
+    audio_format->acodec_->sound_rate_ = SrsAudioSampleRate44100;
+    audio_format->acodec_->sound_size_ = SrsAudioSampleBits16bit;
+    audio_format->acodec_->sound_type_ = SrsAudioChannelsStereo;
+    audio_format->audio_ = new SrsParsedAudioPacket();
+    audio_format->audio_->aac_packet_type_ = SrsAudioAacFrameTraitSequenceHeader;
+
+    // Create audio sample data
+    char audio_data[10] = {0x12, 0x10};  // AAC sequence header
+    audio_format->raw_ = audio_data;
+    audio_format->nb_raw_ = 2;
+
+    // Create audio packet
+    SrsUniquePtr<SrsMediaPacket> audio_packet(new SrsMediaPacket());
+    audio_packet->timestamp_ = 1000;
+
+    // Call encode_audio() - this is the method under test
+    HELPER_EXPECT_SUCCESS(segmenter->encode_audio(audio_packet.get(), audio_format.get()));
+
+    // Verify set_audio_codec was called for sequence header
+    EXPECT_TRUE(mock_enc->set_audio_codec_called_);
+    EXPECT_EQ(SrsAudioCodecIdAAC, mock_enc->last_audio_codec_);
+    EXPECT_EQ(SrsAudioSampleRate44100, mock_enc->last_audio_sample_rate_);
+    EXPECT_EQ(SrsAudioSampleBits16bit, mock_enc->last_audio_sound_bits_);
+    EXPECT_EQ(SrsAudioChannelsStereo, mock_enc->last_audio_channels_);
+
+    // Verify write_sample was called with correct parameters
+    EXPECT_TRUE(mock_enc->write_sample_called_);
+    EXPECT_EQ(SrsMp4HandlerTypeSOUN, mock_enc->last_handler_type_);
+    EXPECT_EQ(0x00, (int)mock_enc->last_frame_type_);
+    EXPECT_EQ(SrsAudioAacFrameTraitSequenceHeader, (int)mock_enc->last_codec_type_);
+    EXPECT_EQ(1000, (int)mock_enc->last_dts_);
+    EXPECT_EQ(1000, (int)mock_enc->last_pts_);  // For audio, PTS = DTS
+    EXPECT_EQ(2, (int)mock_enc->last_sample_size_);
+
+    // Reset mock encoder for video test
+    mock_enc->reset();
+
+    // Test encode_video with H.264 sequence header
+    // Create video format with H.264 codec
+    SrsUniquePtr<SrsFormat> video_format(new SrsFormat());
+    video_format->vcodec_ = new SrsVideoCodecConfig();
+    video_format->vcodec_->id_ = SrsVideoCodecIdAVC;
+    video_format->video_ = new SrsParsedVideoPacket();
+    video_format->video_->frame_type_ = SrsVideoAvcFrameTypeKeyFrame;
+    video_format->video_->avc_packet_type_ = SrsVideoAvcFrameTraitSequenceHeader;
+    video_format->video_->cts_ = 0;
+
+    // Create video sample data (SPS/PPS)
+    char video_data[20] = {0x01, 0x42, 0x00, 0x1e};
+    video_format->raw_ = video_data;
+    video_format->nb_raw_ = 4;
+
+    // Create video packet
+    SrsUniquePtr<SrsMediaPacket> video_packet(new SrsMediaPacket());
+    video_packet->timestamp_ = 2000;
+
+    // Call encode_video() - this is the method under test
+    HELPER_EXPECT_SUCCESS(segmenter->encode_video(video_packet.get(), video_format.get()));
+
+    // Verify vcodec_ was set for sequence header
+    EXPECT_EQ(SrsVideoCodecIdAVC, mock_enc->vcodec_);
+
+    // Verify write_sample was called with correct parameters
+    EXPECT_TRUE(mock_enc->write_sample_called_);
+    EXPECT_EQ(SrsMp4HandlerTypeVIDE, mock_enc->last_handler_type_);
+    EXPECT_EQ(SrsVideoAvcFrameTypeKeyFrame, (int)mock_enc->last_frame_type_);
+    EXPECT_EQ(SrsVideoAvcFrameTraitSequenceHeader, (int)mock_enc->last_codec_type_);
+    EXPECT_EQ(2000, (int)mock_enc->last_dts_);
+    EXPECT_EQ(2000, (int)mock_enc->last_pts_);  // PTS = DTS + CTS (2000 + 0)
+    EXPECT_EQ(4, (int)mock_enc->last_sample_size_);
+
+    // Reset mock encoder for regular video frame test
+    mock_enc->reset();
+
+    // Test encode_video with regular video frame (with CTS)
+    video_format->video_->avc_packet_type_ = SrsVideoAvcFrameTraitNALU;
+    video_format->video_->cts_ = 40;  // 40ms CTS
+    video_packet->timestamp_ = 3000;
+
+    // Call encode_video() again
+    HELPER_EXPECT_SUCCESS(segmenter->encode_video(video_packet.get(), video_format.get()));
+
+    // Verify write_sample was called with correct PTS calculation
+    EXPECT_TRUE(mock_enc->write_sample_called_);
+    EXPECT_EQ(SrsMp4HandlerTypeVIDE, mock_enc->last_handler_type_);
+    EXPECT_EQ(SrsVideoAvcFrameTraitNALU, (int)mock_enc->last_codec_type_);
+    EXPECT_EQ(3000, (int)mock_enc->last_dts_);
+    EXPECT_EQ(3040, (int)mock_enc->last_pts_);  // PTS = DTS + CTS (3000 + 40)
+
+    // Clean up - set to NULL to avoid double-free
+    segmenter->fs_ = NULL;
+    segmenter->enc_ = NULL;
+    segmenter->app_factory_ = NULL;
+    srs_freep(mock_fs);
+    // Note: mock_enc is freed when segmenter is destroyed
+}
+
+VOID TEST(DvrMp4SegmenterTest, CloseEncoderFlushSuccess)
+{
+    srs_error_t err;
+
+    // Create mock factory
+    MockDvrAppFactory *mock_factory = new MockDvrAppFactory();
+
+    // Create SrsDvrMp4Segmenter instance
+    SrsUniquePtr<SrsDvrMp4Segmenter> segmenter(new SrsDvrMp4Segmenter());
+
+    // Inject mock factory
+    segmenter->app_factory_ = mock_factory;
+
+    // Create mock file writer
+    MockSrsFileWriter *mock_fs = new MockSrsFileWriter();
+    segmenter->fs_ = mock_fs;
+
+    // Open the encoder (this will create the mock MP4 encoder via factory)
+    HELPER_EXPECT_SUCCESS(segmenter->open_encoder());
+
+    // Get reference to the mock encoder created by factory
+    MockMp4Encoder *mock_enc = mock_factory->mock_mp4_encoder_;
+    EXPECT_TRUE(mock_enc != NULL);
+    EXPECT_TRUE(mock_enc->initialize_called_);
+
+    // Reset the mock encoder state
+    mock_enc->reset();
+
+    // Call close_encoder() - this should call flush() on the encoder
+    HELPER_EXPECT_SUCCESS(segmenter->close_encoder());
+
+    // Verify flush was called
+    EXPECT_TRUE(mock_enc->flush_called_);
+
+    // Clean up - set to NULL to avoid double-free
+    segmenter->fs_ = NULL;
+    segmenter->enc_ = NULL;
+    segmenter->app_factory_ = NULL;
+    srs_freep(mock_fs);
+    srs_freep(mock_factory);
+}
+
+// Mock ISrsHttpHooks for testing SrsDvrAsyncCallOnDvr
+MockHttpHooksForDvrAsyncCall::MockHttpHooksForDvrAsyncCall()
+{
+    on_dvr_count_ = 0;
+    on_dvr_error_ = srs_success;
+}
+
+MockHttpHooksForDvrAsyncCall::~MockHttpHooksForDvrAsyncCall()
+{
+}
+
+srs_error_t MockHttpHooksForDvrAsyncCall::on_connect(std::string url, ISrsRequest *req)
+{
+    return srs_success;
+}
+
+void MockHttpHooksForDvrAsyncCall::on_close(std::string url, ISrsRequest *req, int64_t send_bytes, int64_t recv_bytes)
+{
+}
+
+srs_error_t MockHttpHooksForDvrAsyncCall::on_publish(std::string url, ISrsRequest *req)
+{
+    return srs_success;
+}
+
+void MockHttpHooksForDvrAsyncCall::on_unpublish(std::string url, ISrsRequest *req)
+{
+}
+
+srs_error_t MockHttpHooksForDvrAsyncCall::on_play(std::string url, ISrsRequest *req)
+{
+    return srs_success;
+}
+
+void MockHttpHooksForDvrAsyncCall::on_stop(std::string url, ISrsRequest *req)
+{
+}
+
+srs_error_t MockHttpHooksForDvrAsyncCall::on_dvr(SrsContextId cid, std::string url, ISrsRequest *req, std::string file)
+{
+    on_dvr_count_++;
+    OnDvrCall call;
+    call.cid_ = cid;
+    call.url_ = url;
+    call.req_ = req;
+    call.file_ = file;
+    on_dvr_calls_.push_back(call);
+    return srs_error_copy(on_dvr_error_);
+}
+
+srs_error_t MockHttpHooksForDvrAsyncCall::on_hls(SrsContextId cid, std::string url, ISrsRequest *req, std::string file, std::string ts_url,
+                                                  std::string m3u8, std::string m3u8_url, int sn, srs_utime_t duration)
+{
+    return srs_success;
+}
+
+srs_error_t MockHttpHooksForDvrAsyncCall::on_hls_notify(SrsContextId cid, std::string url, ISrsRequest *req, std::string ts_url, int nb_notify)
+{
+    return srs_success;
+}
+
+srs_error_t MockHttpHooksForDvrAsyncCall::discover_co_workers(std::string url, std::string &host, int &port)
+{
+    return srs_success;
+}
+
+srs_error_t MockHttpHooksForDvrAsyncCall::on_forward_backend(std::string url, ISrsRequest *req, std::vector<std::string> &rtmp_urls)
+{
+    return srs_success;
+}
+
+void MockHttpHooksForDvrAsyncCall::reset()
+{
+    on_dvr_calls_.clear();
+    on_dvr_count_ = 0;
+    srs_freep(on_dvr_error_);
+}
+
+VOID TEST(DvrAsyncCallOnDvrTest, CallWithMultipleHooks)
+{
+    srs_error_t err;
+
+    // Create mock HTTP hooks
+    SrsUniquePtr<MockHttpHooksForDvrAsyncCall> mock_hooks(new MockHttpHooksForDvrAsyncCall());
+
+    // Create mock request
+    SrsUniquePtr<MockEdgeRequest> req(new MockEdgeRequest("test.vhost", "live", "stream1"));
+
+    // Parse a minimal config with DVR hooks enabled
+    std::string conf_str =
+        "rtmp{listen 1935;} "
+        "vhost test.vhost {\n"
+        "    http_hooks {\n"
+        "        enabled on;\n"
+        "        on_dvr http://localhost:8080/dvr/callback1 http://localhost:8080/dvr/callback2;\n"
+        "    }\n"
+        "}\n";
+
+    // Create temporary config for this test
+    SrsUniquePtr<MockSrsConfig> mock_config(new MockSrsConfig());
+    HELPER_EXPECT_SUCCESS(mock_config->mock_parse(conf_str));
+
+    // Create SrsDvrAsyncCallOnDvr instance
+    SrsContextId cid = _srs_context->get_id();
+    std::string dvr_path = "/path/to/dvr/file.flv";
+    SrsUniquePtr<SrsDvrAsyncCallOnDvr> async_call(new SrsDvrAsyncCallOnDvr(cid, req.get(), dvr_path));
+
+    // Inject mock dependencies into member fields
+    async_call->hooks_ = mock_hooks.get();
+    async_call->config_ = mock_config.get();
+
+    // Call the method under test
+    HELPER_EXPECT_SUCCESS(async_call->call());
+
+    // Verify that on_dvr was called twice (once for each URL)
+    EXPECT_EQ(2, mock_hooks->on_dvr_count_);
+    EXPECT_EQ(2, (int)mock_hooks->on_dvr_calls_.size());
+
+    // Verify first callback
+    EXPECT_EQ("http://localhost:8080/dvr/callback1", mock_hooks->on_dvr_calls_[0].url_);
+    EXPECT_EQ(dvr_path, mock_hooks->on_dvr_calls_[0].file_);
+    EXPECT_EQ(req->vhost_, mock_hooks->on_dvr_calls_[0].req_->vhost_);
+
+    // Verify second callback
+    EXPECT_EQ("http://localhost:8080/dvr/callback2", mock_hooks->on_dvr_calls_[1].url_);
+    EXPECT_EQ(dvr_path, mock_hooks->on_dvr_calls_[1].file_);
+    EXPECT_EQ(req->vhost_, mock_hooks->on_dvr_calls_[1].req_->vhost_);
+
+    // Verify to_string() method
+    std::string str = async_call->to_string();
+    EXPECT_TRUE(str.find("vhost=test.vhost") != std::string::npos);
+    EXPECT_TRUE(str.find("file=/path/to/dvr/file.flv") != std::string::npos);
+
+    // Clean up injected dependencies to avoid double-free
+    async_call->hooks_ = NULL;
+    async_call->config_ = NULL;
+}
+
+// MockDvrSegmenter implementation
+MockDvrSegmenter::MockDvrSegmenter()
+{
+    write_metadata_called_ = false;
+    write_audio_called_ = false;
+    write_video_called_ = false;
+    fragment_ = NULL;
+}
+
+void MockDvrSegmenter::assemble()
+{
+}
+
+MockDvrSegmenter::~MockDvrSegmenter()
+{
+    srs_freep(fragment_);
+}
+
+srs_error_t MockDvrSegmenter::initialize(ISrsDvrPlan *p, ISrsRequest *r)
+{
+    return srs_success;
+}
+
+SrsFragment *MockDvrSegmenter::current()
+{
+    return fragment_;
+}
+
+srs_error_t MockDvrSegmenter::open()
+{
+    return srs_success;
+}
+
+srs_error_t MockDvrSegmenter::write_metadata(SrsMediaPacket *metadata)
+{
+    write_metadata_called_ = true;
+    return srs_success;
+}
+
+srs_error_t MockDvrSegmenter::write_audio(SrsMediaPacket *shared_audio, SrsFormat *format)
+{
+    write_audio_called_ = true;
+    return srs_success;
+}
+
+srs_error_t MockDvrSegmenter::write_video(SrsMediaPacket *shared_video, SrsFormat *format)
+{
+    write_video_called_ = true;
+    return srs_success;
+}
+
+srs_error_t MockDvrSegmenter::close()
+{
+    return srs_success;
+}
+
+VOID TEST(DvrPlanTest, WriteMediaPacketsTypicalScenario)
+{
+    srs_error_t err;
+
+    // Create mock request
+    SrsUniquePtr<MockEdgeRequest> req(new MockEdgeRequest("test.vhost", "live", "stream1"));
+
+    // Create mock segmenter
+    MockDvrSegmenter *mock_segmenter = new MockDvrSegmenter();
+    mock_segmenter->assemble();
+
+    // Create SrsDvrPlan instance
+    SrsUniquePtr<SrsDvrPlan> plan(new SrsDvrPlan());
+
+    // Initialize the plan with mock segmenter
+    HELPER_EXPECT_SUCCESS(plan->initialize(NULL, mock_segmenter, req.get()));
+
+    // Enable DVR by setting dvr_enabled_ flag
+    plan->dvr_enabled_ = true;
+
+    // Create media packets for testing
+    SrsUniquePtr<SrsMediaPacket> metadata(new SrsMediaPacket());
+    char *metadata_data = new char[10];
+    memset(metadata_data, 0x01, 10);
+    metadata->wrap(metadata_data, 10);
+    metadata->message_type_ = SrsFrameTypeScript;
+
+    SrsUniquePtr<SrsMediaPacket> audio(new SrsMediaPacket());
+    char *audio_data = new char[10];
+    memset(audio_data, 0x02, 10);
+    audio->wrap(audio_data, 10);
+    audio->message_type_ = SrsFrameTypeAudio;
+
+    SrsUniquePtr<SrsMediaPacket> video(new SrsMediaPacket());
+    char *video_data = new char[10];
+    memset(video_data, 0x03, 10);
+    video->wrap(video_data, 10);
+    video->message_type_ = SrsFrameTypeVideo;
+
+    // Create format object
+    SrsUniquePtr<SrsFormat> format(new SrsFormat());
+
+    // Test on_meta_data() - should call segmenter's write_metadata
+    HELPER_EXPECT_SUCCESS(plan->on_meta_data(metadata.get()));
+    EXPECT_TRUE(mock_segmenter->write_metadata_called_);
+
+    // Test on_audio() - should call segmenter's write_audio
+    HELPER_EXPECT_SUCCESS(plan->on_audio(audio.get(), format.get()));
+    EXPECT_TRUE(mock_segmenter->write_audio_called_);
+
+    // Test on_video() - should call segmenter's write_video
+    HELPER_EXPECT_SUCCESS(plan->on_video(video.get(), format.get()));
+    EXPECT_TRUE(mock_segmenter->write_video_called_);
+
+    // Test with DVR disabled - should not call segmenter methods
+    plan->dvr_enabled_ = false;
+    mock_segmenter->write_metadata_called_ = false;
+    mock_segmenter->write_audio_called_ = false;
+    mock_segmenter->write_video_called_ = false;
+
+    HELPER_EXPECT_SUCCESS(plan->on_meta_data(metadata.get()));
+    EXPECT_FALSE(mock_segmenter->write_metadata_called_);
+
+    HELPER_EXPECT_SUCCESS(plan->on_audio(audio.get(), format.get()));
+    EXPECT_FALSE(mock_segmenter->write_audio_called_);
+
+    HELPER_EXPECT_SUCCESS(plan->on_video(video.get(), format.get()));
+    EXPECT_FALSE(mock_segmenter->write_video_called_);
+}
+
+VOID TEST(DvrPlanTest, CreatePlanTypicalScenario)
+{
+    srs_error_t err;
+
+    // Test segment plan
+    SrsUniquePtr<MockSrsConfig> segment_config(new MockSrsConfig());
+    HELPER_EXPECT_SUCCESS(segment_config->mock_parse(_MIN_OK_CONF "vhost test.vhost { dvr { enabled on; dvr_plan segment; } }"));
+
+    ISrsDvrPlan *segment_plan = NULL;
+    HELPER_EXPECT_SUCCESS(SrsDvrPlan::create_plan(segment_config.get(), "test.vhost", &segment_plan));
+    EXPECT_TRUE(segment_plan != NULL);
+    EXPECT_TRUE(dynamic_cast<SrsDvrSegmentPlan*>(segment_plan) != NULL);
+    srs_freep(segment_plan);
+
+    // Test session plan
+    SrsUniquePtr<MockSrsConfig> session_config(new MockSrsConfig());
+    HELPER_EXPECT_SUCCESS(session_config->mock_parse(_MIN_OK_CONF "vhost test.vhost { dvr { enabled on; dvr_plan session; } }"));
+
+    ISrsDvrPlan *session_plan = NULL;
+    HELPER_EXPECT_SUCCESS(SrsDvrPlan::create_plan(session_config.get(), "test.vhost", &session_plan));
+    EXPECT_TRUE(session_plan != NULL);
+    EXPECT_TRUE(dynamic_cast<SrsDvrSessionPlan*>(session_plan) != NULL);
+    srs_freep(session_plan);
+
+    // Test illegal plan
+    SrsUniquePtr<MockSrsConfig> illegal_config(new MockSrsConfig());
+    HELPER_EXPECT_SUCCESS(illegal_config->mock_parse(_MIN_OK_CONF "vhost test.vhost { dvr { enabled on; dvr_plan invalid; } }"));
+
+    ISrsDvrPlan *illegal_plan = NULL;
+    HELPER_EXPECT_FAILED(SrsDvrPlan::create_plan(illegal_config.get(), "test.vhost", &illegal_plan));
+    EXPECT_TRUE(illegal_plan == NULL);
+}
+
+VOID TEST(DvrPlanTest, OnReapSegmentExecutesAsyncTask)
+{
+    srs_error_t err;
+
+    // Create mock async worker
+    SrsUniquePtr<MockAsyncCallWorker> mock_async(new MockAsyncCallWorker());
+
+    // Create mock segmenter with a fragment
+    SrsUniquePtr<MockDvrSegmenter> mock_segmenter(new MockDvrSegmenter());
+    SrsFragment *fragment = new SrsFragment();
+    fragment->set_path("/tmp/dvr_segment.flv");
+    mock_segmenter->fragment_ = fragment;
+
+    // Create mock request
+    SrsUniquePtr<MockEdgeRequest> req(new MockEdgeRequest("test.vhost", "live", "stream1"));
+
+    // Create SrsDvrPlan instance
+    SrsUniquePtr<SrsDvrPlan> plan(new SrsDvrPlan());
+    plan->req_ = req.get();
+
+    // Inject mock dependencies
+    plan->segment_ = mock_segmenter.get();
+    plan->async_ = mock_async.get();
+
+    // Call on_reap_segment
+    HELPER_EXPECT_SUCCESS(plan->on_reap_segment());
+
+    // Verify async worker execute was called
+    EXPECT_EQ(1, mock_async->execute_count_);
+    EXPECT_EQ(1, (int)mock_async->tasks_.size());
+
+    // Clean up injected dependencies to avoid double-free
+    plan->segment_ = NULL;
+    plan->async_ = NULL;
+    plan->req_ = NULL;
+}
+
+// Test SrsDvrSessionPlan::on_publish and on_unpublish - major use scenario
+// This test covers the typical scenario where DVR session plan handles publish/unpublish lifecycle.
+// The on_publish method:
+// 1. Calls parent SrsDvrPlan::on_publish() to initialize base functionality
+// 2. Checks if DVR is already enabled (supports multiple publish)
+// 3. Checks if DVR is enabled in config for the vhost
+// 4. Closes any existing segment
+// 5. Opens a new segment
+// 6. Sets dvr_enabled_ flag to true
+// The on_unpublish method:
+// 1. Checks if DVR is enabled (supports multiple publish)
+// 2. Closes the current segment (ignores errors)
+// 3. Sets dvr_enabled_ flag to false
+// 4. Calls parent SrsDvrPlan::on_unpublish() to cleanup
+VOID TEST(DvrSessionPlanTest, PublishUnpublishTypicalScenario)
+{
+    srs_error_t err;
+
+    // Create mock config that enables DVR
+    SrsUniquePtr<MockEdgeConfig> mock_config(new MockEdgeConfig());
+
+    // Create mock request
+    SrsUniquePtr<MockEdgeRequest> req(new MockEdgeRequest("test.vhost", "live", "stream1"));
+
+    // Create mock segmenter
+    MockDvrSegmenter *mock_segmenter = new MockDvrSegmenter();
+    mock_segmenter->assemble();
+
+    // Create SrsDvrSessionPlan instance
+    SrsUniquePtr<SrsDvrSessionPlan> plan(new SrsDvrSessionPlan());
+
+    // Inject mock config
+    plan->config_ = mock_config.get();
+
+    // Initialize the plan with mock segmenter
+    HELPER_EXPECT_SUCCESS(plan->initialize(NULL, mock_segmenter, req.get()));
+
+    // Verify initial state - DVR should be disabled
+    EXPECT_FALSE(plan->dvr_enabled_);
+
+    // Test on_publish() - should enable DVR and open segment
+    HELPER_EXPECT_SUCCESS(plan->on_publish(req.get()));
+
+    // Verify DVR is now enabled
+    EXPECT_TRUE(plan->dvr_enabled_);
+
+    // Test on_publish() again - should return success immediately (multiple publish support)
+    HELPER_EXPECT_SUCCESS(plan->on_publish(req.get()));
+
+    // DVR should still be enabled
+    EXPECT_TRUE(plan->dvr_enabled_);
+
+    // Test on_unpublish() - should close segment and disable DVR
+    plan->on_unpublish();
+
+    // Verify DVR is now disabled
+    EXPECT_FALSE(plan->dvr_enabled_);
+
+    // Test on_unpublish() again - should return immediately (multiple publish support)
+    plan->on_unpublish();
+
+    // DVR should still be disabled
+    EXPECT_FALSE(plan->dvr_enabled_);
+
+    // Clean up injected dependencies to avoid double-free
+    plan->segment_ = NULL;
+    plan->config_ = NULL;
+}
+
+// Test SrsDvrSegmentPlan::initialize, on_publish and on_unpublish - major use scenario
+// This test covers the typical scenario where DVR segment plan handles publish/unpublish lifecycle.
+// The initialize method:
+// 1. Calls parent SrsDvrPlan::initialize() to initialize base functionality
+// 2. Reads wait_keyframe configuration from config
+// 3. Reads duration configuration from config
+// The on_publish method:
+// 1. Calls parent SrsDvrPlan::on_publish() to initialize base functionality
+// 2. Checks if DVR is already enabled (supports multiple publish)
+// 3. Checks if DVR is enabled in config for the vhost
+// 4. Closes any existing segment
+// 5. Opens a new segment
+// 6. Sets dvr_enabled_ flag to true
+// The on_unpublish method:
+// 1. Closes the current segment (ignores errors)
+// 2. Sets dvr_enabled_ flag to false
+// 3. Calls parent SrsDvrPlan::on_unpublish() to cleanup
+VOID TEST(DvrSegmentPlanTest, PublishUnpublishTypicalScenario)
+{
+    srs_error_t err;
+
+    // Create mock config that enables DVR
+    SrsUniquePtr<MockEdgeConfig> mock_config(new MockEdgeConfig());
+
+    // Create mock request
+    SrsUniquePtr<MockEdgeRequest> req(new MockEdgeRequest("test.vhost", "live", "stream1"));
+
+    // Create mock segmenter
+    MockDvrSegmenter *mock_segmenter = new MockDvrSegmenter();
+    mock_segmenter->assemble();
+
+    // Create SrsDvrSegmentPlan instance
+    SrsUniquePtr<SrsDvrSegmentPlan> plan(new SrsDvrSegmentPlan());
+
+    // Inject mock config
+    plan->config_ = mock_config.get();
+
+    // Initialize the plan with mock segmenter
+    HELPER_EXPECT_SUCCESS(plan->initialize(NULL, mock_segmenter, req.get()));
+
+    // Verify initial state - DVR should be disabled
+    EXPECT_FALSE(plan->dvr_enabled_);
+
+    // Test on_publish() - should enable DVR and open segment
+    HELPER_EXPECT_SUCCESS(plan->on_publish(req.get()));
+
+    // Verify DVR is now enabled
+    EXPECT_TRUE(plan->dvr_enabled_);
+
+    // Test on_publish() again - should return success immediately (multiple publish support)
+    HELPER_EXPECT_SUCCESS(plan->on_publish(req.get()));
+
+    // DVR should still be enabled
+    EXPECT_TRUE(plan->dvr_enabled_);
+
+    // Test on_unpublish() - should close segment and disable DVR
+    plan->on_unpublish();
+
+    // Verify DVR is now disabled
+    EXPECT_FALSE(plan->dvr_enabled_);
+
+    // Test on_unpublish() again - should return immediately (multiple publish support)
+    plan->on_unpublish();
+
+    // DVR should still be disabled
+    EXPECT_FALSE(plan->dvr_enabled_);
+
+    // Clean up injected dependencies to avoid double-free
+    plan->segment_ = NULL;
+    plan->config_ = NULL;
+}
+
+// MockOriginHubForDvrSegmentPlan implementation
+MockOriginHubForDvrSegmentPlan::MockOriginHubForDvrSegmentPlan()
+{
+    on_dvr_request_sh_count_ = 0;
+    on_dvr_request_sh_error_ = srs_success;
+}
+
+MockOriginHubForDvrSegmentPlan::~MockOriginHubForDvrSegmentPlan()
+{
+    srs_freep(on_dvr_request_sh_error_);
+}
+
+srs_error_t MockOriginHubForDvrSegmentPlan::initialize(SrsSharedPtr<SrsLiveSource> s, ISrsRequest *r)
+{
+    return srs_success;
+}
+
+void MockOriginHubForDvrSegmentPlan::dispose()
+{
+}
+
+srs_error_t MockOriginHubForDvrSegmentPlan::cycle()
+{
+    return srs_success;
+}
+
+bool MockOriginHubForDvrSegmentPlan::active()
+{
+    return true;
+}
+
+srs_utime_t MockOriginHubForDvrSegmentPlan::cleanup_delay()
+{
+    return 0;
+}
+
+srs_error_t MockOriginHubForDvrSegmentPlan::on_meta_data(SrsMediaPacket *shared_metadata, SrsOnMetaDataPacket *packet)
+{
+    return srs_success;
+}
+
+srs_error_t MockOriginHubForDvrSegmentPlan::on_audio(SrsMediaPacket *shared_audio)
+{
+    return srs_success;
+}
+
+srs_error_t MockOriginHubForDvrSegmentPlan::on_video(SrsMediaPacket *shared_video, bool is_sequence_header)
+{
+    return srs_success;
+}
+
+srs_error_t MockOriginHubForDvrSegmentPlan::on_publish()
+{
+    return srs_success;
+}
+
+void MockOriginHubForDvrSegmentPlan::on_unpublish()
+{
+}
+
+srs_error_t MockOriginHubForDvrSegmentPlan::on_dvr_request_sh()
+{
+    on_dvr_request_sh_count_++;
+    return srs_error_copy(on_dvr_request_sh_error_);
+}
+
+// Test SrsDvrSegmentPlan::on_video with segment reaping when duration exceeds limit
+// This test covers the major use scenario:
+// 1. Segment duration exceeds configured limit (cduration_)
+// 2. A keyframe arrives (wait_keyframe_ is enabled)
+// 3. Segment is reaped (closed and reopened)
+// 4. Sequence header is requested from origin hub
+VOID TEST(DvrSegmentPlanTest, OnVideoReapSegmentWhenDurationExceeds)
+{
+    srs_error_t err;
+
+    // Create mock config that enables DVR with segment duration
+    SrsUniquePtr<MockEdgeConfig> mock_config(new MockEdgeConfig());
+
+    // Create mock request
+    SrsUniquePtr<MockEdgeRequest> req(new MockEdgeRequest("test.vhost", "live", "stream1"));
+
+    // Create mock segmenter with a fragment
+    MockDvrSegmenter *mock_segmenter = new MockDvrSegmenter();
+    mock_segmenter->assemble();
+    SrsFragment *fragment = new SrsFragment();
+    fragment->set_path("/tmp/dvr_segment.flv");
+    mock_segmenter->fragment_ = fragment;
+
+    // Create mock origin hub
+    SrsUniquePtr<MockOriginHubForDvrSegmentPlan> mock_hub(new MockOriginHubForDvrSegmentPlan());
+
+    // Create SrsDvrSegmentPlan instance
+    SrsUniquePtr<SrsDvrSegmentPlan> plan(new SrsDvrSegmentPlan());
+
+    // Inject mock config
+    plan->config_ = mock_config.get();
+
+    // Initialize the plan with mock segmenter and hub
+    HELPER_EXPECT_SUCCESS(plan->initialize(mock_hub.get(), mock_segmenter, req.get()));
+
+    // Enable DVR
+    plan->dvr_enabled_ = true;
+
+    // Set segment duration to 30 seconds (30 * 1000 * 1000 microseconds)
+    plan->cduration_ = 30 * SRS_UTIME_SECONDS;
+
+    // Set wait_keyframe to true (typical configuration)
+    plan->wait_keyframe_ = true;
+
+    // Create video format with H.264 codec
+    SrsUniquePtr<MockSrsFormat> format(new MockSrsFormat());
+
+    // Simulate fragment duration exceeding the configured limit
+    // Append frames to build up duration to 31 seconds (exceeds 30 second limit)
+    fragment->append(0);      // Start at 0ms
+    fragment->append(31000);  // End at 31000ms (31 seconds)
+
+    // Create H.264 keyframe video packet (not sequence header)
+    // H.264 keyframe format: 0x17 = (1 << 4) | 7 = keyframe + H.264
+    // AVC packet type: 0x01 = NALU (not sequence header which is 0x00)
+    SrsUniquePtr<SrsMediaPacket> video_keyframe(new SrsMediaPacket());
+    char *keyframe_data = new char[10];
+    keyframe_data[0] = 0x17;  // Keyframe + H.264 codec
+    keyframe_data[1] = 0x01;  // AVC NALU (not sequence header)
+    memset(keyframe_data + 2, 0, 8);
+    video_keyframe->wrap(keyframe_data, 10);
+    video_keyframe->message_type_ = SrsFrameTypeVideo;
+
+    // Call on_video() - should trigger segment reaping
+    HELPER_EXPECT_SUCCESS(plan->on_video(video_keyframe.get(), format.get()));
+
+    // Verify that on_dvr_request_sh was called (sequence header requested after reaping)
+    EXPECT_EQ(1, mock_hub->on_dvr_request_sh_count_);
+
+    // Verify that write_video was called on the segmenter
+    EXPECT_TRUE(mock_segmenter->write_video_called_);
+
+    // Clean up injected dependencies to avoid double-free
+    plan->segment_ = NULL;
+    plan->config_ = NULL;
+}
+
+// Test SrsDvr::initialize() method
+// This test covers the major use scenario:
+// 1. Creates SrsDvr instance with mocked dependencies
+// 2. Calls initialize() with mock hub and request
+// 3. Verifies that DVR plan is created based on configuration
+// 4. Verifies that appropriate segmenter (FLV or MP4) is created based on path extension
+// 5. Verifies that plan is initialized with the segmenter
+VOID TEST(DvrTest, InitializeTypicalScenario)
+{
+    srs_error_t err;
+
+    // Create mock config that enables DVR
+    SrsUniquePtr<MockEdgeConfig> mock_config(new MockEdgeConfig());
+
+    // Create mock app factory
+    SrsUniquePtr<MockDvrAppFactory> mock_factory(new MockDvrAppFactory());
+
+    // Create mock origin hub
+    SrsUniquePtr<MockOriginHubForDvrSegmentPlan> mock_hub(new MockOriginHubForDvrSegmentPlan());
+
+    // Create mock request
+    SrsUniquePtr<MockEdgeRequest> req(new MockEdgeRequest("test.vhost", "live", "stream1"));
+
+    // Create SrsDvr instance
+    SrsUniquePtr<SrsDvr> dvr(new SrsDvr());
+    dvr->assemble();
+
+    // Inject mock dependencies
+    dvr->config_ = mock_config.get();
+    dvr->app_factory_ = mock_factory.get();
+
+    // Test: Initialize with FLV path (default)
+    HELPER_EXPECT_SUCCESS(dvr->initialize(mock_hub.get(), req.get()));
+
+    // Verify that plan was created
+    EXPECT_TRUE(dvr->plan_ != NULL);
+
+    // Verify that request was copied
+    EXPECT_TRUE(dvr->req_ != NULL);
+    EXPECT_EQ("test.vhost", dvr->req_->vhost_);
+    EXPECT_EQ("live", dvr->req_->app_);
+    EXPECT_EQ("stream1", dvr->req_->stream_);
+
+    // Verify that hub was set
+    EXPECT_EQ(mock_hub.get(), dvr->hub_);
+
+    // Clean up injected dependencies to avoid double-free
+    // Note: Don't set config_ to NULL before destruction because destructor needs it for unsubscribe
+    dvr->app_factory_ = NULL;
+    srs_freep(dvr->req_);
+}
+
+// Test SrsDvr::on_publish and on_unpublish - major use scenario
+// This test covers the typical scenario where DVR handles publish/unpublish lifecycle.
+// The on_publish method:
+// 1. Returns early if DVR is not activated (actived_ = false)
+// 2. Calls plan_->on_publish() to delegate to the DVR plan
+// 3. Copies the request to req_ member field
+// The on_unpublish method:
+// 1. Calls plan_->on_unpublish() to delegate to the DVR plan
+VOID TEST(DvrTest, OnPublishUnpublishTypicalScenario)
+{
+    srs_error_t err;
+
+    // Create mock config
+    SrsUniquePtr<MockEdgeConfig> mock_config(new MockEdgeConfig());
+
+    // Create mock app factory
+    SrsUniquePtr<MockDvrAppFactory> mock_factory(new MockDvrAppFactory());
+
+    // Create mock origin hub
+    SrsUniquePtr<MockOriginHubForDvrSegmentPlan> mock_hub(new MockOriginHubForDvrSegmentPlan());
+
+    // Create mock request
+    SrsUniquePtr<MockEdgeRequest> req(new MockEdgeRequest("test.vhost", "live", "stream1"));
+
+    // Create SrsDvr instance
+    SrsUniquePtr<SrsDvr> dvr(new SrsDvr());
+    dvr->assemble();
+
+    // Inject mock dependencies
+    dvr->config_ = mock_config.get();
+    dvr->app_factory_ = mock_factory.get();
+
+    // Initialize DVR (this creates the plan)
+    HELPER_EXPECT_SUCCESS(dvr->initialize(mock_hub.get(), req.get()));
+
+    // Replace the real plan with a mock plan for testing
+    MockDvrPlan *mock_plan = new MockDvrPlan();
+    srs_freep(dvr->plan_);
+    dvr->plan_ = mock_plan;
+
+    // Set actived_ to true to enable DVR
+    dvr->actived_ = true;
+
+    // Test on_publish() - should call plan's on_publish and copy request
+    HELPER_EXPECT_SUCCESS(dvr->on_publish(req.get()));
+
+    // Verify that plan's on_publish was called
+    EXPECT_TRUE(mock_plan->on_publish_called_);
+
+    // Verify that request was copied
+    EXPECT_TRUE(dvr->req_ != NULL);
+    EXPECT_EQ("test.vhost", dvr->req_->vhost_);
+    EXPECT_EQ("live", dvr->req_->app_);
+    EXPECT_EQ("stream1", dvr->req_->stream_);
+
+    // Test on_unpublish() - should call plan's on_unpublish
+    dvr->on_unpublish();
+
+    // Verify that plan's on_unpublish was called
+    EXPECT_TRUE(mock_plan->on_unpublish_called_);
+
+    // Clean up injected dependencies to avoid double-free
+    dvr->plan_ = NULL;
+    dvr->app_factory_ = NULL;
+    srs_freep(mock_plan);
+}
+
+// Test SrsDvr media packet handling methods (on_meta_data, on_audio, on_video)
+// These methods check the actived_ flag and delegate to plan_ when DVR is active.
+// When DVR is not active, they return success without calling plan_.
+VOID TEST(DvrTest, OnMediaPacketsTypicalScenario)
+{
+    srs_error_t err;
+
+    // Create mock config
+    SrsUniquePtr<MockEdgeConfig> mock_config(new MockEdgeConfig());
+
+    // Create mock app factory
+    SrsUniquePtr<MockDvrAppFactory> mock_factory(new MockDvrAppFactory());
+
+    // Create mock origin hub
+    SrsUniquePtr<MockOriginHubForDvrSegmentPlan> mock_hub(new MockOriginHubForDvrSegmentPlan());
+
+    // Create mock request
+    SrsUniquePtr<MockEdgeRequest> req(new MockEdgeRequest("test.vhost", "live", "stream1"));
+
+    // Create SrsDvr instance
+    SrsUniquePtr<SrsDvr> dvr(new SrsDvr());
+    dvr->assemble();
+
+    // Inject mock dependencies
+    dvr->config_ = mock_config.get();
+    dvr->app_factory_ = mock_factory.get();
+
+    // Initialize DVR
+    HELPER_EXPECT_SUCCESS(dvr->initialize(mock_hub.get(), req.get()));
+
+    // Create mock plan to track method calls
+    MockDvrPlan *mock_plan = new MockDvrPlan();
+    srs_freep(dvr->plan_);
+    dvr->plan_ = mock_plan;
+
+    // Create test media packets
+    SrsUniquePtr<SrsMediaPacket> metadata(new SrsMediaPacket());
+    SrsUniquePtr<SrsMediaPacket> audio(new SrsMediaPacket());
+    SrsUniquePtr<SrsMediaPacket> video(new SrsMediaPacket());
+    SrsUniquePtr<SrsFormat> format(new SrsFormat());
+
+    // Test 1: When DVR is not activated, methods should return success without calling plan
+    dvr->actived_ = false;
+
+    HELPER_EXPECT_SUCCESS(dvr->on_meta_data(metadata.get()));
+    HELPER_EXPECT_SUCCESS(dvr->on_audio(audio.get(), format.get()));
+    HELPER_EXPECT_SUCCESS(dvr->on_video(video.get(), format.get()));
+
+    // Test 2: When DVR is activated, methods should delegate to plan
+    dvr->actived_ = true;
+
+    HELPER_EXPECT_SUCCESS(dvr->on_meta_data(metadata.get()));
+    HELPER_EXPECT_SUCCESS(dvr->on_audio(audio.get(), format.get()));
+    HELPER_EXPECT_SUCCESS(dvr->on_video(video.get(), format.get()));
+
+    // Verify all methods successfully delegated to plan when active
+    // (MockDvrPlan returns srs_success for all methods)
+
+    // Clean up injected dependencies to avoid double-free
+    dvr->plan_ = NULL;
+    dvr->app_factory_ = NULL;
+    srs_freep(mock_plan);
+
+    // Note: Keep config_ set so destructor can call unsubscribe
+}
+
+// Test SrsDvrSegmentPlan::on_audio - major use scenario
+// This test covers the typical scenario where DVR segment plan handles audio packets.
+// The on_audio method:
+// 1. Calls update_duration() to check if segment needs reaping based on duration
+// 2. Calls parent SrsDvrPlan::on_audio() to write audio to segmenter
+// 3. Returns success if both operations succeed
+VOID TEST(DvrSegmentPlanTest, OnAudioTypicalScenario)
+{
+    srs_error_t err;
+
+    // Create mock config that enables DVR
+    SrsUniquePtr<MockEdgeConfig> mock_config(new MockEdgeConfig());
+
+    // Create mock request
+    SrsUniquePtr<MockEdgeRequest> req(new MockEdgeRequest("test.vhost", "live", "stream1"));
+
+    // Create mock segmenter with a fragment
+    MockDvrSegmenter *mock_segmenter = new MockDvrSegmenter();
+    mock_segmenter->assemble();
+    SrsFragment *fragment = new SrsFragment();
+    fragment->set_path("/tmp/dvr_audio.flv");
+    mock_segmenter->fragment_ = fragment;
+
+    // Create mock origin hub
+    SrsUniquePtr<MockOriginHubForDvrSegmentPlan> mock_hub(new MockOriginHubForDvrSegmentPlan());
+
+    // Create SrsDvrSegmentPlan instance
+    SrsUniquePtr<SrsDvrSegmentPlan> plan(new SrsDvrSegmentPlan());
+
+    // Inject mock config
+    plan->config_ = mock_config.get();
+
+    // Initialize the plan with mock segmenter and hub
+    HELPER_EXPECT_SUCCESS(plan->initialize(mock_hub.get(), mock_segmenter, req.get()));
+
+    // Enable DVR
+    plan->dvr_enabled_ = true;
+
+    // Set segment duration to 30 seconds (typical configuration)
+    plan->cduration_ = 30 * SRS_UTIME_SECONDS;
+
+    // Create audio format
+    SrsUniquePtr<MockSrsFormat> format(new MockSrsFormat());
+
+    // Create AAC audio packet
+    // AAC audio format: 0xAF = (10 << 4) | 15 = AAC + 44kHz + 16bit + stereo
+    // AAC packet type: 0x01 = AAC raw (not sequence header which is 0x00)
+    SrsUniquePtr<SrsMediaPacket> audio(new SrsMediaPacket());
+    char *audio_data = new char[10];
+    audio_data[0] = 0xAF;  // AAC codec
+    audio_data[1] = 0x01;  // AAC raw (not sequence header)
+    memset(audio_data + 2, 0, 8);
+    audio->wrap(audio_data, 10);
+    audio->message_type_ = SrsFrameTypeAudio;
+    audio->timestamp_ = 1000;  // 1 second
+
+    // Append timestamp to fragment to simulate duration tracking
+    fragment->append(0);     // Start at 0ms
+    fragment->append(1000);  // Current at 1000ms (1 second, well below 30 second limit)
+
+    // Call on_audio() - should succeed without triggering segment reaping
+    HELPER_EXPECT_SUCCESS(plan->on_audio(audio.get(), format.get()));
+
+    // Verify that write_audio was called on the segmenter (parent SrsDvrPlan::on_audio)
+    EXPECT_TRUE(mock_segmenter->write_audio_called_);
+
+    // Verify that segment was NOT reaped (duration not exceeded, so on_dvr_request_sh not called)
+    EXPECT_EQ(0, mock_hub->on_dvr_request_sh_count_);
+
+    // Clean up injected dependencies to avoid double-free
+    plan->segment_ = NULL;
+    plan->config_ = NULL;
 }
