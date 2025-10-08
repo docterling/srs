@@ -635,6 +635,8 @@ public:
     virtual ISrsMp4Encoder *create_mp4_encoder();
     virtual ISrsDvrSegmenter *create_dvr_flv_segmenter();
     virtual ISrsDvrSegmenter *create_dvr_mp4_segmenter();
+    virtual ISrsGbMediaTcpConn *create_gb_media_tcp_conn();
+    virtual ISrsGbSession *create_gb_session();
 };
 
 // Mock ISrsDvrSegmenter for testing SrsDvrPlan

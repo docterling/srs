@@ -47,7 +47,8 @@ srs_error_t SrsHttpFlvListener::initialize(SrsConfDirective *c)
         return srs_error_new(ERROR_STREAM_CASTER_PORT, "invalid port=%d", port);
     }
 
-    listener_->set_endpoint(srs_net_address_any(), port)->set_label("PUSH-FLV");
+    listener_->set_endpoint(srs_net_address_any(), port);
+    listener_->set_label("PUSH-FLV");
 
     if ((err = caster_->initialize(c)) != srs_success) {
         return srs_error_wrap(err, "init caster port=%d", port);
@@ -160,9 +161,34 @@ void SrsAppCasterFlv::add(ISrsResource *conn, bool *exists)
     manager_->add(conn, exists);
 }
 
+void SrsAppCasterFlv::add_with_id(const std::string &id, ISrsResource *conn)
+{
+    manager_->add_with_id(id, conn);
+}
+
+void SrsAppCasterFlv::add_with_fast_id(uint64_t id, ISrsResource *conn)
+{
+    manager_->add_with_fast_id(id, conn);
+}
+
 ISrsResource *SrsAppCasterFlv::at(int index)
 {
     return manager_->at(index);
+}
+
+ISrsResource *SrsAppCasterFlv::find_by_id(std::string id)
+{
+    return manager_->find_by_id(id);
+}
+
+ISrsResource *SrsAppCasterFlv::find_by_fast_id(uint64_t id)
+{
+    return manager_->find_by_fast_id(id);
+}
+
+ISrsResource *SrsAppCasterFlv::find_by_name(std::string name)
+{
+    return manager_->find_by_name(name);
 }
 
 void SrsAppCasterFlv::remove(ISrsResource *c)

@@ -609,7 +609,9 @@ srs_error_t SrsRtcSessionManager::on_udp_packet(SrsUdpMuxSocket *skt)
 
         // For each binding request, update the UDP socket.
         if (ping.is_binding_request()) {
-            session->udp()->update_sendonly_socket(skt);
+            SrsRtcUdpNetwork *udp_network = dynamic_cast<SrsRtcUdpNetwork *>(session->udp());
+            srs_assert(udp_network);
+            udp_network->update_sendonly_socket(skt);
         }
 
         return session->udp()->on_stun(&ping, data, size);

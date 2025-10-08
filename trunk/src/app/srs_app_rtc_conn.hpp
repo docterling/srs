@@ -552,16 +552,42 @@ public:
     virtual srs_error_t exec_rtc_async_work(ISrsAsyncCallTask *t) = 0;
 };
 
-// A RTC Peer Connection, SDP level object.
-//
-// For performance, we use non-public from resource,
-// see https://stackoverflow.com/questions/3747066/c-cannot-convert-from-base-a-to-derived-type-b-via-virtual-base-a
-class SrsRtcConnection : public ISrsResource, // It's a resource.
+// The interface for RTC connection.
+class ISrsRtcConnection : public ISrsResource, // It's a resource.
                          public ISrsDisposingHandler,
                          public ISrsExpire,
                          public ISrsRtcPacketSender,
                          public ISrsRtcPacketReceiver,
                          public ISrsRtcConnectionNackTimerHandler
+{
+public:
+    ISrsRtcConnection();
+    virtual ~ISrsRtcConnection();
+
+public:
+    // DTLS callbacks.
+    virtual srs_error_t on_dtls_handshake_done() = 0;
+    virtual srs_error_t on_dtls_alert(std::string type, std::string desc) = 0;
+    // RTP/RTCP packet handling.
+    virtual srs_error_t on_rtp_cipher(char *data, int nb_data) = 0;
+    virtual srs_error_t on_rtp_plaintext(char *data, int nb_data) = 0;
+    virtual srs_error_t on_rtcp(char *data, int nb_data) = 0;
+    // STUN binding request.
+    virtual srs_error_t on_binding_request(SrsStunPacket *r, std::string &ice_pwd) = 0;
+    // Network access.
+    virtual ISrsRtcNetwork *udp() = 0;
+    virtual ISrsRtcNetwork *tcp() = 0;
+    // Keep alive.
+    virtual void alive() = 0;
+    // Context switching.
+    virtual void switch_to_context() = 0;
+};
+
+// A RTC Peer Connection, SDP level object.
+//
+// For performance, we use non-public from resource,
+// see https://stackoverflow.com/questions/3747066/c-cannot-convert-from-base-a-to-derived-type-b-via-virtual-base-a
+class SrsRtcConnection : public ISrsRtcConnection
 {
     friend class SrsSecurityTransport;
 
@@ -698,8 +724,8 @@ public:
     void alive();
 
 public:
-    SrsRtcUdpNetwork *udp();
-    SrsRtcTcpNetwork *tcp();
+    ISrsRtcNetwork *udp();
+    ISrsRtcNetwork *tcp();
 
 public:
     // send rtcp

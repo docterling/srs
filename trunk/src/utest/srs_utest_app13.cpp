@@ -3209,6 +3209,16 @@ ISrsDvrSegmenter *MockDvrAppFactory::create_dvr_mp4_segmenter()
     return segmenter;
 }
 
+ISrsGbMediaTcpConn *MockDvrAppFactory::create_gb_media_tcp_conn()
+{
+    return NULL;
+}
+
+ISrsGbSession *MockDvrAppFactory::create_gb_session()
+{
+    return NULL;
+}
+
 VOID TEST(DvrSegmenterTest, OpenTypicalScenario)
 {
     srs_error_t err;

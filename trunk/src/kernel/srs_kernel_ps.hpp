@@ -57,8 +57,23 @@ public:
     virtual void on_recover_mode(int nn_recover) = 0;
 };
 
+// The interface for PS context.
+class ISrsPsContext
+{
+public:
+    ISrsPsContext();
+    virtual ~ISrsPsContext();
+
+public:
+    virtual SrsPsDecodeHelper* helper() = 0;
+    virtual void set_detect_ps_integrity(bool v) = 0;
+    virtual srs_error_t decode(SrsBuffer *stream, ISrsPsMessageHandler *handler) = 0;
+    virtual SrsTsMessage *last() = 0;
+    virtual SrsTsMessage *reap() = 0;
+};
+
 // The PS context, to process PS PES stream.
-class SrsPsContext
+class SrsPsContext : public ISrsPsContext
 {
 public:
     SrsPsDecodeHelper helper_;
@@ -87,6 +102,7 @@ public:
     SrsTsMessage *last();
     // Reap the last message and create a fresh one.
     SrsTsMessage *reap();
+    virtual SrsPsDecodeHelper* helper();
 
 public:
     // Feed with ts packets, decode as ts message, callback handler if got one ts message.

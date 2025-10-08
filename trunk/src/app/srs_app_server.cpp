@@ -150,6 +150,14 @@ ISrsSignalHandler::~ISrsSignalHandler()
 {
 }
 
+ISrsApiServerOwner::ISrsApiServerOwner()
+{
+}
+
+ISrsApiServerOwner::~ISrsApiServerOwner()
+{
+}
+
 SrsServer::SrsServer()
 {
     signal_reload_ = false;
@@ -270,7 +278,9 @@ SrsServer::~SrsServer()
     circuit_breaker_ = NULL;
     srt_sources_ = NULL;
     rtc_sources_ = NULL;
+#ifdef SRS_RTSP
     rtsp_sources_ = NULL;
+#endif
 #ifdef SRS_GB28181
     gb_manager_ = NULL;
 #endif
@@ -682,7 +692,8 @@ srs_error_t SrsServer::listen()
 
     // Create exporter server listener.
     if (config_->get_exporter_enabled()) {
-        exporter_listener_->set_endpoint(config_->get_exporter_listen())->set_label("Exporter-Server");
+        exporter_listener_->set_endpoint(config_->get_exporter_listen());
+        exporter_listener_->set_label("Exporter-Server");
         if ((err = exporter_listener_->listen()) != srs_success) {
             return srs_error_wrap(err, "exporter server listen");
         }
@@ -1558,7 +1569,7 @@ srs_error_t SrsServer::do_on_tcp_client(ISrsListener *listener, srs_netfd_t &stf
     // For RTC TCP connection, use resource executor to manage the resource.
     SrsRtcTcpConn *raw_conn = dynamic_cast<SrsRtcTcpConn *>(resource);
     if (raw_conn) {
-        SrsSharedResource<SrsRtcTcpConn> *conn = new SrsSharedResource<SrsRtcTcpConn>(raw_conn);
+        SrsSharedResource<ISrsRtcTcpConn> *conn = new SrsSharedResource<ISrsRtcTcpConn>(raw_conn);
         SrsExecutorCoroutine *executor = new SrsExecutorCoroutine(conn_manager_, conn, raw_conn, raw_conn);
         raw_conn->setup_owner(conn, executor, executor);
         if ((err = executor->start()) != srs_success) {

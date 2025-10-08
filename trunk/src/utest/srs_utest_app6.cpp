@@ -166,6 +166,15 @@ void MockRtcNetwork::reset()
     is_established_ = true;
 }
 
+srs_error_t MockRtcNetwork::initialize(SrsSessionConfig *cfg, bool dtls, bool srtp)
+{
+    return srs_success;
+}
+
+void MockRtcNetwork::set_state(SrsRtcNetworkState state)
+{
+}
+
 srs_error_t MockRtcNetwork::on_dtls_handshake_done()
 {
     on_dtls_handshake_done_count_++;
@@ -180,6 +189,11 @@ srs_error_t MockRtcNetwork::on_dtls_alert(std::string type, std::string desc)
     return srs_error_copy(on_dtls_alert_error_);
 }
 
+srs_error_t MockRtcNetwork::on_dtls(char *data, int nb_data)
+{
+    return srs_success;
+}
+
 srs_error_t MockRtcNetwork::protect_rtp(void *packet, int *nb_cipher)
 {
     protect_rtp_count_++;
@@ -190,6 +204,21 @@ srs_error_t MockRtcNetwork::protect_rtcp(void *packet, int *nb_cipher)
 {
     protect_rtcp_count_++;
     return srs_error_copy(protect_rtcp_error_);
+}
+
+srs_error_t MockRtcNetwork::on_stun(SrsStunPacket *r, char *data, int nb_data)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcNetwork::on_rtp(char *data, int nb_data)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcNetwork::on_rtcp(char *data, int nb_data)
+{
+    return srs_success;
 }
 
 bool MockRtcNetwork::is_establelished()

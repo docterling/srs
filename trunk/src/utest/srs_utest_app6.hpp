@@ -84,10 +84,16 @@ public:
     virtual ~MockRtcNetwork();
 
 public:
+    virtual srs_error_t initialize(SrsSessionConfig *cfg, bool dtls, bool srtp);
+    virtual void set_state(SrsRtcNetworkState state);
     virtual srs_error_t on_dtls_handshake_done();
     virtual srs_error_t on_dtls_alert(std::string type, std::string desc);
+    virtual srs_error_t on_dtls(char *data, int nb_data);
     virtual srs_error_t protect_rtp(void *packet, int *nb_cipher);
     virtual srs_error_t protect_rtcp(void *packet, int *nb_cipher);
+    virtual srs_error_t on_stun(SrsStunPacket *r, char *data, int nb_data);
+    virtual srs_error_t on_rtp(char *data, int nb_data);
+    virtual srs_error_t on_rtcp(char *data, int nb_data);
     virtual bool is_establelished();
     virtual srs_error_t write(void *buf, size_t size, ssize_t *nwrite);
 
@@ -291,6 +297,8 @@ public:
     virtual std::vector<SrsConfDirective *> get_stream_casters() { return std::vector<SrsConfDirective *>(); }
     virtual bool get_stream_caster_enabled(SrsConfDirective *conf) { return false; }
     virtual std::string get_stream_caster_engine(SrsConfDirective *conf) { return ""; }
+    virtual std::string get_stream_caster_output(SrsConfDirective *conf) { return ""; }
+    virtual int get_stream_caster_listen(SrsConfDirective *conf) { return 0; }
     virtual bool get_exporter_enabled() { return false; }
     virtual std::string get_exporter_listen() { return ""; }
     virtual std::string get_exporter_label() { return ""; }

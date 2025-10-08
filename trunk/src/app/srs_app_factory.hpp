@@ -29,6 +29,8 @@ class SrsRtcTrackDescription;
 class ISrsFlvTransmuxer;
 class ISrsMp4Encoder;
 class ISrsDvrSegmenter;
+class ISrsGbMediaTcpConn;
+class ISrsGbSession;
 
 // The factory to create app objects.
 class ISrsAppFactory
@@ -57,6 +59,8 @@ public:
     virtual ISrsMp4Encoder *create_mp4_encoder() = 0;
     virtual ISrsDvrSegmenter *create_dvr_flv_segmenter() = 0;
     virtual ISrsDvrSegmenter *create_dvr_mp4_segmenter() = 0;
+    virtual ISrsGbMediaTcpConn *create_gb_media_tcp_conn() = 0;
+    virtual ISrsGbSession *create_gb_session() = 0;
 };
 
 // The factory to create app objects.
@@ -86,6 +90,8 @@ public:
     virtual ISrsMp4Encoder *create_mp4_encoder();
     virtual ISrsDvrSegmenter *create_dvr_flv_segmenter();
     virtual ISrsDvrSegmenter *create_dvr_mp4_segmenter();
+    virtual ISrsGbMediaTcpConn *create_gb_media_tcp_conn();
+    virtual ISrsGbSession *create_gb_session();
 };
 
 extern ISrsAppFactory *_srs_app_factory;

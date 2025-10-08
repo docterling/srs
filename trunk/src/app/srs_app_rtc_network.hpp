@@ -20,18 +20,23 @@
 class ISrsResourceManager;
 class ISrsCoroutine;
 class SrsNetworkDelta;
+class ISrsNetworkDelta;
 class SrsTcpConnection;
+class ISrsTcpConnection;
 class ISrsKbpsDelta;
 class SrsUdpMuxSocket;
 class SrsErrorPithyPrint;
 class ISrsRtcTransport;
 class SrsEphemeralDelta;
+class ISrsEphemeralDelta;
 class ISrsKbpsDelta;
 class SrsRtcUdpNetwork;
+class ISrsRtcUdpNetwork;
 class ISrsRtcNetwork;
 class SrsRtcTcpNetwork;
 class SrsRtcDummyNetwork;
 class SrsRtcTcpConn;
+class ISrsRtcTcpConn;
 
 // The network stat.
 enum SrsRtcNetworkState {
@@ -43,25 +48,35 @@ enum SrsRtcNetworkState {
     SrsRtcNetworkStateClosed = 5,
 };
 
+// The network manager interface.
+class ISrsRtcNetworks
+{
+public:
+    ISrsRtcNetworks();
+    virtual ~ISrsRtcNetworks();
+
+public:
+};
+
 // A group of networks, each has its own DTLS and SRTP context.
-class SrsRtcNetworks
+class SrsRtcNetworks : public ISrsRtcNetworks
 {
 private:
     // Network over UDP.
-    SrsRtcUdpNetwork *udp_;
+    ISrsRtcNetwork *udp_;
     // Network over TCP
-    SrsRtcTcpNetwork *tcp_;
+    ISrsRtcNetwork *tcp_;
     // Network over dummy
-    SrsRtcDummyNetwork *dummy_;
+    ISrsRtcNetwork *dummy_;
 
 private:
     // WebRTC session object.
-    SrsRtcConnection *conn_;
+    ISrsRtcConnection *conn_;
     // Delta object for statistics.
-    SrsEphemeralDelta *delta_;
+    ISrsEphemeralDelta *delta_;
 
 public:
-    SrsRtcNetworks(SrsRtcConnection *conn);
+    SrsRtcNetworks(ISrsRtcConnection *conn);
     virtual ~SrsRtcNetworks();
     // DTLS transport functions.
 public:
@@ -71,8 +86,8 @@ public:
     // Connection level state machine, for ARQ of UDP packets.
     void set_state(SrsRtcNetworkState state);
     // Get the UDP network object.
-    SrsRtcUdpNetwork *udp();
-    SrsRtcTcpNetwork *tcp();
+    ISrsRtcNetwork *udp();
+    ISrsRtcNetwork *tcp();
     // Get an available network.
     ISrsRtcNetwork *available();
 
@@ -89,16 +104,32 @@ public:
     virtual ~ISrsRtcNetwork();
 
 public:
+    // Initialize the network with DTLS and SRTP configuration.
+    virtual srs_error_t initialize(SrsSessionConfig *cfg, bool dtls, bool srtp) = 0;
+    // Set the network state.
+    virtual void set_state(SrsRtcNetworkState state) = 0;
+
+public:
     // Callback when DTLS connected.
     virtual srs_error_t on_dtls_handshake_done() = 0;
     // Callback when DTLS disconnected.
     virtual srs_error_t on_dtls_alert(std::string type, std::string desc) = 0;
+    // Handle DTLS data.
+    virtual srs_error_t on_dtls(char *data, int nb_data) = 0;
 
 public:
     // Protect RTP packet by SRTP context.
     virtual srs_error_t protect_rtp(void *packet, int *nb_cipher) = 0;
     // Protect RTCP packet by SRTP context.
     virtual srs_error_t protect_rtcp(void *packet, int *nb_cipher) = 0;
+
+public:
+    // Handle STUN packet.
+    virtual srs_error_t on_stun(SrsStunPacket *r, char *data, int nb_data) = 0;
+    // Handle RTP packet.
+    virtual srs_error_t on_rtp(char *data, int nb_data) = 0;
+    // Handle RTCP packet.
+    virtual srs_error_t on_rtcp(char *data, int nb_data) = 0;
 
 public:
     virtual bool is_establelished() = 0;
@@ -113,12 +144,22 @@ public:
 
     // The interface of ISrsRtcNetwork
 public:
+    virtual srs_error_t initialize(SrsSessionConfig *cfg, bool dtls, bool srtp);
+    virtual void set_state(SrsRtcNetworkState state);
     virtual srs_error_t on_dtls_handshake_done();
     virtual srs_error_t on_dtls_alert(std::string type, std::string desc);
+    virtual srs_error_t on_dtls(char *data, int nb_data);
 
 public:
     virtual srs_error_t protect_rtp(void *packet, int *nb_cipher);
     virtual srs_error_t protect_rtcp(void *packet, int *nb_cipher);
+
+public:
+    virtual srs_error_t on_stun(SrsStunPacket *r, char *data, int nb_data);
+    virtual srs_error_t on_rtp(char *data, int nb_data);
+    virtual srs_error_t on_rtcp(char *data, int nb_data);
+
+public:
     virtual bool is_establelished();
     // Interface ISrsStreamWriter.
 public:
@@ -129,10 +170,13 @@ public:
 class SrsRtcUdpNetwork : public ISrsRtcNetwork
 {
 private:
+    ISrsResourceManager *conn_manager_;
+
+private:
     // WebRTC session object.
-    SrsRtcConnection *conn_;
+    ISrsRtcConnection *conn_;
     // Delta object for statistics.
-    SrsEphemeralDelta *delta_;
+    ISrsEphemeralDelta *delta_;
     SrsRtcNetworkState state_;
 
 private:
@@ -146,7 +190,7 @@ private:
     ISrsRtcTransport *transport_;
 
 public:
-    SrsRtcUdpNetwork(SrsRtcConnection *conn, SrsEphemeralDelta *delta);
+    SrsRtcUdpNetwork(ISrsRtcConnection *conn, ISrsEphemeralDelta *delta);
     virtual ~SrsRtcUdpNetwork();
 
 public:
@@ -185,14 +229,14 @@ public:
 class SrsRtcTcpNetwork : public ISrsRtcNetwork
 {
 private:
-    SrsRtcConnection *conn_;
-    SrsEphemeralDelta *delta_;
+    ISrsRtcConnection *conn_;
+    ISrsEphemeralDelta *delta_;
     ISrsProtocolReadWriter *sendonly_skt_;
 
 private:
     // The DTLS transport over this network.
     ISrsRtcTransport *transport_;
-    SrsSharedResource<SrsRtcTcpConn> owner_;
+    SrsSharedResource<ISrsRtcTcpConn> owner_;
 
 private:
     std::string peer_ip_;
@@ -200,12 +244,12 @@ private:
     SrsRtcNetworkState state_;
 
 public:
-    SrsRtcTcpNetwork(SrsRtcConnection *conn, SrsEphemeralDelta *delta);
+    SrsRtcTcpNetwork(ISrsRtcConnection *conn, ISrsEphemeralDelta *delta);
     virtual ~SrsRtcTcpNetwork();
 
 public:
-    void set_owner(SrsSharedResource<SrsRtcTcpConn> v) { owner_ = v; }
-    SrsSharedResource<SrsRtcTcpConn> owner() { return owner_; }
+    void set_owner(SrsSharedResource<ISrsRtcTcpConn> v) { owner_ = v; }
+    SrsSharedResource<ISrsRtcTcpConn> owner() { return owner_; }
     void update_sendonly_socket(ISrsProtocolReadWriter *skt);
     // ISrsRtcNetwork
 public:
@@ -248,12 +292,28 @@ public:
     void dispose();
 };
 
+// The interface for TCP connection.
+class ISrsRtcTcpConn : public ISrsConnection, public ISrsCoroutineHandler, public ISrsExecutorHandler
+{
+public:
+    ISrsRtcTcpConn();
+    virtual ~ISrsRtcTcpConn();
+
+public:
+    // Interrupt the TCP connection.
+    virtual void interrupt() = 0;
+};
+
 // For WebRTC over TCP.
-class SrsRtcTcpConn : public ISrsConnection, public ISrsCoroutineHandler, public ISrsExecutorHandler
+class SrsRtcTcpConn : public ISrsRtcTcpConn
 {
 private:
+    ISrsResourceManager *conn_manager_;
+    ISrsStatistic *stat_;
+
+private:
     // Because session references to this object, so we should directly use the session ptr.
-    SrsRtcConnection *session_;
+    ISrsRtcConnection *session_;
 
 private:
     // The ip and port of client.
@@ -267,7 +327,7 @@ private:
 
 private:
     // The shared resource which own this object, we should never free it because it's managed by shared ptr.
-    SrsSharedResource<SrsRtcTcpConn> *wrapper_;
+    SrsSharedResource<ISrsRtcTcpConn> *wrapper_;
     // The owner coroutine, allow user to interrupt the loop.
     ISrsInterruptable *owner_coroutine_;
     ISrsContextIdSetter *owner_cid_;
@@ -283,7 +343,7 @@ public:
 
 public:
     // Setup the owner, the wrapper is the shared ptr, the interruptable object is the coroutine, and the cid is the context id.
-    void setup_owner(SrsSharedResource<SrsRtcTcpConn> *wrapper, ISrsInterruptable *owner_coroutine, ISrsContextIdSetter *owner_cid);
+    void setup_owner(SrsSharedResource<ISrsRtcTcpConn> *wrapper, ISrsInterruptable *owner_coroutine, ISrsContextIdSetter *owner_cid);
 
 public:
     ISrsKbpsDelta *delta();

@@ -22,6 +22,7 @@
 #include <srs_kernel_flv.hpp>
 #include <srs_kernel_mp4.hpp>
 #include <srs_app_dvr.hpp>
+#include <srs_app_gb28181.hpp>
 
 ISrsAppFactory::ISrsAppFactory()
 {
@@ -126,6 +127,16 @@ ISrsDvrSegmenter *SrsAppFactory::create_dvr_flv_segmenter()
 ISrsDvrSegmenter *SrsAppFactory::create_dvr_mp4_segmenter()
 {
     return new SrsDvrMp4Segmenter();
+}
+
+ISrsGbMediaTcpConn *SrsAppFactory::create_gb_media_tcp_conn()
+{
+    return new SrsGbMediaTcpConn();
+}
+
+ISrsGbSession *SrsAppFactory::create_gb_session()
+{
+    return new SrsGbSession();
 }
 
 SrsFinalFactory::SrsFinalFactory()

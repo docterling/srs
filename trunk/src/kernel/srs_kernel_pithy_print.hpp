@@ -95,6 +95,19 @@ public:
     virtual bool can_print();
 };
 
+// The interface for pithy print.
+class ISrsPithyPrint
+{
+public:
+    ISrsPithyPrint();
+    virtual ~ISrsPithyPrint();
+
+public:
+    virtual void elapse() = 0;
+    virtual bool can_print() = 0;
+    virtual srs_utime_t age() = 0;
+};
+
 // The stage is used for a collection of object to do print,
 // the print time in a stage is constant and not changed,
 // that is, we always got one message to print every specified time.
@@ -112,7 +125,7 @@ public:
 //            }
 //            // read and write RTMP messages.
 //        }
-class SrsPithyPrint
+class SrsPithyPrint : public ISrsPithyPrint
 {
 private:
     int client_id_;

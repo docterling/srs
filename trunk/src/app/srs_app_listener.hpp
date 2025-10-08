@@ -64,6 +64,18 @@ public:
     virtual srs_error_t listen() = 0;
 };
 
+// The IP layer TCP/UDP listener.
+class ISrsIpListener : public ISrsListener
+{
+public:
+    ISrsIpListener();
+    virtual ~ISrsIpListener();
+
+public:
+    virtual ISrsListener *set_endpoint(const std::string &i, int p) = 0;
+    virtual ISrsListener *set_label(const std::string &label) = 0;
+};
+
 // The tcp connection handler.
 class ISrsTcpHandler
 {
@@ -77,7 +89,7 @@ public:
 };
 
 // Bind udp port, start thread to recv packet and handler it.
-class SrsUdpListener : public ISrsCoroutineHandler
+class SrsUdpListener : public ISrsCoroutineHandler, public ISrsIpListener
 {
 protected:
     std::string label_;
@@ -98,8 +110,8 @@ public:
     virtual ~SrsUdpListener();
 
 public:
-    SrsUdpListener *set_label(const std::string &label);
-    SrsUdpListener *set_endpoint(const std::string &i, int p);
+    ISrsListener *set_label(const std::string &label);
+    ISrsListener *set_endpoint(const std::string &i, int p);
 
 private:
     virtual int fd();
@@ -120,7 +132,7 @@ private:
 };
 
 // Bind and listen tcp port, use handler to process the client.
-class SrsTcpListener : public ISrsCoroutineHandler, public ISrsListener
+class SrsTcpListener : public ISrsCoroutineHandler, public ISrsIpListener
 {
 private:
     std::string label_;
@@ -137,9 +149,9 @@ public:
     virtual ~SrsTcpListener();
 
 public:
-    SrsTcpListener *set_label(const std::string &label);
-    SrsTcpListener *set_endpoint(const std::string &i, int p);
-    SrsTcpListener *set_endpoint(const std::string &endpoint);
+    ISrsListener *set_label(const std::string &label);
+    ISrsListener *set_endpoint(const std::string &i, int p);
+    ISrsListener *set_endpoint(const std::string &endpoint);
     int port();
 
 public:
@@ -154,7 +166,7 @@ private:
 };
 
 // Bind and listen tcp port, use handler to process the client.
-class SrsMultipleTcpListeners : public ISrsListener, public ISrsTcpHandler
+class SrsMultipleTcpListeners : public ISrsIpListener, public ISrsTcpHandler
 {
 private:
     ISrsTcpHandler *handler_;
@@ -165,7 +177,8 @@ public:
     virtual ~SrsMultipleTcpListeners();
 
 public:
-    SrsMultipleTcpListeners *set_label(const std::string &label);
+    ISrsListener *set_label(const std::string &label);
+    ISrsListener *set_endpoint(const std::string &i, int p);
     SrsMultipleTcpListeners *add(const std::vector<std::string> &endpoints);
 
 public:

@@ -64,6 +64,14 @@ ISrsListener::~ISrsListener()
 {
 }
 
+ISrsIpListener::ISrsIpListener()
+{
+}
+
+ISrsIpListener::~ISrsIpListener()
+{
+}
+
 ISrsTcpHandler::ISrsTcpHandler()
 {
 }
@@ -92,13 +100,13 @@ SrsUdpListener::~SrsUdpListener()
     srs_freepa(buf_);
 }
 
-SrsUdpListener *SrsUdpListener::set_label(const std::string &label)
+ISrsListener *SrsUdpListener::set_label(const std::string &label)
 {
     label_ = label;
     return this;
 }
 
-SrsUdpListener *SrsUdpListener::set_endpoint(const std::string &i, int p)
+ISrsListener *SrsUdpListener::set_endpoint(const std::string &i, int p)
 {
     ip_ = i;
     port_ = p;
@@ -250,20 +258,20 @@ SrsTcpListener::~SrsTcpListener()
     srs_close_stfd(lfd_);
 }
 
-SrsTcpListener *SrsTcpListener::set_label(const std::string &label)
+ISrsListener *SrsTcpListener::set_label(const std::string &label)
 {
     label_ = label;
     return this;
 }
 
-SrsTcpListener *SrsTcpListener::set_endpoint(const std::string &i, int p)
+ISrsListener *SrsTcpListener::set_endpoint(const std::string &i, int p)
 {
     ip_ = i;
     port_ = p;
     return this;
 }
 
-SrsTcpListener *SrsTcpListener::set_endpoint(const std::string &endpoint)
+ISrsListener *SrsTcpListener::set_endpoint(const std::string &endpoint)
 {
     std::string ip;
     int port_;
@@ -358,11 +366,21 @@ SrsMultipleTcpListeners::~SrsMultipleTcpListeners()
     }
 }
 
-SrsMultipleTcpListeners *SrsMultipleTcpListeners::set_label(const std::string &label)
+ISrsListener *SrsMultipleTcpListeners::set_label(const std::string &label)
 {
     for (vector<SrsTcpListener *>::iterator it = listeners_.begin(); it != listeners_.end(); ++it) {
         SrsTcpListener *l = *it;
         l->set_label(label);
+    }
+
+    return this;
+}
+
+ISrsListener *SrsMultipleTcpListeners::set_endpoint(const std::string &i, int p)
+{
+    for (vector<SrsTcpListener *>::iterator it = listeners_.begin(); it != listeners_.end(); ++it) {
+        SrsTcpListener *l = *it;
+        l->set_endpoint(i, p);
     }
 
     return this;
@@ -376,7 +394,8 @@ SrsMultipleTcpListeners *SrsMultipleTcpListeners::add(const std::vector<std::str
         srs_net_split_for_listener(endpoints[i], ip, port);
 
         SrsTcpListener *l = new SrsTcpListener(this);
-        listeners_.push_back(l->set_endpoint(ip, port));
+        l->set_endpoint(ip, port);
+        listeners_.push_back(l);
     }
 
     return this;

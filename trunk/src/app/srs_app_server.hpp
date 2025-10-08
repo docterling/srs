@@ -84,6 +84,17 @@ public:
     virtual void on_signal(int signo) = 0;
 };
 
+// The API server owner interface.
+class ISrsApiServerOwner
+{
+public:
+    ISrsApiServerOwner();
+    virtual ~ISrsApiServerOwner();
+
+public:
+    virtual ISrsHttpServeMux *api_server() = 0;
+};
+
 // SrsServer is the main server class of SRS (Simple Realtime Server) that provides comprehensive
 // streaming media server functionality. It serves as the central orchestrator for all streaming
 // protocols and services in a single-threaded, coroutine-based architecture.
@@ -93,7 +104,8 @@ class SrsServer : public ISrsReloadHandler, // Reload framework for permormance 
                   public ISrsHourGlassHandler,
                   public ISrsSrtClientHandler,
                   public ISrsUdpMuxHandler,
-                  public ISrsSignalHandler
+                  public ISrsSignalHandler,
+                  public ISrsApiServerOwner
 {
 private:
     ISrsAppConfig *config_;
@@ -104,7 +116,9 @@ private:
     ISrsCircuitBreaker *circuit_breaker_;
     ISrsSrtSourceManager *srt_sources_;
     ISrsRtcSourceManager *rtc_sources_;
+#ifdef SRS_RTSP
     ISrsRtspSourceManager *rtsp_sources_;
+#endif
 #ifdef SRS_GB28181
     ISrsResourceManager *gb_manager_;
 #endif

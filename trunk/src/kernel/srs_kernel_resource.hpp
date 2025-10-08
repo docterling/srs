@@ -93,8 +93,18 @@ public:
 public:
     // Add a resource to the manager.
     virtual void add(ISrsResource *conn, bool *exists = NULL) = 0;
+    // Add a resource with string id to the manager.
+    virtual void add_with_id(const std::string &id, ISrsResource *conn) = 0;
+    // Add a resource with fast(int) id to the manager.
+    virtual void add_with_fast_id(uint64_t id, ISrsResource *conn) = 0;
     // Get resource at specified index.
     virtual ISrsResource *at(int index) = 0;
+    // Find resource by string id.
+    virtual ISrsResource *find_by_id(std::string id) = 0;
+    // Find resource by fast(int) id.
+    virtual ISrsResource *find_by_fast_id(uint64_t id) = 0;
+    // Find resource by name.
+    virtual ISrsResource *find_by_name(std::string name) = 0;
 
 public:
     // Remove then free the specified connection. Note that the manager always free c resource,

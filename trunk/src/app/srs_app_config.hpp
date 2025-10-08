@@ -359,6 +359,8 @@ public:
     virtual std::vector<SrsConfDirective *> get_stream_casters() = 0;
     virtual bool get_stream_caster_enabled(SrsConfDirective *conf) = 0;
     virtual std::string get_stream_caster_engine(SrsConfDirective *conf) = 0;
+    virtual std::string get_stream_caster_output(SrsConfDirective *conf) = 0;
+    virtual int get_stream_caster_listen(SrsConfDirective *conf) = 0;
 
 public:
     // Exporter config

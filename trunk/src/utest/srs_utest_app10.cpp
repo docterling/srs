@@ -699,12 +699,35 @@ void MockConnectionManagerForResampleKbps::add(ISrsResource *conn, bool *exists)
     connections_.push_back(conn);
 }
 
+void MockConnectionManagerForResampleKbps::add_with_id(const std::string & /*id*/, ISrsResource * /*conn*/)
+{
+}
+
+void MockConnectionManagerForResampleKbps::add_with_fast_id(uint64_t /*id*/, ISrsResource * /*conn*/)
+{
+}
+
 ISrsResource *MockConnectionManagerForResampleKbps::at(int index)
 {
     if (index < 0 || index >= (int)connections_.size()) {
         return NULL;
     }
     return connections_[index];
+}
+
+ISrsResource *MockConnectionManagerForResampleKbps::find_by_id(std::string /*id*/)
+{
+    return NULL;
+}
+
+ISrsResource *MockConnectionManagerForResampleKbps::find_by_fast_id(uint64_t /*id*/)
+{
+    return NULL;
+}
+
+ISrsResource *MockConnectionManagerForResampleKbps::find_by_name(std::string /*name*/)
+{
+    return NULL;
 }
 
 void MockConnectionManagerForResampleKbps::remove(ISrsResource *c)
@@ -966,7 +989,30 @@ void MockConnectionManagerForConnectionLimit::add(ISrsResource *conn, bool *exis
 {
 }
 
+void MockConnectionManagerForConnectionLimit::add_with_id(const std::string & /*id*/, ISrsResource * /*conn*/)
+{
+}
+
+void MockConnectionManagerForConnectionLimit::add_with_fast_id(uint64_t /*id*/, ISrsResource * /*conn*/)
+{
+}
+
 ISrsResource *MockConnectionManagerForConnectionLimit::at(int index)
+{
+    return NULL;
+}
+
+ISrsResource *MockConnectionManagerForConnectionLimit::find_by_id(std::string /*id*/)
+{
+    return NULL;
+}
+
+ISrsResource *MockConnectionManagerForConnectionLimit::find_by_fast_id(uint64_t /*id*/)
+{
+    return NULL;
+}
+
+ISrsResource *MockConnectionManagerForConnectionLimit::find_by_name(std::string /*name*/)
 {
     return NULL;
 }
