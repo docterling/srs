@@ -2063,19 +2063,19 @@ VOID TEST(RtspPlayStreamTest, OnStreamChange)
     // Create new audio track description with different SSRC and PT
     new_desc->audio_track_desc_ = new SrsRtcTrackDescription();
     new_desc->audio_track_desc_->type_ = "audio";
-    new_desc->audio_track_desc_->ssrc_ = 1002;  // Changed SSRC
-    new_desc->audio_track_desc_->media_ = new SrsAudioPayload(112, "opus", 48000, 2);  // Changed PT
+    new_desc->audio_track_desc_->ssrc_ = 1002;                                        // Changed SSRC
+    new_desc->audio_track_desc_->media_ = new SrsAudioPayload(112, "opus", 48000, 2); // Changed PT
     new_desc->audio_track_desc_->media_->pt_ = 112;
-    new_desc->audio_track_desc_->red_ = new SrsRedPayload(64, "red", 48000, 2);  // Changed PT
+    new_desc->audio_track_desc_->red_ = new SrsRedPayload(64, "red", 48000, 2); // Changed PT
     new_desc->audio_track_desc_->red_->pt_ = 64;
 
     // Create new video track description with different SSRC and PT
     SrsRtcTrackDescription *new_video_desc = new SrsRtcTrackDescription();
     new_video_desc->type_ = "video";
-    new_video_desc->ssrc_ = 2002;  // Changed SSRC
-    new_video_desc->media_ = new SrsVideoPayload(103, "H264", 90000);  // Changed PT
+    new_video_desc->ssrc_ = 2002;                                     // Changed SSRC
+    new_video_desc->media_ = new SrsVideoPayload(103, "H264", 90000); // Changed PT
     new_video_desc->media_->pt_ = 103;
-    new_video_desc->red_ = new SrsCodecPayload(101, "rtx", 90000);  // Changed PT
+    new_video_desc->red_ = new SrsCodecPayload(101, "rtx", 90000); // Changed PT
     new_video_desc->red_->pt_ = 101;
     new_desc->video_track_descs_.push_back(new_video_desc);
 
@@ -2084,13 +2084,13 @@ VOID TEST(RtspPlayStreamTest, OnStreamChange)
 
     // Verify that audio track map was updated with new SSRC
     EXPECT_EQ(1, (int)play_stream->audio_tracks_.size());
-    EXPECT_TRUE(play_stream->audio_tracks_.find(1001) == play_stream->audio_tracks_.end());  // Old SSRC removed
-    EXPECT_TRUE(play_stream->audio_tracks_.find(1002) != play_stream->audio_tracks_.end());  // New SSRC added
+    EXPECT_TRUE(play_stream->audio_tracks_.find(1001) == play_stream->audio_tracks_.end()); // Old SSRC removed
+    EXPECT_TRUE(play_stream->audio_tracks_.find(1002) != play_stream->audio_tracks_.end()); // New SSRC added
 
     // Verify that video track map was updated with new SSRC
     EXPECT_EQ(1, (int)play_stream->video_tracks_.size());
-    EXPECT_TRUE(play_stream->video_tracks_.find(2001) == play_stream->video_tracks_.end());  // Old SSRC removed
-    EXPECT_TRUE(play_stream->video_tracks_.find(2002) != play_stream->video_tracks_.end());  // New SSRC added
+    EXPECT_TRUE(play_stream->video_tracks_.find(2001) == play_stream->video_tracks_.end()); // Old SSRC removed
+    EXPECT_TRUE(play_stream->video_tracks_.find(2002) != play_stream->video_tracks_.end()); // New SSRC added
 
     // Verify that the track objects are the same (not recreated)
     EXPECT_EQ(audio_track, play_stream->audio_tracks_[1002]);
@@ -2470,7 +2470,7 @@ VOID TEST(RtspConnectionTest, SessionLifecycleAndDisposal)
     // Test 1: Context management
     {
         // Get the context ID
-        const SrsContextId& cid = conn->context_id();
+        const SrsContextId &cid = conn->context_id();
         EXPECT_FALSE(cid.empty());
 
         // Switch to context should set the global context
@@ -2566,7 +2566,7 @@ VOID TEST(RtspConnectionTest, DoDescribeWithAudioAndVideo)
     audio_desc->type_ = "audio";
     audio_desc->ssrc_ = 1001;
     SrsAudioPayload *audio_payload = new SrsAudioPayload(97, "MPEG4-GENERIC", 48000, 2);
-    audio_payload->aac_config_hex_ = "1190";  // AAC config hex
+    audio_payload->aac_config_hex_ = "1190"; // AAC config hex
     audio_desc->media_ = audio_payload;
     mock_source->audio_desc_ = audio_desc;
 
@@ -2729,7 +2729,7 @@ VOID TEST(RtspConnectionTest, DoSetupWithTcpTransport)
     // Create a track description with known stream_id and ssrc
     SrsRtcTrackDescription *video_desc = new SrsRtcTrackDescription();
     video_desc->type_ = "video";
-    video_desc->id_ = "0";  // stream_id will be 0
+    video_desc->id_ = "0"; // stream_id will be 0
     video_desc->ssrc_ = 12345;
 
     // Add track to connection's tracks map
@@ -2738,7 +2738,7 @@ VOID TEST(RtspConnectionTest, DoSetupWithTcpTransport)
     // Create RTSP SETUP request with TCP transport
     SrsUniquePtr<SrsRtspRequest> req(new SrsRtspRequest());
     req->method_ = "SETUP";
-    req->stream_id_ = 0;  // Matches track id_ = "0"
+    req->stream_id_ = 0; // Matches track id_ = "0"
 
     // Configure TCP transport (interleaved mode)
     req->transport_ = new SrsRtspTransport();
@@ -2837,12 +2837,12 @@ VOID TEST(RtspConnectionTest, GetSsrcByStreamIdSuccess)
     // Create multiple track descriptions with different stream IDs
     SrsRtcTrackDescription *audio_desc = new SrsRtcTrackDescription();
     audio_desc->type_ = "audio";
-    audio_desc->id_ = "0";  // stream_id 0
+    audio_desc->id_ = "0"; // stream_id 0
     audio_desc->ssrc_ = 1001;
 
     SrsRtcTrackDescription *video_desc = new SrsRtcTrackDescription();
     video_desc->type_ = "video";
-    video_desc->id_ = "1";  // stream_id 1
+    video_desc->id_ = "1"; // stream_id 1
     video_desc->ssrc_ = 2001;
 
     // Add tracks to connection's tracks map (key is SSRC)
@@ -3459,13 +3459,13 @@ VOID TEST(DvrSegmenterTest, OnUpdateDurationTypicalScenario)
 
     // Create media packets with different timestamps to test duration tracking
     SrsUniquePtr<SrsMediaPacket> msg1(new SrsMediaPacket());
-    msg1->timestamp_ = 1000;  // 1000ms
+    msg1->timestamp_ = 1000; // 1000ms
 
     SrsUniquePtr<SrsMediaPacket> msg2(new SrsMediaPacket());
-    msg2->timestamp_ = 2000;  // 2000ms
+    msg2->timestamp_ = 2000; // 2000ms
 
     SrsUniquePtr<SrsMediaPacket> msg3(new SrsMediaPacket());
-    msg3->timestamp_ = 3500;  // 3500ms
+    msg3->timestamp_ = 3500; // 3500ms
 
     // Verify initial fragment duration is 0
     EXPECT_EQ(0, srsu2msi(segmenter->fragment_->duration()));
@@ -3521,8 +3521,8 @@ VOID TEST(DvrFlvSegmenterTest, RefreshMetadataTypicalScenario)
     HELPER_EXPECT_SUCCESS(mock_fs->write(dummy_data, sizeof(dummy_data), NULL));
 
     // Set the duration and filesize offsets (simulate where metadata fields are in the file)
-    segmenter->duration_offset_ = 20;   // Duration field at offset 20
-    segmenter->filesize_offset_ = 40;   // Filesize field at offset 40
+    segmenter->duration_offset_ = 20; // Duration field at offset 20
+    segmenter->filesize_offset_ = 40; // Filesize field at offset 40
 
     // Set up the fragment with a duration (5.5 seconds = 5500ms = 5500000us)
     SrsUniquePtr<SrsMediaPacket> msg1(new SrsMediaPacket());
@@ -3530,7 +3530,7 @@ VOID TEST(DvrFlvSegmenterTest, RefreshMetadataTypicalScenario)
     HELPER_EXPECT_SUCCESS(segmenter->on_update_duration(msg1.get()));
 
     SrsUniquePtr<SrsMediaPacket> msg2(new SrsMediaPacket());
-    msg2->timestamp_ = 6500;  // 5500ms duration
+    msg2->timestamp_ = 6500; // 5500ms duration
     HELPER_EXPECT_SUCCESS(segmenter->on_update_duration(msg2.get()));
 
     // Verify fragment duration is 5500ms
@@ -3538,7 +3538,7 @@ VOID TEST(DvrFlvSegmenterTest, RefreshMetadataTypicalScenario)
 
     // Get current file position before refresh
     int64_t pos_before = mock_fs->tellg();
-    EXPECT_EQ(100, pos_before);  // Should be at end of dummy data
+    EXPECT_EQ(100, pos_before); // Should be at end of dummy data
 
     // Call refresh_metadata() - this is the method under test
     HELPER_EXPECT_SUCCESS(segmenter->refresh_metadata());
@@ -3550,7 +3550,7 @@ VOID TEST(DvrFlvSegmenterTest, RefreshMetadataTypicalScenario)
     // Verify the filesize was written correctly at filesize_offset_
     mock_fs->seek2(segmenter->filesize_offset_);
     int amf0_number_size = SrsAmf0Size::number();
-    char filesize_buf[9];  // AMF0 number is always 9 bytes (1 byte marker + 8 bytes double)
+    char filesize_buf[9]; // AMF0 number is always 9 bytes (1 byte marker + 8 bytes double)
     ssize_t nread = 0;
     HELPER_EXPECT_SUCCESS(mock_fs->uf->read(filesize_buf, amf0_number_size, &nread));
     EXPECT_EQ(amf0_number_size, nread);
@@ -3560,11 +3560,11 @@ VOID TEST(DvrFlvSegmenterTest, RefreshMetadataTypicalScenario)
     SrsUniquePtr<SrsAmf0Any> filesize_value(SrsAmf0Any::number());
     HELPER_EXPECT_SUCCESS(filesize_value->read(&filesize_stream));
     EXPECT_TRUE(filesize_value->is_number());
-    EXPECT_EQ(100.0, filesize_value->to_number());  // Should match file size
+    EXPECT_EQ(100.0, filesize_value->to_number()); // Should match file size
 
     // Verify the duration was written correctly at duration_offset_
     mock_fs->seek2(segmenter->duration_offset_);
-    char duration_buf[9];  // AMF0 number is always 9 bytes (1 byte marker + 8 bytes double)
+    char duration_buf[9]; // AMF0 number is always 9 bytes (1 byte marker + 8 bytes double)
     nread = 0;
     HELPER_EXPECT_SUCCESS(mock_fs->uf->read(duration_buf, amf0_number_size, &nread));
     EXPECT_EQ(amf0_number_size, nread);
@@ -3574,7 +3574,7 @@ VOID TEST(DvrFlvSegmenterTest, RefreshMetadataTypicalScenario)
     SrsUniquePtr<SrsAmf0Any> duration_value(SrsAmf0Any::number());
     HELPER_EXPECT_SUCCESS(duration_value->read(&duration_stream));
     EXPECT_TRUE(duration_value->is_number());
-    EXPECT_EQ(5.5, duration_value->to_number());  // Should be 5.5 seconds
+    EXPECT_EQ(5.5, duration_value->to_number()); // Should be 5.5 seconds
 
     // Clean up - set to NULL to avoid double-free
     segmenter->fs_ = NULL;
@@ -3625,8 +3625,8 @@ VOID TEST(DvrFlvSegmenterTest, EncodeMetadataTypicalScenario)
     SrsUniquePtr<SrsAmf0Object> metadata_obj(SrsAmf0Any::object());
     metadata_obj->set("width", SrsAmf0Any::number(1920));
     metadata_obj->set("height", SrsAmf0Any::number(1080));
-    metadata_obj->set("duration", SrsAmf0Any::number(120));      // Should be removed and replaced
-    metadata_obj->set("filesize", SrsAmf0Any::number(1000000));  // Should be removed and replaced
+    metadata_obj->set("duration", SrsAmf0Any::number(120));     // Should be removed and replaced
+    metadata_obj->set("filesize", SrsAmf0Any::number(1000000)); // Should be removed and replaced
 
     // Serialize metadata to bytes
     int metadata_size = name->total_size() + metadata_obj->total_size();
@@ -3649,13 +3649,13 @@ VOID TEST(DvrFlvSegmenterTest, EncodeMetadataTypicalScenario)
 
     // Verify the mock encoder's write_metadata was called
     EXPECT_TRUE(mock_enc->write_metadata_called_);
-    EXPECT_EQ(18, (int)mock_enc->metadata_type_);  // Type should be 18 (script data)
-    EXPECT_TRUE(mock_enc->metadata_size_ > 0);     // Should have written some data
+    EXPECT_EQ(18, (int)mock_enc->metadata_type_); // Type should be 18 (script data)
+    EXPECT_TRUE(mock_enc->metadata_size_ > 0);    // Should have written some data
 
     // Verify duration_offset_ and filesize_offset_ were calculated
     EXPECT_TRUE(segmenter->duration_offset_ > 0);
     EXPECT_TRUE(segmenter->filesize_offset_ > 0);
-    EXPECT_TRUE(segmenter->filesize_offset_ < segmenter->duration_offset_);  // filesize comes before duration
+    EXPECT_TRUE(segmenter->filesize_offset_ < segmenter->duration_offset_); // filesize comes before duration
 
     // Verify calling encode_metadata again is ignored (metadata already written)
     int64_t saved_duration_offset = segmenter->duration_offset_;
@@ -3734,7 +3734,7 @@ VOID TEST(DvrMp4SegmenterTest, EncodeAudioVideoTypicalScenario)
     audio_format->audio_->aac_packet_type_ = SrsAudioAacFrameTraitSequenceHeader;
 
     // Create audio sample data
-    char audio_data[10] = {0x12, 0x10};  // AAC sequence header
+    char audio_data[10] = {0x12, 0x10}; // AAC sequence header
     audio_format->raw_ = audio_data;
     audio_format->nb_raw_ = 2;
 
@@ -3758,7 +3758,7 @@ VOID TEST(DvrMp4SegmenterTest, EncodeAudioVideoTypicalScenario)
     EXPECT_EQ(0x00, (int)mock_enc->last_frame_type_);
     EXPECT_EQ(SrsAudioAacFrameTraitSequenceHeader, (int)mock_enc->last_codec_type_);
     EXPECT_EQ(1000, (int)mock_enc->last_dts_);
-    EXPECT_EQ(1000, (int)mock_enc->last_pts_);  // For audio, PTS = DTS
+    EXPECT_EQ(1000, (int)mock_enc->last_pts_); // For audio, PTS = DTS
     EXPECT_EQ(2, (int)mock_enc->last_sample_size_);
 
     // Reset mock encoder for video test
@@ -3795,7 +3795,7 @@ VOID TEST(DvrMp4SegmenterTest, EncodeAudioVideoTypicalScenario)
     EXPECT_EQ(SrsVideoAvcFrameTypeKeyFrame, (int)mock_enc->last_frame_type_);
     EXPECT_EQ(SrsVideoAvcFrameTraitSequenceHeader, (int)mock_enc->last_codec_type_);
     EXPECT_EQ(2000, (int)mock_enc->last_dts_);
-    EXPECT_EQ(2000, (int)mock_enc->last_pts_);  // PTS = DTS + CTS (2000 + 0)
+    EXPECT_EQ(2000, (int)mock_enc->last_pts_); // PTS = DTS + CTS (2000 + 0)
     EXPECT_EQ(4, (int)mock_enc->last_sample_size_);
 
     // Reset mock encoder for regular video frame test
@@ -3803,7 +3803,7 @@ VOID TEST(DvrMp4SegmenterTest, EncodeAudioVideoTypicalScenario)
 
     // Test encode_video with regular video frame (with CTS)
     video_format->video_->avc_packet_type_ = SrsVideoAvcFrameTraitNALU;
-    video_format->video_->cts_ = 40;  // 40ms CTS
+    video_format->video_->cts_ = 40; // 40ms CTS
     video_packet->timestamp_ = 3000;
 
     // Call encode_video() again
@@ -3814,7 +3814,7 @@ VOID TEST(DvrMp4SegmenterTest, EncodeAudioVideoTypicalScenario)
     EXPECT_EQ(SrsMp4HandlerTypeVIDE, mock_enc->last_handler_type_);
     EXPECT_EQ(SrsVideoAvcFrameTraitNALU, (int)mock_enc->last_codec_type_);
     EXPECT_EQ(3000, (int)mock_enc->last_dts_);
-    EXPECT_EQ(3040, (int)mock_enc->last_pts_);  // PTS = DTS + CTS (3000 + 40)
+    EXPECT_EQ(3040, (int)mock_enc->last_pts_); // PTS = DTS + CTS (3000 + 40)
 
     // Clean up - set to NULL to avoid double-free
     segmenter->fs_ = NULL;
@@ -3917,7 +3917,7 @@ srs_error_t MockHttpHooksForDvrAsyncCall::on_dvr(SrsContextId cid, std::string u
 }
 
 srs_error_t MockHttpHooksForDvrAsyncCall::on_hls(SrsContextId cid, std::string url, ISrsRequest *req, std::string file, std::string ts_url,
-                                                  std::string m3u8, std::string m3u8_url, int sn, srs_utime_t duration)
+                                                 std::string m3u8, std::string m3u8_url, int sn, srs_utime_t duration)
 {
     return srs_success;
 }
@@ -4141,7 +4141,7 @@ VOID TEST(DvrPlanTest, CreatePlanTypicalScenario)
     ISrsDvrPlan *segment_plan = NULL;
     HELPER_EXPECT_SUCCESS(SrsDvrPlan::create_plan(segment_config.get(), "test.vhost", &segment_plan));
     EXPECT_TRUE(segment_plan != NULL);
-    EXPECT_TRUE(dynamic_cast<SrsDvrSegmentPlan*>(segment_plan) != NULL);
+    EXPECT_TRUE(dynamic_cast<SrsDvrSegmentPlan *>(segment_plan) != NULL);
     srs_freep(segment_plan);
 
     // Test session plan
@@ -4151,7 +4151,7 @@ VOID TEST(DvrPlanTest, CreatePlanTypicalScenario)
     ISrsDvrPlan *session_plan = NULL;
     HELPER_EXPECT_SUCCESS(SrsDvrPlan::create_plan(session_config.get(), "test.vhost", &session_plan));
     EXPECT_TRUE(session_plan != NULL);
-    EXPECT_TRUE(dynamic_cast<SrsDvrSessionPlan*>(session_plan) != NULL);
+    EXPECT_TRUE(dynamic_cast<SrsDvrSessionPlan *>(session_plan) != NULL);
     srs_freep(session_plan);
 
     // Test illegal plan
@@ -4456,16 +4456,16 @@ VOID TEST(DvrSegmentPlanTest, OnVideoReapSegmentWhenDurationExceeds)
 
     // Simulate fragment duration exceeding the configured limit
     // Append frames to build up duration to 31 seconds (exceeds 30 second limit)
-    fragment->append(0);      // Start at 0ms
-    fragment->append(31000);  // End at 31000ms (31 seconds)
+    fragment->append(0);     // Start at 0ms
+    fragment->append(31000); // End at 31000ms (31 seconds)
 
     // Create H.264 keyframe video packet (not sequence header)
     // H.264 keyframe format: 0x17 = (1 << 4) | 7 = keyframe + H.264
     // AVC packet type: 0x01 = NALU (not sequence header which is 0x00)
     SrsUniquePtr<SrsMediaPacket> video_keyframe(new SrsMediaPacket());
     char *keyframe_data = new char[10];
-    keyframe_data[0] = 0x17;  // Keyframe + H.264 codec
-    keyframe_data[1] = 0x01;  // AVC NALU (not sequence header)
+    keyframe_data[0] = 0x17; // Keyframe + H.264 codec
+    keyframe_data[1] = 0x01; // AVC NALU (not sequence header)
     memset(keyframe_data + 2, 0, 8);
     video_keyframe->wrap(keyframe_data, 10);
     video_keyframe->message_type_ = SrsFrameTypeVideo;
@@ -4718,16 +4718,16 @@ VOID TEST(DvrSegmentPlanTest, OnAudioTypicalScenario)
     // AAC packet type: 0x01 = AAC raw (not sequence header which is 0x00)
     SrsUniquePtr<SrsMediaPacket> audio(new SrsMediaPacket());
     char *audio_data = new char[10];
-    audio_data[0] = 0xAF;  // AAC codec
-    audio_data[1] = 0x01;  // AAC raw (not sequence header)
+    audio_data[0] = 0xAF; // AAC codec
+    audio_data[1] = 0x01; // AAC raw (not sequence header)
     memset(audio_data + 2, 0, 8);
     audio->wrap(audio_data, 10);
     audio->message_type_ = SrsFrameTypeAudio;
-    audio->timestamp_ = 1000;  // 1 second
+    audio->timestamp_ = 1000; // 1 second
 
     // Append timestamp to fragment to simulate duration tracking
-    fragment->append(0);     // Start at 0ms
-    fragment->append(1000);  // Current at 1000ms (1 second, well below 30 second limit)
+    fragment->append(0);    // Start at 0ms
+    fragment->append(1000); // Current at 1000ms (1 second, well below 30 second limit)
 
     // Call on_audio() - should succeed without triggering segment reaping
     HELPER_EXPECT_SUCCESS(plan->on_audio(audio.get(), format.get()));

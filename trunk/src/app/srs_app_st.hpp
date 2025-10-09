@@ -197,7 +197,11 @@ public:
 //          return err;
 //      }
 class SrsExecutorCoroutine : public ISrsResource, // It's a resource.
-    public ISrsStartable, public ISrsInterruptable, public ISrsContextIdSetter, public ISrsContextIdGetter, public ISrsCoroutineHandler
+                             public ISrsStartable,
+                             public ISrsInterruptable,
+                             public ISrsContextIdSetter,
+                             public ISrsContextIdGetter,
+                             public ISrsCoroutineHandler
 {
 private:
     ISrsResourceManager *manager_;

@@ -203,9 +203,9 @@ SrsRtcUdpNetwork::~SrsRtcUdpNetwork()
 
     // Note that we should never delete the sendonly_skt,
     // it's just point to the object in peer_addresses_.
-    map<string, SrsUdpMuxSocket *>::iterator it;
+    map<string, ISrsUdpMuxSocket *>::iterator it;
     for (it = peer_addresses_.begin(); it != peer_addresses_.end(); ++it) {
-        SrsUdpMuxSocket *addr = it->second;
+        ISrsUdpMuxSocket *addr = it->second;
         srs_freep(addr);
     }
 
@@ -368,7 +368,7 @@ int SrsRtcUdpNetwork::get_peer_port()
     return sendonly_skt_->get_peer_port();
 }
 
-void SrsRtcUdpNetwork::update_sendonly_socket(SrsUdpMuxSocket *skt)
+void SrsRtcUdpNetwork::update_sendonly_socket(ISrsUdpMuxSocket *skt)
 {
     // TODO: FIXME: Refine performance.
     string prev_peer_id, peer_id = skt->peer_id();
@@ -382,9 +382,9 @@ void SrsRtcUdpNetwork::update_sendonly_socket(SrsUdpMuxSocket *skt)
     }
 
     // Find object from cache.
-    SrsUdpMuxSocket *addr_cache = NULL;
+    ISrsUdpMuxSocket *addr_cache = NULL;
     if (true) {
-        map<string, SrsUdpMuxSocket *>::iterator it = peer_addresses_.find(peer_id);
+        map<string, ISrsUdpMuxSocket *>::iterator it = peer_addresses_.find(peer_id);
         if (it != peer_addresses_.end()) {
             addr_cache = it->second;
         }

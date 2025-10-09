@@ -430,6 +430,14 @@ srs_error_t SrsMultipleTcpListeners::on_tcp_client(ISrsListener *listener, srs_n
     return handler_->on_tcp_client(this, stfd);
 }
 
+ISrsUdpMuxSocket::ISrsUdpMuxSocket()
+{
+}
+
+ISrsUdpMuxSocket::~ISrsUdpMuxSocket()
+{
+}
+
 SrsUdpMuxSocket::SrsUdpMuxSocket(srs_netfd_t fd)
 {
     nn_msgs_for_yield_ = 0;
@@ -612,7 +620,7 @@ SrsBuffer *SrsUdpMuxSocket::buffer()
     return cache_buffer_;
 }
 
-SrsUdpMuxSocket *SrsUdpMuxSocket::copy_sendonly()
+ISrsUdpMuxSocket *SrsUdpMuxSocket::copy_sendonly()
 {
     SrsUdpMuxSocket *sendonly = new SrsUdpMuxSocket(lfd_);
 

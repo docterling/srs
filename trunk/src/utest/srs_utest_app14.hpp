@@ -12,17 +12,17 @@
 */
 #include <srs_utest.hpp>
 
-#include <srs_app_gb28181.hpp>
 #include <srs_app_config.hpp>
-#include <srs_app_server.hpp>
-#include <srs_app_factory.hpp>
 #include <srs_app_dvr.hpp>
-#include <srs_protocol_http_stack.hpp>
-#include <srs_protocol_rtmp_conn.hpp>
-#include <srs_protocol_raw_avc.hpp>
+#include <srs_app_factory.hpp>
+#include <srs_app_gb28181.hpp>
+#include <srs_app_server.hpp>
 #include <srs_protocol_http_client.hpp>
-#include <srs_utest_app6.hpp>
+#include <srs_protocol_http_stack.hpp>
+#include <srs_protocol_raw_avc.hpp>
+#include <srs_protocol_rtmp_conn.hpp>
 #include <srs_utest_app11.hpp>
+#include <srs_utest_app6.hpp>
 
 #ifdef SRS_RTSP
 #include <srs_app_rtsp_conn.hpp>
@@ -96,6 +96,88 @@ public:
     virtual std::string desc();
     virtual srs_error_t cycle();
     virtual void on_executor_done(ISrsInterruptable *executor);
+    void reset();
+};
+
+// Mock ISrsRtcConnection for testing SrsRtcUdpNetwork
+class MockRtcConnectionForUdpNetwork : public ISrsRtcConnection
+{
+public:
+    srs_error_t on_dtls_alert_error_;
+    std::string last_alert_type_;
+    std::string last_alert_desc_;
+    bool on_rtp_cipher_called_;
+    bool on_rtp_plaintext_called_;
+    bool on_rtcp_called_;
+
+public:
+    MockRtcConnectionForUdpNetwork();
+    virtual ~MockRtcConnectionForUdpNetwork();
+
+public:
+    // ISrsResource interface
+    virtual const SrsContextId &get_id();
+    virtual std::string desc();
+    virtual void on_disposing(ISrsResource *c);
+
+public:
+    // ISrsDisposingHandler interface
+    virtual void on_before_dispose(ISrsResource *c);
+
+public:
+    // ISrsExpire interface
+    virtual void expire();
+
+public:
+    // ISrsRtcPacketSender interface
+    virtual srs_error_t send_rtcp(char *data, int nb_data);
+    virtual srs_error_t do_send_packet(SrsRtpPacket *pkt);
+    virtual srs_error_t send_rtcp_rr(uint32_t ssrc, SrsRtpRingBuffer *rtp_queue, const uint64_t &last_send_systime, const SrsNtp &last_send_ntp);
+    virtual srs_error_t send_rtcp_xr_rrtr(uint32_t ssrc);
+    virtual void check_send_nacks(SrsRtpNackForReceiver *nack, uint32_t ssrc, uint32_t &sent_nacks, uint32_t &timeout_nacks);
+    virtual srs_error_t send_rtcp_fb_pli(uint32_t ssrc, const SrsContextId &cid_of_subscriber);
+
+public:
+    // ISrsRtcPacketReceiver interface
+    virtual srs_error_t on_rtp(SrsRtpPacket *pkt);
+    virtual srs_error_t on_rtcp(SrsRtcpCommon *rtcp);
+
+public:
+    // ISrsRtcConnectionNackTimerHandler interface
+    virtual srs_error_t do_check_send_nacks();
+
+public:
+    // ISrsRtcConnection interface
+    virtual srs_error_t on_dtls_handshake_done();
+    virtual srs_error_t on_dtls_alert(std::string type, std::string desc);
+    virtual srs_error_t on_rtp_cipher(char *data, int nb_data);
+    virtual srs_error_t on_rtp_plaintext(char *data, int nb_data);
+    virtual srs_error_t on_rtcp(char *data, int nb_data);
+    virtual srs_error_t on_binding_request(SrsStunPacket *r, std::string &ice_pwd);
+    virtual ISrsRtcNetwork *udp();
+    virtual ISrsRtcNetwork *tcp();
+    virtual void alive();
+    virtual void switch_to_context();
+
+public:
+    void set_on_dtls_alert_error(srs_error_t err);
+    void reset();
+};
+
+// Mock ISrsEphemeralDelta for testing SrsRtcUdpNetwork
+class MockEphemeralDelta : public ISrsEphemeralDelta
+{
+public:
+    int64_t in_bytes_;
+    int64_t out_bytes_;
+
+public:
+    MockEphemeralDelta();
+    virtual ~MockEphemeralDelta();
+
+public:
+    virtual void add_delta(int64_t in, int64_t out);
+    virtual void remark(int64_t *in, int64_t *out);
     void reset();
 };
 
@@ -330,6 +412,73 @@ public:
     virtual void on_executor_done(ISrsInterruptable *executor);
 };
 
+// Mock ISrsInterruptable for testing SrsRtcTcpConn
+class MockInterruptableForRtcTcpConn : public ISrsInterruptable
+{
+public:
+    bool interrupt_called_;
+    srs_error_t pull_error_;
+
+public:
+    MockInterruptableForRtcTcpConn();
+    virtual ~MockInterruptableForRtcTcpConn();
+
+public:
+    virtual void interrupt();
+    virtual srs_error_t pull();
+    void reset();
+};
+
+// Mock ISrsContextIdSetter for testing SrsRtcTcpConn
+class MockContextIdSetterForRtcTcpConn : public ISrsContextIdSetter
+{
+public:
+    bool set_cid_called_;
+    SrsContextId received_cid_;
+
+public:
+    MockContextIdSetterForRtcTcpConn();
+    virtual ~MockContextIdSetterForRtcTcpConn();
+
+public:
+    virtual void set_cid(const SrsContextId &cid);
+    void reset();
+};
+
+// Mock ISrsRtcConnection for testing SrsRtcTcpConn
+class MockRtcConnectionForTcpConn : public ISrsRtcConnection
+{
+public:
+    MockRtcConnectionForTcpConn();
+    virtual ~MockRtcConnectionForTcpConn();
+
+public:
+    virtual const SrsContextId &get_id();
+    virtual std::string desc();
+    virtual void on_disposing(ISrsResource *c);
+    virtual void on_before_dispose(ISrsResource *c);
+    virtual void expire();
+    virtual srs_error_t send_rtcp(char *data, int nb_data);
+    virtual srs_error_t send_rtcp_rr(uint32_t ssrc, SrsRtpRingBuffer *rtp_queue, const uint64_t &last_send_systime, const SrsNtp &last_send_ntp);
+    virtual srs_error_t send_rtcp_xr_rrtr(uint32_t ssrc);
+    virtual void check_send_nacks(SrsRtpNackForReceiver *nack, uint32_t ssrc, uint32_t &sent_nacks, uint32_t &timeout_nacks);
+    virtual srs_error_t send_rtcp_fb_pli(uint32_t ssrc, const SrsContextId &cid_of_subscriber);
+    virtual srs_error_t do_send_packet(SrsRtpPacket *pkt);
+    virtual srs_error_t do_check_send_nacks();
+    virtual void on_connection_established();
+    virtual srs_error_t on_dtls_alert(std::string type, std::string desc);
+    virtual srs_error_t on_dtls_handshake_done();
+    virtual srs_error_t on_dtls_application_data(const char *data, const int len);
+    virtual srs_error_t on_rtp_cipher(char *data, int nb_data);
+    virtual srs_error_t on_rtp_plaintext(char *buf, int nb_buf);
+    virtual srs_error_t on_rtcp(char *buf, int nb_buf);
+    virtual srs_error_t on_binding_request(SrsStunPacket *r, std::string &ice_pwd);
+    virtual ISrsRtcNetwork *udp();
+    virtual ISrsRtcNetwork *tcp();
+    virtual void alive();
+    virtual void switch_to_context();
+};
+
 // Mock ISrsPsPackHandler for testing SrsPackContext
 class MockPsPackHandler : public ISrsPsPackHandler
 {
@@ -368,8 +517,8 @@ public:
 class MockResourceManagerForGbPublish : public ISrsResourceManager
 {
 public:
-    std::map<std::string, ISrsResource*> id_map_;
-    std::map<uint64_t, ISrsResource*> fast_id_map_;
+    std::map<std::string, ISrsResource *> id_map_;
+    std::map<uint64_t, ISrsResource *> fast_id_map_;
 
 public:
     MockResourceManagerForGbPublish();
@@ -454,5 +603,236 @@ public:
     void reset();
 };
 
-#endif
+// Mock ISrsRtcNetwork for testing SrsRtcNetworks
+class MockRtcNetworkForNetworks : public ISrsRtcNetwork
+{
+public:
+    srs_error_t initialize_error_;
+    bool initialize_called_;
+    SrsSessionConfig *last_cfg_;
+    bool last_dtls_;
+    bool last_srtp_;
+    SrsRtcNetworkState state_;
+    bool is_established_;
 
+public:
+    MockRtcNetworkForNetworks();
+    virtual ~MockRtcNetworkForNetworks();
+
+public:
+    virtual srs_error_t initialize(SrsSessionConfig *cfg, bool dtls, bool srtp);
+    virtual void set_state(SrsRtcNetworkState state);
+    virtual srs_error_t on_dtls_handshake_done();
+    virtual srs_error_t on_dtls_alert(std::string type, std::string desc);
+    virtual srs_error_t on_dtls(char *data, int nb_data);
+    virtual srs_error_t protect_rtp(void *packet, int *nb_cipher);
+    virtual srs_error_t protect_rtcp(void *packet, int *nb_cipher);
+    virtual srs_error_t on_stun(SrsStunPacket *r, char *data, int nb_data);
+    virtual srs_error_t on_rtp(char *data, int nb_data);
+    virtual srs_error_t on_rtcp(char *data, int nb_data);
+    virtual bool is_establelished();
+    virtual srs_error_t write(void *buf, size_t size, ssize_t *nwrite);
+
+public:
+    void reset();
+    void set_initialize_error(srs_error_t err);
+};
+
+// Mock ISrsRtcTransport for testing SrsRtcUdpNetwork RTP/RTCP handling
+class MockRtcTransportForUdpNetwork : public ISrsRtcTransport
+{
+public:
+    srs_error_t unprotect_rtp_error_;
+    srs_error_t unprotect_rtcp_error_;
+    bool unprotect_rtp_called_;
+    bool unprotect_rtcp_called_;
+    int unprotected_rtp_size_;
+    int unprotected_rtcp_size_;
+
+public:
+    MockRtcTransportForUdpNetwork();
+    virtual ~MockRtcTransportForUdpNetwork();
+
+public:
+    virtual srs_error_t initialize(SrsSessionConfig *cfg);
+    virtual srs_error_t start_active_handshake();
+    virtual srs_error_t on_dtls(char *data, int nb_data);
+    virtual srs_error_t on_dtls_alert(std::string type, std::string desc);
+    virtual srs_error_t protect_rtp(void *packet, int *nb_cipher);
+    virtual srs_error_t protect_rtcp(void *packet, int *nb_cipher);
+    virtual srs_error_t unprotect_rtp(void *packet, int *nb_plaintext);
+    virtual srs_error_t unprotect_rtcp(void *packet, int *nb_plaintext);
+    // ISrsDtlsCallback interface
+    virtual srs_error_t on_dtls_handshake_done();
+    virtual srs_error_t on_dtls_application_data(const char *data, const int len);
+    virtual srs_error_t write_dtls_data(void *data, int size);
+
+public:
+    void reset();
+    void set_unprotect_rtp_error(srs_error_t err);
+    void set_unprotect_rtcp_error(srs_error_t err);
+};
+
+// Mock ISrsResourceManager for testing SrsRtcUdpNetwork::update_sendonly_socket
+class MockResourceManagerForUdpNetwork : public ISrsResourceManager
+{
+public:
+    std::map<std::string, ISrsResource *> id_map_;
+    std::map<uint64_t, ISrsResource *> fast_id_map_;
+
+public:
+    MockResourceManagerForUdpNetwork();
+    virtual ~MockResourceManagerForUdpNetwork();
+
+public:
+    virtual srs_error_t start();
+    virtual bool empty();
+    virtual size_t size();
+    virtual void add(ISrsResource *conn, bool *exists = NULL);
+    virtual void add_with_id(const std::string &id, ISrsResource *conn);
+    virtual void add_with_fast_id(uint64_t id, ISrsResource *conn);
+    virtual ISrsResource *at(int index);
+    virtual ISrsResource *find_by_id(std::string id);
+    virtual ISrsResource *find_by_fast_id(uint64_t id);
+    virtual ISrsResource *find_by_name(std::string name);
+    virtual void remove(ISrsResource *c);
+    virtual void subscribe(ISrsDisposingHandler *h);
+    virtual void unsubscribe(ISrsDisposingHandler *h);
+    void reset();
+};
+
+// Mock ISrsUdpMuxSocket for testing SrsRtcUdpNetwork STUN handling
+class MockUdpMuxSocket : public ISrsUdpMuxSocket
+{
+public:
+    srs_error_t sendto_error_;
+    int sendto_called_count_;
+    int last_sendto_size_;
+    std::string peer_ip_;
+    int peer_port_;
+    std::string peer_id_;
+    uint64_t fast_id_;
+
+public:
+    MockUdpMuxSocket();
+    virtual ~MockUdpMuxSocket();
+
+public:
+    virtual srs_error_t sendto(void *data, int size, srs_utime_t timeout);
+    virtual std::string get_peer_ip() const;
+    virtual int get_peer_port() const;
+    virtual std::string peer_id();
+    virtual uint64_t fast_id();
+    virtual SrsUdpMuxSocket *copy_sendonly();
+
+public:
+    void reset();
+    void set_sendto_error(srs_error_t err);
+};
+
+// Mock ISrsProtocolReadWriter for testing SrsRtcTcpNetwork write operations
+class MockProtocolReadWriterForTcpNetwork : public ISrsProtocolReadWriter
+{
+public:
+    std::vector<std::string> written_data_;
+    srs_error_t write_error_;
+    int64_t send_bytes_;
+    int64_t recv_bytes_;
+    srs_utime_t send_timeout_;
+    srs_utime_t recv_timeout_;
+    std::string read_data_;
+    size_t read_pos_;
+
+public:
+    MockProtocolReadWriterForTcpNetwork();
+    virtual ~MockProtocolReadWriterForTcpNetwork();
+
+public:
+    virtual srs_error_t read_fully(void *buf, size_t size, ssize_t *nread);
+    virtual srs_error_t write(void *buf, size_t size, ssize_t *nwrite);
+    virtual void set_recv_timeout(srs_utime_t tm);
+    virtual srs_utime_t get_recv_timeout();
+    virtual int64_t get_recv_bytes();
+    virtual void set_send_timeout(srs_utime_t tm);
+    virtual srs_utime_t get_send_timeout();
+    virtual int64_t get_send_bytes();
+    virtual srs_error_t writev(const iovec *iov, int iov_size, ssize_t *nwrite);
+    virtual srs_error_t read(void *buf, size_t size, ssize_t *nread);
+
+public:
+    void reset();
+    void set_write_error(srs_error_t err);
+    void set_read_data(const std::string &data);
+};
+
+// Mock ISrsResourceManager for testing SrsRtcTcpConn::handshake
+class MockResourceManagerForTcpConnHandshake : public ISrsResourceManager
+{
+public:
+    ISrsResource *session_to_return_;
+
+public:
+    MockResourceManagerForTcpConnHandshake();
+    virtual ~MockResourceManagerForTcpConnHandshake();
+
+public:
+    virtual srs_error_t start();
+    virtual bool empty();
+    virtual size_t size();
+    virtual void add(ISrsResource *conn, bool *exists = NULL);
+    virtual void add_with_id(const std::string &id, ISrsResource *conn);
+    virtual void add_with_fast_id(uint64_t id, ISrsResource *conn);
+    virtual ISrsResource *at(int index);
+    virtual ISrsResource *find_by_id(std::string id);
+    virtual ISrsResource *find_by_fast_id(uint64_t id);
+    virtual ISrsResource *find_by_name(std::string name);
+    virtual void remove(ISrsResource *c);
+    virtual void subscribe(ISrsDisposingHandler *h);
+    virtual void unsubscribe(ISrsDisposingHandler *h);
+    void reset();
+};
+
+// Mock ISrsRtcConnection for testing SrsRtcTcpConn::handshake
+class MockRtcConnectionForTcpConnHandshake : public ISrsRtcConnection
+{
+public:
+    ISrsRtcNetwork *tcp_network_;
+    std::string ice_pwd_;
+    bool switch_to_context_called_;
+    bool on_binding_request_called_;
+
+public:
+    MockRtcConnectionForTcpConnHandshake();
+    virtual ~MockRtcConnectionForTcpConnHandshake();
+
+public:
+    virtual const SrsContextId &get_id();
+    virtual std::string desc();
+    virtual void on_disposing(ISrsResource *c);
+    virtual void on_before_dispose(ISrsResource *c);
+    virtual void expire();
+    virtual srs_error_t send_rtcp(char *data, int nb_data);
+    virtual srs_error_t send_rtcp_rr(uint32_t ssrc, SrsRtpRingBuffer *rtp_queue, const uint64_t &last_send_systime, const SrsNtp &last_send_ntp);
+    virtual srs_error_t send_rtcp_xr_rrtr(uint32_t ssrc);
+    virtual void check_send_nacks(SrsRtpNackForReceiver *nack, uint32_t ssrc, uint32_t &sent_nacks, uint32_t &timeout_nacks);
+    virtual srs_error_t send_rtcp_fb_pli(uint32_t ssrc, const SrsContextId &cid_of_subscriber);
+    virtual srs_error_t do_send_packet(SrsRtpPacket *pkt);
+    virtual srs_error_t do_check_send_nacks();
+    virtual void on_connection_established();
+    virtual srs_error_t on_dtls_alert(std::string type, std::string desc);
+    virtual srs_error_t on_dtls_handshake_done();
+    virtual srs_error_t on_dtls_application_data(const char *data, const int len);
+    virtual srs_error_t on_rtp_cipher(char *data, int nb_data);
+    virtual srs_error_t on_rtp_plaintext(char *buf, int nb_buf);
+    virtual srs_error_t on_rtcp(char *buf, int nb_buf);
+    virtual srs_error_t on_binding_request(SrsStunPacket *r, std::string &ice_pwd);
+    virtual ISrsRtcNetwork *udp();
+    virtual ISrsRtcNetwork *tcp();
+    virtual void alive();
+    virtual void switch_to_context();
+
+public:
+    void reset();
+};
+
+#endif

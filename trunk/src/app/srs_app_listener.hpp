@@ -189,8 +189,24 @@ public:
     virtual srs_error_t on_tcp_client(ISrsListener *listener, srs_netfd_t stfd);
 };
 
+// The UDP socket interface.
+class ISrsUdpMuxSocket
+{
+public:
+    ISrsUdpMuxSocket();
+    virtual ~ISrsUdpMuxSocket();
+
+public:
+    virtual srs_error_t sendto(void *data, int size, srs_utime_t timeout) = 0;
+    virtual std::string get_peer_ip() const = 0;
+    virtual int get_peer_port() const = 0;
+    virtual std::string peer_id() = 0;
+    virtual uint64_t fast_id() = 0;
+    virtual ISrsUdpMuxSocket *copy_sendonly() = 0;
+};
+
 // TODO: FIXME: Rename it. Refine it for performance issue.
-class SrsUdpMuxSocket
+class SrsUdpMuxSocket : public ISrsUdpMuxSocket
 {
 private:
     // For sender yield only.
@@ -235,7 +251,7 @@ public:
     std::string peer_id();
     uint64_t fast_id();
     SrsBuffer *buffer();
-    SrsUdpMuxSocket *copy_sendonly();
+    ISrsUdpMuxSocket *copy_sendonly();
 };
 
 class SrsUdpMuxListener : public ISrsCoroutineHandler

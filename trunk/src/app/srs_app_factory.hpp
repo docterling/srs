@@ -59,8 +59,10 @@ public:
     virtual ISrsMp4Encoder *create_mp4_encoder() = 0;
     virtual ISrsDvrSegmenter *create_dvr_flv_segmenter() = 0;
     virtual ISrsDvrSegmenter *create_dvr_mp4_segmenter() = 0;
+#ifdef SRS_GB28181
     virtual ISrsGbMediaTcpConn *create_gb_media_tcp_conn() = 0;
     virtual ISrsGbSession *create_gb_session() = 0;
+#endif
 };
 
 // The factory to create app objects.
@@ -90,8 +92,10 @@ public:
     virtual ISrsMp4Encoder *create_mp4_encoder();
     virtual ISrsDvrSegmenter *create_dvr_flv_segmenter();
     virtual ISrsDvrSegmenter *create_dvr_mp4_segmenter();
+#ifdef SRS_GB28181
     virtual ISrsGbMediaTcpConn *create_gb_media_tcp_conn();
     virtual ISrsGbSession *create_gb_session();
+#endif
 };
 
 extern ISrsAppFactory *_srs_app_factory;

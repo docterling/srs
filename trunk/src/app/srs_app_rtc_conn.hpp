@@ -554,11 +554,11 @@ public:
 
 // The interface for RTC connection.
 class ISrsRtcConnection : public ISrsResource, // It's a resource.
-                         public ISrsDisposingHandler,
-                         public ISrsExpire,
-                         public ISrsRtcPacketSender,
-                         public ISrsRtcPacketReceiver,
-                         public ISrsRtcConnectionNackTimerHandler
+                          public ISrsDisposingHandler,
+                          public ISrsExpire,
+                          public ISrsRtcPacketSender,
+                          public ISrsRtcPacketReceiver,
+                          public ISrsRtcConnectionNackTimerHandler
 {
 public:
     ISrsRtcConnection();

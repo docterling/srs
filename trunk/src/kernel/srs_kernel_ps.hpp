@@ -65,7 +65,7 @@ public:
     virtual ~ISrsPsContext();
 
 public:
-    virtual SrsPsDecodeHelper* helper() = 0;
+    virtual SrsPsDecodeHelper *helper() = 0;
     virtual void set_detect_ps_integrity(bool v) = 0;
     virtual srs_error_t decode(SrsBuffer *stream, ISrsPsMessageHandler *handler) = 0;
     virtual SrsTsMessage *last() = 0;
@@ -102,7 +102,7 @@ public:
     SrsTsMessage *last();
     // Reap the last message and create a fresh one.
     SrsTsMessage *reap();
-    virtual SrsPsDecodeHelper* helper();
+    virtual SrsPsDecodeHelper *helper();
 
 public:
     // Feed with ts packets, decode as ts message, callback handler if got one ts message.

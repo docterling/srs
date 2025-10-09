@@ -128,6 +128,7 @@ public:
     virtual void setup_owner(SrsSharedResource<ISrsGbSession> *wrapper, ISrsInterruptable *owner_coroutine, ISrsContextIdSetter *owner_cid) = 0;
     // Notice session to use current media connection.
     virtual void on_media_transport(SrsSharedResource<ISrsGbMediaTcpConn> media) = 0;
+
 public:
     virtual void on_ps_pack(ISrsPackContext *ctx, SrsPsPacket *ps, const std::vector<SrsTsMessage *> &msgs) = 0;
 };
@@ -140,7 +141,7 @@ class SrsGbSession : public ISrsGbSession
 {
 private:
     ISrsAppConfig *config_;
-    
+
 private:
     SrsContextId cid_;
 
@@ -298,7 +299,7 @@ public:
 
 // A GB28181 TCP media connection, for PS stream.
 class SrsGbMediaTcpConn : public ISrsGbMediaTcpConn, // It's a resource, coroutine handler, and executor handler.
-    public ISrsPsPackHandler
+                          public ISrsPsPackHandler
 {
 private:
     ISrsResourceManager *gb_manager_;

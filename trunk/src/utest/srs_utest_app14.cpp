@@ -7,19 +7,25 @@
 
 using namespace std;
 
+#include <srs_app_config.hpp>
 #include <srs_app_gb28181.hpp>
 #include <srs_app_listener.hpp>
+#include <srs_app_rtc_conn.hpp>
+#include <srs_app_rtc_network.hpp>
 #include <srs_kernel_error.hpp>
-#include <srs_kernel_utility.hpp>
-#include <srs_app_config.hpp>
-#include <srs_kernel_ts.hpp>
+#include <srs_kernel_kbps.hpp>
 #include <srs_kernel_ps.hpp>
-#include <srs_protocol_raw_avc.hpp>
-#include <srs_protocol_rtmp_conn.hpp>
+#include <srs_kernel_ts.hpp>
+#include <srs_kernel_utility.hpp>
 #include <srs_protocol_json.hpp>
-#include <srs_utest_kernel.hpp>
+#include <srs_protocol_raw_avc.hpp>
+#include <srs_protocol_rtc_stun.hpp>
+#include <srs_protocol_rtmp_conn.hpp>
+#include <srs_protocol_sdp.hpp>
 #include <srs_utest_app11.hpp>
 #include <srs_utest_http.hpp>
+#include <srs_utest_kernel.hpp>
+#include <srs_utest_protocol.hpp>
 
 // Mock ISrsGbMuxer implementation
 MockGbMuxer::MockGbMuxer()
@@ -224,7 +230,7 @@ VOID TEST(GB28181Test, SessionOnPsPack)
 
     // Test context change (new media transport)
     SrsUniquePtr<MockPackContext> ctx2(new MockPackContext());
-    ctx2->media_id_ = 2;  // Different media_id
+    ctx2->media_id_ = 2; // Different media_id
     ctx2->media_startime_ = srs_time_now_realtime();
     ctx2->media_nn_recovered_ = 2;
     ctx2->media_nn_msgs_dropped_ = 1;
@@ -1312,7 +1318,7 @@ MockGbRawAacStream::MockGbRawAacStream()
     adts_demux_error_ = srs_success;
     mux_sequence_header_error_ = srs_success;
     mux_aac2flv_error_ = srs_success;
-    sequence_header_output_ = "\xAF\x00\x12\x10";  // AAC sequence header
+    sequence_header_output_ = "\xAF\x00\x12\x10"; // AAC sequence header
     demux_frame_size_ = 100;
 }
 
@@ -1339,12 +1345,12 @@ srs_error_t MockGbRawAacStream::adts_demux(SrsBuffer *stream, char **pframe, int
 
         // Set codec info
         codec.aac_object_ = SrsAacObjectTypeAacLC;
-        codec.sampling_frequency_index_ = 4;  // 44100Hz
-        codec.channel_configuration_ = 2;     // Stereo
-        codec.sound_format_ = 10;             // AAC
-        codec.sound_rate_ = 3;                // 44kHz
-        codec.sound_size_ = 1;                // 16-bit
-        codec.sound_type_ = 1;                // Stereo
+        codec.sampling_frequency_index_ = 4; // 44100Hz
+        codec.channel_configuration_ = 2;    // Stereo
+        codec.sound_format_ = 10;            // AAC
+        codec.sound_rate_ = 3;               // 44kHz
+        codec.sound_size_ = 1;               // 16-bit
+        codec.sound_type_ = 1;               // Stereo
     } else {
         *pframe = NULL;
         *pnb_frame = 0;
@@ -1374,10 +1380,10 @@ srs_error_t MockGbRawAacStream::mux_aac2flv(char *frame, int nb_frame, SrsRawAac
     }
 
     // Simulate muxing AAC to FLV
-    *nb_flv = nb_frame + 2;  // 2 bytes for AAC header
+    *nb_flv = nb_frame + 2; // 2 bytes for AAC header
     *flv = new char[*nb_flv];
-    (*flv)[0] = 0xAF;  // AAC, 44kHz, 16-bit, stereo
-    (*flv)[1] = codec->aac_packet_type_;  // 0 for sequence header, 1 for raw data
+    (*flv)[0] = 0xAF;                    // AAC, 44kHz, 16-bit, stereo
+    (*flv)[1] = codec->aac_packet_type_; // 0 for sequence header, 1 for raw data
     if (nb_frame > 0) {
         memcpy(*flv + 2, frame, nb_frame);
     }
@@ -1478,6 +1484,176 @@ void MockGbSessionForMuxer::on_executor_done(ISrsInterruptable *executor)
 {
 }
 
+MockInterruptableForRtcTcpConn::MockInterruptableForRtcTcpConn()
+{
+    interrupt_called_ = false;
+    pull_error_ = srs_success;
+}
+
+MockInterruptableForRtcTcpConn::~MockInterruptableForRtcTcpConn()
+{
+    srs_freep(pull_error_);
+}
+
+void MockInterruptableForRtcTcpConn::interrupt()
+{
+    interrupt_called_ = true;
+}
+
+srs_error_t MockInterruptableForRtcTcpConn::pull()
+{
+    return srs_error_copy(pull_error_);
+}
+
+void MockInterruptableForRtcTcpConn::reset()
+{
+    interrupt_called_ = false;
+    srs_freep(pull_error_);
+}
+
+MockContextIdSetterForRtcTcpConn::MockContextIdSetterForRtcTcpConn()
+{
+    set_cid_called_ = false;
+}
+
+MockContextIdSetterForRtcTcpConn::~MockContextIdSetterForRtcTcpConn()
+{
+}
+
+void MockContextIdSetterForRtcTcpConn::set_cid(const SrsContextId &cid)
+{
+    set_cid_called_ = true;
+    received_cid_ = cid;
+}
+
+void MockContextIdSetterForRtcTcpConn::reset()
+{
+    set_cid_called_ = false;
+    received_cid_ = SrsContextId();
+}
+
+MockRtcConnectionForTcpConn::MockRtcConnectionForTcpConn()
+{
+}
+
+MockRtcConnectionForTcpConn::~MockRtcConnectionForTcpConn()
+{
+}
+
+const SrsContextId &MockRtcConnectionForTcpConn::get_id()
+{
+    static SrsContextId cid;
+    return cid;
+}
+
+std::string MockRtcConnectionForTcpConn::desc()
+{
+    return "MockRtcConnectionForTcpConn";
+}
+
+void MockRtcConnectionForTcpConn::on_disposing(ISrsResource *c)
+{
+}
+
+void MockRtcConnectionForTcpConn::on_before_dispose(ISrsResource *c)
+{
+}
+
+void MockRtcConnectionForTcpConn::expire()
+{
+}
+
+srs_error_t MockRtcConnectionForTcpConn::send_rtcp(char *data, int nb_data)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForTcpConn::send_rtcp_rr(uint32_t ssrc, SrsRtpRingBuffer *rtp_queue, const uint64_t &last_send_systime, const SrsNtp &last_send_ntp)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForTcpConn::send_rtcp_xr_rrtr(uint32_t ssrc)
+{
+    return srs_success;
+}
+
+void MockRtcConnectionForTcpConn::check_send_nacks(SrsRtpNackForReceiver *nack, uint32_t ssrc, uint32_t &sent_nacks, uint32_t &timeout_nacks)
+{
+}
+
+srs_error_t MockRtcConnectionForTcpConn::send_rtcp_fb_pli(uint32_t ssrc, const SrsContextId &cid_of_subscriber)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForTcpConn::do_send_packet(SrsRtpPacket *pkt)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForTcpConn::do_check_send_nacks()
+{
+    return srs_success;
+}
+
+void MockRtcConnectionForTcpConn::on_connection_established()
+{
+}
+
+srs_error_t MockRtcConnectionForTcpConn::on_dtls_alert(std::string type, std::string desc)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForTcpConn::on_dtls_handshake_done()
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForTcpConn::on_dtls_application_data(const char *data, const int len)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForTcpConn::on_rtp_cipher(char *data, int nb_data)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForTcpConn::on_rtp_plaintext(char *buf, int nb_buf)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForTcpConn::on_rtcp(char *buf, int nb_buf)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForTcpConn::on_binding_request(SrsStunPacket *r, std::string &ice_pwd)
+{
+    return srs_success;
+}
+
+ISrsRtcNetwork *MockRtcConnectionForTcpConn::udp()
+{
+    return NULL;
+}
+
+ISrsRtcNetwork *MockRtcConnectionForTcpConn::tcp()
+{
+    return NULL;
+}
+
+void MockRtcConnectionForTcpConn::alive()
+{
+}
+
+void MockRtcConnectionForTcpConn::switch_to_context()
+{
+}
+
 // Mock ISrsPsPackHandler implementation
 MockPsPackHandler::MockPsPackHandler()
 {
@@ -1545,12 +1721,12 @@ VOID TEST(GbMuxerTest, OnTsMessageAudio)
     // For now, let's just test without RTMP connection by setting sdk_ to a mock
     // that's already "connected"
     MockGbRtmpClient *mock_sdk = new MockGbRtmpClient();
-    muxer->sdk_ = mock_sdk;  // Simulate already connected
+    muxer->sdk_ = mock_sdk; // Simulate already connected
 
     // Create TS message with audio data (AAC ADTS format)
     SrsUniquePtr<SrsTsMessage> ts_msg(new SrsTsMessage());
-    ts_msg->sid_ = SrsTsPESStreamIdAudioCommon;  // Audio stream
-    ts_msg->dts_ = 90000;  // 1 second in 90kHz timebase
+    ts_msg->sid_ = SrsTsPESStreamIdAudioCommon; // Audio stream
+    ts_msg->dts_ = 90000;                       // 1 second in 90kHz timebase
 
     // Create AAC ADTS frame data (simplified)
     // ADTS header (7 bytes) + AAC raw data
@@ -1558,9 +1734,9 @@ VOID TEST(GbMuxerTest, OnTsMessageAudio)
     memset(adts_data, 0, sizeof(adts_data));
     // ADTS sync word (12 bits = 0xFFF)
     adts_data[0] = 0xFF;
-    adts_data[1] = 0xF1;  // MPEG-4, no CRC
+    adts_data[1] = 0xF1; // MPEG-4, no CRC
     // Profile, sample rate, channel config (simplified)
-    adts_data[2] = 0x50;  // AAC LC, 44.1kHz
+    adts_data[2] = 0x50; // AAC LC, 44.1kHz
     adts_data[3] = 0x80;
     adts_data[4] = 0x00;
     adts_data[5] = 0x1F;
@@ -1587,7 +1763,7 @@ VOID TEST(GbMuxerTest, OnTsMessageAudio)
 
     // Verify: Messages were pushed to queue (sequence header + raw data)
     EXPECT_TRUE(mock_queue->push_called_);
-    EXPECT_GE(mock_queue->push_count_, 2);  // At least sequence header + one raw frame
+    EXPECT_GE(mock_queue->push_count_, 2); // At least sequence header + one raw frame
 
     // Clean up - set to NULL to avoid double-free
     muxer->sdk_ = NULL;
@@ -1615,12 +1791,12 @@ VOID TEST(PackContextTest, OnTsMessageMultiplePacksWithTimestampCorrection)
     // Create PS context and packet for first pack
     SrsUniquePtr<SrsPsContext> ps_ctx1(new SrsPsContext());
     SrsUniquePtr<SrsPsPacket> ps_packet1(new SrsPsPacket(ps_ctx1.get()));
-    ps_packet1->id_ = 0x10000001;  // First pack ID
+    ps_packet1->id_ = 0x10000001; // First pack ID
 
     // Create first TS message (video) with valid timestamps
     SrsUniquePtr<SrsTsMessage> msg1(new SrsTsMessage());
     msg1->sid_ = SrsTsPESStreamIdVideoCommon;
-    msg1->dts_ = 90000;  // 1 second in 90kHz
+    msg1->dts_ = 90000; // 1 second in 90kHz
     msg1->pts_ = 90000;
     msg1->ps_helper_ = &ps_ctx1->helper_;
     ps_ctx1->helper_.ctx_ = ps_ctx1.get();
@@ -1636,8 +1812,8 @@ VOID TEST(PackContextTest, OnTsMessageMultiplePacksWithTimestampCorrection)
     // Create second TS message (audio) in same pack with zero timestamps
     SrsUniquePtr<SrsTsMessage> msg2(new SrsTsMessage());
     msg2->sid_ = SrsTsPESStreamIdAudioCommon;
-    msg2->dts_ = 0;  // Zero timestamp - should be corrected
-    msg2->pts_ = 0;  // Zero timestamp - should be corrected
+    msg2->dts_ = 0; // Zero timestamp - should be corrected
+    msg2->pts_ = 0; // Zero timestamp - should be corrected
     msg2->ps_helper_ = &ps_ctx1->helper_;
 
     // Test: Process second message in same pack
@@ -1650,12 +1826,12 @@ VOID TEST(PackContextTest, OnTsMessageMultiplePacksWithTimestampCorrection)
     // Create PS context and packet for second pack (different ID)
     SrsUniquePtr<SrsPsContext> ps_ctx2(new SrsPsContext());
     SrsUniquePtr<SrsPsPacket> ps_packet2(new SrsPsPacket(ps_ctx2.get()));
-    ps_packet2->id_ = 0x10000002;  // Different pack ID
+    ps_packet2->id_ = 0x10000002; // Different pack ID
 
     // Create third TS message (video) in new pack
     SrsUniquePtr<SrsTsMessage> msg3(new SrsTsMessage());
     msg3->sid_ = SrsTsPESStreamIdVideoCommon;
-    msg3->dts_ = 180000;  // 2 seconds in 90kHz
+    msg3->dts_ = 180000; // 2 seconds in 90kHz
     msg3->pts_ = 180000;
     msg3->ps_helper_ = &ps_ctx2->helper_;
     ps_ctx2->helper_.ctx_ = ps_ctx2.get();
@@ -1669,7 +1845,7 @@ VOID TEST(PackContextTest, OnTsMessageMultiplePacksWithTimestampCorrection)
     EXPECT_TRUE(mock_handler->on_ps_pack_called_);
     EXPECT_EQ(1, mock_handler->on_ps_pack_count_);
     EXPECT_EQ(0x10000001u, mock_handler->last_pack_id_);
-    EXPECT_EQ(2, mock_handler->last_msgs_count_);  // msg1 and msg2
+    EXPECT_EQ(2, mock_handler->last_msgs_count_); // msg1 and msg2
 }
 
 // Test SrsPackContext::on_recover_mode - covers recovery statistics and message dropping
@@ -1725,8 +1901,8 @@ VOID TEST(PackContextTest, OnRecoverMode)
     ctx->on_recover_mode(2);
 
     // Verify: Recovery counter NOT incremented (nn_recover > 1), but messages dropped
-    EXPECT_EQ(1u, ctx->media_nn_recovered_);  // Still 1, not incremented
-    EXPECT_EQ(2u, ctx->media_nn_msgs_dropped_);  // 2 messages dropped
+    EXPECT_EQ(1u, ctx->media_nn_recovered_);    // Still 1, not incremented
+    EXPECT_EQ(2u, ctx->media_nn_msgs_dropped_); // 2 messages dropped
 
     // Add more messages to test another recovery
     SrsUniquePtr<SrsTsMessage> msg3(new SrsTsMessage());
@@ -1742,8 +1918,8 @@ VOID TEST(PackContextTest, OnRecoverMode)
     ctx->on_recover_mode(0);
 
     // Verify: Recovery counter incremented (nn_recover <= 1), message dropped
-    EXPECT_EQ(2u, ctx->media_nn_recovered_);  // Incremented to 2
-    EXPECT_EQ(3u, ctx->media_nn_msgs_dropped_);  // Total 3 messages dropped
+    EXPECT_EQ(2u, ctx->media_nn_recovered_);    // Incremented to 2
+    EXPECT_EQ(3u, ctx->media_nn_msgs_dropped_); // Total 3 messages dropped
 }
 
 // Test SrsRecoverablePsContext::decode_rtp with valid RTP packet containing PS data
@@ -2275,10 +2451,10 @@ VOID TEST(GB28181Test, GoApiGbPublishSuccess)
 
     // Clean up - interrupt and remove the created session/executor
     // The session is wrapped in SrsSharedResource, and the executor manages it
-    SrsSharedResource<ISrsGbSession> *session_wrapper = dynamic_cast<SrsSharedResource<ISrsGbSession>*>(session_by_id);
+    SrsSharedResource<ISrsGbSession> *session_wrapper = dynamic_cast<SrsSharedResource<ISrsGbSession> *>(session_by_id);
     if (session_wrapper) {
         ISrsGbSession *session = session_wrapper->get();
-        MockGbSessionForApiPublish *mock_session = dynamic_cast<MockGbSessionForApiPublish*>(session);
+        MockGbSessionForApiPublish *mock_session = dynamic_cast<MockGbSessionForApiPublish *>(session);
         if (mock_session && mock_session->owner_coroutine_) {
             // Interrupt the executor coroutine to stop the cycle
             mock_session->owner_coroutine_->interrupt();
@@ -2296,3 +2472,1814 @@ VOID TEST(GB28181Test, GoApiGbPublishSuccess)
     srs_freep(conf);
 }
 
+// Mock ISrsRtcNetwork implementation
+MockRtcNetworkForNetworks::MockRtcNetworkForNetworks()
+{
+    initialize_error_ = srs_success;
+    initialize_called_ = false;
+    last_cfg_ = NULL;
+    last_dtls_ = false;
+    last_srtp_ = false;
+    state_ = SrsRtcNetworkStateInit;
+    is_established_ = false;
+}
+
+MockRtcNetworkForNetworks::~MockRtcNetworkForNetworks()
+{
+}
+
+srs_error_t MockRtcNetworkForNetworks::initialize(SrsSessionConfig *cfg, bool dtls, bool srtp)
+{
+    initialize_called_ = true;
+    last_cfg_ = cfg;
+    last_dtls_ = dtls;
+    last_srtp_ = srtp;
+    return srs_error_copy(initialize_error_);
+}
+
+void MockRtcNetworkForNetworks::set_state(SrsRtcNetworkState state)
+{
+    state_ = state;
+}
+
+srs_error_t MockRtcNetworkForNetworks::on_dtls_handshake_done()
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcNetworkForNetworks::on_dtls_alert(std::string type, std::string desc)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcNetworkForNetworks::on_dtls(char *data, int nb_data)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcNetworkForNetworks::protect_rtp(void *packet, int *nb_cipher)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcNetworkForNetworks::protect_rtcp(void *packet, int *nb_cipher)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcNetworkForNetworks::on_stun(SrsStunPacket *r, char *data, int nb_data)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcNetworkForNetworks::on_rtp(char *data, int nb_data)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcNetworkForNetworks::on_rtcp(char *data, int nb_data)
+{
+    return srs_success;
+}
+
+bool MockRtcNetworkForNetworks::is_establelished()
+{
+    return is_established_;
+}
+
+srs_error_t MockRtcNetworkForNetworks::write(void *buf, size_t size, ssize_t *nwrite)
+{
+    return srs_success;
+}
+
+void MockRtcNetworkForNetworks::reset()
+{
+    initialize_called_ = false;
+    last_cfg_ = NULL;
+    last_dtls_ = false;
+    last_srtp_ = false;
+    state_ = SrsRtcNetworkStateInit;
+    is_established_ = false;
+    srs_freep(initialize_error_);
+}
+
+void MockRtcNetworkForNetworks::set_initialize_error(srs_error_t err)
+{
+    srs_freep(initialize_error_);
+    initialize_error_ = srs_error_copy(err);
+}
+
+// Test SrsRtcNetworks::initialize
+VOID TEST(RtcNetworksTest, InitializeSuccess)
+{
+    srs_error_t err;
+
+    // Create SrsRtcNetworks object with NULL connection (not used in initialize)
+    SrsUniquePtr<SrsRtcNetworks> networks(new SrsRtcNetworks(NULL));
+
+    // Create mock networks for UDP and TCP
+    MockRtcNetworkForNetworks *mock_udp = new MockRtcNetworkForNetworks();
+    MockRtcNetworkForNetworks *mock_tcp = new MockRtcNetworkForNetworks();
+
+    // Inject mock networks into SrsRtcNetworks
+    networks->udp_ = mock_udp;
+    networks->tcp_ = mock_tcp;
+
+    // Create session config
+    SrsSessionConfig cfg;
+    cfg.dtls_role_ = "passive";
+    cfg.dtls_version_ = "auto";
+
+    // Call initialize with dtls=true, srtp=true
+    HELPER_EXPECT_SUCCESS(networks->initialize(&cfg, true, true));
+
+    // Verify both UDP and TCP initialize were called
+    EXPECT_TRUE(mock_udp->initialize_called_);
+    EXPECT_TRUE(mock_tcp->initialize_called_);
+
+    // Verify parameters were passed correctly
+    EXPECT_EQ(&cfg, mock_udp->last_cfg_);
+    EXPECT_TRUE(mock_udp->last_dtls_);
+    EXPECT_TRUE(mock_udp->last_srtp_);
+
+    EXPECT_EQ(&cfg, mock_tcp->last_cfg_);
+    EXPECT_TRUE(mock_tcp->last_dtls_);
+    EXPECT_TRUE(mock_tcp->last_srtp_);
+
+    // Clean up - set to NULL to avoid double-free
+    networks->udp_ = NULL;
+    networks->tcp_ = NULL;
+    srs_freep(mock_udp);
+    srs_freep(mock_tcp);
+}
+
+// Test SrsRtcNetworks major use scenario: set_state, udp, tcp, available, delta
+VOID TEST(RtcNetworksTest, MajorUseScenario)
+{
+    // Create SrsRtcNetworks object with NULL connection
+    SrsUniquePtr<SrsRtcNetworks> networks(new SrsRtcNetworks(NULL));
+
+    // Create mock networks for UDP and TCP
+    MockRtcNetworkForNetworks *mock_udp = new MockRtcNetworkForNetworks();
+    MockRtcNetworkForNetworks *mock_tcp = new MockRtcNetworkForNetworks();
+
+    // Inject mock networks into SrsRtcNetworks
+    networks->udp_ = mock_udp;
+    networks->tcp_ = mock_tcp;
+
+    // Test 1: udp() and tcp() methods return correct network objects
+    EXPECT_EQ(mock_udp, networks->udp());
+    EXPECT_EQ(mock_tcp, networks->tcp());
+
+    // Test 2: available() returns dummy when neither UDP nor TCP is established
+    ISrsRtcNetwork *available_network = networks->available();
+    EXPECT_NE(mock_udp, available_network);
+    EXPECT_NE(mock_tcp, available_network);
+    EXPECT_NE((ISrsRtcNetwork *)NULL, available_network); // Should return dummy, not NULL
+
+    // Test 3: available() returns UDP when UDP is established
+    mock_udp->is_established_ = true;
+    available_network = networks->available();
+    EXPECT_EQ(mock_udp, available_network);
+
+    // Test 4: available() returns UDP when both UDP and TCP are established (UDP has priority)
+    mock_tcp->is_established_ = true;
+    available_network = networks->available();
+    EXPECT_EQ(mock_udp, available_network);
+
+    // Test 5: available() returns TCP when only TCP is established
+    mock_udp->is_established_ = false;
+    available_network = networks->available();
+    EXPECT_EQ(mock_tcp, available_network);
+
+    // Test 6: set_state() propagates state to both UDP and TCP networks
+    networks->set_state(SrsRtcNetworkStateEstablished);
+    EXPECT_EQ(SrsRtcNetworkStateEstablished, mock_udp->state_);
+    EXPECT_EQ(SrsRtcNetworkStateEstablished, mock_tcp->state_);
+
+    networks->set_state(SrsRtcNetworkStateClosed);
+    EXPECT_EQ(SrsRtcNetworkStateClosed, mock_udp->state_);
+    EXPECT_EQ(SrsRtcNetworkStateClosed, mock_tcp->state_);
+
+    // Test 7: delta() returns non-NULL delta object
+    ISrsKbpsDelta *delta = networks->delta();
+    EXPECT_NE((ISrsKbpsDelta *)NULL, delta);
+
+    // Clean up - set to NULL to avoid double-free
+    networks->udp_ = NULL;
+    networks->tcp_ = NULL;
+    srs_freep(mock_udp);
+    srs_freep(mock_tcp);
+}
+
+VOID TEST(RtcDummyNetworkTest, AllMethodsReturnSuccess)
+{
+    srs_error_t err;
+
+    // Create SrsRtcDummyNetwork instance
+    SrsUniquePtr<SrsRtcDummyNetwork> dummy_network(new SrsRtcDummyNetwork());
+
+    // Test initialize() - should return success
+    HELPER_EXPECT_SUCCESS(dummy_network->initialize(NULL, true, true));
+
+    // Test set_state() - should not crash
+    dummy_network->set_state(SrsRtcNetworkStateEstablished);
+
+    // Test is_establelished() - should always return true
+    EXPECT_TRUE(dummy_network->is_establelished());
+
+    // Test on_dtls_handshake_done() - should return success
+    HELPER_EXPECT_SUCCESS(dummy_network->on_dtls_handshake_done());
+
+    // Test on_dtls_alert() - should return success
+    HELPER_EXPECT_SUCCESS(dummy_network->on_dtls_alert("warning", "close_notify"));
+
+    // Test on_dtls() - should return success
+    char dtls_data[100] = {0};
+    HELPER_EXPECT_SUCCESS(dummy_network->on_dtls(dtls_data, sizeof(dtls_data)));
+
+    // Test protect_rtp() - should return success
+    char rtp_packet[1500] = {0};
+    int rtp_cipher_size = sizeof(rtp_packet);
+    HELPER_EXPECT_SUCCESS(dummy_network->protect_rtp(rtp_packet, &rtp_cipher_size));
+
+    // Test protect_rtcp() - should return success
+    char rtcp_packet[1500] = {0};
+    int rtcp_cipher_size = sizeof(rtcp_packet);
+    HELPER_EXPECT_SUCCESS(dummy_network->protect_rtcp(rtcp_packet, &rtcp_cipher_size));
+
+    // Test on_stun() - should return success
+    HELPER_EXPECT_SUCCESS(dummy_network->on_stun(NULL, dtls_data, sizeof(dtls_data)));
+
+    // Test on_rtp() - should return success
+    HELPER_EXPECT_SUCCESS(dummy_network->on_rtp(rtp_packet, sizeof(rtp_packet)));
+
+    // Test on_rtcp() - should return success
+    HELPER_EXPECT_SUCCESS(dummy_network->on_rtcp(rtcp_packet, sizeof(rtcp_packet)));
+
+    // Test write() - should return success
+    char write_buf[1500] = {0};
+    ssize_t nwrite = 0;
+    HELPER_EXPECT_SUCCESS(dummy_network->write(write_buf, sizeof(write_buf), &nwrite));
+}
+
+// Mock ISrsRtcConnection implementation
+MockRtcConnectionForUdpNetwork::MockRtcConnectionForUdpNetwork()
+{
+    on_dtls_alert_error_ = srs_success;
+    last_alert_type_ = "";
+    last_alert_desc_ = "";
+    on_rtp_cipher_called_ = false;
+    on_rtp_plaintext_called_ = false;
+    on_rtcp_called_ = false;
+}
+
+MockRtcConnectionForUdpNetwork::~MockRtcConnectionForUdpNetwork()
+{
+    srs_freep(on_dtls_alert_error_);
+}
+
+const SrsContextId &MockRtcConnectionForUdpNetwork::get_id()
+{
+    static SrsContextId cid;
+    return cid;
+}
+
+std::string MockRtcConnectionForUdpNetwork::desc()
+{
+    return "MockRtcConnectionForUdpNetwork";
+}
+
+void MockRtcConnectionForUdpNetwork::on_disposing(ISrsResource *c)
+{
+}
+
+void MockRtcConnectionForUdpNetwork::on_before_dispose(ISrsResource *c)
+{
+}
+
+void MockRtcConnectionForUdpNetwork::expire()
+{
+}
+
+srs_error_t MockRtcConnectionForUdpNetwork::send_rtcp(char *data, int nb_data)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForUdpNetwork::do_send_packet(SrsRtpPacket *pkt)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForUdpNetwork::send_rtcp_rr(uint32_t ssrc, SrsRtpRingBuffer *rtp_queue, const uint64_t &last_send_systime, const SrsNtp &last_send_ntp)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForUdpNetwork::send_rtcp_xr_rrtr(uint32_t ssrc)
+{
+    return srs_success;
+}
+
+void MockRtcConnectionForUdpNetwork::check_send_nacks(SrsRtpNackForReceiver *nack, uint32_t ssrc, uint32_t &sent_nacks, uint32_t &timeout_nacks)
+{
+}
+
+srs_error_t MockRtcConnectionForUdpNetwork::send_rtcp_fb_pli(uint32_t ssrc, const SrsContextId &cid_of_subscriber)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForUdpNetwork::on_rtp(SrsRtpPacket *pkt)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForUdpNetwork::on_rtcp(SrsRtcpCommon *rtcp)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForUdpNetwork::do_check_send_nacks()
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForUdpNetwork::on_dtls_handshake_done()
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForUdpNetwork::on_dtls_alert(std::string type, std::string desc)
+{
+    last_alert_type_ = type;
+    last_alert_desc_ = desc;
+    return srs_error_copy(on_dtls_alert_error_);
+}
+
+srs_error_t MockRtcConnectionForUdpNetwork::on_rtp_cipher(char *data, int nb_data)
+{
+    on_rtp_cipher_called_ = true;
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForUdpNetwork::on_rtp_plaintext(char *data, int nb_data)
+{
+    on_rtp_plaintext_called_ = true;
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForUdpNetwork::on_rtcp(char *data, int nb_data)
+{
+    on_rtcp_called_ = true;
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForUdpNetwork::on_binding_request(SrsStunPacket *r, std::string &ice_pwd)
+{
+    return srs_success;
+}
+
+ISrsRtcNetwork *MockRtcConnectionForUdpNetwork::udp()
+{
+    return NULL;
+}
+
+ISrsRtcNetwork *MockRtcConnectionForUdpNetwork::tcp()
+{
+    return NULL;
+}
+
+void MockRtcConnectionForUdpNetwork::alive()
+{
+}
+
+void MockRtcConnectionForUdpNetwork::switch_to_context()
+{
+}
+
+void MockRtcConnectionForUdpNetwork::set_on_dtls_alert_error(srs_error_t err)
+{
+    srs_freep(on_dtls_alert_error_);
+    on_dtls_alert_error_ = srs_error_copy(err);
+}
+
+void MockRtcConnectionForUdpNetwork::reset()
+{
+    srs_freep(on_dtls_alert_error_);
+    last_alert_type_ = "";
+    last_alert_desc_ = "";
+    on_rtp_cipher_called_ = false;
+    on_rtp_plaintext_called_ = false;
+    on_rtcp_called_ = false;
+}
+
+// Mock ISrsEphemeralDelta implementation
+MockEphemeralDelta::MockEphemeralDelta()
+{
+    in_bytes_ = 0;
+    out_bytes_ = 0;
+}
+
+MockEphemeralDelta::~MockEphemeralDelta()
+{
+}
+
+void MockEphemeralDelta::add_delta(int64_t in, int64_t out)
+{
+    in_bytes_ += in;
+    out_bytes_ += out;
+}
+
+void MockEphemeralDelta::remark(int64_t *in, int64_t *out)
+{
+    if (in)
+        *in = in_bytes_;
+    if (out)
+        *out = out_bytes_;
+    in_bytes_ = 0;
+    out_bytes_ = 0;
+}
+
+void MockEphemeralDelta::reset()
+{
+    in_bytes_ = 0;
+    out_bytes_ = 0;
+}
+
+// Test SrsRtcUdpNetwork initialization and DTLS handling
+VOID TEST(RtcUdpNetworkTest, InitializeAndHandleDtls)
+{
+    srs_error_t err;
+
+    // Create mock dependencies
+    SrsUniquePtr<MockRtcConnectionForUdpNetwork> mock_conn(new MockRtcConnectionForUdpNetwork());
+    SrsUniquePtr<MockEphemeralDelta> mock_delta(new MockEphemeralDelta());
+
+    // Create SrsRtcUdpNetwork with mock dependencies
+    SrsUniquePtr<SrsRtcUdpNetwork> udp_network(new SrsRtcUdpNetwork(mock_conn.get(), mock_delta.get()));
+
+    // Test 1: Initialize with DTLS but no SRTP (should use SrsSemiSecurityTransport)
+    SrsSessionConfig cfg;
+    cfg.dtls_role_ = "passive";
+    cfg.dtls_version_ = "auto";
+    HELPER_EXPECT_SUCCESS(udp_network->initialize(&cfg, true, false));
+
+    // Test 2: Handle DTLS data - should update delta statistics
+    char dtls_data[100] = {0x16, 0x03, 0x01, 0x00, 0x50}; // DTLS handshake packet
+    int nb_dtls = 100;
+    mock_delta->reset();
+    // Note: on_dtls will fail because we don't have a real DTLS context, but it should update delta
+    err = udp_network->on_dtls(dtls_data, nb_dtls);
+    srs_freep(err); // Ignore error, we're testing delta update
+    EXPECT_EQ(100, mock_delta->in_bytes_);
+
+    // Test 3: Handle DTLS alert - should forward to connection
+    mock_conn->reset();
+    HELPER_EXPECT_SUCCESS(udp_network->on_dtls_alert("warning", "close_notify"));
+    EXPECT_STREQ("warning", mock_conn->last_alert_type_.c_str());
+    EXPECT_STREQ("close_notify", mock_conn->last_alert_desc_.c_str());
+
+    // Test 4: Initialize with plaintext (no DTLS, no SRTP)
+    SrsUniquePtr<SrsRtcUdpNetwork> plaintext_network(new SrsRtcUdpNetwork(mock_conn.get(), mock_delta.get()));
+    HELPER_EXPECT_SUCCESS(plaintext_network->initialize(&cfg, false, false));
+}
+
+// Test SrsRtcUdpNetwork DTLS handshake completion and SRTP protection
+VOID TEST(RtcUdpNetworkTest, DtlsHandshakeAndSrtpProtection)
+{
+    srs_error_t err;
+
+    // Create mock dependencies
+    SrsUniquePtr<MockRtcConnectionForUdpNetwork> mock_conn(new MockRtcConnectionForUdpNetwork());
+    SrsUniquePtr<MockEphemeralDelta> mock_delta(new MockEphemeralDelta());
+
+    // Create SrsRtcUdpNetwork with mock dependencies
+    SrsUniquePtr<SrsRtcUdpNetwork> udp_network(new SrsRtcUdpNetwork(mock_conn.get(), mock_delta.get()));
+
+    // Initialize with plaintext transport (no DTLS, no SRTP) for testing
+    SrsSessionConfig cfg;
+    cfg.dtls_role_ = "passive";
+    cfg.dtls_version_ = "auto";
+    HELPER_EXPECT_SUCCESS(udp_network->initialize(&cfg, false, false));
+
+    // Verify initial state is not established
+    EXPECT_FALSE(udp_network->is_establelished());
+
+    // Test 1: First call to on_dtls_handshake_done should succeed and change state
+    HELPER_EXPECT_SUCCESS(udp_network->on_dtls_handshake_done());
+    EXPECT_TRUE(udp_network->is_establelished());
+
+    // Test 2: Second call to on_dtls_handshake_done should be ignored (ARQ scenario)
+    // The state is already established, so it should return success without calling conn_
+    HELPER_EXPECT_SUCCESS(udp_network->on_dtls_handshake_done());
+    EXPECT_TRUE(udp_network->is_establelished());
+
+    // Test 3: protect_rtp should delegate to transport
+    char rtp_packet[1500];
+    int nb_cipher = 1500;
+    // With plaintext transport, this should succeed without modification
+    HELPER_EXPECT_SUCCESS(udp_network->protect_rtp(rtp_packet, &nb_cipher));
+
+    // Test 4: protect_rtcp should delegate to transport
+    char rtcp_packet[1500];
+    nb_cipher = 1500;
+    // With plaintext transport, this should succeed without modification
+    HELPER_EXPECT_SUCCESS(udp_network->protect_rtcp(rtcp_packet, &nb_cipher));
+}
+
+// Mock ISrsRtcTransport implementation
+MockRtcTransportForUdpNetwork::MockRtcTransportForUdpNetwork()
+{
+    unprotect_rtp_error_ = srs_success;
+    unprotect_rtcp_error_ = srs_success;
+    unprotect_rtp_called_ = false;
+    unprotect_rtcp_called_ = false;
+    unprotected_rtp_size_ = 0;
+    unprotected_rtcp_size_ = 0;
+}
+
+MockRtcTransportForUdpNetwork::~MockRtcTransportForUdpNetwork()
+{
+}
+
+srs_error_t MockRtcTransportForUdpNetwork::initialize(SrsSessionConfig *cfg)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcTransportForUdpNetwork::start_active_handshake()
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcTransportForUdpNetwork::on_dtls(char *data, int nb_data)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcTransportForUdpNetwork::on_dtls_alert(std::string type, std::string desc)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcTransportForUdpNetwork::protect_rtp(void *packet, int *nb_cipher)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcTransportForUdpNetwork::protect_rtcp(void *packet, int *nb_cipher)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcTransportForUdpNetwork::unprotect_rtp(void *packet, int *nb_plaintext)
+{
+    unprotect_rtp_called_ = true;
+    if (unprotect_rtp_error_ != srs_success) {
+        return srs_error_copy(unprotect_rtp_error_);
+    }
+    // Simulate successful unprotection - reduce size slightly (remove SRTP overhead)
+    unprotected_rtp_size_ = *nb_plaintext;
+    *nb_plaintext = *nb_plaintext - 10; // Simulate SRTP overhead removal
+    return srs_success;
+}
+
+srs_error_t MockRtcTransportForUdpNetwork::unprotect_rtcp(void *packet, int *nb_plaintext)
+{
+    unprotect_rtcp_called_ = true;
+    if (unprotect_rtcp_error_ != srs_success) {
+        return srs_error_copy(unprotect_rtcp_error_);
+    }
+    // Simulate successful unprotection - reduce size slightly (remove SRTCP overhead)
+    unprotected_rtcp_size_ = *nb_plaintext;
+    *nb_plaintext = *nb_plaintext - 14; // Simulate SRTCP overhead removal
+    return srs_success;
+}
+
+srs_error_t MockRtcTransportForUdpNetwork::on_dtls_handshake_done()
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcTransportForUdpNetwork::on_dtls_application_data(const char *data, const int len)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcTransportForUdpNetwork::write_dtls_data(void *data, int size)
+{
+    return srs_success;
+}
+
+void MockRtcTransportForUdpNetwork::reset()
+{
+    srs_freep(unprotect_rtp_error_);
+    srs_freep(unprotect_rtcp_error_);
+    unprotect_rtp_called_ = false;
+    unprotect_rtcp_called_ = false;
+    unprotected_rtp_size_ = 0;
+    unprotected_rtcp_size_ = 0;
+}
+
+void MockRtcTransportForUdpNetwork::set_unprotect_rtp_error(srs_error_t err)
+{
+    srs_freep(unprotect_rtp_error_);
+    unprotect_rtp_error_ = srs_error_copy(err);
+}
+
+void MockRtcTransportForUdpNetwork::set_unprotect_rtcp_error(srs_error_t err)
+{
+    srs_freep(unprotect_rtcp_error_);
+    unprotect_rtcp_error_ = srs_error_copy(err);
+}
+
+// Test SrsRtcUdpNetwork RTP and RTCP packet handling
+VOID TEST(RtcUdpNetworkTest, HandleRtpAndRtcpPackets)
+{
+    srs_error_t err;
+
+    // Create mock dependencies
+    SrsUniquePtr<MockRtcConnectionForUdpNetwork> mock_conn(new MockRtcConnectionForUdpNetwork());
+    SrsUniquePtr<MockEphemeralDelta> mock_delta(new MockEphemeralDelta());
+    MockRtcTransportForUdpNetwork *mock_transport = new MockRtcTransportForUdpNetwork();
+
+    // Create SrsRtcUdpNetwork with mock dependencies
+    SrsUniquePtr<SrsRtcUdpNetwork> udp_network(new SrsRtcUdpNetwork(mock_conn.get(), mock_delta.get()));
+
+    // Initialize with plaintext transport
+    SrsSessionConfig cfg;
+    cfg.dtls_role_ = "passive";
+    cfg.dtls_version_ = "auto";
+    HELPER_EXPECT_SUCCESS(udp_network->initialize(&cfg, false, false));
+
+    // Inject mock transport
+    udp_network->transport_ = mock_transport;
+
+    // Test 1: Handle RTP packet - should update delta, call on_rtp_cipher, unprotect, and on_rtp_plaintext
+    char rtp_data[200];
+    memset(rtp_data, 0x80, 200); // Fill with RTP-like data
+    mock_delta->reset();
+    mock_transport->reset();
+    mock_conn->reset();
+
+    HELPER_EXPECT_SUCCESS(udp_network->on_rtp(rtp_data, 200));
+
+    // Verify delta was updated with received bytes
+    EXPECT_EQ(200, mock_delta->in_bytes_);
+    // Verify transport unprotect was called
+    EXPECT_TRUE(mock_transport->unprotect_rtp_called_);
+    EXPECT_EQ(200, mock_transport->unprotected_rtp_size_);
+    // Verify connection callbacks were invoked
+    EXPECT_TRUE(mock_conn->on_rtp_cipher_called_);
+    EXPECT_TRUE(mock_conn->on_rtp_plaintext_called_);
+
+    // Test 2: Handle RTCP packet - should update delta, unprotect, and call on_rtcp
+    char rtcp_data[100];
+    memset(rtcp_data, 0xC8, 100); // Fill with RTCP-like data
+    mock_delta->reset();
+    mock_transport->reset();
+    mock_conn->reset();
+
+    HELPER_EXPECT_SUCCESS(udp_network->on_rtcp(rtcp_data, 100));
+
+    // Verify delta was updated with received bytes
+    EXPECT_EQ(100, mock_delta->in_bytes_);
+    // Verify transport unprotect was called
+    EXPECT_TRUE(mock_transport->unprotect_rtcp_called_);
+    EXPECT_EQ(100, mock_transport->unprotected_rtcp_size_);
+    // Verify connection callback was invoked
+    EXPECT_TRUE(mock_conn->on_rtcp_called_);
+
+    // Test 3: Handle RTP unprotect failure - should return error
+    mock_transport->reset();
+    mock_transport->set_unprotect_rtp_error(srs_error_new(ERROR_RTC_SRTP_UNPROTECT, "mock unprotect error"));
+    HELPER_EXPECT_FAILED(udp_network->on_rtp(rtp_data, 200));
+
+    // Test 4: Handle RTCP unprotect failure - should return error
+    mock_transport->reset();
+    mock_transport->set_unprotect_rtcp_error(srs_error_new(ERROR_RTC_SRTP_UNPROTECT, "mock unprotect error"));
+    HELPER_EXPECT_FAILED(udp_network->on_rtcp(rtcp_data, 100));
+
+    // Clean up - set to NULL to avoid double-free
+    udp_network->transport_ = NULL;
+    srs_freep(mock_transport);
+}
+
+// Mock ISrsResourceManager implementation for testing SrsRtcUdpNetwork::update_sendonly_socket
+MockResourceManagerForUdpNetwork::MockResourceManagerForUdpNetwork()
+{
+}
+
+MockResourceManagerForUdpNetwork::~MockResourceManagerForUdpNetwork()
+{
+}
+
+srs_error_t MockResourceManagerForUdpNetwork::start()
+{
+    return srs_success;
+}
+
+bool MockResourceManagerForUdpNetwork::empty()
+{
+    return id_map_.empty();
+}
+
+size_t MockResourceManagerForUdpNetwork::size()
+{
+    return id_map_.size();
+}
+
+void MockResourceManagerForUdpNetwork::add(ISrsResource *conn, bool *exists)
+{
+}
+
+void MockResourceManagerForUdpNetwork::add_with_id(const std::string &id, ISrsResource *conn)
+{
+    id_map_[id] = conn;
+}
+
+void MockResourceManagerForUdpNetwork::add_with_fast_id(uint64_t id, ISrsResource *conn)
+{
+    fast_id_map_[id] = conn;
+}
+
+ISrsResource *MockResourceManagerForUdpNetwork::at(int index)
+{
+    return NULL;
+}
+
+ISrsResource *MockResourceManagerForUdpNetwork::find_by_id(std::string id)
+{
+    std::map<std::string, ISrsResource *>::iterator it = id_map_.find(id);
+    if (it != id_map_.end()) {
+        return it->second;
+    }
+    return NULL;
+}
+
+ISrsResource *MockResourceManagerForUdpNetwork::find_by_fast_id(uint64_t id)
+{
+    std::map<uint64_t, ISrsResource *>::iterator it = fast_id_map_.find(id);
+    if (it != fast_id_map_.end()) {
+        return it->second;
+    }
+    return NULL;
+}
+
+ISrsResource *MockResourceManagerForUdpNetwork::find_by_name(std::string name)
+{
+    return NULL;
+}
+
+void MockResourceManagerForUdpNetwork::remove(ISrsResource *c)
+{
+}
+
+void MockResourceManagerForUdpNetwork::subscribe(ISrsDisposingHandler *h)
+{
+}
+
+void MockResourceManagerForUdpNetwork::unsubscribe(ISrsDisposingHandler *h)
+{
+}
+
+void MockResourceManagerForUdpNetwork::reset()
+{
+    id_map_.clear();
+    fast_id_map_.clear();
+}
+
+// Mock ISrsUdpMuxSocket implementation
+MockUdpMuxSocket::MockUdpMuxSocket()
+{
+    sendto_error_ = srs_success;
+    sendto_called_count_ = 0;
+    last_sendto_size_ = 0;
+    peer_ip_ = "192.168.1.100";
+    peer_port_ = 5000;
+    peer_id_ = "192.168.1.100:5000";
+    fast_id_ = 0;
+}
+
+MockUdpMuxSocket::~MockUdpMuxSocket()
+{
+    srs_freep(sendto_error_);
+}
+
+srs_error_t MockUdpMuxSocket::sendto(void *data, int size, srs_utime_t timeout)
+{
+    sendto_called_count_++;
+    last_sendto_size_ = size;
+    return srs_error_copy(sendto_error_);
+}
+
+std::string MockUdpMuxSocket::get_peer_ip() const
+{
+    return peer_ip_;
+}
+
+int MockUdpMuxSocket::get_peer_port() const
+{
+    return peer_port_;
+}
+
+std::string MockUdpMuxSocket::peer_id()
+{
+    return peer_id_;
+}
+
+uint64_t MockUdpMuxSocket::fast_id()
+{
+    return fast_id_;
+}
+
+SrsUdpMuxSocket *MockUdpMuxSocket::copy_sendonly()
+{
+    // Return self for testing purposes - in real implementation this creates a copy
+    return (SrsUdpMuxSocket *)this;
+}
+
+void MockUdpMuxSocket::reset()
+{
+    srs_freep(sendto_error_);
+    sendto_called_count_ = 0;
+    last_sendto_size_ = 0;
+}
+
+void MockUdpMuxSocket::set_sendto_error(srs_error_t err)
+{
+    srs_freep(sendto_error_);
+    sendto_error_ = srs_error_copy(err);
+}
+
+// Test SrsRtcUdpNetwork STUN binding request handling
+VOID TEST(RtcUdpNetworkTest, HandleStunBindingRequest)
+{
+    srs_error_t err;
+
+    // Create mock dependencies
+    SrsUniquePtr<MockRtcConnectionForUdpNetwork> mock_conn(new MockRtcConnectionForUdpNetwork());
+    SrsUniquePtr<MockEphemeralDelta> mock_delta(new MockEphemeralDelta());
+    MockUdpMuxSocket *mock_socket = new MockUdpMuxSocket();
+
+    // Create UDP network
+    SrsUniquePtr<SrsRtcUdpNetwork> udp_network(new SrsRtcUdpNetwork(mock_conn.get(), mock_delta.get()));
+
+    // Initialize with plaintext transport for testing
+    SrsSessionConfig cfg;
+    cfg.dtls_role_ = "passive";
+    cfg.dtls_version_ = "auto";
+    HELPER_EXPECT_SUCCESS(udp_network->initialize(&cfg, false, false));
+
+    // Set the mock socket for UDP network to use
+    udp_network->sendonly_skt_ = mock_socket;
+
+    // Create a STUN binding request packet
+    SrsUniquePtr<SrsStunPacket> stun_request(new SrsStunPacket());
+    stun_request->set_message_type(BindingRequest);
+    stun_request->set_local_ufrag("local_user");
+    stun_request->set_remote_ufrag("remote_user");
+    stun_request->set_transcation_id("transaction123");
+
+    // Create dummy STUN data buffer
+    char request_buf[100];
+    memset(request_buf, 0, sizeof(request_buf));
+
+    // Test 1: Handle non-binding STUN request (should be ignored and return success)
+    SrsUniquePtr<SrsStunPacket> stun_response(new SrsStunPacket());
+    stun_response->set_message_type(BindingResponse);
+
+    mock_delta->reset();
+    mock_socket->reset();
+    HELPER_EXPECT_SUCCESS(udp_network->on_stun(stun_response.get(), request_buf, sizeof(request_buf)));
+
+    // Should not send any response for non-binding-request, so no delta change and no sendto calls
+    EXPECT_EQ(0, mock_delta->out_bytes_);
+    EXPECT_EQ(0, mock_socket->sendto_called_count_);
+
+    // Test 2: Handle STUN binding request - should create and send response
+    mock_delta->reset();
+    mock_socket->reset();
+    HELPER_EXPECT_SUCCESS(udp_network->on_stun(stun_request.get(), request_buf, sizeof(request_buf)));
+
+    // Verify that:
+    // 1. conn_->on_binding_request() was called (implicitly - no error returned)
+    // 2. A STUN binding response was created and sent
+    // 3. Delta was updated with sent bytes
+    // 4. Socket sendto was called
+    EXPECT_GT(mock_delta->out_bytes_, 0);
+    EXPECT_EQ(1, mock_socket->sendto_called_count_);
+    EXPECT_GT(mock_socket->last_sendto_size_, 0);
+
+    // Test 3: Handle STUN binding request with sendto error
+    mock_delta->reset();
+    mock_socket->reset();
+    mock_socket->set_sendto_error(srs_error_new(ERROR_SOCKET_WRITE, "mock sendto error"));
+
+    err = udp_network->on_stun(stun_request.get(), request_buf, sizeof(request_buf));
+    HELPER_EXPECT_FAILED(err);
+
+    // Even though sendto failed, delta should still be updated (happens before write)
+    EXPECT_GT(mock_delta->out_bytes_, 0);
+    EXPECT_EQ(1, mock_socket->sendto_called_count_);
+
+    // Clean up - set to NULL to avoid double-free
+    udp_network->sendonly_skt_ = NULL;
+    srs_freep(mock_socket);
+}
+
+// Test SrsRtcUdpNetwork update_sendonly_socket, get_peer_ip, and get_peer_port
+VOID TEST(RtcUdpNetworkTest, UpdateSendonlySocketAndGetPeerInfo)
+{
+    // Create mock dependencies
+    SrsUniquePtr<MockRtcConnectionForUdpNetwork> mock_conn(new MockRtcConnectionForUdpNetwork());
+    SrsUniquePtr<MockEphemeralDelta> mock_delta(new MockEphemeralDelta());
+    SrsUniquePtr<MockResourceManagerForUdpNetwork> mock_manager(new MockResourceManagerForUdpNetwork());
+
+    // Create UDP network
+    SrsUniquePtr<SrsRtcUdpNetwork> udp_network(new SrsRtcUdpNetwork(mock_conn.get(), mock_delta.get()));
+
+    // Inject mock resource manager
+    udp_network->conn_manager_ = mock_manager.get();
+
+    // Create mock UDP socket with peer address 192.168.1.100:5000
+    MockUdpMuxSocket *mock_socket1 = new MockUdpMuxSocket();
+    mock_socket1->peer_ip_ = "192.168.1.100";
+    mock_socket1->peer_port_ = 5000;
+    mock_socket1->peer_id_ = "192.168.1.100:5000";
+    mock_socket1->fast_id_ = 0x1388c0a80164ULL; // port 5000 << 48 | IP 192.168.1.100
+
+    std::string peer_id1 = mock_socket1->peer_id();
+    EXPECT_FALSE(peer_id1.empty());
+    EXPECT_STREQ("192.168.1.100:5000", peer_id1.c_str());
+
+    // Test 1: First update - should initialize sendonly_skt_
+    udp_network->update_sendonly_socket(mock_socket1);
+
+    // Verify sendonly_skt_ is set
+    EXPECT_TRUE(udp_network->sendonly_skt_ != NULL);
+
+    // Test 2: Verify get_peer_ip and get_peer_port return correct values
+    std::string peer_ip = udp_network->get_peer_ip();
+    int peer_port = udp_network->get_peer_port();
+    EXPECT_STREQ("192.168.1.100", peer_ip.c_str());
+    EXPECT_EQ(5000, peer_port);
+
+    // Test 3: Verify peer address is cached
+    EXPECT_EQ(1u, udp_network->peer_addresses_.size());
+
+    // Test 4: Verify connection manager was called with peer_id
+    EXPECT_TRUE(mock_manager->id_map_.find(peer_id1) != mock_manager->id_map_.end());
+    EXPECT_EQ(mock_conn.get(), mock_manager->id_map_[peer_id1]);
+
+    // Test 5: Verify fast_id was registered
+    EXPECT_TRUE(mock_manager->fast_id_map_.find(mock_socket1->fast_id_) != mock_manager->fast_id_map_.end());
+
+    // Test 6: Update with same address - should be ignored (no new cache entry)
+    udp_network->update_sendonly_socket(mock_socket1);
+    EXPECT_EQ(1u, udp_network->peer_addresses_.size());
+
+    // Test 7: Update with different address - should create new cache entry
+    MockUdpMuxSocket *mock_socket2 = new MockUdpMuxSocket();
+    mock_socket2->peer_ip_ = "192.168.1.101";
+    mock_socket2->peer_port_ = 6000;
+    mock_socket2->peer_id_ = "192.168.1.101:6000";
+    mock_socket2->fast_id_ = 0x1770c0a80165ULL; // port 6000 << 48 | IP 192.168.1.101
+
+    std::string peer_id2 = mock_socket2->peer_id();
+    EXPECT_FALSE(peer_id2.empty());
+    EXPECT_STREQ("192.168.1.101:6000", peer_id2.c_str());
+    EXPECT_NE(peer_id1, peer_id2);
+
+    udp_network->update_sendonly_socket(mock_socket2);
+
+    // Verify new peer info
+    peer_ip = udp_network->get_peer_ip();
+    peer_port = udp_network->get_peer_port();
+    EXPECT_STREQ("192.168.1.101", peer_ip.c_str());
+    EXPECT_EQ(6000, peer_port);
+
+    // Verify both addresses are cached
+    EXPECT_EQ(2u, udp_network->peer_addresses_.size());
+    EXPECT_TRUE(mock_manager->id_map_.find(peer_id2) != mock_manager->id_map_.end());
+
+    // Clean up - clear peer_addresses_ map before destroying udp_network
+    // to avoid use-after-free when udp_network destructor tries to free the cached sockets
+    udp_network->peer_addresses_.clear();
+    udp_network->conn_manager_ = NULL;
+    udp_network->sendonly_skt_ = NULL;
+
+    // Now safe to free the mock sockets
+    srs_freep(mock_socket1);
+    srs_freep(mock_socket2);
+}
+
+// Test SrsRtcTcpNetwork major use scenario: DTLS handshake and RTP/RTCP protection
+VOID TEST(RtcTcpNetworkTest, DtlsHandshakeAndPacketProtection)
+{
+    srs_error_t err;
+
+    // Create mock dependencies
+    SrsUniquePtr<MockRtcConnectionForUdpNetwork> mock_conn(new MockRtcConnectionForUdpNetwork());
+    SrsUniquePtr<MockEphemeralDelta> mock_delta(new MockEphemeralDelta());
+    MockRtcTransportForUdpNetwork *mock_transport = new MockRtcTransportForUdpNetwork();
+
+    // Create SrsRtcTcpNetwork with mock dependencies
+    SrsUniquePtr<SrsRtcTcpNetwork> tcp_network(new SrsRtcTcpNetwork(mock_conn.get(), mock_delta.get()));
+
+    // Inject mock transport to replace the real transport
+    srs_freep(tcp_network->transport_);
+    tcp_network->transport_ = mock_transport;
+
+    // Test 1: update_sendonly_socket - should update the sendonly socket reference
+    SrsUniquePtr<MockEmptyIO> mock_io(new MockEmptyIO());
+    tcp_network->update_sendonly_socket(mock_io.get());
+    EXPECT_TRUE(tcp_network->sendonly_skt_ != NULL);
+
+    // Test 2: on_dtls_handshake_done - first call should succeed and change state to Established
+    HELPER_EXPECT_SUCCESS(tcp_network->on_dtls_handshake_done());
+    EXPECT_EQ(SrsRtcNetworkStateEstablished, tcp_network->state_);
+
+    // Test 3: on_dtls_handshake_done - second call should be ignored (ARQ scenario)
+    // The state is already established, so it should return success without calling conn_
+    HELPER_EXPECT_SUCCESS(tcp_network->on_dtls_handshake_done());
+    EXPECT_EQ(SrsRtcNetworkStateEstablished, tcp_network->state_);
+
+    // Test 4: on_dtls_alert - should forward to connection
+    mock_conn->reset();
+    HELPER_EXPECT_SUCCESS(tcp_network->on_dtls_alert("warning", "close_notify"));
+    EXPECT_STREQ("warning", mock_conn->last_alert_type_.c_str());
+    EXPECT_STREQ("close_notify", mock_conn->last_alert_desc_.c_str());
+
+    // Test 5: protect_rtp - should delegate to transport
+    char rtp_packet[1500];
+    memset(rtp_packet, 0x80, sizeof(rtp_packet));
+    int nb_cipher = 1500;
+    HELPER_EXPECT_SUCCESS(tcp_network->protect_rtp(rtp_packet, &nb_cipher));
+
+    // Test 6: protect_rtcp - should delegate to transport
+    char rtcp_packet[1500];
+    memset(rtcp_packet, 0xC8, sizeof(rtcp_packet));
+    nb_cipher = 1500;
+    HELPER_EXPECT_SUCCESS(tcp_network->protect_rtcp(rtcp_packet, &nb_cipher));
+
+    // Clean up
+    tcp_network->sendonly_skt_ = NULL;
+}
+
+// Mock ISrsProtocolReadWriter implementation
+MockProtocolReadWriterForTcpNetwork::MockProtocolReadWriterForTcpNetwork()
+{
+    write_error_ = srs_success;
+    send_bytes_ = 0;
+    recv_bytes_ = 0;
+    send_timeout_ = SRS_UTIME_NO_TIMEOUT;
+    recv_timeout_ = SRS_UTIME_NO_TIMEOUT;
+    read_pos_ = 0;
+}
+
+MockProtocolReadWriterForTcpNetwork::~MockProtocolReadWriterForTcpNetwork()
+{
+    srs_freep(write_error_);
+}
+
+srs_error_t MockProtocolReadWriterForTcpNetwork::read_fully(void *buf, size_t size, ssize_t *nread)
+{
+    if (read_pos_ + size > read_data_.size()) {
+        return srs_error_new(ERROR_SOCKET_READ, "not enough data");
+    }
+
+    memcpy(buf, read_data_.data() + read_pos_, size);
+    read_pos_ += size;
+    if (nread) *nread = size;
+    recv_bytes_ += size;
+
+    return srs_success;
+}
+
+srs_error_t MockProtocolReadWriterForTcpNetwork::write(void *buf, size_t size, ssize_t *nwrite)
+{
+    if (write_error_ != srs_success) {
+        return srs_error_copy(write_error_);
+    }
+
+    // Store written data for verification
+    written_data_.push_back(std::string((char *)buf, size));
+    send_bytes_ += size;
+
+    if (nwrite) {
+        *nwrite = size;
+    }
+
+    return srs_success;
+}
+
+void MockProtocolReadWriterForTcpNetwork::set_recv_timeout(srs_utime_t tm)
+{
+    recv_timeout_ = tm;
+}
+
+srs_utime_t MockProtocolReadWriterForTcpNetwork::get_recv_timeout()
+{
+    return recv_timeout_;
+}
+
+int64_t MockProtocolReadWriterForTcpNetwork::get_recv_bytes()
+{
+    return recv_bytes_;
+}
+
+void MockProtocolReadWriterForTcpNetwork::set_send_timeout(srs_utime_t tm)
+{
+    send_timeout_ = tm;
+}
+
+srs_utime_t MockProtocolReadWriterForTcpNetwork::get_send_timeout()
+{
+    return send_timeout_;
+}
+
+int64_t MockProtocolReadWriterForTcpNetwork::get_send_bytes()
+{
+    return send_bytes_;
+}
+
+srs_error_t MockProtocolReadWriterForTcpNetwork::writev(const iovec *iov, int iov_size, ssize_t *nwrite)
+{
+    return srs_success;
+}
+
+srs_error_t MockProtocolReadWriterForTcpNetwork::read(void *buf, size_t size, ssize_t *nread)
+{
+    return srs_success;
+}
+
+void MockProtocolReadWriterForTcpNetwork::reset()
+{
+    written_data_.clear();
+    srs_freep(write_error_);
+    send_bytes_ = 0;
+    recv_bytes_ = 0;
+    read_data_.clear();
+    read_pos_ = 0;
+}
+
+void MockProtocolReadWriterForTcpNetwork::set_write_error(srs_error_t err)
+{
+    srs_freep(write_error_);
+    write_error_ = srs_error_copy(err);
+}
+
+void MockProtocolReadWriterForTcpNetwork::set_read_data(const std::string &data)
+{
+    read_data_ = data;
+    read_pos_ = 0;
+}
+
+// Test SrsRtcTcpNetwork initialize, on_dtls, on_rtp, on_rtcp - major use scenario
+VOID TEST(RtcTcpNetworkTest, InitializeAndHandlePackets)
+{
+    srs_error_t err;
+
+    // Create mock dependencies
+    SrsUniquePtr<MockRtcConnectionForUdpNetwork> mock_conn(new MockRtcConnectionForUdpNetwork());
+    SrsUniquePtr<MockEphemeralDelta> mock_delta(new MockEphemeralDelta());
+    MockRtcTransportForUdpNetwork *mock_transport = new MockRtcTransportForUdpNetwork();
+
+    // Create SrsRtcTcpNetwork with mock dependencies
+    SrsUniquePtr<SrsRtcTcpNetwork> tcp_network(new SrsRtcTcpNetwork(mock_conn.get(), mock_delta.get()));
+
+    // Test 1: Initialize with DTLS but no SRTP (should use SrsSemiSecurityTransport)
+    SrsSessionConfig cfg;
+    cfg.dtls_role_ = "passive";
+    cfg.dtls_version_ = "auto";
+    HELPER_EXPECT_SUCCESS(tcp_network->initialize(&cfg, true, false));
+
+    // Replace transport with mock for testing
+    srs_freep(tcp_network->transport_);
+    tcp_network->transport_ = mock_transport;
+
+    // Test 2: on_dtls - should update delta statistics and forward to transport
+    char dtls_data[100];
+    memset(dtls_data, 0x16, sizeof(dtls_data)); // DTLS handshake packet marker
+    mock_delta->reset();
+    mock_transport->reset();
+    err = tcp_network->on_dtls(dtls_data, 100);
+    srs_freep(err); // Ignore error from mock transport
+    EXPECT_EQ(100, mock_delta->in_bytes_);
+
+    // Test 3: on_rtp - should update delta, call on_rtp_cipher, unprotect, and on_rtp_plaintext
+    char rtp_data[200];
+    memset(rtp_data, 0x80, sizeof(rtp_data)); // RTP packet marker
+    mock_delta->reset();
+    mock_transport->reset();
+    mock_conn->reset();
+    mock_transport->unprotected_rtp_size_ = 200; // Mock unprotect to keep same size
+    HELPER_EXPECT_SUCCESS(tcp_network->on_rtp(rtp_data, 200));
+    EXPECT_EQ(200, mock_delta->in_bytes_);
+    EXPECT_TRUE(mock_transport->unprotect_rtp_called_);
+    EXPECT_TRUE(mock_conn->on_rtp_cipher_called_);
+    EXPECT_TRUE(mock_conn->on_rtp_plaintext_called_);
+
+    // Test 4: on_rtcp - should update delta, unprotect, and call on_rtcp
+    char rtcp_data[100];
+    memset(rtcp_data, 0xC8, sizeof(rtcp_data)); // RTCP packet marker
+    mock_delta->reset();
+    mock_transport->reset();
+    mock_conn->reset();
+    mock_transport->unprotected_rtcp_size_ = 100; // Mock unprotect to keep same size
+    HELPER_EXPECT_SUCCESS(tcp_network->on_rtcp(rtcp_data, 100));
+    EXPECT_EQ(100, mock_delta->in_bytes_);
+    EXPECT_TRUE(mock_transport->unprotect_rtcp_called_);
+    EXPECT_TRUE(mock_conn->on_rtcp_called_);
+
+    // Test 5: set_state and is_establelished
+    tcp_network->set_state(SrsRtcNetworkStateEstablished);
+    EXPECT_TRUE(tcp_network->is_establelished());
+
+    // Test 6: get_peer_ip and get_peer_port
+    tcp_network->set_peer_id("192.168.1.100", 5000);
+    EXPECT_STREQ("192.168.1.100", tcp_network->get_peer_ip().c_str());
+    EXPECT_EQ(5000, tcp_network->get_peer_port());
+
+    // Clean up
+    tcp_network->transport_ = NULL;
+    srs_freep(mock_transport);
+}
+
+// Test SrsRtcTcpNetwork::on_stun with STUN binding request
+VOID TEST(RtcTcpNetworkTest, HandleStunBindingRequest)
+{
+    srs_error_t err;
+
+    // Create mock dependencies
+    SrsUniquePtr<MockRtcConnectionForUdpNetwork> mock_conn(new MockRtcConnectionForUdpNetwork());
+    SrsUniquePtr<MockEphemeralDelta> mock_delta(new MockEphemeralDelta());
+    MockRtcTransportForUdpNetwork *mock_transport = new MockRtcTransportForUdpNetwork();
+    SrsUniquePtr<MockProtocolReadWriterForTcpNetwork> mock_io(new MockProtocolReadWriterForTcpNetwork());
+
+    // Create SrsRtcTcpNetwork with mock dependencies
+    SrsUniquePtr<SrsRtcTcpNetwork> tcp_network(new SrsRtcTcpNetwork(mock_conn.get(), mock_delta.get()));
+
+    // Inject mock transport and socket
+    srs_freep(tcp_network->transport_);
+    tcp_network->transport_ = mock_transport;
+    tcp_network->update_sendonly_socket(mock_io.get());
+    tcp_network->set_peer_id("192.168.1.100", 5000);
+
+    // Set initial state to WaitingStun
+    tcp_network->set_state(SrsRtcNetworkStateWaitingStun);
+
+    // Create a STUN binding request packet
+    SrsUniquePtr<SrsStunPacket> stun_request(new SrsStunPacket());
+    stun_request->set_message_type(BindingRequest);
+    stun_request->set_local_ufrag("local_user");
+    stun_request->set_remote_ufrag("remote_user");
+    stun_request->set_transcation_id("transaction123");
+
+    // Create dummy STUN request data (we don't need real encoded data for this test)
+    char request_buf[100];
+    memset(request_buf, 0, sizeof(request_buf));
+    int request_size = 20; // Minimal STUN header size
+
+    // Test: Handle STUN binding request
+    // This should:
+    // 1. Call conn_->on_binding_request to get ice_pwd
+    // 2. Create and encode a STUN binding response
+    // 3. Write the response via write()
+    // 4. Transition state from WaitingStun to Dtls
+    // 5. Start DTLS handshake
+    mock_io->reset();
+    HELPER_EXPECT_SUCCESS(tcp_network->on_stun(stun_request.get(), request_buf, request_size));
+
+    // Verify state transitioned to Dtls
+    EXPECT_EQ(SrsRtcNetworkStateDtls, tcp_network->state_);
+
+    // Verify that data was written (STUN binding response)
+    // The write() method is called with 2-byte length prefix + STUN response data
+    EXPECT_TRUE(mock_io->written_data_.size() >= 2);
+
+    // First write should be 2-byte length prefix
+    EXPECT_EQ(2, (int)mock_io->written_data_[0].size());
+
+    // Second write should be the STUN response data
+    EXPECT_TRUE(mock_io->written_data_[1].size() > 0);
+
+    // Clean up
+    tcp_network->sendonly_skt_ = NULL;
+}
+
+// Test SrsRtcTcpConn setup_owner, delta, interrupt, desc, get_id, remote_ip, and on_executor_done
+VOID TEST(RtcTcpConnTest, SetupOwnerAndBasicMethods)
+{
+    // Create mock dependencies
+    SrsUniquePtr<MockInterruptableForRtcTcpConn> mock_coroutine(new MockInterruptableForRtcTcpConn());
+    SrsUniquePtr<MockContextIdSetterForRtcTcpConn> mock_cid_setter(new MockContextIdSetterForRtcTcpConn());
+    SrsUniquePtr<MockRtcConnectionForTcpConn> mock_session(new MockRtcConnectionForTcpConn());
+
+    // Create SrsRtcTcpConn with IP and port
+    std::string test_ip = "192.168.1.100";
+    int test_port = 8080;
+    SrsUniquePtr<SrsRtcTcpConn> tcp_conn(new SrsRtcTcpConn(NULL, test_ip, test_port));
+
+    // Test 1: setup_owner - set wrapper, owner_coroutine, and owner_cid
+    SrsSharedResource<ISrsRtcTcpConn> *mock_wrapper = NULL;
+    tcp_conn->setup_owner(mock_wrapper, mock_coroutine.get(), mock_cid_setter.get());
+    EXPECT_EQ(mock_wrapper, tcp_conn->wrapper_);
+    EXPECT_EQ(mock_coroutine.get(), tcp_conn->owner_coroutine_);
+    EXPECT_EQ(mock_cid_setter.get(), tcp_conn->owner_cid_);
+
+    // Test 2: delta() - should return the delta object
+    ISrsKbpsDelta *delta = tcp_conn->delta();
+    EXPECT_TRUE(delta != NULL);
+
+    // Test 3: desc() - should return "Tcp"
+    EXPECT_STREQ("Tcp", tcp_conn->desc().c_str());
+
+    // Test 4: get_id() - should return the context id
+    const SrsContextId &cid = tcp_conn->get_id();
+    EXPECT_TRUE(!cid.empty());
+
+    // Test 5: remote_ip() - should return the IP address
+    EXPECT_STREQ(test_ip.c_str(), tcp_conn->remote_ip().c_str());
+
+    // Test 6: interrupt() - should set session to NULL and call owner_coroutine->interrupt()
+    tcp_conn->session_ = mock_session.get();
+    EXPECT_FALSE(mock_coroutine->interrupt_called_);
+    tcp_conn->interrupt();
+    EXPECT_TRUE(mock_coroutine->interrupt_called_);
+    EXPECT_TRUE(tcp_conn->session_ == NULL);
+
+    // Test 7: on_executor_done() - should set owner_coroutine to NULL
+    tcp_conn->owner_coroutine_ = mock_coroutine.get();
+    EXPECT_TRUE(tcp_conn->owner_coroutine_ != NULL);
+    tcp_conn->on_executor_done(mock_coroutine.get());
+    EXPECT_TRUE(tcp_conn->owner_coroutine_ == NULL);
+}
+
+// Mock ISrsResourceManager for testing SrsRtcTcpConn::handshake
+MockResourceManagerForTcpConnHandshake::MockResourceManagerForTcpConnHandshake()
+{
+    session_to_return_ = NULL;
+}
+
+MockResourceManagerForTcpConnHandshake::~MockResourceManagerForTcpConnHandshake()
+{
+}
+
+srs_error_t MockResourceManagerForTcpConnHandshake::start()
+{
+    return srs_success;
+}
+
+bool MockResourceManagerForTcpConnHandshake::empty()
+{
+    return true;
+}
+
+size_t MockResourceManagerForTcpConnHandshake::size()
+{
+    return 0;
+}
+
+void MockResourceManagerForTcpConnHandshake::add(ISrsResource *conn, bool *exists)
+{
+}
+
+void MockResourceManagerForTcpConnHandshake::add_with_id(const std::string &id, ISrsResource *conn)
+{
+}
+
+void MockResourceManagerForTcpConnHandshake::add_with_fast_id(uint64_t id, ISrsResource *conn)
+{
+}
+
+ISrsResource *MockResourceManagerForTcpConnHandshake::at(int index)
+{
+    return NULL;
+}
+
+ISrsResource *MockResourceManagerForTcpConnHandshake::find_by_id(std::string id)
+{
+    return NULL;
+}
+
+ISrsResource *MockResourceManagerForTcpConnHandshake::find_by_fast_id(uint64_t id)
+{
+    return NULL;
+}
+
+ISrsResource *MockResourceManagerForTcpConnHandshake::find_by_name(std::string name)
+{
+    return session_to_return_;
+}
+
+void MockResourceManagerForTcpConnHandshake::remove(ISrsResource *c)
+{
+}
+
+void MockResourceManagerForTcpConnHandshake::subscribe(ISrsDisposingHandler *h)
+{
+}
+
+void MockResourceManagerForTcpConnHandshake::unsubscribe(ISrsDisposingHandler *h)
+{
+}
+
+void MockResourceManagerForTcpConnHandshake::reset()
+{
+    session_to_return_ = NULL;
+}
+
+// Mock ISrsRtcConnection for testing SrsRtcTcpConn::handshake
+MockRtcConnectionForTcpConnHandshake::MockRtcConnectionForTcpConnHandshake()
+{
+    tcp_network_ = NULL;
+    ice_pwd_ = "test_ice_pwd";
+    switch_to_context_called_ = false;
+    on_binding_request_called_ = false;
+}
+
+MockRtcConnectionForTcpConnHandshake::~MockRtcConnectionForTcpConnHandshake()
+{
+}
+
+const SrsContextId &MockRtcConnectionForTcpConnHandshake::get_id()
+{
+    static SrsContextId cid;
+    return cid;
+}
+
+std::string MockRtcConnectionForTcpConnHandshake::desc()
+{
+    return "MockRtcConnectionForTcpConnHandshake";
+}
+
+void MockRtcConnectionForTcpConnHandshake::on_disposing(ISrsResource *c)
+{
+}
+
+void MockRtcConnectionForTcpConnHandshake::on_before_dispose(ISrsResource *c)
+{
+}
+
+void MockRtcConnectionForTcpConnHandshake::expire()
+{
+}
+
+srs_error_t MockRtcConnectionForTcpConnHandshake::send_rtcp(char *data, int nb_data)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForTcpConnHandshake::send_rtcp_rr(uint32_t ssrc, SrsRtpRingBuffer *rtp_queue, const uint64_t &last_send_systime, const SrsNtp &last_send_ntp)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForTcpConnHandshake::send_rtcp_xr_rrtr(uint32_t ssrc)
+{
+    return srs_success;
+}
+
+void MockRtcConnectionForTcpConnHandshake::check_send_nacks(SrsRtpNackForReceiver *nack, uint32_t ssrc, uint32_t &sent_nacks, uint32_t &timeout_nacks)
+{
+}
+
+srs_error_t MockRtcConnectionForTcpConnHandshake::send_rtcp_fb_pli(uint32_t ssrc, const SrsContextId &cid_of_subscriber)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForTcpConnHandshake::do_send_packet(SrsRtpPacket *pkt)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForTcpConnHandshake::do_check_send_nacks()
+{
+    return srs_success;
+}
+
+void MockRtcConnectionForTcpConnHandshake::on_connection_established()
+{
+}
+
+srs_error_t MockRtcConnectionForTcpConnHandshake::on_dtls_alert(std::string type, std::string desc)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForTcpConnHandshake::on_dtls_handshake_done()
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForTcpConnHandshake::on_dtls_application_data(const char *data, const int len)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForTcpConnHandshake::on_rtp_cipher(char *data, int nb_data)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForTcpConnHandshake::on_rtp_plaintext(char *buf, int nb_buf)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForTcpConnHandshake::on_rtcp(char *buf, int nb_buf)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForTcpConnHandshake::on_binding_request(SrsStunPacket *r, std::string &ice_pwd)
+{
+    on_binding_request_called_ = true;
+    ice_pwd = ice_pwd_;
+    return srs_success;
+}
+
+ISrsRtcNetwork *MockRtcConnectionForTcpConnHandshake::udp()
+{
+    return NULL;
+}
+
+ISrsRtcNetwork *MockRtcConnectionForTcpConnHandshake::tcp()
+{
+    return tcp_network_;
+}
+
+void MockRtcConnectionForTcpConnHandshake::alive()
+{
+}
+
+void MockRtcConnectionForTcpConnHandshake::switch_to_context()
+{
+    switch_to_context_called_ = true;
+}
+
+void MockRtcConnectionForTcpConnHandshake::reset()
+{
+    tcp_network_ = NULL;
+    ice_pwd_ = "test_ice_pwd";
+    switch_to_context_called_ = false;
+    on_binding_request_called_ = false;
+}
+
+// Test SrsRtcTcpConn::handshake - major use scenario
+VOID TEST(RtcTcpConnTest, HandshakeWithStunBindingRequest)
+{
+    srs_error_t err;
+
+    // Create a STUN binding request packet manually
+    // STUN header: message type (2) + message length (2) + magic cookie (4) + transaction ID (12) = 20 bytes
+    // Plus username attribute: type (2) + length (2) + value (padded to 4-byte boundary)
+    char stun_buf[128];
+    memset(stun_buf, 0, sizeof(stun_buf));
+
+    // STUN header
+    stun_buf[0] = 0x00;
+    stun_buf[1] = 0x01; // BindingRequest
+    stun_buf[2] = 0x00;
+    stun_buf[3] = 0x10; // message length = 16 (username attribute: 4 + 12)
+
+    // Magic cookie (0x2112A442)
+    stun_buf[4] = 0x21;
+    stun_buf[5] = 0x12;
+    stun_buf[6] = 0xA4;
+    stun_buf[7] = 0x42;
+
+    // Transaction ID (12 bytes)
+    for (int i = 8; i < 20; i++) {
+        stun_buf[i] = i - 8;
+    }
+
+    // Username attribute: type=0x0006, length=12, value="test:session"
+    stun_buf[20] = 0x00;
+    stun_buf[21] = 0x06; // Username attribute type
+    stun_buf[22] = 0x00;
+    stun_buf[23] = 0x0C; // Length = 12
+    memcpy(stun_buf + 24, "test:session", 12);
+
+    int stun_size = 36; // 20 (header) + 16 (username attribute)
+
+    // Prepare read data: 2-byte length prefix + STUN packet
+    std::string read_data;
+    uint8_t len_prefix[2];
+    len_prefix[0] = (stun_size >> 8) & 0xFF;
+    len_prefix[1] = stun_size & 0xFF;
+    read_data.append((char *)len_prefix, 2);
+    read_data.append(stun_buf, stun_size);
+
+    // Create mock socket with read data
+    SrsUniquePtr<MockProtocolReadWriterForTcpNetwork> mock_io(new MockProtocolReadWriterForTcpNetwork());
+    mock_io->set_read_data(read_data);
+
+    // Create mock resource manager
+    SrsUniquePtr<MockResourceManagerForTcpConnHandshake> mock_conn_manager(new MockResourceManagerForTcpConnHandshake());
+
+    // Create mock RTC connection with TCP network
+    SrsUniquePtr<MockRtcConnectionForTcpConnHandshake> mock_session(new MockRtcConnectionForTcpConnHandshake());
+    SrsUniquePtr<MockEphemeralDelta> mock_delta(new MockEphemeralDelta());
+    SrsUniquePtr<SrsRtcTcpNetwork> tcp_network(new SrsRtcTcpNetwork(mock_session.get(), mock_delta.get()));
+
+    // Set up mock session to return the TCP network
+    mock_session->tcp_network_ = tcp_network.get();
+
+    // Set up mock resource manager to return the session by username
+    mock_conn_manager->session_to_return_ = mock_session.get();
+
+    // Create SrsRtcTcpConn with mock socket - wrapper will own it
+    std::string test_ip = "192.168.1.100";
+    int test_port = 8080;
+    SrsRtcTcpConn *tcp_conn = new SrsRtcTcpConn(mock_io.get(), test_ip, test_port);
+
+    // Create wrapper for shared resource
+    SrsUniquePtr<SrsSharedResource<ISrsRtcTcpConn> > wrapper(new SrsSharedResource<ISrsRtcTcpConn>(tcp_conn));
+
+    // Inject mock resource manager
+    tcp_conn->conn_manager_ = mock_conn_manager.get();
+    tcp_conn->wrapper_ = wrapper.get();
+
+    // Test: Execute handshake
+    // This should:
+    // 1. Read STUN packet from socket
+    // 2. Decode STUN packet
+    // 3. Find session by username from conn_manager
+    // 4. Call session->switch_to_context()
+    // 5. Get TCP network from session
+    // 6. Set owner on TCP network
+    // 7. Update sendonly socket on TCP network
+    // 8. Call network->on_stun() to handle the packet
+    HELPER_EXPECT_SUCCESS(tcp_conn->handshake());
+
+    // Verify session was found and context switched
+    EXPECT_TRUE(mock_session->switch_to_context_called_);
+
+    // Verify session was stored in tcp_conn
+    EXPECT_EQ(mock_session.get(), tcp_conn->session_);
+
+    // Verify TCP network owner was set
+    EXPECT_EQ(tcp_conn, tcp_network->owner().get());
+
+    // Verify sendonly socket was updated
+    EXPECT_EQ(mock_io.get(), tcp_network->sendonly_skt_);
+
+    // Verify peer ID was set
+    EXPECT_STREQ(test_ip.c_str(), tcp_network->peer_ip_.c_str());
+    EXPECT_EQ(test_port, tcp_network->peer_port_);
+
+    // Clean up - prevent double free
+    tcp_conn->skt_ = NULL;
+    tcp_conn->conn_manager_ = NULL;
+    tcp_conn->wrapper_ = NULL;
+    tcp_network->sendonly_skt_ = NULL;
+    mock_session->tcp_network_ = NULL;
+    mock_conn_manager->session_to_return_ = NULL;
+}
+
+// Test SrsRtcTcpConn::read_packet - major use scenario
+VOID TEST(RtcTcpConnTest, ReadPacketSuccess)
+{
+    srs_error_t err;
+
+    // Create mock socket with test data
+    SrsUniquePtr<MockProtocolReadWriterForTcpNetwork> mock_io(new MockProtocolReadWriterForTcpNetwork());
+
+    // Prepare test packet data: 2-byte length header + packet body
+    // Length = 100 bytes (0x0064 in big-endian)
+    std::string test_data;
+    test_data.push_back(0x00);  // Length high byte
+    test_data.push_back(0x64);  // Length low byte (100 in decimal)
+
+    // Add 100 bytes of packet data
+    for (int i = 0; i < 100; i++) {
+        test_data.push_back((char)(i % 256));
+    }
+
+    mock_io->set_read_data(test_data);
+
+    // Create SrsRtcTcpConn with mock socket
+    std::string test_ip = "192.168.1.100";
+    int test_port = 8000;
+    SrsRtcTcpConn *tcp_conn = new SrsRtcTcpConn(mock_io.get(), test_ip, test_port);
+
+    // Prepare buffer for reading packet
+    char pkt[1500];
+    int nb_pkt = 1500;
+
+    // Test: Read packet successfully
+    HELPER_EXPECT_SUCCESS(tcp_conn->read_packet(pkt, &nb_pkt));
+
+    // Verify packet length was correctly read
+    EXPECT_EQ(100, nb_pkt);
+
+    // Verify packet data was correctly read
+    for (int i = 0; i < 100; i++) {
+        EXPECT_EQ((char)(i % 256), pkt[i]);
+    }
+
+    // Verify total bytes read (2 bytes length + 100 bytes data)
+    EXPECT_EQ(102, mock_io->get_recv_bytes());
+
+    // Clean up - prevent double free
+    tcp_conn->skt_ = NULL;
+}
+
+// Test SrsRtcTcpConn::on_tcp_pkt - major use scenario
+// This test covers the main packet routing logic:
+// 1. STUN packets are decoded and forwarded to session->tcp()->on_stun()
+// 2. RTP packets are forwarded to session->tcp()->on_rtp()
+// 3. RTCP packets are forwarded to session->tcp()->on_rtcp()
+// 4. DTLS packets are forwarded to session->tcp()->on_dtls()
+// 5. Unknown packets return error
+// 6. When session is NULL, packets are ignored
+VOID TEST(RtcTcpConnTest, OnTcpPktRouting)
+{
+    srs_error_t err;
+
+    // Create mock RTC connection with TCP network
+    SrsUniquePtr<MockRtcConnectionForTcpConnHandshake> mock_session(new MockRtcConnectionForTcpConnHandshake());
+    SrsUniquePtr<MockRtcNetworkForNetworks> mock_tcp_network(new MockRtcNetworkForNetworks());
+    mock_session->tcp_network_ = mock_tcp_network.get();
+
+    // Create SrsRtcTcpConn
+    SrsUniquePtr<MockProtocolReadWriterForTcpNetwork> mock_io(new MockProtocolReadWriterForTcpNetwork());
+    std::string test_ip = "192.168.1.100";
+    int test_port = 8000;
+    SrsRtcTcpConn *tcp_conn = new SrsRtcTcpConn(mock_io.get(), test_ip, test_port);
+
+    // Inject mock session
+    tcp_conn->session_ = mock_session.get();
+
+    // Test 1: STUN packet routing
+    // Create valid STUN binding request packet
+    // STUN header: message type (2) + message length (2) + magic cookie (4) + transaction ID (12) = 20 bytes
+    char stun_pkt[20];
+    memset(stun_pkt, 0, sizeof(stun_pkt));
+    // Set message type to binding request (0x0001)
+    stun_pkt[0] = 0x00;
+    stun_pkt[1] = 0x01;
+    // Set message length to 0 (no attributes)
+    stun_pkt[2] = 0x00;
+    stun_pkt[3] = 0x00;
+    // Set magic cookie (0x2112A442 in network byte order)
+    stun_pkt[4] = 0x21;
+    stun_pkt[5] = 0x12;
+    stun_pkt[6] = 0xA4;
+    stun_pkt[7] = 0x42;
+    // Set transaction ID (12 bytes)
+    for (int i = 8; i < 20; i++) {
+        stun_pkt[i] = i - 8;
+    }
+
+    HELPER_EXPECT_SUCCESS(tcp_conn->on_tcp_pkt(stun_pkt, 20));
+
+    // Test 2: RTP packet routing
+    // RTP packets have version bits (10) in first byte, and payload type < 64
+    char rtp_pkt[100];
+    memset(rtp_pkt, 0, sizeof(rtp_pkt));
+    rtp_pkt[0] = 0x80;  // Version 2 (10xxxxxx)
+    rtp_pkt[1] = 0x08;  // Payload type 8 (PCMA)
+
+    HELPER_EXPECT_SUCCESS(tcp_conn->on_tcp_pkt(rtp_pkt, 100));
+
+    // Test 3: RTCP packet routing
+    // RTCP packets have version bits (10) and payload type in range [64, 95]
+    char rtcp_pkt[100];
+    memset(rtcp_pkt, 0, sizeof(rtcp_pkt));
+    rtcp_pkt[0] = 0x80;  // Version 2 (10xxxxxx)
+    rtcp_pkt[1] = 0xC8;  // Payload type 200 (SR - Sender Report)
+
+    HELPER_EXPECT_SUCCESS(tcp_conn->on_tcp_pkt(rtcp_pkt, 100));
+
+    // Test 4: DTLS packet routing
+    // DTLS packets have content type in range [20, 63]
+    char dtls_pkt[100];
+    memset(dtls_pkt, 0, sizeof(dtls_pkt));
+    dtls_pkt[0] = 0x16;  // Content type: handshake (22)
+    dtls_pkt[1] = 0xFE;  // DTLS version 1.0 (0xFEFF)
+    dtls_pkt[2] = 0xFF;
+
+    HELPER_EXPECT_SUCCESS(tcp_conn->on_tcp_pkt(dtls_pkt, 100));
+
+    // Test 5: Unknown packet returns error
+    char unknown_pkt[100];
+    memset(unknown_pkt, 0xFF, sizeof(unknown_pkt));
+
+    HELPER_EXPECT_FAILED(tcp_conn->on_tcp_pkt(unknown_pkt, 100));
+
+    // Test 6: When session is NULL, packets are ignored (no error)
+    tcp_conn->session_ = NULL;
+    HELPER_EXPECT_SUCCESS(tcp_conn->on_tcp_pkt(stun_pkt, 20));
+
+    // Clean up - prevent double free
+    tcp_conn->skt_ = NULL;
+    tcp_conn->session_ = NULL;
+    mock_session->tcp_network_ = NULL;
+}

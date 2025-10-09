@@ -13,6 +13,7 @@ using namespace std;
 #include <sstream>
 
 #include <srs_app_config.hpp>
+#include <srs_app_factory.hpp>
 #include <srs_app_http_hooks.hpp>
 #include <srs_app_rtsp_source.hpp>
 #include <srs_app_security.hpp>
@@ -29,7 +30,6 @@ using namespace std;
 #include <srs_protocol_rtsp_stack.hpp>
 #include <srs_protocol_st.hpp>
 #include <srs_protocol_utility.hpp>
-#include <srs_app_factory.hpp>
 
 extern SrsPps *_srs_pps_snack;
 extern SrsPps *_srs_pps_snack2;
@@ -656,8 +656,8 @@ srs_error_t SrsRtspConnection::on_rtsp_request(SrsRtspRequest *req_raw)
             return srs_error_wrap(err, "response setup");
         }
         srs_trace("RTSP: SETUP cseq=%ld, session=%s, transport=%s/%s/%s, ssrc=%u, client_port=%d-%d",
-                    req->seq_, session_id_.c_str(), req->transport_->transport_.c_str(), req->transport_->profile_.c_str(),
-                    req->transport_->lower_transport_.c_str(), ssrc, req->transport_->client_port_min_, req->transport_->client_port_max_);
+                  req->seq_, session_id_.c_str(), req->transport_->transport_.c_str(), req->transport_->profile_.c_str(),
+                  req->transport_->lower_transport_.c_str(), ssrc, req->transport_->client_port_min_, req->transport_->client_port_max_);
     } else if (req->is_play()) {
         SrsUniquePtr<SrsRtspResponse> res(new SrsRtspResponse((int)req->seq_));
         res->session_ = session_id_;

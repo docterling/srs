@@ -850,7 +850,7 @@ SrsOriginHub::SrsOriginHub()
 
     hls_ = new SrsHls();
     dash_ = new SrsDash();
-    
+
     dvr_ = new SrsDvr();
     dvr_->assemble();
 

@@ -30,8 +30,8 @@
 #include <srs_protocol_rtmp_conn.hpp>
 #include <srs_protocol_rtmp_stack.hpp>
 #include <srs_protocol_rtsp_stack.hpp>
-#include <srs_utest_app6.hpp>
 #include <srs_utest_app12.hpp>
+#include <srs_utest_app6.hpp>
 
 // Mock request class for testing edge upstream
 class MockEdgeRequest : public ISrsRequest
@@ -451,7 +451,7 @@ public:
     bool send_message_called_;
     int last_response_seq_;
     std::string last_response_session_;
-    std::string last_response_type_;  // "OPTIONS", "DESCRIBE", "SETUP", "PLAY", "TEARDOWN"
+    std::string last_response_type_; // "OPTIONS", "DESCRIBE", "SETUP", "PLAY", "TEARDOWN"
     srs_error_t send_message_error_;
 
 public:

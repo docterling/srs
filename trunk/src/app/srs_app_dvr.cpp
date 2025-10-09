@@ -12,6 +12,7 @@
 using namespace std;
 
 #include <srs_app_config.hpp>
+#include <srs_app_factory.hpp>
 #include <srs_app_fragment.hpp>
 #include <srs_app_http_hooks.hpp>
 #include <srs_app_utility.hpp>
@@ -25,7 +26,6 @@ using namespace std;
 #include <srs_protocol_amf0.hpp>
 #include <srs_protocol_json.hpp>
 #include <srs_protocol_rtmp_stack.hpp>
-#include <srs_app_factory.hpp>
 
 #define SRS_FWRITE_CACHE_SIZE 65536
 

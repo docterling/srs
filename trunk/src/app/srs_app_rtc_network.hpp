@@ -25,6 +25,7 @@ class SrsTcpConnection;
 class ISrsTcpConnection;
 class ISrsKbpsDelta;
 class SrsUdpMuxSocket;
+class ISrsUdpMuxSocket;
 class SrsErrorPithyPrint;
 class ISrsRtcTransport;
 class SrsEphemeralDelta;
@@ -183,9 +184,9 @@ private:
     // Pithy print for address change, use port as error code.
     SrsErrorPithyPrint *pp_address_change_;
     // The peer address, client maybe use more than one address, it's the current selected one.
-    SrsUdpMuxSocket *sendonly_skt_;
+    ISrsUdpMuxSocket *sendonly_skt_;
     // The address list, client may use multiple addresses.
-    std::map<std::string, SrsUdpMuxSocket *> peer_addresses_;
+    std::map<std::string, ISrsUdpMuxSocket *> peer_addresses_;
     // The DTLS transport over this network.
     ISrsRtcTransport *transport_;
 
@@ -195,7 +196,7 @@ public:
 
 public:
     // Update the UDP connection.
-    void update_sendonly_socket(SrsUdpMuxSocket *skt);
+    void update_sendonly_socket(ISrsUdpMuxSocket *skt);
     // When got STUN ping message. The peer address may change, we can identify that by STUN messages.
     srs_error_t on_stun(SrsStunPacket *r, char *data, int nb_data);
 
@@ -320,7 +321,7 @@ private:
     std::string ip_;
     int port_;
     // The delta for statistic.
-    SrsNetworkDelta *delta_;
+    ISrsNetworkDelta *delta_;
     ISrsProtocolReadWriter *skt_;
     // Packet cache.
     char *pkt_;

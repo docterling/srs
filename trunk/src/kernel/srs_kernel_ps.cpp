@@ -89,7 +89,7 @@ SrsTsMessage *SrsPsContext::reap()
     return msg;
 }
 
-SrsPsDecodeHelper* SrsPsContext::helper()
+SrsPsDecodeHelper *SrsPsContext::helper()
 {
     return &helper_;
 }
