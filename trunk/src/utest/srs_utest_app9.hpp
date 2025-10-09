@@ -115,7 +115,7 @@ public:
 public:
     MockDashForOriginHub();
     virtual ~MockDashForOriginHub();
-    virtual srs_error_t initialize(SrsOriginHub *h, ISrsRequest *r);
+    virtual srs_error_t initialize(ISrsOriginHub *h, ISrsRequest *r);
     virtual srs_error_t on_publish();
     virtual srs_error_t on_audio(SrsMediaPacket *shared_audio, SrsFormat *format);
     virtual srs_error_t on_video(SrsMediaPacket *shared_video, SrsFormat *format);

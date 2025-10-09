@@ -6990,6 +6990,14 @@ SrsMp4ObjectType SrsMp4Encoder::get_audio_object_type()
     }
 }
 
+ISrsMp4M2tsInitEncoder::ISrsMp4M2tsInitEncoder()
+{
+}
+
+ISrsMp4M2tsInitEncoder::~ISrsMp4M2tsInitEncoder()
+{
+}
+
 SrsMp4M2tsInitEncoder::SrsMp4M2tsInitEncoder()
 {
     writer_ = NULL;
@@ -7578,6 +7586,14 @@ srs_error_t SrsMp4M2tsInitEncoder::config_sample_description_encryption(SrsMp4Sa
     sinf->set_schi(schi);
 
     return err;
+}
+
+ISrsMp4M2tsSegmentEncoder::ISrsMp4M2tsSegmentEncoder()
+{
+}
+
+ISrsMp4M2tsSegmentEncoder::~ISrsMp4M2tsSegmentEncoder()
+{
 }
 
 SrsMp4M2tsSegmentEncoder::SrsMp4M2tsSegmentEncoder()

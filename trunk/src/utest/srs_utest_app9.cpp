@@ -1406,7 +1406,7 @@ MockDashForOriginHub::~MockDashForOriginHub()
     srs_freep(initialize_error_);
 }
 
-srs_error_t MockDashForOriginHub::initialize(SrsOriginHub *h, ISrsRequest *r)
+srs_error_t MockDashForOriginHub::initialize(ISrsOriginHub *h, ISrsRequest *r)
 {
     initialize_count_++;
     return srs_error_copy(initialize_error_);

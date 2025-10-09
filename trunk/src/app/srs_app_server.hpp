@@ -95,6 +95,18 @@ public:
     virtual ISrsHttpServeMux *api_server() = 0;
 };
 
+// The RTC API server owner interface.
+class ISrsRtcApiServer
+{
+public:
+    ISrsRtcApiServer();
+    virtual ~ISrsRtcApiServer();
+
+public:
+    virtual srs_error_t create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, SrsRtcConnection **psession) = 0;
+    virtual SrsRtcConnection *find_rtc_session_by_username(const std::string &ufrag) = 0;
+};
+
 // SrsServer is the main server class of SRS (Simple Realtime Server) that provides comprehensive
 // streaming media server functionality. It serves as the central orchestrator for all streaming
 // protocols and services in a single-threaded, coroutine-based architecture.
@@ -105,7 +117,8 @@ class SrsServer : public ISrsReloadHandler, // Reload framework for permormance 
                   public ISrsSrtClientHandler,
                   public ISrsUdpMuxHandler,
                   public ISrsSignalHandler,
-                  public ISrsApiServerOwner
+                  public ISrsApiServerOwner,
+                  public ISrsRtcApiServer
 {
 private:
     ISrsAppConfig *config_;

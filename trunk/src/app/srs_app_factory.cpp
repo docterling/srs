@@ -8,7 +8,9 @@
 
 #include <srs_app_caster_flv.hpp>
 #include <srs_app_config.hpp>
+#include <srs_app_dash.hpp>
 #include <srs_app_dvr.hpp>
+#include <srs_app_fragment.hpp>
 #include <srs_app_gb28181.hpp>
 #include <srs_app_rtmp_conn.hpp>
 #include <srs_app_rtmp_source.hpp>
@@ -139,6 +141,21 @@ ISrsGbSession *SrsAppFactory::create_gb_session()
     return new SrsGbSession();
 }
 #endif
+
+ISrsInitMp4 *SrsAppFactory::create_init_mp4()
+{
+    return new SrsInitMp4();
+}
+
+ISrsFragmentWindow *SrsAppFactory::create_fragment_window()
+{
+    return new SrsFragmentWindow();
+}
+
+ISrsFragmentedMp4 *SrsAppFactory::create_fragmented_mp4()
+{
+    return new SrsFragmentedMp4();
+}
 
 SrsFinalFactory::SrsFinalFactory()
 {

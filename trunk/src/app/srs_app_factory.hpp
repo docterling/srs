@@ -31,6 +31,10 @@ class ISrsMp4Encoder;
 class ISrsDvrSegmenter;
 class ISrsGbMediaTcpConn;
 class ISrsGbSession;
+class ISrsFragment;
+class ISrsInitMp4;
+class ISrsFragmentWindow;
+class ISrsFragmentedMp4;
 
 // The factory to create app objects.
 class ISrsAppFactory
@@ -63,6 +67,9 @@ public:
     virtual ISrsGbMediaTcpConn *create_gb_media_tcp_conn() = 0;
     virtual ISrsGbSession *create_gb_session() = 0;
 #endif
+    virtual ISrsInitMp4 *create_init_mp4() = 0;
+    virtual ISrsFragmentWindow *create_fragment_window() = 0;
+    virtual ISrsFragmentedMp4 *create_fragmented_mp4() = 0;
 };
 
 // The factory to create app objects.
@@ -96,6 +103,9 @@ public:
     virtual ISrsGbMediaTcpConn *create_gb_media_tcp_conn();
     virtual ISrsGbSession *create_gb_session();
 #endif
+    virtual ISrsInitMp4 *create_init_mp4();
+    virtual ISrsFragmentWindow *create_fragment_window();
+    virtual ISrsFragmentedMp4 *create_fragmented_mp4();
 };
 
 extern ISrsAppFactory *_srs_app_factory;

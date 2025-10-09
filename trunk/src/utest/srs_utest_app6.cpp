@@ -2181,6 +2181,8 @@ MockAppConfig::MockAppConfig()
     rtc_twcc_enabled_ = true;
     srt_enabled_ = false;
     rtc_to_rtmp_ = false;
+    dash_dispose_ = 0;
+    dash_enabled_ = false;
 }
 
 MockAppConfig::~MockAppConfig()
@@ -2282,6 +2284,16 @@ srs_utime_t MockAppConfig::get_rtc_stun_timeout(std::string vhost)
 bool MockAppConfig::get_rtc_stun_strict_check(std::string vhost)
 {
     return false; // Default to non-strict mode
+}
+
+std::string MockAppConfig::get_rtc_dtls_role(std::string vhost)
+{
+    return "passive"; // Default DTLS role
+}
+
+std::string MockAppConfig::get_rtc_dtls_version(std::string vhost)
+{
+    return "auto"; // Default DTLS version
 }
 
 SrsConfDirective *MockAppConfig::get_vhost_on_hls(std::string vhost)

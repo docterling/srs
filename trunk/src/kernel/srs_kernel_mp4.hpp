@@ -2721,9 +2721,23 @@ private:
     virtual SrsMp4ObjectType get_audio_object_type();
 };
 
+// The fMP4 init encoder interface.
+class ISrsMp4M2tsInitEncoder
+{
+public:
+    ISrsMp4M2tsInitEncoder();
+    virtual ~ISrsMp4M2tsInitEncoder();
+
+public:
+    // Initialize the encoder with a writer w.
+    virtual srs_error_t initialize(ISrsWriter *w) = 0;
+    // Write the sequence header.
+    virtual srs_error_t write(SrsFormat *format, bool video, int tid) = 0;
+};
+
 // A fMP4 encoder, to write the init.mp4 with sequence header.
 // TODO: What the M2ts short for?
-class SrsMp4M2tsInitEncoder
+class SrsMp4M2tsInitEncoder : public ISrsMp4M2tsInitEncoder
 {
 private:
     ISrsWriter *writer_;
@@ -2781,10 +2795,34 @@ private:
     virtual srs_error_t config_sample_description_encryption(SrsMp4SampleEntry *box);
 };
 
+// The fMP4 segment encoder interface.
+class ISrsMp4M2tsSegmentEncoder
+{
+public:
+    ISrsMp4M2tsSegmentEncoder();
+    virtual ~ISrsMp4M2tsSegmentEncoder();
+
+public:
+    // Initialize the encoder with a writer w.
+    virtual srs_error_t initialize(ISrsWriter *w, uint32_t sequence, srs_utime_t basetime, uint32_t tid) = 0;
+    // Cache a sample.
+    // @param ht, The sample handler type, audio/soun or video/vide.
+    // @param ft, The frame type. For video, it's SrsVideoAvcFrameType.
+    // @param dts The output dts in milliseconds.
+    // @param pts The output pts in milliseconds.
+    // @param sample The output payload, user must free it.
+    // @param nb_sample The output size of payload.
+    // @remark All samples are RAW AAC/AVC data, because sequence header is writen to init.mp4.
+    virtual srs_error_t write_sample(SrsMp4HandlerType ht, uint16_t ft,
+                                     uint32_t dts, uint32_t pts, uint8_t *sample, uint32_t nb_sample) = 0;
+    // Flush the encoder, to write the moof and mdat.
+    virtual srs_error_t flush(uint64_t &dts) = 0;
+};
+
 // A fMP4 encoder, to cache segments then flush to disk, because the fMP4 should write
 // trun box before mdat.
 // TODO: fmp4 support package more than one tracks.
-class SrsMp4M2tsSegmentEncoder
+class SrsMp4M2tsSegmentEncoder : public ISrsMp4M2tsSegmentEncoder
 {
 private:
     ISrsWriter *writer_;

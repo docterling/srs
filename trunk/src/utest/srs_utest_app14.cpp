@@ -2378,6 +2378,21 @@ ISrsGbSession *MockAppFactoryForGbPublish::create_gb_session()
     return session;
 }
 
+ISrsInitMp4 *MockAppFactoryForGbPublish::create_init_mp4()
+{
+    return NULL;
+}
+
+ISrsFragmentWindow *MockAppFactoryForGbPublish::create_fragment_window()
+{
+    return NULL;
+}
+
+ISrsFragmentedMp4 *MockAppFactoryForGbPublish::create_fragmented_mp4()
+{
+    return NULL;
+}
+
 void MockAppFactoryForGbPublish::reset()
 {
     srs_freep(mock_gb_session_);
@@ -3553,7 +3568,8 @@ srs_error_t MockProtocolReadWriterForTcpNetwork::read_fully(void *buf, size_t si
 
     memcpy(buf, read_data_.data() + read_pos_, size);
     read_pos_ += size;
-    if (nread) *nread = size;
+    if (nread)
+        *nread = size;
     recv_bytes_ += size;
 
     return srs_success;
@@ -4154,8 +4170,8 @@ VOID TEST(RtcTcpConnTest, ReadPacketSuccess)
     // Prepare test packet data: 2-byte length header + packet body
     // Length = 100 bytes (0x0064 in big-endian)
     std::string test_data;
-    test_data.push_back(0x00);  // Length high byte
-    test_data.push_back(0x64);  // Length low byte (100 in decimal)
+    test_data.push_back(0x00); // Length high byte
+    test_data.push_back(0x64); // Length low byte (100 in decimal)
 
     // Add 100 bytes of packet data
     for (int i = 0; i < 100; i++) {
@@ -4244,8 +4260,8 @@ VOID TEST(RtcTcpConnTest, OnTcpPktRouting)
     // RTP packets have version bits (10) in first byte, and payload type < 64
     char rtp_pkt[100];
     memset(rtp_pkt, 0, sizeof(rtp_pkt));
-    rtp_pkt[0] = 0x80;  // Version 2 (10xxxxxx)
-    rtp_pkt[1] = 0x08;  // Payload type 8 (PCMA)
+    rtp_pkt[0] = 0x80; // Version 2 (10xxxxxx)
+    rtp_pkt[1] = 0x08; // Payload type 8 (PCMA)
 
     HELPER_EXPECT_SUCCESS(tcp_conn->on_tcp_pkt(rtp_pkt, 100));
 
@@ -4253,8 +4269,8 @@ VOID TEST(RtcTcpConnTest, OnTcpPktRouting)
     // RTCP packets have version bits (10) and payload type in range [64, 95]
     char rtcp_pkt[100];
     memset(rtcp_pkt, 0, sizeof(rtcp_pkt));
-    rtcp_pkt[0] = 0x80;  // Version 2 (10xxxxxx)
-    rtcp_pkt[1] = 0xC8;  // Payload type 200 (SR - Sender Report)
+    rtcp_pkt[0] = 0x80; // Version 2 (10xxxxxx)
+    rtcp_pkt[1] = 0xC8; // Payload type 200 (SR - Sender Report)
 
     HELPER_EXPECT_SUCCESS(tcp_conn->on_tcp_pkt(rtcp_pkt, 100));
 
@@ -4262,8 +4278,8 @@ VOID TEST(RtcTcpConnTest, OnTcpPktRouting)
     // DTLS packets have content type in range [20, 63]
     char dtls_pkt[100];
     memset(dtls_pkt, 0, sizeof(dtls_pkt));
-    dtls_pkt[0] = 0x16;  // Content type: handshake (22)
-    dtls_pkt[1] = 0xFE;  // DTLS version 1.0 (0xFEFF)
+    dtls_pkt[0] = 0x16; // Content type: handshake (22)
+    dtls_pkt[1] = 0xFE; // DTLS version 1.0 (0xFEFF)
     dtls_pkt[2] = 0xFF;
 
     HELPER_EXPECT_SUCCESS(tcp_conn->on_tcp_pkt(dtls_pkt, 100));

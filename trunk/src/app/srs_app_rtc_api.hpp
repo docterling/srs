@@ -15,15 +15,29 @@ class SrsServer;
 class ISrsRequest;
 class SrsSdp;
 class SrsRtcUserConfig;
+class ISrsRtcApiServer;
+class ISrsSecurity;
+class ISrsAppConfig;
+class ISrsStatistic;
+class ISrsRtcSourceManager;
+class ISrsLiveSourceManager;
+class ISrsHttpHooks;
 
 class SrsGoApiRtcPlay : public ISrsHttpHandler
 {
 private:
-    SrsServer *server_;
-    SrsSecurity *security_;
+    ISrsAppConfig *config_;
+    ISrsStatistic *stat_;
+    ISrsRtcSourceManager *rtc_sources_;
+    ISrsLiveSourceManager *live_sources_;
+    ISrsHttpHooks *hooks_;
+
+private:
+    ISrsRtcApiServer *server_;
+    ISrsSecurity *security_;
 
 public:
-    SrsGoApiRtcPlay(SrsServer *server);
+    SrsGoApiRtcPlay(ISrsRtcApiServer *server);
     virtual ~SrsGoApiRtcPlay();
 
 public:
@@ -45,11 +59,16 @@ private:
 class SrsGoApiRtcPublish : public ISrsHttpHandler
 {
 private:
-    SrsServer *server_;
-    SrsSecurity *security_;
+    ISrsAppConfig *config_;
+    ISrsStatistic *stat_;
+    ISrsHttpHooks *hooks_;
+
+private:
+    ISrsRtcApiServer *server_;
+    ISrsSecurity *security_;
 
 public:
-    SrsGoApiRtcPublish(SrsServer *server);
+    SrsGoApiRtcPublish(ISrsRtcApiServer *server);
     virtual ~SrsGoApiRtcPublish();
 
 public:
@@ -72,12 +91,15 @@ private:
 class SrsGoApiRtcWhip : public ISrsHttpHandler
 {
 private:
-    SrsServer *server_;
+    ISrsAppConfig *config_;
+
+private:
+    ISrsRtcApiServer *server_;
     SrsGoApiRtcPublish *publish_;
     SrsGoApiRtcPlay *play_;
 
 public:
-    SrsGoApiRtcWhip(SrsServer *server);
+    SrsGoApiRtcWhip(ISrsRtcApiServer *server);
     virtual ~SrsGoApiRtcWhip();
 
 public:
@@ -90,10 +112,10 @@ private:
 class SrsGoApiRtcNACK : public ISrsHttpHandler
 {
 private:
-    SrsServer *server_;
+    ISrsRtcApiServer *server_;
 
 public:
-    SrsGoApiRtcNACK(SrsServer *server);
+    SrsGoApiRtcNACK(ISrsRtcApiServer *server);
     virtual ~SrsGoApiRtcNACK();
 
 public:

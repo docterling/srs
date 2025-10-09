@@ -600,6 +600,9 @@ public:
     virtual SrsDvrMp4Segmenter *create_dvr_mp4_segmenter();
     virtual ISrsGbMediaTcpConn *create_gb_media_tcp_conn();
     virtual ISrsGbSession *create_gb_session();
+    virtual ISrsInitMp4 *create_init_mp4();
+    virtual ISrsFragmentWindow *create_fragment_window();
+    virtual ISrsFragmentedMp4 *create_fragmented_mp4();
     void reset();
 };
 

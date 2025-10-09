@@ -242,6 +242,8 @@ public:
     bool rtc_twcc_enabled_;
     bool srt_enabled_;
     bool rtc_to_rtmp_;
+    srs_utime_t dash_dispose_;
+    bool dash_enabled_;
 
 public:
     MockAppConfig();
@@ -291,6 +293,7 @@ public:
     virtual std::string get_rtc_server_protocol() { return "udp"; }
     virtual std::vector<std::string> get_rtc_server_listens() { return std::vector<std::string>(); }
     virtual int get_rtc_server_reuseport() { return 1; }
+    virtual bool get_rtc_server_encrypt() { return false; }
     virtual bool get_rtsp_server_enabled() { return false; }
     virtual std::vector<std::string> get_rtsp_server_listens() { return std::vector<std::string>(); }
     virtual std::vector<std::string> get_srt_listens() { return std::vector<std::string>(); }
@@ -357,6 +360,8 @@ public:
     virtual bool get_rtc_to_rtmp(std::string vhost);
     virtual srs_utime_t get_rtc_stun_timeout(std::string vhost);
     virtual bool get_rtc_stun_strict_check(std::string vhost);
+    virtual std::string get_rtc_dtls_role(std::string vhost);
+    virtual std::string get_rtc_dtls_version(std::string vhost);
     virtual SrsConfDirective *get_vhost_on_hls(std::string vhost);
     virtual SrsConfDirective *get_vhost_on_hls_notify(std::string vhost);
     // HLS methods
@@ -420,6 +425,17 @@ public:
     virtual std::string get_vhost_edge_protocol(std::string vhost) { return "rtmp"; }
     virtual bool get_vhost_edge_follow_client(std::string vhost) { return false; }
     virtual std::string get_vhost_edge_transform_vhost(std::string vhost) { return ""; }
+    // DASH methods
+    virtual bool get_dash_enabled(std::string vhost) { return dash_enabled_; }
+    virtual bool get_dash_enabled(SrsConfDirective *vhost) { return dash_enabled_; }
+    virtual srs_utime_t get_dash_fragment(std::string vhost) { return 30 * SRS_UTIME_SECONDS; }
+    virtual srs_utime_t get_dash_update_period(std::string vhost) { return 30 * SRS_UTIME_SECONDS; }
+    virtual srs_utime_t get_dash_timeshift(std::string vhost) { return 300 * SRS_UTIME_SECONDS; }
+    virtual std::string get_dash_path(std::string vhost) { return "./[vhost]/[app]/[stream]/"; }
+    virtual std::string get_dash_mpd_file(std::string vhost) { return "[stream].mpd"; }
+    virtual int get_dash_window_size(std::string vhost) { return 10; }
+    virtual bool get_dash_cleanup(std::string vhost) { return true; }
+    virtual srs_utime_t get_dash_dispose(std::string vhost) { return dash_dispose_; }
     void set_http_hooks_enabled(bool enabled);
     void set_on_stop_urls(const std::vector<std::string> &urls);
     void clear_on_stop_directive();

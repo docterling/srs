@@ -158,6 +158,14 @@ ISrsApiServerOwner::~ISrsApiServerOwner()
 {
 }
 
+ISrsRtcApiServer::ISrsRtcApiServer()
+{
+}
+
+ISrsRtcApiServer::~ISrsRtcApiServer()
+{
+}
+
 SrsServer::SrsServer()
 {
     signal_reload_ = false;
