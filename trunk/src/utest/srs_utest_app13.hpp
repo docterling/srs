@@ -640,6 +640,12 @@ public:
     virtual ISrsInitMp4 *create_init_mp4();
     virtual ISrsFragmentWindow *create_fragment_window();
     virtual ISrsFragmentedMp4 *create_fragmented_mp4();
+    virtual ISrsIpListener *create_tcp_listener(ISrsTcpHandler *handler);
+    // ISrsKernelFactory interface methods
+    virtual ISrsCoroutine *create_coroutine(const std::string &name, ISrsCoroutineHandler *handler, SrsContextId cid);
+    virtual ISrsTime *create_time();
+    virtual ISrsConfig *create_config();
+    virtual ISrsCond *create_cond();
 };
 
 // Mock ISrsDvrSegmenter for testing SrsDvrPlan

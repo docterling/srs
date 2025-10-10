@@ -23,6 +23,8 @@ struct sockaddr;
 class SrsBuffer;
 class SrsUdpMuxSocket;
 class ISrsListener;
+class ISrsAppFactory;
+class ISrsUdpMuxSocket;
 
 // The udp packet handler.
 class ISrsUdpHandler
@@ -50,7 +52,7 @@ public:
     virtual ~ISrsUdpMuxHandler();
 
 public:
-    virtual srs_error_t on_udp_packet(SrsUdpMuxSocket *skt) = 0;
+    virtual srs_error_t on_udp_packet(ISrsUdpMuxSocket *skt) = 0;
 };
 
 // All listener should support listen method.
@@ -91,6 +93,9 @@ public:
 // Bind udp port, start thread to recv packet and handler it.
 class SrsUdpListener : public ISrsCoroutineHandler, public ISrsIpListener
 {
+private:
+    ISrsAppFactory *factory_;
+
 protected:
     std::string label_;
     srs_netfd_t lfd_;
@@ -135,6 +140,9 @@ private:
 class SrsTcpListener : public ISrsCoroutineHandler, public ISrsIpListener
 {
 private:
+    ISrsAppFactory *factory_;
+
+private:
     std::string label_;
     srs_netfd_t lfd_;
     ISrsCoroutine *trd_;
@@ -169,8 +177,11 @@ private:
 class SrsMultipleTcpListeners : public ISrsIpListener, public ISrsTcpHandler
 {
 private:
+    ISrsAppFactory *factory_;
+
+private:
     ISrsTcpHandler *handler_;
-    std::vector<SrsTcpListener *> listeners_;
+    std::vector<ISrsIpListener *> listeners_;
 
 public:
     SrsMultipleTcpListeners(ISrsTcpHandler *h);
@@ -179,7 +190,7 @@ public:
 public:
     ISrsListener *set_label(const std::string &label);
     ISrsListener *set_endpoint(const std::string &i, int p);
-    SrsMultipleTcpListeners *add(const std::vector<std::string> &endpoints);
+    ISrsIpListener *add(const std::vector<std::string> &endpoints);
 
 public:
     srs_error_t listen();
@@ -203,6 +214,9 @@ public:
     virtual std::string peer_id() = 0;
     virtual uint64_t fast_id() = 0;
     virtual ISrsUdpMuxSocket *copy_sendonly() = 0;
+    virtual int recvfrom(srs_utime_t timeout) = 0;
+    virtual char *data() = 0;
+    virtual int size() = 0;
 };
 
 // TODO: FIXME: Rename it. Refine it for performance issue.
@@ -256,6 +270,9 @@ public:
 
 class SrsUdpMuxListener : public ISrsCoroutineHandler
 {
+private:
+    ISrsAppFactory *factory_;
+
 private:
     srs_netfd_t lfd_;
     ISrsCoroutine *trd_;

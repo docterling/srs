@@ -2393,6 +2393,31 @@ ISrsFragmentedMp4 *MockAppFactoryForGbPublish::create_fragmented_mp4()
     return NULL;
 }
 
+ISrsIpListener *MockAppFactoryForGbPublish::create_tcp_listener(ISrsTcpHandler *handler)
+{
+    return NULL;
+}
+
+ISrsCoroutine *MockAppFactoryForGbPublish::create_coroutine(const std::string &name, ISrsCoroutineHandler *handler, SrsContextId cid)
+{
+    return NULL;
+}
+
+ISrsTime *MockAppFactoryForGbPublish::create_time()
+{
+    return NULL;
+}
+
+ISrsConfig *MockAppFactoryForGbPublish::create_config()
+{
+    return NULL;
+}
+
+ISrsCond *MockAppFactoryForGbPublish::create_cond()
+{
+    return NULL;
+}
+
 void MockAppFactoryForGbPublish::reset()
 {
     srs_freep(mock_gb_session_);
@@ -3276,11 +3301,14 @@ MockUdpMuxSocket::MockUdpMuxSocket()
     peer_port_ = 5000;
     peer_id_ = "192.168.1.100:5000";
     fast_id_ = 0;
+    data_ = NULL;
+    size_ = 0;
 }
 
 MockUdpMuxSocket::~MockUdpMuxSocket()
 {
     srs_freep(sendto_error_);
+    data_ = NULL;
 }
 
 srs_error_t MockUdpMuxSocket::sendto(void *data, int size, srs_utime_t timeout)
@@ -3314,6 +3342,24 @@ SrsUdpMuxSocket *MockUdpMuxSocket::copy_sendonly()
 {
     // Return self for testing purposes - in real implementation this creates a copy
     return (SrsUdpMuxSocket *)this;
+}
+
+int MockUdpMuxSocket::recvfrom(srs_utime_t timeout)
+{
+    // Mock implementation - return the size of data received
+    return size_;
+}
+
+char *MockUdpMuxSocket::data()
+{
+    // Mock implementation - return the data buffer
+    return data_;
+}
+
+int MockUdpMuxSocket::size()
+{
+    // Mock implementation - return the size of data
+    return size_;
 }
 
 void MockUdpMuxSocket::reset()

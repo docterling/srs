@@ -28,6 +28,7 @@ class SrsSdp;
 class SrsRtcSource;
 class SrsResourceManager;
 class SrsAsyncCallWorker;
+class ISrsUdpMuxSocket;
 
 // The UDP black hole, for developer to use wireshark to catch plaintext packets.
 // For example, server receive UDP packets at udp://8000, and forward the plaintext packet to black hole,
@@ -118,7 +119,7 @@ public:
     virtual srs_error_t exec_rtc_async_work(ISrsAsyncCallTask *t);
 
 public:
-    virtual srs_error_t on_udp_packet(SrsUdpMuxSocket *skt);
+    virtual srs_error_t on_udp_packet(ISrsUdpMuxSocket *skt);
 };
 
 #endif

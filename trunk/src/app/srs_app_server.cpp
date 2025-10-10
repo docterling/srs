@@ -1370,7 +1370,7 @@ srs_error_t SrsServer::listen_rtc_udp()
     return err;
 }
 
-srs_error_t SrsServer::on_udp_packet(SrsUdpMuxSocket *skt)
+srs_error_t SrsServer::on_udp_packet(ISrsUdpMuxSocket *skt)
 {
     return rtc_session_manager_->on_udp_packet(skt);
 }

@@ -603,6 +603,12 @@ public:
     virtual ISrsInitMp4 *create_init_mp4();
     virtual ISrsFragmentWindow *create_fragment_window();
     virtual ISrsFragmentedMp4 *create_fragmented_mp4();
+    virtual ISrsIpListener *create_tcp_listener(ISrsTcpHandler *handler);
+    // ISrsKernelFactory interface methods
+    virtual ISrsCoroutine *create_coroutine(const std::string &name, ISrsCoroutineHandler *handler, SrsContextId cid);
+    virtual ISrsTime *create_time();
+    virtual ISrsConfig *create_config();
+    virtual ISrsCond *create_cond();
     void reset();
 };
 
@@ -715,6 +721,8 @@ public:
     int peer_port_;
     std::string peer_id_;
     uint64_t fast_id_;
+    char *data_;
+    int size_;
 
 public:
     MockUdpMuxSocket();
@@ -727,6 +735,9 @@ public:
     virtual std::string peer_id();
     virtual uint64_t fast_id();
     virtual SrsUdpMuxSocket *copy_sendonly();
+    virtual int recvfrom(srs_utime_t timeout);
+    virtual char *data();
+    virtual int size();
 
 public:
     void reset();

@@ -556,7 +556,7 @@ srs_error_t SrsRtcSessionManager::exec_rtc_async_work(ISrsAsyncCallTask *t)
     return rtc_async_->execute(t);
 }
 
-srs_error_t SrsRtcSessionManager::on_udp_packet(SrsUdpMuxSocket *skt)
+srs_error_t SrsRtcSessionManager::on_udp_packet(ISrsUdpMuxSocket *skt)
 {
     srs_error_t err = srs_success;
 

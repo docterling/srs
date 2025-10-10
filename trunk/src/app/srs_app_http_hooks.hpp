@@ -17,6 +17,8 @@ class SrsStSocket;
 class ISrsRequest;
 class SrsHttpParser;
 class SrsHttpClient;
+class ISrsAppFactory;
+class ISrsHttpClient;
 
 // HTTP hooks interface for SRS server event callbacks.
 //
@@ -149,6 +151,9 @@ public:
 
 class SrsHttpHooks : public ISrsHttpHooks
 {
+private:
+    ISrsAppFactory *factory_;
+
 public:
     SrsHttpHooks();
     virtual ~SrsHttpHooks();
@@ -168,7 +173,7 @@ public:
     srs_error_t on_forward_backend(std::string url, ISrsRequest *req, std::vector<std::string> &rtmp_urls);
 
 private:
-    srs_error_t do_post(SrsHttpClient *hc, std::string url, std::string req, int &code, std::string &res);
+    srs_error_t do_post(ISrsHttpClient *hc, std::string url, std::string req, int &code, std::string &res);
 };
 
 // Global HTTP hooks instance

@@ -12,6 +12,7 @@
 #include <srs_app_dvr.hpp>
 #include <srs_app_fragment.hpp>
 #include <srs_app_gb28181.hpp>
+#include <srs_app_listener.hpp>
 #include <srs_app_rtmp_conn.hpp>
 #include <srs_app_rtmp_source.hpp>
 #include <srs_app_rtsp_source.hpp>
@@ -35,10 +36,12 @@ ISrsAppFactory::~ISrsAppFactory()
 
 SrsAppFactory::SrsAppFactory()
 {
+    kernel_factory_ = new SrsFinalFactory();
 }
 
 SrsAppFactory::~SrsAppFactory()
 {
+    srs_freep(kernel_factory_);
 }
 
 ISrsFileWriter *SrsAppFactory::create_file_writer()
@@ -155,6 +158,31 @@ ISrsFragmentWindow *SrsAppFactory::create_fragment_window()
 ISrsFragmentedMp4 *SrsAppFactory::create_fragmented_mp4()
 {
     return new SrsFragmentedMp4();
+}
+
+ISrsIpListener *SrsAppFactory::create_tcp_listener(ISrsTcpHandler *handler)
+{
+    return new SrsTcpListener(handler);
+}
+
+ISrsCoroutine *SrsAppFactory::create_coroutine(const std::string &name, ISrsCoroutineHandler *handler, SrsContextId cid)
+{
+    return kernel_factory_->create_coroutine(name, handler, cid);
+}
+
+ISrsTime *SrsAppFactory::create_time()
+{
+    return kernel_factory_->create_time();
+}
+
+ISrsConfig *SrsAppFactory::create_config()
+{
+    return kernel_factory_->create_config();
+}
+
+ISrsCond *SrsAppFactory::create_cond()
+{
+    return kernel_factory_->create_cond();
 }
 
 SrsFinalFactory::SrsFinalFactory()

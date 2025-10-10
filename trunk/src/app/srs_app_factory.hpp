@@ -35,9 +35,12 @@ class ISrsFragment;
 class ISrsInitMp4;
 class ISrsFragmentWindow;
 class ISrsFragmentedMp4;
+class SrsFinalFactory;
+class ISrsIpListener;
+class ISrsTcpHandler;
 
 // The factory to create app objects.
-class ISrsAppFactory
+class ISrsAppFactory : public ISrsKernelFactory
 {
 public:
     ISrsAppFactory();
@@ -70,11 +73,15 @@ public:
     virtual ISrsInitMp4 *create_init_mp4() = 0;
     virtual ISrsFragmentWindow *create_fragment_window() = 0;
     virtual ISrsFragmentedMp4 *create_fragmented_mp4() = 0;
+    virtual ISrsIpListener *create_tcp_listener(ISrsTcpHandler *handler) = 0;
 };
 
 // The factory to create app objects.
 class SrsAppFactory : public ISrsAppFactory
 {
+private:
+    ISrsKernelFactory *kernel_factory_;
+
 public:
     SrsAppFactory();
     virtual ~SrsAppFactory();
@@ -106,6 +113,13 @@ public:
     virtual ISrsInitMp4 *create_init_mp4();
     virtual ISrsFragmentWindow *create_fragment_window();
     virtual ISrsFragmentedMp4 *create_fragmented_mp4();
+    virtual ISrsIpListener *create_tcp_listener(ISrsTcpHandler *handler);
+
+public:
+    virtual ISrsCoroutine *create_coroutine(const std::string &name, ISrsCoroutineHandler *handler, SrsContextId cid);
+    virtual ISrsTime *create_time();
+    virtual ISrsConfig *create_config();
+    virtual ISrsCond *create_cond();
 };
 
 extern ISrsAppFactory *_srs_app_factory;

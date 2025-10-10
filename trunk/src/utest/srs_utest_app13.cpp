@@ -3234,6 +3234,31 @@ ISrsFragmentedMp4 *MockDvrAppFactory::create_fragmented_mp4()
     return NULL;
 }
 
+ISrsIpListener *MockDvrAppFactory::create_tcp_listener(ISrsTcpHandler *handler)
+{
+    return NULL;
+}
+
+ISrsCoroutine *MockDvrAppFactory::create_coroutine(const std::string &name, ISrsCoroutineHandler *handler, SrsContextId cid)
+{
+    return NULL;
+}
+
+ISrsTime *MockDvrAppFactory::create_time()
+{
+    return NULL;
+}
+
+ISrsConfig *MockDvrAppFactory::create_config()
+{
+    return NULL;
+}
+
+ISrsCond *MockDvrAppFactory::create_cond()
+{
+    return NULL;
+}
+
 VOID TEST(DvrSegmenterTest, OpenTypicalScenario)
 {
     srs_error_t err;

@@ -69,6 +69,7 @@ class ISrsLog;
 class ISrsStatistic;
 class ISrsHourGlass;
 class ISrsAppFactory;
+class ISrsUdpMuxSocket;
 
 // Initialize global shared variables cross all threads.
 extern srs_error_t srs_global_initialize();
@@ -298,7 +299,7 @@ private:
 
     // Interface ISrsUdpMuxHandler
 public:
-    virtual srs_error_t on_udp_packet(SrsUdpMuxSocket *skt);
+    virtual srs_error_t on_udp_packet(ISrsUdpMuxSocket *skt);
 
 private:
     virtual srs_error_t listen_rtc_api();

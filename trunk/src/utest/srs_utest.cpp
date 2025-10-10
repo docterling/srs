@@ -50,8 +50,8 @@ bool _srs_in_docker = false;
 bool _srs_config_by_env = false;
 
 // @global kernel factory.
-ISrsKernelFactory *_srs_kernel_factory = new SrsFinalFactory();
 ISrsAppFactory *_srs_app_factory = new SrsAppFactory();
+ISrsKernelFactory *_srs_kernel_factory = _srs_app_factory;
 
 // The binary name of SRS.
 const char *_srs_binary = NULL;
