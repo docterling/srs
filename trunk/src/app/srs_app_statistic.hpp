@@ -161,6 +161,8 @@ public:
     virtual SrsStatisticVhost *find_vhost_by_id(std::string vid) = 0;
     // Find stream by id.
     virtual SrsStatisticStream *find_stream(std::string sid) = 0;
+    // Find stream by url.
+    virtual SrsStatisticStream *find_stream_by_url(std::string url) = 0;
     // Find client by id.
     virtual SrsStatisticClient *find_client(std::string client_id) = 0;
     // Dumps the vhosts to json array.

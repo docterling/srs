@@ -10,6 +10,7 @@ using namespace std;
 
 #include <srs_app_config.hpp>
 #include <srs_app_dash.hpp>
+#include <srs_app_http_hooks.hpp>
 #include <srs_app_rtc_api.hpp>
 #include <srs_app_rtc_server.hpp>
 #include <srs_app_statistic.hpp>
@@ -1877,6 +1878,11 @@ SrsStatisticStream *MockStatisticForRtcApi::find_stream(std::string sid)
     return NULL;
 }
 
+SrsStatisticStream *MockStatisticForRtcApi::find_stream_by_url(std::string url)
+{
+    return NULL;
+}
+
 SrsStatisticClient *MockStatisticForRtcApi::find_client(std::string client_id)
 {
     return NULL;
@@ -3403,3 +3409,860 @@ VOID TEST(StatisticTest, DumpsMetrics)
     // nerrs should be 2 (client1 and client2 disconnected with errors)
     EXPECT_EQ(2, nerrs);
 }
+
+// Mock ISrsHttpResponseReader implementation for SrsHttpHooks testing
+MockHttpResponseReaderForHooks::MockHttpResponseReaderForHooks()
+{
+    content_ = "";
+    read_pos_ = 0;
+    eof_ = false;
+}
+
+MockHttpResponseReaderForHooks::~MockHttpResponseReaderForHooks()
+{
+}
+
+srs_error_t MockHttpResponseReaderForHooks::read(void *buf, size_t size, ssize_t *nread)
+{
+    if (eof_ || read_pos_ >= content_.length()) {
+        eof_ = true;
+        return srs_error_new(-1, "EOF");
+    }
+
+    size_t remaining = content_.length() - read_pos_;
+    size_t to_read = srs_min(size, remaining);
+    memcpy(buf, content_.data() + read_pos_, to_read);
+    read_pos_ += to_read;
+    if (nread) {
+        *nread = to_read;
+    }
+
+    if (read_pos_ >= content_.length()) {
+        eof_ = true;
+    }
+
+    return srs_success;
+}
+
+bool MockHttpResponseReaderForHooks::eof()
+{
+    return eof_;
+}
+
+// Mock ISrsHttpMessage implementation for SrsHttpHooks testing
+MockHttpMessageForHooks::MockHttpMessageForHooks()
+{
+    status_code_ = 200;
+    body_content_ = "{\"code\":0}";
+    body_reader_ = NULL;
+}
+
+MockHttpMessageForHooks::~MockHttpMessageForHooks()
+{
+    srs_freep(body_reader_);
+}
+
+uint8_t MockHttpMessageForHooks::method()
+{
+    return 0;
+}
+
+uint16_t MockHttpMessageForHooks::status_code()
+{
+    return status_code_;
+}
+
+std::string MockHttpMessageForHooks::method_str()
+{
+    return "POST";
+}
+
+std::string MockHttpMessageForHooks::url()
+{
+    return "";
+}
+
+std::string MockHttpMessageForHooks::host()
+{
+    return "";
+}
+
+std::string MockHttpMessageForHooks::path()
+{
+    return "";
+}
+
+std::string MockHttpMessageForHooks::query()
+{
+    return "";
+}
+
+std::string MockHttpMessageForHooks::ext()
+{
+    return "";
+}
+
+srs_error_t MockHttpMessageForHooks::body_read_all(std::string &body)
+{
+    body = body_content_;
+    return srs_success;
+}
+
+ISrsHttpResponseReader *MockHttpMessageForHooks::body_reader()
+{
+    return body_reader_;
+}
+
+int64_t MockHttpMessageForHooks::content_length()
+{
+    return 0;
+}
+
+std::string MockHttpMessageForHooks::query_get(std::string key)
+{
+    return "";
+}
+
+int MockHttpMessageForHooks::request_header_count()
+{
+    return 0;
+}
+
+std::string MockHttpMessageForHooks::request_header_key_at(int index)
+{
+    return "";
+}
+
+std::string MockHttpMessageForHooks::request_header_value_at(int index)
+{
+    return "";
+}
+
+std::string MockHttpMessageForHooks::get_request_header(std::string name)
+{
+    return "";
+}
+
+ISrsRequest *MockHttpMessageForHooks::to_request(std::string vhost)
+{
+    return NULL;
+}
+
+bool MockHttpMessageForHooks::is_chunked()
+{
+    return false;
+}
+
+bool MockHttpMessageForHooks::is_keep_alive()
+{
+    return false;
+}
+
+bool MockHttpMessageForHooks::is_jsonp()
+{
+    return false;
+}
+
+std::string MockHttpMessageForHooks::jsonp()
+{
+    return "";
+}
+
+bool MockHttpMessageForHooks::require_crossdomain()
+{
+    return false;
+}
+
+srs_error_t MockHttpMessageForHooks::enter_infinite_chunked()
+{
+    return srs_success;
+}
+
+srs_error_t MockHttpMessageForHooks::end_infinite_chunked()
+{
+    return srs_success;
+}
+
+uint8_t MockHttpMessageForHooks::message_type()
+{
+    return 0;
+}
+
+bool MockHttpMessageForHooks::is_http_get()
+{
+    return false;
+}
+
+bool MockHttpMessageForHooks::is_http_put()
+{
+    return false;
+}
+
+bool MockHttpMessageForHooks::is_http_post()
+{
+    return true;
+}
+
+bool MockHttpMessageForHooks::is_http_delete()
+{
+    return false;
+}
+
+bool MockHttpMessageForHooks::is_http_options()
+{
+    return false;
+}
+
+std::string MockHttpMessageForHooks::uri()
+{
+    return "";
+}
+
+std::string MockHttpMessageForHooks::parse_rest_id(std::string pattern)
+{
+    return "";
+}
+
+SrsHttpHeader *MockHttpMessageForHooks::header()
+{
+    return NULL;
+}
+
+// Mock ISrsHttpClient implementation for SrsHttpHooks testing
+MockHttpClientForHooks::MockHttpClientForHooks()
+{
+    initialize_called_ = false;
+    post_called_ = false;
+    get_called_ = false;
+    port_ = 0;
+    mock_response_ = NULL;
+    initialize_error_ = srs_success;
+    post_error_ = srs_success;
+    get_error_ = srs_success;
+}
+
+MockHttpClientForHooks::~MockHttpClientForHooks()
+{
+}
+
+srs_error_t MockHttpClientForHooks::initialize(std::string schema, std::string h, int p, srs_utime_t tm)
+{
+    initialize_called_ = true;
+    schema_ = schema;
+    host_ = h;
+    port_ = p;
+    return srs_error_copy(initialize_error_);
+}
+
+srs_error_t MockHttpClientForHooks::get(std::string path, std::string req, ISrsHttpMessage **ppmsg)
+{
+    get_called_ = true;
+    path_ = path;
+    request_body_ = req;
+    if (ppmsg && mock_response_) {
+        *ppmsg = mock_response_;
+    }
+    return srs_error_copy(get_error_);
+}
+
+srs_error_t MockHttpClientForHooks::post(std::string path, std::string req, ISrsHttpMessage **ppmsg)
+{
+    post_called_ = true;
+    path_ = path;
+    request_body_ = req;
+    if (ppmsg && mock_response_) {
+        *ppmsg = mock_response_;
+    }
+    return srs_error_copy(post_error_);
+}
+
+void MockHttpClientForHooks::set_recv_timeout(srs_utime_t tm)
+{
+}
+
+void MockHttpClientForHooks::kbps_sample(const char *label, srs_utime_t age)
+{
+}
+
+// Mock ISrsAppFactory implementation for SrsHttpHooks testing
+MockAppFactoryForHooks::MockAppFactoryForHooks()
+{
+    mock_http_client_ = NULL;
+}
+
+MockAppFactoryForHooks::~MockAppFactoryForHooks()
+{
+}
+
+ISrsHttpClient *MockAppFactoryForHooks::create_http_client()
+{
+    return mock_http_client_;
+}
+
+// Mock ISrsStatistic implementation for SrsHttpHooks testing
+MockStatisticForHooks::MockStatisticForHooks()
+{
+    server_id_ = "test_server_id";
+    service_id_ = "test_service_id";
+}
+
+MockStatisticForHooks::~MockStatisticForHooks()
+{
+}
+
+void MockStatisticForHooks::on_disconnect(std::string id, srs_error_t err)
+{
+}
+
+srs_error_t MockStatisticForHooks::on_client(std::string id, ISrsRequest *req, ISrsExpire *conn, SrsRtmpConnType type)
+{
+    return srs_success;
+}
+
+srs_error_t MockStatisticForHooks::on_video_info(ISrsRequest *req, SrsVideoCodecId vcodec, int avc_profile, int avc_level, int width, int height)
+{
+    return srs_success;
+}
+
+srs_error_t MockStatisticForHooks::on_audio_info(ISrsRequest *req, SrsAudioCodecId acodec, SrsAudioSampleRate asample_rate,
+                                                  SrsAudioChannels asound_type, SrsAacObjectType aac_object)
+{
+    return srs_success;
+}
+
+void MockStatisticForHooks::on_stream_publish(ISrsRequest *req, std::string publisher_id)
+{
+}
+
+void MockStatisticForHooks::on_stream_close(ISrsRequest *req)
+{
+}
+
+void MockStatisticForHooks::kbps_add_delta(std::string id, ISrsKbpsDelta *delta)
+{
+}
+
+void MockStatisticForHooks::kbps_sample()
+{
+}
+
+srs_error_t MockStatisticForHooks::on_video_frames(ISrsRequest *req, int nb_frames)
+{
+    return srs_success;
+}
+
+std::string MockStatisticForHooks::server_id()
+{
+    return server_id_;
+}
+
+std::string MockStatisticForHooks::service_id()
+{
+    return service_id_;
+}
+
+std::string MockStatisticForHooks::service_pid()
+{
+    return "test_pid";
+}
+
+SrsStatisticVhost *MockStatisticForHooks::find_vhost_by_id(std::string vid)
+{
+    return NULL;
+}
+
+SrsStatisticStream *MockStatisticForHooks::find_stream(std::string sid)
+{
+    return NULL;
+}
+
+SrsStatisticStream *MockStatisticForHooks::find_stream_by_url(std::string url)
+{
+    return NULL;
+}
+
+SrsStatisticClient *MockStatisticForHooks::find_client(std::string client_id)
+{
+    return NULL;
+}
+
+srs_error_t MockStatisticForHooks::dumps_vhosts(SrsJsonArray *arr)
+{
+    return srs_success;
+}
+
+srs_error_t MockStatisticForHooks::dumps_streams(SrsJsonArray *arr, int start, int count)
+{
+    return srs_success;
+}
+
+srs_error_t MockStatisticForHooks::dumps_clients(SrsJsonArray *arr, int start, int count)
+{
+    return srs_success;
+}
+
+srs_error_t MockStatisticForHooks::dumps_metrics(int64_t &send_bytes, int64_t &recv_bytes, int64_t &nstreams, int64_t &nclients, int64_t &total_nclients, int64_t &nerrs)
+{
+    return srs_success;
+}
+
+// Mock factory that tracks HTTP client calls
+class MockAppFactoryForHooksTest : public SrsAppFactory
+{
+public:
+    bool initialize_called_;
+    bool post_called_;
+    std::string schema_;
+    std::string host_;
+    int port_;
+    std::string path_;
+    std::string request_body_;
+    MockHttpClientForHooks *mock_http_client_;
+
+public:
+    MockAppFactoryForHooksTest()
+    {
+        initialize_called_ = false;
+        post_called_ = false;
+        port_ = 0;
+        mock_http_client_ = NULL;
+    }
+
+    virtual ~MockAppFactoryForHooksTest()
+    {
+    }
+
+    virtual ISrsHttpClient *create_http_client()
+    {
+        // If a specific mock client is set, return it
+        if (mock_http_client_) {
+            return mock_http_client_;
+        }
+
+        // Create a mock HTTP client that saves call information to the factory
+        MockHttpClientForHooks *client = new MockHttpClientForHooks();
+
+        // Create mock response
+        MockHttpMessageForHooks *msg = new MockHttpMessageForHooks();
+        msg->status_code_ = 200;
+        msg->body_content_ = "{\"code\":0}";
+
+        // Create mock body reader for GET requests (e.g., on_hls_notify)
+        MockHttpResponseReaderForHooks *reader = new MockHttpResponseReaderForHooks();
+        reader->content_ = "OK";  // Simple response body
+        msg->body_reader_ = reader;
+
+        client->mock_response_ = msg;
+
+        return client;
+    }
+};
+
+VOID TEST(HttpHooksTest, OnConnectSuccess)
+{
+    srs_error_t err;
+
+    // Create mock factory that will track calls
+    SrsUniquePtr<MockAppFactoryForHooksTest> mock_factory(new MockAppFactoryForHooksTest());
+
+    // Create mock statistic
+    SrsUniquePtr<MockStatisticForHooks> mock_stat(new MockStatisticForHooks());
+
+    // Create mock request
+    SrsUniquePtr<MockSrsRequest> req(new MockSrsRequest("test.vhost", "live", "stream1"));
+    req->ip_ = "192.168.1.100";
+    req->tcUrl_ = "rtmp://test.vhost/live";
+    req->pageUrl_ = "http://example.com/player.html";
+    req->param_ = "?token=abc123";
+
+    // Create SrsHttpHooks and inject mocks
+    SrsUniquePtr<SrsHttpHooks> hooks(new SrsHttpHooks());
+    hooks->factory_ = mock_factory.get();
+    hooks->stat_ = mock_stat.get();
+
+    // Test on_connect with successful response
+    std::string url = "http://127.0.0.1:8085/api/v1/clients";
+    HELPER_EXPECT_SUCCESS(hooks->on_connect(url, req.get()));
+
+    // Clean up - set injected fields to NULL to avoid double-free
+    hooks->factory_ = NULL;
+    hooks->stat_ = NULL;
+}
+
+VOID TEST(HttpHooksTest, OnCloseSuccess)
+{
+    // Create mock factory that will track calls
+    SrsUniquePtr<MockAppFactoryForHooksTest> mock_factory(new MockAppFactoryForHooksTest());
+
+    // Create mock statistic
+    SrsUniquePtr<MockStatisticForHooks> mock_stat(new MockStatisticForHooks());
+
+    // Create mock request
+    SrsUniquePtr<MockSrsRequest> req(new MockSrsRequest("test.vhost", "live", "stream1"));
+    req->ip_ = "192.168.1.100";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+
+    // Create SrsHttpHooks and inject mocks
+    SrsUniquePtr<SrsHttpHooks> hooks(new SrsHttpHooks());
+    hooks->factory_ = mock_factory.get();
+    hooks->stat_ = mock_stat.get();
+
+    // Test on_close with successful response
+    std::string url = "http://127.0.0.1:8085/api/v1/clients";
+    int64_t send_bytes = 1024000;
+    int64_t recv_bytes = 512000;
+    hooks->on_close(url, req.get(), send_bytes, recv_bytes);
+
+    // Clean up - set injected fields to NULL to avoid double-free
+    hooks->factory_ = NULL;
+    hooks->stat_ = NULL;
+}
+
+VOID TEST(HttpHooksTest, OnPublishSuccess)
+{
+    srs_error_t err;
+
+    // Create mock factory that will track calls
+    SrsUniquePtr<MockAppFactoryForHooksTest> mock_factory(new MockAppFactoryForHooksTest());
+
+    // Create mock statistic
+    SrsUniquePtr<MockStatisticForHooks> mock_stat(new MockStatisticForHooks());
+
+    // Create mock request
+    SrsUniquePtr<MockSrsRequest> req(new MockSrsRequest("test.vhost", "live", "stream1"));
+    req->ip_ = "192.168.1.100";
+    req->tcUrl_ = "rtmp://test.vhost/live";
+    req->param_ = "?token=abc123";
+
+    // Create SrsHttpHooks and inject mocks
+    SrsUniquePtr<SrsHttpHooks> hooks(new SrsHttpHooks());
+    hooks->factory_ = mock_factory.get();
+    hooks->stat_ = mock_stat.get();
+
+    // Test on_publish with successful response - major use scenario
+    std::string url = "http://127.0.0.1:8085/api/v1/streams";
+    HELPER_EXPECT_SUCCESS(hooks->on_publish(url, req.get()));
+
+    // Clean up - set injected fields to NULL to avoid double-free
+    hooks->factory_ = NULL;
+    hooks->stat_ = NULL;
+}
+
+VOID TEST(HttpHooksTest, OnUnpublishSuccess)
+{
+    // Create mock factory that will track calls
+    SrsUniquePtr<MockAppFactoryForHooksTest> mock_factory(new MockAppFactoryForHooksTest());
+
+    // Create mock statistic
+    SrsUniquePtr<MockStatisticForHooks> mock_stat(new MockStatisticForHooks());
+
+    // Create mock request
+    SrsUniquePtr<MockSrsRequest> req(new MockSrsRequest("test.vhost", "live", "stream1"));
+    req->ip_ = "192.168.1.100";
+    req->tcUrl_ = "rtmp://test.vhost/live";
+    req->param_ = "?token=abc123";
+
+    // Create SrsHttpHooks and inject mocks
+    SrsUniquePtr<SrsHttpHooks> hooks(new SrsHttpHooks());
+    hooks->factory_ = mock_factory.get();
+    hooks->stat_ = mock_stat.get();
+
+    // Test on_unpublish with successful response - major use scenario
+    std::string url = "http://127.0.0.1:8085/api/v1/streams";
+    hooks->on_unpublish(url, req.get());
+
+    // Clean up - set injected fields to NULL to avoid double-free
+    hooks->factory_ = NULL;
+    hooks->stat_ = NULL;
+}
+
+VOID TEST(HttpHooksTest, OnPlaySuccess)
+{
+    srs_error_t err;
+
+    // Create mock factory that will track calls
+    SrsUniquePtr<MockAppFactoryForHooksTest> mock_factory(new MockAppFactoryForHooksTest());
+
+    // Create mock statistic
+    SrsUniquePtr<MockStatisticForHooks> mock_stat(new MockStatisticForHooks());
+
+    // Create mock request
+    SrsUniquePtr<MockSrsRequest> req(new MockSrsRequest("test.vhost", "live", "stream1"));
+    req->ip_ = "192.168.1.100";
+    req->tcUrl_ = "rtmp://test.vhost/live";
+    req->param_ = "?token=abc123";
+    req->pageUrl_ = "http://example.com/player.html";
+
+    // Create SrsHttpHooks and inject mocks
+    SrsUniquePtr<SrsHttpHooks> hooks(new SrsHttpHooks());
+    hooks->factory_ = mock_factory.get();
+    hooks->stat_ = mock_stat.get();
+
+    // Test on_play with successful response - major use scenario
+    std::string url = "http://127.0.0.1:8085/api/v1/sessions";
+    HELPER_EXPECT_SUCCESS(hooks->on_play(url, req.get()));
+
+    // Clean up - set injected fields to NULL to avoid double-free
+    hooks->factory_ = NULL;
+    hooks->stat_ = NULL;
+}
+
+VOID TEST(HttpHooksTest, OnStopSuccess)
+{
+    // Create mock factory that will track calls
+    SrsUniquePtr<MockAppFactoryForHooksTest> mock_factory(new MockAppFactoryForHooksTest());
+
+    // Create mock statistic
+    SrsUniquePtr<MockStatisticForHooks> mock_stat(new MockStatisticForHooks());
+
+    // Create mock request
+    SrsUniquePtr<MockSrsRequest> req(new MockSrsRequest("test.vhost", "live", "stream1"));
+    req->ip_ = "192.168.1.100";
+    req->vhost_ = "test.vhost";
+    req->app_ = "live";
+    req->tcUrl_ = "rtmp://test.vhost/live";
+    req->param_ = "?token=abc123";
+
+    // Create SrsHttpHooks and inject mocks
+    SrsUniquePtr<SrsHttpHooks> hooks(new SrsHttpHooks());
+    hooks->factory_ = mock_factory.get();
+    hooks->stat_ = mock_stat.get();
+
+    // Test on_stop with successful response - major use scenario
+    std::string url = "http://127.0.0.1:8085/api/v1/sessions";
+    hooks->on_stop(url, req.get());
+
+    // Clean up - set injected fields to NULL to avoid double-free
+    hooks->factory_ = NULL;
+    hooks->stat_ = NULL;
+}
+
+VOID TEST(HttpHooksTest, OnDvrSuccess)
+{
+    srs_error_t err;
+
+    // Create mock factory that will track calls
+    SrsUniquePtr<MockAppFactoryForHooksTest> mock_factory(new MockAppFactoryForHooksTest());
+
+    // Create mock statistic
+    SrsUniquePtr<MockStatisticForHooks> mock_stat(new MockStatisticForHooks());
+    mock_stat->server_id_ = "server-123";
+    mock_stat->service_id_ = "service-456";
+
+    // Create mock config
+    SrsUniquePtr<MockAppConfig> mock_config(new MockAppConfig());
+
+    // Create mock request
+    SrsUniquePtr<MockSrsRequest> req(new MockSrsRequest("test.vhost", "live", "stream1"));
+    req->ip_ = "192.168.1.100";
+    req->tcUrl_ = "rtmp://test.vhost/live";
+    req->param_ = "?token=abc123";
+
+    // Create SrsHttpHooks and inject mocks
+    SrsUniquePtr<SrsHttpHooks> hooks(new SrsHttpHooks());
+    hooks->factory_ = mock_factory.get();
+    hooks->stat_ = mock_stat.get();
+    hooks->config_ = mock_config.get();
+
+    // Test on_dvr with successful response - major use scenario
+    // This covers DVR recording notification with file path
+    SrsContextId cid;
+    cid.set_value("client-789");
+    std::string url = "http://127.0.0.1:8085/api/v1/dvrs";
+    std::string file = "/data/dvr/test.vhost/live/stream1/2025-01-15/recording.flv";
+    HELPER_EXPECT_SUCCESS(hooks->on_dvr(cid, url, req.get(), file));
+
+    // Clean up - set injected fields to NULL to avoid double-free
+    hooks->factory_ = NULL;
+    hooks->stat_ = NULL;
+    hooks->config_ = NULL;
+}
+
+VOID TEST(HttpHooksTest, OnHlsSuccess)
+{
+    srs_error_t err;
+
+    // Create mock factory that will track calls
+    SrsUniquePtr<MockAppFactoryForHooksTest> mock_factory(new MockAppFactoryForHooksTest());
+
+    // Create mock statistic
+    SrsUniquePtr<MockStatisticForHooks> mock_stat(new MockStatisticForHooks());
+    mock_stat->server_id_ = "server-123";
+    mock_stat->service_id_ = "service-456";
+
+    // Create mock config
+    SrsUniquePtr<MockAppConfig> mock_config(new MockAppConfig());
+
+    // Create mock request
+    SrsUniquePtr<MockSrsRequest> req(new MockSrsRequest("test.vhost", "live", "stream1"));
+    req->ip_ = "192.168.1.100";
+    req->tcUrl_ = "rtmp://test.vhost/live";
+    req->param_ = "?token=abc123";
+
+    // Create SrsHttpHooks and inject mocks
+    SrsUniquePtr<SrsHttpHooks> hooks(new SrsHttpHooks());
+    hooks->factory_ = mock_factory.get();
+    hooks->stat_ = mock_stat.get();
+    hooks->config_ = mock_config.get();
+
+    // Test on_hls with successful response - major use scenario
+    // This covers HLS segment notification with all typical parameters
+    SrsContextId cid;
+    cid.set_value("client-789");
+    std::string url = "http://127.0.0.1:8085/api/v1/hls";
+    std::string file = "/data/hls/test.vhost/live/stream1/segment-123.ts";
+    std::string ts_url = "segment-123.ts";
+    std::string m3u8 = "/data/hls/test.vhost/live/stream1/playlist.m3u8";
+    std::string m3u8_url = "http://127.0.0.1:8080/live/stream1/playlist.m3u8";
+    int sn = 123;
+    srs_utime_t duration = 10 * SRS_UTIME_SECONDS;  // 10 seconds
+
+    HELPER_EXPECT_SUCCESS(hooks->on_hls(cid, url, req.get(), file, ts_url, m3u8, m3u8_url, sn, duration));
+
+    // Clean up - set injected fields to NULL to avoid double-free
+    hooks->factory_ = NULL;
+    hooks->stat_ = NULL;
+    hooks->config_ = NULL;
+}
+
+VOID TEST(HttpHooksTest, OnHlsNotifySuccess)
+{
+    srs_error_t err;
+
+    // Create mock factory that will track calls
+    SrsUniquePtr<MockAppFactoryForHooksTest> mock_factory(new MockAppFactoryForHooksTest());
+
+    // Create mock statistic
+    SrsUniquePtr<MockStatisticForHooks> mock_stat(new MockStatisticForHooks());
+    mock_stat->server_id_ = "server-123";
+    mock_stat->service_id_ = "service-456";
+
+    // Create mock config
+    SrsUniquePtr<MockAppConfig> mock_config(new MockAppConfig());
+
+    // Create mock request
+    SrsUniquePtr<MockSrsRequest> req(new MockSrsRequest("test.vhost", "live", "stream1"));
+    req->app_ = "live";
+    req->stream_ = "stream1";
+    req->param_ = "?token=abc123";
+
+    // Create SrsHttpHooks and inject mocks
+    SrsUniquePtr<SrsHttpHooks> hooks(new SrsHttpHooks());
+    hooks->factory_ = mock_factory.get();
+    hooks->stat_ = mock_stat.get();
+    hooks->config_ = mock_config.get();
+
+    // Test on_hls_notify with successful response - major use scenario
+    // This covers HLS segment notification with URL template variable replacement
+    SrsContextId cid;
+    cid.set_value("client-789");
+    std::string url = "http://127.0.0.1:8085/api/v1/hls/notify?server=[server_id]&service=[service_id]&app=[app]&stream=[stream]&ts=[ts_url]&param=[param]";
+    std::string ts_url = "segment-123.ts";
+    int nb_notify = 1024;  // Read up to 1KB from response
+
+    HELPER_EXPECT_SUCCESS(hooks->on_hls_notify(cid, url, req.get(), ts_url, nb_notify));
+
+    // Clean up - set injected fields to NULL to avoid double-free
+    hooks->factory_ = NULL;
+    hooks->stat_ = NULL;
+    hooks->config_ = NULL;
+}
+
+VOID TEST(HttpHooksTest, DiscoverCoWorkersSuccess)
+{
+    srs_error_t err;
+
+    // Create mock factory that returns HTTP client with cluster discovery response
+    SrsUniquePtr<MockAppFactoryForHooksTest> mock_factory(new MockAppFactoryForHooksTest());
+
+    // Create SrsHttpHooks and inject mock factory
+    SrsUniquePtr<SrsHttpHooks> hooks(new SrsHttpHooks());
+    hooks->factory_ = mock_factory.get();
+
+    // Override the mock HTTP client response to return cluster discovery JSON
+    // The response should contain: {"data": {"origin": {"ip": "192.168.1.10", "port": 1935}}}
+    MockHttpClientForHooks *mock_client = new MockHttpClientForHooks();
+    MockHttpMessageForHooks *msg = new MockHttpMessageForHooks();
+    msg->status_code_ = 200;
+    msg->body_content_ = "{\"code\":0,\"data\":{\"origin\":{\"ip\":\"192.168.1.10\",\"port\":1935}}}";
+
+    MockHttpResponseReaderForHooks *reader = new MockHttpResponseReaderForHooks();
+    reader->content_ = msg->body_content_;
+    msg->body_reader_ = reader;
+
+    mock_client->mock_response_ = msg;
+    mock_factory->mock_http_client_ = mock_client;
+
+    // Test discover_co_workers with successful response - major use scenario
+    // This covers origin cluster discovery with host and port extraction
+    std::string url = "http://127.0.0.1:8085/api/v1/clusters";
+    std::string host;
+    int port = 0;
+
+    HELPER_EXPECT_SUCCESS(hooks->discover_co_workers(url, host, port));
+
+    // Verify the parsed host and port
+    EXPECT_STREQ("192.168.1.10", host.c_str());
+    EXPECT_EQ(1935, port);
+
+    // Clean up - set injected fields to NULL to avoid double-free
+    // Note: mock_client is already freed by SrsUniquePtr in discover_co_workers
+    hooks->factory_ = NULL;
+    mock_factory->mock_http_client_ = NULL;
+}
+
+VOID TEST(HttpHooksTest, OnForwardBackendSuccess)
+{
+    srs_error_t err;
+
+    // Create mock factory that returns HTTP client with forward backend response
+    SrsUniquePtr<MockAppFactoryForHooksTest> mock_factory(new MockAppFactoryForHooksTest());
+
+    // Create mock statistic
+    SrsUniquePtr<MockStatisticForHooks> mock_stat(new MockStatisticForHooks());
+
+    // Create mock request
+    SrsUniquePtr<MockSrsRequest> req(new MockSrsRequest("test.vhost", "live", "stream1"));
+    req->ip_ = "192.168.1.100";
+    req->tcUrl_ = "rtmp://test.vhost/live";
+    req->param_ = "?token=abc123";
+
+    // Create SrsHttpHooks and inject mocks
+    SrsUniquePtr<SrsHttpHooks> hooks(new SrsHttpHooks());
+    hooks->factory_ = mock_factory.get();
+    hooks->stat_ = mock_stat.get();
+
+    // Override the mock HTTP client response to return forward backend JSON with RTMP URLs
+    // The response should contain: {"data": {"urls": ["rtmp://origin1/live/stream1", "rtmp://origin2/live/stream1"]}}
+    MockHttpClientForHooks *mock_client = new MockHttpClientForHooks();
+    MockHttpMessageForHooks *msg = new MockHttpMessageForHooks();
+    msg->status_code_ = 200;
+    msg->body_content_ = "{\"code\":0,\"data\":{\"urls\":[\"rtmp://192.168.1.10:1935/live/stream1\",\"rtmp://192.168.1.11:1935/live/stream1\"]}}";
+
+    MockHttpResponseReaderForHooks *reader = new MockHttpResponseReaderForHooks();
+    reader->content_ = msg->body_content_;
+    msg->body_reader_ = reader;
+
+    mock_client->mock_response_ = msg;
+    mock_factory->mock_http_client_ = mock_client;
+
+    // Test on_forward_backend with successful response - major use scenario
+    // This covers forward backend discovery with RTMP URL extraction
+    std::string url = "http://127.0.0.1:8085/api/v1/forward";
+    std::vector<std::string> rtmp_urls;
+
+    HELPER_EXPECT_SUCCESS(hooks->on_forward_backend(url, req.get(), rtmp_urls));
+
+    // Verify the parsed RTMP URLs
+    EXPECT_EQ(2, (int)rtmp_urls.size());
+    EXPECT_STREQ("rtmp://192.168.1.10:1935/live/stream1", rtmp_urls[0].c_str());
+    EXPECT_STREQ("rtmp://192.168.1.11:1935/live/stream1", rtmp_urls[1].c_str());
+
+    // Clean up - set injected fields to NULL to avoid double-free
+    // Note: mock_client is already freed by SrsUniquePtr in on_forward_backend
+    hooks->factory_ = NULL;
+    hooks->stat_ = NULL;
+    mock_factory->mock_http_client_ = NULL;
+}
+

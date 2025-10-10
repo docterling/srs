@@ -775,7 +775,7 @@ void SrsDvrSessionPlan::on_unpublish()
     // ignore error.
     srs_error_t err = segment_->close();
     if (err != srs_success) {
-        srs_warn("ignore flv close error %s", srs_error_desc(err).c_str());
+        srs_warn("ignore dvr segment close failed. ret=%d", srs_error_code(err));
         srs_freep(err);
     }
 

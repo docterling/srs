@@ -6649,7 +6649,7 @@ srs_error_t SrsMp4Encoder::flush()
     srs_error_t err = srs_success;
 
     if (!nb_audios_ && !nb_videos_) {
-        return srs_error_new(ERROR_MP4_ILLEGAL_MOOV, "Missing audio and video track");
+        return srs_error_new(ERROR_MP4_ILLEGAL_MOOV, "Missing audio and video track, nb_audios=%d, nb_videos=%d", nb_audios_, nb_videos_);
     }
 
     // Write moov.
@@ -6943,6 +6943,7 @@ srs_error_t SrsMp4Encoder::copy_sequence_header(SrsFormat *format, bool vsh, uin
             pavcc_ = std::vector<char>(sample, sample + nb_sample);
         }
         if (format && format->vcodec_) {
+            vcodec_ = format->vcodec_->id_;
             width_ = format->vcodec_->width_;
             height_ = format->vcodec_->height_;
         }

@@ -819,6 +819,11 @@ SrsStatisticStream *MockStatisticForResampleKbps::find_stream(std::string sid)
     return NULL;
 }
 
+SrsStatisticStream *MockStatisticForResampleKbps::find_stream_by_url(std::string url)
+{
+    return NULL;
+}
+
 SrsStatisticClient *MockStatisticForResampleKbps::find_client(std::string client_id)
 {
     return NULL;

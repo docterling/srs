@@ -288,6 +288,8 @@ public:
     virtual srs_error_t persistence() = 0;
     virtual std::string config() = 0;
     virtual SrsConfDirective *get_root() = 0;
+    // Get the current work directory.
+    virtual std::string cwd() = 0;
 
 public:
     // Global server config

@@ -20,6 +20,7 @@
 #include <srs_app_statistic.hpp>
 #include <srs_kernel_file.hpp>
 #include <srs_kernel_mp4.hpp>
+#include <srs_protocol_http_client.hpp>
 #include <srs_protocol_http_conn.hpp>
 #include <srs_protocol_http_stack.hpp>
 #include <srs_protocol_sdp.hpp>
@@ -321,6 +322,7 @@ public:
     virtual std::string service_pid();
     virtual SrsStatisticVhost *find_vhost_by_id(std::string vid);
     virtual SrsStatisticStream *find_stream(std::string sid);
+    virtual SrsStatisticStream *find_stream_by_url(std::string url);
     virtual SrsStatisticClient *find_client(std::string client_id);
     virtual srs_error_t dumps_vhosts(SrsJsonArray *arr);
     virtual srs_error_t dumps_streams(SrsJsonArray *arr, int start, int count);
@@ -447,6 +449,149 @@ public:
 public:
     virtual srs_error_t create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, SrsRtcConnection **psession);
     virtual SrsRtcConnection *find_rtc_session_by_username(const std::string &ufrag);
+};
+
+// Mock ISrsHttpResponseReader for testing SrsHttpHooks
+class MockHttpResponseReaderForHooks : public ISrsHttpResponseReader
+{
+public:
+    std::string content_;
+    size_t read_pos_;
+    bool eof_;
+
+public:
+    MockHttpResponseReaderForHooks();
+    virtual ~MockHttpResponseReaderForHooks();
+
+public:
+    virtual srs_error_t read(void *buf, size_t size, ssize_t *nread);
+    virtual bool eof();
+};
+
+// Mock ISrsHttpMessage for testing SrsHttpHooks::on_connect
+class MockHttpMessageForHooks : public ISrsHttpMessage
+{
+public:
+    int status_code_;
+    std::string body_content_;
+    MockHttpResponseReaderForHooks *body_reader_;
+
+public:
+    MockHttpMessageForHooks();
+    virtual ~MockHttpMessageForHooks();
+
+public:
+    virtual uint8_t method();
+    virtual uint16_t status_code();
+    virtual std::string method_str();
+    virtual std::string url();
+    virtual std::string host();
+    virtual std::string path();
+    virtual std::string query();
+    virtual std::string ext();
+    virtual srs_error_t body_read_all(std::string &body);
+    virtual ISrsHttpResponseReader *body_reader();
+    virtual int64_t content_length();
+    virtual std::string query_get(std::string key);
+    virtual int request_header_count();
+    virtual std::string request_header_key_at(int index);
+    virtual std::string request_header_value_at(int index);
+    virtual std::string get_request_header(std::string name);
+    virtual ISrsRequest *to_request(std::string vhost);
+    virtual bool is_chunked();
+    virtual bool is_keep_alive();
+    virtual bool is_jsonp();
+    virtual std::string jsonp();
+    virtual bool require_crossdomain();
+    virtual srs_error_t enter_infinite_chunked();
+    virtual srs_error_t end_infinite_chunked();
+    virtual uint8_t message_type();
+    virtual bool is_http_get();
+    virtual bool is_http_put();
+    virtual bool is_http_post();
+    virtual bool is_http_delete();
+    virtual bool is_http_options();
+    virtual std::string uri();
+    virtual std::string parse_rest_id(std::string pattern);
+    virtual SrsHttpHeader *header();
+};
+
+// Mock ISrsHttpClient for testing SrsHttpHooks::on_connect
+class MockHttpClientForHooks : public ISrsHttpClient
+{
+public:
+    bool initialize_called_;
+    bool post_called_;
+    bool get_called_;
+    std::string schema_;
+    std::string host_;
+    int port_;
+    std::string path_;
+    std::string request_body_;
+    MockHttpMessageForHooks *mock_response_;
+    srs_error_t initialize_error_;
+    srs_error_t post_error_;
+    srs_error_t get_error_;
+
+public:
+    MockHttpClientForHooks();
+    virtual ~MockHttpClientForHooks();
+
+public:
+    virtual srs_error_t initialize(std::string schema, std::string h, int p, srs_utime_t tm);
+    virtual srs_error_t get(std::string path, std::string req, ISrsHttpMessage **ppmsg);
+    virtual srs_error_t post(std::string path, std::string req, ISrsHttpMessage **ppmsg);
+    virtual void set_recv_timeout(srs_utime_t tm);
+    virtual void kbps_sample(const char *label, srs_utime_t age);
+};
+
+// Mock ISrsAppFactory for testing SrsHttpHooks::on_connect
+class MockAppFactoryForHooks : public SrsAppFactory
+{
+public:
+    MockHttpClientForHooks *mock_http_client_;
+
+public:
+    MockAppFactoryForHooks();
+    virtual ~MockAppFactoryForHooks();
+
+public:
+    virtual ISrsHttpClient *create_http_client();
+};
+
+// Mock ISrsStatistic for testing SrsHttpHooks::on_connect
+class MockStatisticForHooks : public ISrsStatistic
+{
+public:
+    std::string server_id_;
+    std::string service_id_;
+
+public:
+    MockStatisticForHooks();
+    virtual ~MockStatisticForHooks();
+
+public:
+    virtual void on_disconnect(std::string id, srs_error_t err);
+    virtual srs_error_t on_client(std::string id, ISrsRequest *req, ISrsExpire *conn, SrsRtmpConnType type);
+    virtual srs_error_t on_video_info(ISrsRequest *req, SrsVideoCodecId vcodec, int avc_profile, int avc_level, int width, int height);
+    virtual srs_error_t on_audio_info(ISrsRequest *req, SrsAudioCodecId acodec, SrsAudioSampleRate asample_rate,
+                                      SrsAudioChannels asound_type, SrsAacObjectType aac_object);
+    virtual void on_stream_publish(ISrsRequest *req, std::string publisher_id);
+    virtual void on_stream_close(ISrsRequest *req);
+    virtual void kbps_add_delta(std::string id, ISrsKbpsDelta *delta);
+    virtual void kbps_sample();
+    virtual srs_error_t on_video_frames(ISrsRequest *req, int nb_frames);
+    virtual std::string server_id();
+    virtual std::string service_id();
+    virtual std::string service_pid();
+    virtual SrsStatisticVhost *find_vhost_by_id(std::string vid);
+    virtual SrsStatisticStream *find_stream(std::string sid);
+    virtual SrsStatisticStream *find_stream_by_url(std::string url);
+    virtual SrsStatisticClient *find_client(std::string client_id);
+    virtual srs_error_t dumps_vhosts(SrsJsonArray *arr);
+    virtual srs_error_t dumps_streams(SrsJsonArray *arr, int start, int count);
+    virtual srs_error_t dumps_clients(SrsJsonArray *arr, int start, int count);
+    virtual srs_error_t dumps_metrics(int64_t &send_bytes, int64_t &recv_bytes, int64_t &nstreams, int64_t &nclients, int64_t &total_nclients, int64_t &nerrs);
 };
 
 #endif

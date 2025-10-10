@@ -257,6 +257,7 @@ public:
     virtual srs_error_t persistence() { return srs_success; }
     virtual std::string config() { return ""; }
     virtual SrsConfDirective *get_root() { return NULL; }
+    virtual std::string cwd() { return "./"; }
     virtual int get_max_connections() { return 1000; }
     virtual std::string get_pid_file() { return ""; }
     virtual bool empty_ip_ok() { return false; }
@@ -517,6 +518,7 @@ public:
     virtual std::string service_pid();
     virtual SrsStatisticVhost *find_vhost_by_id(std::string vid);
     virtual SrsStatisticStream *find_stream(std::string sid);
+    virtual SrsStatisticStream *find_stream_by_url(std::string url);
     virtual SrsStatisticClient *find_client(std::string client_id);
     virtual srs_error_t dumps_vhosts(SrsJsonArray *arr);
     virtual srs_error_t dumps_streams(SrsJsonArray *arr, int start, int count);

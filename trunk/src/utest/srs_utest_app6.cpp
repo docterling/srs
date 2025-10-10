@@ -2776,6 +2776,11 @@ SrsStatisticStream *MockRtcStatistic::find_stream(std::string sid)
     return NULL;
 }
 
+SrsStatisticStream *MockRtcStatistic::find_stream_by_url(std::string url)
+{
+    return NULL;
+}
+
 SrsStatisticClient *MockRtcStatistic::find_client(std::string client_id)
 {
     return NULL;

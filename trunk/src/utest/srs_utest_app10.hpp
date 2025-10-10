@@ -268,6 +268,7 @@ public:
     virtual std::string service_pid();
     virtual SrsStatisticVhost *find_vhost_by_id(std::string vid);
     virtual SrsStatisticStream *find_stream(std::string sid);
+    virtual SrsStatisticStream *find_stream_by_url(std::string url);
     virtual SrsStatisticClient *find_client(std::string client_id);
     virtual srs_error_t dumps_vhosts(SrsJsonArray *arr);
     virtual srs_error_t dumps_streams(SrsJsonArray *arr, int start, int count);

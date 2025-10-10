@@ -19,6 +19,8 @@ class SrsHttpParser;
 class SrsHttpClient;
 class ISrsAppFactory;
 class ISrsHttpClient;
+class ISrsStatistic;
+class ISrsAppConfig;
 
 // HTTP hooks interface for SRS server event callbacks.
 //
@@ -153,6 +155,8 @@ class SrsHttpHooks : public ISrsHttpHooks
 {
 private:
     ISrsAppFactory *factory_;
+    ISrsStatistic *stat_;
+    ISrsAppConfig *config_;
 
 public:
     SrsHttpHooks();
