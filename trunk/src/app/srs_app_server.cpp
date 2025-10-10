@@ -108,6 +108,10 @@ srs_error_t srs_global_initialize()
     _srs_stages = new SrsStageManager();
     _srs_sources = new SrsLiveSourceManager();
     _srs_circuit_breaker = new SrsCircuitBreaker();
+
+    // Initialize global statistic instance before _srs_hooks, as SrsHttpHooks depends on it.
+    _srs_stat = new SrsStatistic();
+
     _srs_hooks = new SrsHttpHooks();
 
     _srs_srt_sources = new SrsSrtSourceManager();
@@ -135,9 +139,6 @@ srs_error_t srs_global_initialize()
     _srs_reload_state = SrsReloadStateInit;
     SrsRand rand;
     _srs_reload_id = rand.gen_str(7);
-
-    // Initialize global statistic instance.
-    _srs_stat = new SrsStatistic();
 
     return err;
 }
@@ -1069,6 +1070,12 @@ srs_error_t SrsServer::do_cycle()
 
         if ((err = do2_cycle()) != srs_success) {
             return srs_error_wrap(err, "cycle");
+        }
+
+        // Break the loop when quit signals are set, otherwise we loop forever
+        // printing "cleanup for quit signal" every second.
+        if (signal_fast_quit_ || signal_gracefully_quit_) {
+            break;
         }
 
         srs_usleep(1 * SRS_UTIME_SECONDS);

@@ -570,6 +570,82 @@ build_and_development:
     description: "Run the unit tests for SRS"
     working_directory: "trunk"
 
+  run_blackbox_tests:
+    description: "Blackbox tests are integration tests that test SRS as a complete system using FFmpeg as client"
+    location: "trunk/3rdparty/srs-bench/blackbox/"
+
+    prerequisites:
+      - "SRS server binary must be built first (make -j in trunk/)"
+      - "FFmpeg and FFprobe must be available in PATH"
+      - "Test media files (avatar.flv, etc.) must be present in srs-bench directory"
+
+    build_blackbox_tests:
+      command: "cd trunk/3rdparty/srs-bench && make"
+      description: "Build the blackbox test binary"
+      output: "./objs/srs_blackbox_test"
+
+    run_all_tests:
+      command: "./objs/srs_blackbox_test -test.v -srs-log -srs-stdout"
+      description: "Run all blackbox tests with verbose output and detailed SRS logs"
+      working_directory: "trunk/3rdparty/srs-bench"
+
+    run_specific_test:
+      command: "./objs/srs_blackbox_test -test.v -srs-log -srs-stdout -test.run TestName"
+      description: "Run a specific test by name (e.g., TestFast_RtmpPublish_DvrFlv_Basic)"
+      examples:
+        - "./objs/srs_blackbox_test -test.v -srs-log -srs-stdout -test.run TestFast_RtmpPublish_DvrFlv_Basic"
+        - "./objs/srs_blackbox_test -test.v -srs-log -srs-stdout -test.run TestFast_RtmpPublish_RtmpPlay_Basic"
+        - "./objs/srs_blackbox_test -test.v -srs-log -srs-stdout -test.run 'TestFast_RtmpPublish_Dvr.*'"
+
+    test_options:
+      - flag: "-test.v"
+        description: "Verbose output showing test progress (recommended)"
+      - flag: "-test.run <pattern>"
+        description: "Run only tests matching the pattern (Go regex)"
+      - flag: "-srs-log"
+        description: "Enable detailed SRS log output (recommended for debugging)"
+      - flag: "-srs-stdout"
+        description: "Show SRS stdout logs (recommended for debugging)"
+      - flag: "-srs-ffmpeg-stderr"
+        description: "Show FFmpeg stderr logs"
+      - flag: "-srs-ffprobe-stdout"
+        description: "Show FFprobe stdout logs"
+      - flag: "-srs-binary <path>"
+        description: "Specify custom SRS binary path (default: ../../objs/srs)"
+      - flag: "-srs-timeout <ms>"
+        description: "Timeout for each test case in milliseconds (default: 64000)"
+
+    how_it_works:
+      - "Each blackbox test automatically starts a fresh SRS server instance"
+      - "SRS is configured via environment variables (e.g., SRS_VHOST_DVR_ENABLED=on)"
+      - "Tests use FFmpeg to publish streams and FFprobe to verify output"
+      - "SRS server is automatically stopped when test completes"
+      - "Each test runs in isolation with its own SRS instance and random ports"
+      - "No need to manually start or stop SRS server"
+
+    test_categories:
+      rtmp: "TestFast_RtmpPublish_RtmpPlay_*, TestFast_RtmpPublish_HttpFlvPlay_*"
+      dvr: "TestFast_RtmpPublish_DvrFlv_*, TestFast_RtmpPublish_DvrMp4_*"
+      hls: "TestFast_RtmpPublish_HlsPlay_*"
+      hevc: "TestSlow_RtmpPublish_*_HEVC_*, TestSlow_SrtPublish_*_HEVC_*"
+      srt: "TestFast_SrtPublish_SrtPlay_*"
+      rtsp: "TestFast_RtmpPublish_RtspPlay_*"
+      http_api: "TestFast_Http_Api_*"
+      mp3: "TestFast_RtmpPublish_*_CodecMP3_*"
+
+    common_workflows:
+      quick_test:
+        description: "Run a single fast test to verify basic functionality"
+        command: "./objs/srs_blackbox_test -test.v -srs-log -srs-stdout -test.run TestFast_RtmpPublish_RtmpPlay_Basic"
+
+      dvr_tests:
+        description: "Run all DVR-related tests"
+        command: "./objs/srs_blackbox_test -test.v -srs-log -srs-stdout -test.run 'TestFast_RtmpPublish_Dvr.*'"
+
+      debug_test:
+        description: "Run test with full logging including FFmpeg stderr for debugging"
+        command: "./objs/srs_blackbox_test -test.v -srs-log -srs-stdout -srs-ffmpeg-stderr -test.run TestName"
+
 testing:
   test_patterns:
     - Note that private and protected members are accessible in utests, as there is a macro to convert them to public
