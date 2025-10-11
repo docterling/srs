@@ -58,9 +58,27 @@ public:
     virtual srs_error_t on_conn_done(srs_error_t r0) = 0;
 };
 
+// The HTTP connection, for HTTP stream or static file.
+class ISrsHttpConn : public ISrsConnection, public ISrsStartable, public ISrsCoroutineHandler, public ISrsExpire
+{
+public:
+    ISrsHttpConn();
+    virtual ~ISrsHttpConn();
+
+public:
+    // Whether the connection coroutine is error or terminated.
+    virtual srs_error_t pull() = 0;
+    // Whether enable the CORS(cross-domain).
+    virtual srs_error_t set_crossdomain_enabled(bool v) = 0;
+    // Whether enable the Auth.
+    virtual srs_error_t set_auth_enabled(bool auth_enabled) = 0;
+    // Whether enable the JSONP.
+    virtual srs_error_t set_jsonp(bool v) = 0;
+};
+
 // TODO: FIXME: Should rename to roundtrip or responder, not connection.
 // The http connection which request the static or stream content.
-class SrsHttpConn : public ISrsConnection, public ISrsStartable, public ISrsCoroutineHandler, public ISrsExpire
+class SrsHttpConn : public ISrsHttpConn
 {
 protected:
     SrsHttpParser *parser_;

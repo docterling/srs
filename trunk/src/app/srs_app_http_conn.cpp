@@ -49,6 +49,14 @@ ISrsHttpConnOwner::~ISrsHttpConnOwner()
 {
 }
 
+ISrsHttpConn::ISrsHttpConn()
+{
+}
+
+ISrsHttpConn::~ISrsHttpConn()
+{
+}
+
 SrsHttpConn::SrsHttpConn(ISrsHttpConnOwner *handler, ISrsProtocolReadWriter *fd, ISrsHttpServeMux *m, string cip, int cport)
 {
     parser_ = new SrsHttpParser();

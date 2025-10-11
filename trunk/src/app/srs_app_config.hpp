@@ -337,6 +337,7 @@ public:
     virtual std::string get_https_stream_ssl_key() = 0;
     virtual std::string get_https_stream_ssl_cert() = 0;
     virtual std::string get_http_stream_dir() = 0;
+    virtual bool get_http_stream_crossdomain() = 0;
 
 public:
     // WebRTC config

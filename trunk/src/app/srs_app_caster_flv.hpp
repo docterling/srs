@@ -23,6 +23,12 @@ class SrsFlvDecoder;
 class SrsTcpClient;
 class SrsSimpleRtmpClient;
 class SrsAppCasterFlv;
+class ISrsAppCasterFlv;
+class ISrsAppConfig;
+class ISrsAppFactory;
+class ISrsBasicRtmpClient;
+class ISrsProtocolReadWriter;
+class ISrsHttpConn;
 
 #include <srs_app_http_conn.hpp>
 #include <srs_app_listener.hpp>
@@ -44,8 +50,11 @@ public:
 class SrsHttpFlvListener : public ISrsHttpFlvListener
 {
 private:
+    ISrsAppConfig *config_;
+
+private:
     SrsTcpListener *listener_;
-    SrsAppCasterFlv *caster_;
+    ISrsAppCasterFlv *caster_;
 
 public:
     SrsHttpFlvListener();
@@ -68,11 +77,15 @@ public:
     virtual ~ISrsAppCasterFlv();
 
 public:
+    virtual srs_error_t initialize(SrsConfDirective *c) = 0;
 };
 
 // The stream caster for flv stream over HTTP POST.
 class SrsAppCasterFlv : public ISrsAppCasterFlv
 {
+private:
+    ISrsAppConfig *config_;
+
 private:
     std::string output_;
     SrsHttpServeMux *http_mux_;
@@ -110,7 +123,7 @@ public:
 };
 
 // The dynamic http connection, never drop the body.
-class ISrsDynamicHttpConn: public ISrsConnection, public ISrsStartable, public ISrsHttpConnOwner, public ISrsReloadHandler
+class ISrsDynamicHttpConn : public ISrsConnection, public ISrsStartable, public ISrsHttpConnOwner
 {
 public:
     ISrsDynamicHttpConn();
@@ -123,13 +136,17 @@ public:
 class SrsDynamicHttpConn : public ISrsDynamicHttpConn
 {
 private:
+    ISrsAppConfig *config_;
+    ISrsAppFactory *app_factory_;
+
+private:
     // The manager object to manage the connection.
     ISrsResourceManager *manager_;
     std::string output_;
     SrsPithyPrint *pprint_;
-    SrsSimpleRtmpClient *sdk_;
-    SrsTcpConnection *skt_;
-    SrsHttpConn *conn_;
+    ISrsBasicRtmpClient *sdk_;
+    ISrsProtocolReadWriter *skt_;
+    ISrsHttpConn *conn_;
 
 private:
     // The ip and port of client.

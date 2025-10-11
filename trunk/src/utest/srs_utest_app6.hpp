@@ -291,6 +291,7 @@ public:
     virtual std::string get_https_stream_ssl_key() { return ""; }
     virtual std::string get_https_stream_ssl_cert() { return ""; }
     virtual std::string get_http_stream_dir() { return ""; }
+    virtual bool get_http_stream_crossdomain() { return false; }
     virtual bool get_rtc_server_enabled() { return false; }
     virtual bool get_rtc_server_tcp_enabled() { return false; }
     virtual std::vector<std::string> get_rtc_server_tcp_listens() { return std::vector<std::string>(); }

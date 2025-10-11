@@ -10,6 +10,7 @@
 using namespace std;
 
 #include <srs_app_config.hpp>
+#include <srs_app_factory.hpp>
 #include <srs_app_http_conn.hpp>
 #include <srs_app_rtmp_conn.hpp>
 #include <srs_app_st.hpp>
@@ -38,19 +39,23 @@ SrsHttpFlvListener::SrsHttpFlvListener()
 {
     listener_ = new SrsTcpListener(this);
     caster_ = new SrsAppCasterFlv();
+
+    config_ = _srs_config;
 }
 
 SrsHttpFlvListener::~SrsHttpFlvListener()
 {
     srs_freep(caster_);
     srs_freep(listener_);
+
+    config_ = NULL;
 }
 
 srs_error_t SrsHttpFlvListener::initialize(SrsConfDirective *c)
 {
     srs_error_t err = srs_success;
 
-    int port = _srs_config->get_stream_caster_listen(c);
+    int port = config_->get_stream_caster_listen(c);
     if (port <= 0) {
         return srs_error_new(ERROR_STREAM_CASTER_PORT, "invalid port=%d", port);
     }
@@ -104,6 +109,8 @@ SrsAppCasterFlv::SrsAppCasterFlv()
 {
     http_mux_ = new SrsHttpServeMux();
     manager_ = new SrsResourceManager("CFLV");
+
+    config_ = _srs_config;
 }
 
 SrsAppCasterFlv::~SrsAppCasterFlv()
@@ -116,13 +123,15 @@ SrsAppCasterFlv::~SrsAppCasterFlv()
         ISrsConnection *conn = *it;
         srs_freep(conn);
     }
+
+    config_ = NULL;
 }
 
 srs_error_t SrsAppCasterFlv::initialize(SrsConfDirective *c)
 {
     srs_error_t err = srs_success;
 
-    output_ = _srs_config->get_stream_caster_output(c);
+    output_ = config_->get_stream_caster_output(c);
 
     if ((err = http_mux_->handle("/", this)) != srs_success) {
         return srs_error_wrap(err, "handle root");
@@ -143,11 +152,11 @@ srs_error_t SrsAppCasterFlv::on_tcp_client(ISrsListener *listener, srs_netfd_t s
     string ip = srs_get_peer_ip(fd);
     int port = srs_get_peer_port(fd);
 
-    if (ip.empty() && !_srs_config->empty_ip_ok()) {
+    if (ip.empty() && !config_->empty_ip_ok()) {
         srs_warn("empty ip for fd=%d", srs_netfd_fileno(stfd));
     }
 
-    SrsDynamicHttpConn *conn = new SrsDynamicHttpConn(this, stfd, http_mux_, ip, port);
+    ISrsDynamicHttpConn *conn = new SrsDynamicHttpConn(this, stfd, http_mux_, ip, port);
     conns_.push_back(conn);
 
     if ((err = conn->start()) != srs_success) {
@@ -291,17 +300,19 @@ SrsDynamicHttpConn::SrsDynamicHttpConn(ISrsResourceManager *cm, srs_netfd_t fd, 
     ip_ = cip;
     port_ = cport;
 
-    _srs_config->subscribe(this);
+    config_ = _srs_config;
+    app_factory_ = _srs_app_factory;
 }
 
 SrsDynamicHttpConn::~SrsDynamicHttpConn()
 {
-    _srs_config->unsubscribe(this);
-
     srs_freep(conn_);
     srs_freep(skt_);
     srs_freep(sdk_);
     srs_freep(pprint_);
+
+    config_ = NULL;
+    app_factory_ = NULL;
 }
 
 srs_error_t SrsDynamicHttpConn::proxy(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, std::string o)
@@ -343,7 +354,7 @@ srs_error_t SrsDynamicHttpConn::do_proxy(ISrsHttpResponseReader *rr, SrsFlvDecod
 
     srs_utime_t cto = SRS_CONSTS_RTMP_TIMEOUT;
     srs_utime_t sto = SRS_CONSTS_RTMP_PULSE;
-    sdk_ = new SrsSimpleRtmpClient(output_, cto, sto);
+    sdk_ = app_factory_->create_rtmp_client(output_, cto, sto);
 
     if ((err = sdk_->connect()) != srs_success) {
         return srs_error_wrap(err, "connect %s failed, cto=%dms, sto=%dms.", output_.c_str(), srsu2msi(cto), srsu2msi(sto));
@@ -439,7 +450,7 @@ srs_error_t SrsDynamicHttpConn::start()
 {
     srs_error_t err = srs_success;
 
-    bool v = _srs_config->get_http_stream_crossdomain();
+    bool v = config_->get_http_stream_crossdomain();
     if ((err = conn_->set_crossdomain_enabled(v)) != srs_success) {
         return srs_error_wrap(err, "set cors=%d", v);
     }
