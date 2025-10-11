@@ -26,6 +26,14 @@ using namespace std;
 
 #define SRS_HTTP_FLV_STREAM_BUFFER 4096
 
+ISrsHttpFlvListener::ISrsHttpFlvListener()
+{
+}
+
+ISrsHttpFlvListener::~ISrsHttpFlvListener()
+{
+}
+
 SrsHttpFlvListener::SrsHttpFlvListener()
 {
     listener_ = new SrsTcpListener(this);
@@ -82,6 +90,14 @@ srs_error_t SrsHttpFlvListener::on_tcp_client(ISrsListener *listener, srs_netfd_
     }
 
     return err;
+}
+
+ISrsAppCasterFlv::ISrsAppCasterFlv()
+{
+}
+
+ISrsAppCasterFlv::~ISrsAppCasterFlv()
+{
 }
 
 SrsAppCasterFlv::SrsAppCasterFlv()
@@ -254,6 +270,14 @@ srs_error_t SrsAppCasterFlv::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessa
     return err;
 }
 
+ISrsDynamicHttpConn::ISrsDynamicHttpConn()
+{
+}
+
+ISrsDynamicHttpConn::~ISrsDynamicHttpConn()
+{
+}
+
 SrsDynamicHttpConn::SrsDynamicHttpConn(ISrsResourceManager *cm, srs_netfd_t fd, SrsHttpServeMux *m, string cip, int cport)
 {
     // Create a identify for this client.
@@ -423,13 +447,23 @@ srs_error_t SrsDynamicHttpConn::start()
     return conn_->start();
 }
 
+ISrsHttpFileReader::ISrsHttpFileReader()
+{
+}
+
+ISrsHttpFileReader::~ISrsHttpFileReader()
+{
+}
+
 SrsHttpFileReader::SrsHttpFileReader(ISrsHttpResponseReader *h)
 {
     http_ = h;
+    file_reader_ = new SrsFileReader();
 }
 
 SrsHttpFileReader::~SrsHttpFileReader()
 {
+    srs_freep(file_reader_);
 }
 
 srs_error_t SrsHttpFileReader::open(std::string /*file*/)

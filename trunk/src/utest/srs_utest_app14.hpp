@@ -212,6 +212,7 @@ public:
     virtual ISrsListener *set_endpoint(const std::string &i, int p);
     virtual ISrsListener *set_label(const std::string &label);
     virtual srs_error_t listen();
+    virtual void close();
     void reset();
 };
 
@@ -275,6 +276,7 @@ public:
     virtual ISrsListener *set_endpoint(const std::string &i, int p);
     virtual ISrsListener *set_label(const std::string &label);
     virtual srs_error_t listen();
+    virtual void close();
     void reset();
 };
 

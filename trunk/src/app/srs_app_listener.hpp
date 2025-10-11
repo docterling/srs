@@ -76,6 +76,7 @@ public:
 public:
     virtual ISrsListener *set_endpoint(const std::string &i, int p) = 0;
     virtual ISrsListener *set_label(const std::string &label) = 0;
+    virtual void close() = 0;
 };
 
 // The tcp connection handler.

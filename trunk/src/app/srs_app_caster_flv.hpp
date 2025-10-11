@@ -30,8 +30,18 @@ class SrsAppCasterFlv;
 #include <srs_kernel_file.hpp>
 #include <srs_protocol_conn.hpp>
 
+// The http flv listener.
+class ISrsHttpFlvListener : public ISrsTcpHandler, public ISrsListener
+{
+public:
+    ISrsHttpFlvListener();
+    virtual ~ISrsHttpFlvListener();
+
+public:
+};
+
 // A TCP listener, for flv stream server.
-class SrsHttpFlvListener : public ISrsTcpHandler, public ISrsListener
+class SrsHttpFlvListener : public ISrsHttpFlvListener
 {
 private:
     SrsTcpListener *listener_;
@@ -50,8 +60,18 @@ public:
     virtual srs_error_t on_tcp_client(ISrsListener *listener, srs_netfd_t stfd);
 };
 
+// The http flv caster interface.
+class ISrsAppCasterFlv : public ISrsTcpHandler, public ISrsResourceManager, public ISrsHttpHandler
+{
+public:
+    ISrsAppCasterFlv();
+    virtual ~ISrsAppCasterFlv();
+
+public:
+};
+
 // The stream caster for flv stream over HTTP POST.
-class SrsAppCasterFlv : public ISrsTcpHandler, public ISrsResourceManager, public ISrsHttpHandler
+class SrsAppCasterFlv : public ISrsAppCasterFlv
 {
 private:
     std::string output_;
@@ -90,7 +110,17 @@ public:
 };
 
 // The dynamic http connection, never drop the body.
-class SrsDynamicHttpConn : public ISrsConnection, public ISrsStartable, public ISrsHttpConnOwner, public ISrsReloadHandler
+class ISrsDynamicHttpConn: public ISrsConnection, public ISrsStartable, public ISrsHttpConnOwner, public ISrsReloadHandler
+{
+public:
+    ISrsDynamicHttpConn();
+    virtual ~ISrsDynamicHttpConn();
+
+public:
+};
+
+// The dynamic http connection, never drop the body.
+class SrsDynamicHttpConn : public ISrsDynamicHttpConn
 {
 private:
     // The manager object to manage the connection.
@@ -135,10 +165,21 @@ public:
 };
 
 // The http wrapper for file reader, to read http post stream like a file.
-class SrsHttpFileReader : public SrsFileReader
+class ISrsHttpFileReader : public ISrsFileReader
+{
+public:
+    ISrsHttpFileReader();
+    virtual ~ISrsHttpFileReader();
+
+public:
+};
+
+// The http wrapper for file reader, to read http post stream like a file.
+class SrsHttpFileReader : public ISrsHttpFileReader
 {
 private:
     ISrsHttpResponseReader *http_;
+    SrsFileReader *file_reader_;
 
 public:
     SrsHttpFileReader(ISrsHttpResponseReader *h);

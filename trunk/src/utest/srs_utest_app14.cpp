@@ -451,6 +451,10 @@ srs_error_t MockIpListener::listen()
     return srs_success;
 }
 
+void MockIpListener::close()
+{
+}
+
 void MockIpListener::reset()
 {
     endpoint_ip_ = "";
@@ -603,6 +607,10 @@ srs_error_t MockIpListenerForGbListen::listen()
 {
     listen_called_ = true;
     return srs_success;
+}
+
+void MockIpListenerForGbListen::close()
+{
 }
 
 void MockIpListenerForGbListen::reset()

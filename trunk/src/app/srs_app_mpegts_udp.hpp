@@ -15,18 +15,27 @@ struct sockaddr;
 
 class SrsBuffer;
 class SrsTsContext;
+class ISrsTsContext;
 class SrsConfDirective;
 class SrsSimpleStream;
 class SrsRtmpClient;
 class SrsStSocket;
 class ISrsRequest;
 class SrsRawH264Stream;
+class ISrsRawH264Stream;
 class SrsMediaPacket;
 class SrsRawAacStream;
+class ISrsRawAacStream;
 struct SrsRawAacStreamCodec;
 class SrsPithyPrint;
+class ISrsPithyPrint;
 class SrsSimpleRtmpClient;
+class ISrsBasicRtmpClient;
 class SrsMpegtsOverUdp;
+class ISrsIpListener;
+class ISrsMpegtsOverUdp;
+class ISrsAppConfig;
+class ISrsAppFactory;
 
 #include <srs_app_listener.hpp>
 #include <srs_app_st.hpp>
@@ -36,8 +45,11 @@ class SrsMpegtsOverUdp;
 class SrsUdpCasterListener : public ISrsListener
 {
 private:
-    SrsUdpListener *listener_;
-    SrsMpegtsOverUdp *caster_;
+    ISrsAppConfig *config_;
+
+private:
+    ISrsIpListener *listener_;
+    ISrsMpegtsOverUdp *caster_;
 
 public:
     SrsUdpCasterListener();
@@ -49,10 +61,22 @@ public:
     void close();
 };
 
+// The interface for mpegts queue.
+class ISrsMpegtsQueue
+{
+public:
+    ISrsMpegtsQueue();
+    virtual ~ISrsMpegtsQueue();
+
+public:
+    virtual srs_error_t push(SrsMediaPacket *msg) = 0;
+    virtual SrsMediaPacket *dequeue() = 0;
+};
+
 // The queue for mpegts over udp to send packets.
 // For the aac in mpegts contains many flv packets in a pes packet,
 // we must recalc the timestamp.
-class SrsMpegtsQueue
+class SrsMpegtsQueue : public ISrsMpegtsQueue
 {
 private:
     // The key: dts, value: msg.
@@ -69,19 +93,34 @@ public:
     virtual SrsMediaPacket *dequeue();
 };
 
+// The interface for mpegts over udp.
+class ISrsMpegtsOverUdp : public ISrsTsHandler, public ISrsUdpHandler
+{
+public:
+    ISrsMpegtsOverUdp();
+    virtual ~ISrsMpegtsOverUdp();
+
+public:
+    virtual srs_error_t initialize(SrsConfDirective *c) = 0;
+};
+
 // The mpegts over udp stream caster.
-class SrsMpegtsOverUdp : public ISrsTsHandler, public ISrsUdpHandler
+class SrsMpegtsOverUdp : public ISrsMpegtsOverUdp
 {
 private:
-    SrsTsContext *context_;
+    ISrsAppConfig *config_;
+    ISrsAppFactory *app_factory_;
+
+private:
+    ISrsTsContext *context_;
     SrsSimpleStream *buffer_;
     std::string output_;
 
 private:
-    SrsSimpleRtmpClient *sdk_;
+    ISrsBasicRtmpClient *sdk_;
 
 private:
-    SrsRawH264Stream *avc_;
+    ISrsRawH264Stream *avc_;
     std::string h264_sps_;
     bool h264_sps_changed_;
     std::string h264_pps_;
@@ -89,12 +128,12 @@ private:
     bool h264_sps_pps_sent_;
 
 private:
-    SrsRawAacStream *aac_;
+    ISrsRawAacStream *aac_;
     std::string aac_specific_config_;
 
 private:
-    SrsMpegtsQueue *queue_;
-    SrsPithyPrint *pprint_;
+    ISrsMpegtsQueue *queue_;
+    ISrsPithyPrint *pprint_;
 
 public:
     SrsMpegtsOverUdp();
