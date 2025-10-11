@@ -244,6 +244,9 @@ public:
     bool rtc_to_rtmp_;
     srs_utime_t dash_dispose_;
     bool dash_enabled_;
+    bool api_as_candidates_;
+    bool resolve_api_domain_;
+    bool keep_api_domain_;
 
 public:
     MockAppConfig();
@@ -295,6 +298,12 @@ public:
     virtual std::vector<std::string> get_rtc_server_listens() { return std::vector<std::string>(); }
     virtual int get_rtc_server_reuseport() { return 1; }
     virtual bool get_rtc_server_encrypt() { return false; }
+    virtual bool get_api_as_candidates() { return api_as_candidates_; }
+    virtual bool get_resolve_api_domain() { return resolve_api_domain_; }
+    virtual bool get_keep_api_domain() { return keep_api_domain_; }
+    virtual std::string get_rtc_server_candidates() { return "*"; }
+    virtual bool get_use_auto_detect_network_ip() { return true; }
+    virtual std::string get_rtc_server_ip_family() { return "ipv4"; }
     virtual bool get_rtsp_server_enabled() { return false; }
     virtual std::vector<std::string> get_rtsp_server_listens() { return std::vector<std::string>(); }
     virtual std::vector<std::string> get_srt_listens() { return std::vector<std::string>(); }
@@ -358,6 +367,8 @@ public:
     virtual bool get_rtc_twcc_enabled(std::string vhost);
     virtual bool get_srt_enabled();
     virtual bool get_srt_enabled(std::string vhost);
+    virtual std::string get_srt_default_streamid();
+    virtual bool get_srt_to_rtmp(std::string vhost);
     virtual bool get_rtc_to_rtmp(std::string vhost);
     virtual srs_utime_t get_rtc_stun_timeout(std::string vhost);
     virtual bool get_rtc_stun_strict_check(std::string vhost);
@@ -448,6 +459,9 @@ public:
     void set_rtc_twcc_enabled(bool enabled);
     void set_srt_enabled(bool enabled);
     void set_rtc_to_rtmp(bool enabled);
+    void set_api_as_candidates(bool enabled);
+    void set_resolve_api_domain(bool enabled);
+    void set_keep_api_domain(bool enabled);
 };
 
 // Mock request for testing SrsRtcAsyncCallOnStop

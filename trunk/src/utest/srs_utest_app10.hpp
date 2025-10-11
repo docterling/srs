@@ -233,6 +233,7 @@ public:
     virtual void add(ISrsResource *conn, bool *exists = NULL);
     virtual void add_with_id(const std::string &id, ISrsResource *conn);
     virtual void add_with_fast_id(uint64_t id, ISrsResource *conn);
+    virtual void add_with_name(const std::string &name, ISrsResource *conn);
     virtual ISrsResource *at(int index);
     virtual ISrsResource *find_by_id(std::string id);
     virtual ISrsResource *find_by_fast_id(uint64_t id);
@@ -308,6 +309,7 @@ public:
     virtual void add(ISrsResource *conn, bool *exists = NULL);
     virtual void add_with_id(const std::string &id, ISrsResource *conn);
     virtual void add_with_fast_id(uint64_t id, ISrsResource *conn);
+    virtual void add_with_name(const std::string &name, ISrsResource *conn);
     virtual ISrsResource *at(int index);
     virtual ISrsResource *find_by_id(std::string id);
     virtual ISrsResource *find_by_fast_id(uint64_t id);

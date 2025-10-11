@@ -171,6 +171,11 @@ void SrsAppCasterFlv::add_with_fast_id(uint64_t id, ISrsResource *conn)
     manager_->add_with_fast_id(id, conn);
 }
 
+void SrsAppCasterFlv::add_with_name(const std::string &name, ISrsResource *conn)
+{
+    manager_->add_with_name(name, conn);
+}
+
 ISrsResource *SrsAppCasterFlv::at(int index)
 {
     return manager_->at(index);

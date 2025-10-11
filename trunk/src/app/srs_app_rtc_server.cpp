@@ -177,11 +177,11 @@ bool srs_is_rtcp(const uint8_t *data, size_t len)
     return (len >= 12) && (data[0] & 0x80) && (data[1] >= 192 && data[1] <= 223);
 }
 
-srs_error_t api_server_as_candidates(string api, set<string> &candidate_ips)
+srs_error_t api_server_as_candidates(ISrsAppConfig *config, string api, set<string> &candidate_ips)
 {
     srs_error_t err = srs_success;
 
-    if (api.empty() || !_srs_config->get_api_as_candidates()) {
+    if (api.empty() || !config->get_api_as_candidates()) {
         return err;
     }
 
@@ -194,12 +194,12 @@ srs_error_t api_server_as_candidates(string api, set<string> &candidate_ips)
     }
 
     // Whether add domain name.
-    if (!srs_net_is_ipv4(hostname) && _srs_config->get_keep_api_domain()) {
+    if (!srs_net_is_ipv4(hostname) && config->get_keep_api_domain()) {
         candidate_ips.insert(hostname);
     }
 
     // Try to parse the domain name if not IP.
-    if (!srs_net_is_ipv4(hostname) && _srs_config->get_resolve_api_domain()) {
+    if (!srs_net_is_ipv4(hostname) && config->get_resolve_api_domain()) {
         int family = 0;
         string ip = srs_dns_resolve(hostname, family);
         if (ip.empty() || ip == SRS_CONSTS_LOCALHOST || ip == SRS_CONSTS_LOOPBACK || ip == SRS_CONSTS_LOOPBACK6) {
@@ -218,7 +218,7 @@ srs_error_t api_server_as_candidates(string api, set<string> &candidate_ips)
     return err;
 }
 
-set<string> discover_candidates(SrsRtcUserConfig *ruc)
+set<string> discover_candidates(SrsProtocolUtility *utility, ISrsAppConfig *config, SrsRtcUserConfig *ruc)
 {
     srs_error_t err = srs_success;
 
@@ -229,29 +229,28 @@ set<string> discover_candidates(SrsRtcUserConfig *ruc)
     }
 
     // Try to discover from api of request, if api_as_candidates enabled.
-    if ((err = api_server_as_candidates(ruc->req_->host_, candidate_ips)) != srs_success) {
+    if ((err = api_server_as_candidates(config, ruc->req_->host_, candidate_ips)) != srs_success) {
         srs_warn("ignore discovering ip from api %s, err %s", ruc->req_->host_.c_str(), srs_error_summary(err).c_str());
         srs_freep(err);
     }
 
     // If not * or 0.0.0.0, use the candidate as exposed IP.
-    string candidate = _srs_config->get_rtc_server_candidates();
+    string candidate = config->get_rtc_server_candidates();
     if (candidate != "*" && candidate != "0.0.0.0") {
         candidate_ips.insert(candidate);
         return candidate_ips;
     }
 
     // All automatically detected IP list.
-    SrsProtocolUtility utility;
-    vector<SrsIPAddress *> &ips = utility.local_ips();
+    vector<SrsIPAddress *> &ips = utility->local_ips();
     if (ips.empty()) {
         return candidate_ips;
     }
 
     // Discover from local network interface addresses.
-    if (_srs_config->get_use_auto_detect_network_ip()) {
+    if (config->get_use_auto_detect_network_ip()) {
         // We try to find the best match candidates, no loopback.
-        string family = _srs_config->get_rtc_server_ip_family();
+        string family = config->get_rtc_server_ip_family();
         for (int i = 0; i < (int)ips.size(); ++i) {
             SrsIPAddress *ip = ips[i];
             if (ip->is_loopback_) {
@@ -313,12 +312,16 @@ SrsRtcUserConfig::~SrsRtcUserConfig()
 SrsRtcSessionManager::SrsRtcSessionManager()
 {
     rtc_async_ = new SrsAsyncCallWorker();
+
+    conn_manager_ = _srs_conn_manager;
 }
 
 SrsRtcSessionManager::~SrsRtcSessionManager()
 {
     rtc_async_->stop();
     srs_freep(rtc_async_);
+
+    conn_manager_ = NULL;
 }
 
 srs_error_t SrsRtcSessionManager::initialize()
@@ -334,7 +337,7 @@ srs_error_t SrsRtcSessionManager::initialize()
 
 SrsRtcConnection *SrsRtcSessionManager::find_rtc_session_by_username(const std::string &username)
 {
-    ISrsResource *conn = _srs_conn_manager->find_by_name(username);
+    ISrsResource *conn = conn_manager_->find_by_name(username);
     return dynamic_cast<SrsRtcConnection *>(conn);
 }
 
@@ -410,7 +413,7 @@ srs_error_t SrsRtcSessionManager::do_create_rtc_session(SrsRtcUserConfig *ruc, S
     std::string username = "";
     while (true) {
         username = local_ufrag + ":" + ruc->remote_sdp_.get_ice_ufrag();
-        if (!_srs_conn_manager->find_by_name(username)) {
+        if (!conn_manager_->find_by_name(username)) {
             break;
         }
 
@@ -442,7 +445,8 @@ srs_error_t SrsRtcSessionManager::do_create_rtc_session(SrsRtcUserConfig *ruc, S
 
         string protocol = _srs_config->get_rtc_server_protocol();
 
-        set<string> candidates = discover_candidates(ruc);
+        SrsProtocolUtility utility;
+        set<string> candidates = discover_candidates(&utility, _srs_config, ruc);
         for (set<string>::iterator it = candidates.begin(); it != candidates.end(); ++it) {
             string hostname;
             int uport = udp_port;
@@ -494,7 +498,7 @@ srs_error_t SrsRtcSessionManager::do_create_rtc_session(SrsRtcUserConfig *ruc, S
     }
 
     // We allows username is optional, but it never empty here.
-    _srs_conn_manager->add_with_name(username, session);
+    conn_manager_->add_with_name(username, session);
 
     return err;
 }
@@ -505,8 +509,8 @@ void SrsRtcSessionManager::srs_update_rtc_sessions()
     int nn_rtc_conns = 0;
 
     // Check all sessions and dispose the dead sessions.
-    for (int i = 0; i < (int)_srs_conn_manager->size(); i++) {
-        SrsRtcConnection *session = dynamic_cast<SrsRtcConnection *>(_srs_conn_manager->at(i));
+    for (int i = 0; i < (int)conn_manager_->size(); i++) {
+        SrsRtcConnection *session = dynamic_cast<SrsRtcConnection *>(conn_manager_->at(i));
         // Ignore not session, or already disposing.
         if (!session || session->disposing_) {
             continue;
@@ -525,7 +529,7 @@ void SrsRtcSessionManager::srs_update_rtc_sessions()
         srs_trace("RTC: session destroy by timeout, username=%s", username.c_str());
 
         // Use manager to free session and notify other objects.
-        _srs_conn_manager->remove(session);
+        conn_manager_->remove(session);
     }
 
     // Ignore stats if no RTC connections.
@@ -569,11 +573,11 @@ srs_error_t SrsRtcSessionManager::on_udp_packet(ISrsUdpMuxSocket *skt)
     uint64_t fast_id = skt->fast_id();
     // Try fast id first, if not found, search by long peer id.
     if (fast_id) {
-        session = (SrsRtcConnection *)_srs_conn_manager->find_by_fast_id(fast_id);
+        session = (SrsRtcConnection *)conn_manager_->find_by_fast_id(fast_id);
     }
     if (!session) {
         string peer_id = skt->peer_id();
-        session = (SrsRtcConnection *)_srs_conn_manager->find_by_id(peer_id);
+        session = (SrsRtcConnection *)conn_manager_->find_by_id(peer_id);
     }
 
     if (session) {

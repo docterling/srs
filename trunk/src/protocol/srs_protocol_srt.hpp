@@ -115,8 +115,26 @@ public:
 };
 ISrsSrtPoller *srs_srt_poller_new();
 
+// Srt socket interface.
+class ISrsSrtSocket
+{
+public:
+    ISrsSrtSocket();
+    virtual ~ISrsSrtSocket();
+
+public:
+    virtual srs_error_t recvmsg(void *buf, size_t size, ssize_t *nread) = 0;
+    virtual srs_error_t sendmsg(void *buf, size_t size, ssize_t *nwrite) = 0;
+    virtual void set_recv_timeout(srs_utime_t tm) = 0;
+    virtual void set_send_timeout(srs_utime_t tm) = 0;
+    virtual srs_utime_t get_send_timeout() = 0;
+    virtual srs_utime_t get_recv_timeout() = 0;
+    virtual int64_t get_send_bytes() = 0;
+    virtual int64_t get_recv_bytes() = 0;
+};
+
 // Srt ST socket, wrap SRT io and make it adapt to ST-thread.
-class SrsSrtSocket
+class SrsSrtSocket : public ISrsSrtSocket
 {
 public:
     SrsSrtSocket(ISrsSrtPoller *srt_poller, srs_srt_t srt_fd);

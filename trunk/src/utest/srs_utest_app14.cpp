@@ -859,6 +859,10 @@ void MockResourceManagerForBindSession::add_with_fast_id(uint64_t id, ISrsResour
 {
 }
 
+void MockResourceManagerForBindSession::add_with_name(const std::string & /*name*/, ISrsResource * /*conn*/)
+{
+}
+
 ISrsResource *MockResourceManagerForBindSession::at(int index)
 {
     return NULL;
@@ -2135,6 +2139,10 @@ void MockResourceManagerForGbPublish::add_with_fast_id(uint64_t id, ISrsResource
     fast_id_map_[id] = conn;
 }
 
+void MockResourceManagerForGbPublish::add_with_name(const std::string & /*name*/, ISrsResource * /*conn*/)
+{
+}
+
 ISrsResource *MockResourceManagerForGbPublish::at(int index)
 {
     return NULL;
@@ -3245,6 +3253,10 @@ void MockResourceManagerForUdpNetwork::add_with_fast_id(uint64_t id, ISrsResourc
     fast_id_map_[id] = conn;
 }
 
+void MockResourceManagerForUdpNetwork::add_with_name(const std::string & /*name*/, ISrsResource * /*conn*/)
+{
+}
+
 ISrsResource *MockResourceManagerForUdpNetwork::at(int index)
 {
     return NULL;
@@ -3915,6 +3927,10 @@ void MockResourceManagerForTcpConnHandshake::add_with_id(const std::string &id, 
 }
 
 void MockResourceManagerForTcpConnHandshake::add_with_fast_id(uint64_t id, ISrsResource *conn)
+{
+}
+
+void MockResourceManagerForTcpConnHandshake::add_with_name(const std::string & /*name*/, ISrsResource * /*conn*/)
 {
 }
 

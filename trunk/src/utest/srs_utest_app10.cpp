@@ -707,6 +707,10 @@ void MockConnectionManagerForResampleKbps::add_with_fast_id(uint64_t /*id*/, ISr
 {
 }
 
+void MockConnectionManagerForResampleKbps::add_with_name(const std::string & /*name*/, ISrsResource * /*conn*/)
+{
+}
+
 ISrsResource *MockConnectionManagerForResampleKbps::at(int index)
 {
     if (index < 0 || index >= (int)connections_.size()) {
@@ -999,6 +1003,10 @@ void MockConnectionManagerForConnectionLimit::add_with_id(const std::string & /*
 }
 
 void MockConnectionManagerForConnectionLimit::add_with_fast_id(uint64_t /*id*/, ISrsResource * /*conn*/)
+{
+}
+
+void MockConnectionManagerForConnectionLimit::add_with_name(const std::string & /*name*/, ISrsResource * /*conn*/)
 {
 }
 

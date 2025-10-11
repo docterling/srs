@@ -23,6 +23,17 @@ class SrsLiveSource;
 class SrsSrtSource;
 class SrsSrtServer;
 class SrsNetworkDelta;
+class ISrsNetworkDelta;
+class ISrsSrtSocket;
+class SrsNetworkKbps;
+class ISrsSecurity;
+class ISrsStatistic;
+class ISrsAppConfig;
+class ISrsStreamPublishTokenManager;
+class ISrsSrtSourceManager;
+class ISrsLiveSourceManager;
+class ISrsRtcSourceManager;
+class ISrsHttpHooks;
 
 // The basic connection of SRS, for SRT based protocols,
 // all srt connections accept from srt listener must extends from this base class,
@@ -52,13 +63,24 @@ private:
     // The underlayer srt fd handler.
     srs_srt_t srt_fd_;
     // The underlayer srt socket.
-    SrsSrtSocket *srt_skt_;
+    ISrsSrtSocket *srt_skt_;
 };
 
-class SrsSrtRecvThread : public ISrsCoroutineHandler
+// The recv thread for SRT connection.
+class ISrsSrtRecvThread : public ISrsCoroutineHandler
 {
 public:
-    SrsSrtRecvThread(SrsSrtConnection *srt_conn);
+    ISrsSrtRecvThread();
+    virtual ~ISrsSrtRecvThread();
+
+public:
+};
+
+// The recv thread for SRT connection.
+class SrsSrtRecvThread : public ISrsSrtRecvThread
+{
+public:
+    SrsSrtRecvThread(ISrsProtocolReadWriter *srt_conn);
     ~SrsSrtRecvThread();
     // Interface ISrsCoroutineHandler
 public:
@@ -72,17 +94,36 @@ public:
     srs_error_t get_recv_err();
 
 private:
-    SrsSrtConnection *srt_conn_;
+    ISrsProtocolReadWriter *srt_conn_;
     ISrsCoroutine *trd_;
     srs_error_t recv_err_;
 };
 
 // The SRT connection, for client to publish or play stream.
-class SrsMpegtsSrtConn : public ISrsConnection, // It's a resource.
+class ISrsMpegtsSrtConnection : public ISrsConnection, // It's a resource.
                          public ISrsStartable,
                          public ISrsCoroutineHandler,
                          public ISrsExpire
 {
+public:
+    ISrsMpegtsSrtConnection();
+    virtual ~ISrsMpegtsSrtConnection();
+
+public:
+};
+
+// The SRT connection, for client to publish or play stream.
+class SrsMpegtsSrtConn : public ISrsMpegtsSrtConnection
+{
+private:
+    ISrsStatistic *stat_;
+    ISrsAppConfig *config_;
+    ISrsStreamPublishTokenManager *stream_publish_tokens_;
+    ISrsSrtSourceManager *srt_sources_;
+    ISrsLiveSourceManager *live_sources_;
+    ISrsRtcSourceManager *rtc_sources_;
+    ISrsHttpHooks *hooks_;
+
 public:
     SrsMpegtsSrtConn(ISrsResourceManager *resource_manager, srs_srt_t srt_fd, std::string ip, int port);
     virtual ~SrsMpegtsSrtConn();
@@ -131,8 +172,8 @@ private:
 private:
     ISrsResourceManager *resource_manager_;
     srs_srt_t srt_fd_;
-    SrsSrtConnection *srt_conn_;
-    SrsNetworkDelta *delta_;
+    ISrsProtocolReadWriter *srt_conn_;
+    ISrsNetworkDelta *delta_;
     SrsNetworkKbps *kbps_;
     std::string ip_;
     int port_;
@@ -140,7 +181,7 @@ private:
 
     ISrsRequest *req_;
     SrsSharedPtr<SrsSrtSource> srt_source_;
-    SrsSecurity *security_;
+    ISrsSecurity *security_;
 };
 
 #endif

@@ -1029,6 +1029,10 @@ void MockConnectionManagerForExpire::add_with_fast_id(uint64_t /*id*/, ISrsResou
 {
 }
 
+void MockConnectionManagerForExpire::add_with_name(const std::string & /*name*/, ISrsResource * /*conn*/)
+{
+}
+
 ISrsResource *MockConnectionManagerForExpire::at(int /*index*/)
 {
     return NULL;

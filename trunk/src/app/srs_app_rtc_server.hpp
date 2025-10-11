@@ -29,6 +29,7 @@ class SrsRtcSource;
 class SrsResourceManager;
 class SrsAsyncCallWorker;
 class ISrsUdpMuxSocket;
+class ISrsResourceManager;
 
 // The UDP black hole, for developer to use wireshark to catch plaintext packets.
 // For example, server receive UDP packets at udp://8000, and forward the plaintext packet to black hole,
@@ -85,7 +86,7 @@ public:
 };
 
 // Discover the candidates for RTC server.
-extern std::set<std::string> discover_candidates(SrsRtcUserConfig *ruc);
+extern std::set<std::string> discover_candidates(SrsProtocolUtility *utility, ISrsAppConfig *config, SrsRtcUserConfig *ruc);
 
 // The dns resolve utility, return the resolved ip address.
 extern std::string srs_dns_resolve(std::string host, int &family);
@@ -93,6 +94,9 @@ extern std::string srs_dns_resolve(std::string host, int &family);
 // RTC session manager to handle WebRTC session lifecycle and management.
 class SrsRtcSessionManager : public ISrsExecRtcAsyncTask
 {
+private:
+    ISrsResourceManager *conn_manager_;
+
 private:
     // WebRTC async call worker for non-blocking operations.
     SrsAsyncCallWorker *rtc_async_;
@@ -121,5 +125,9 @@ public:
 public:
     virtual srs_error_t on_udp_packet(ISrsUdpMuxSocket *skt);
 };
+
+// Helper function to discover candidate IPs from API server hostname
+// Used by WebRTC ICE candidate discovery
+extern srs_error_t api_server_as_candidates(ISrsAppConfig *config, std::string api, std::set<std::string> &candidate_ips);
 
 #endif

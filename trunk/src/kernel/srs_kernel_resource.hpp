@@ -105,6 +105,8 @@ public:
     virtual ISrsResource *find_by_fast_id(uint64_t id) = 0;
     // Find resource by name.
     virtual ISrsResource *find_by_name(std::string name) = 0;
+    // Add a resource with name to the manager.
+    virtual void add_with_name(const std::string &name, ISrsResource *conn) = 0;
 
 public:
     // Remove then free the specified connection. Note that the manager always free c resource,

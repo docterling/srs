@@ -347,6 +347,12 @@ public:
     virtual std::vector<std::string> get_rtc_server_listens() = 0;
     virtual int get_rtc_server_reuseport() = 0;
     virtual bool get_rtc_server_encrypt() = 0;
+    virtual bool get_api_as_candidates() = 0;
+    virtual bool get_resolve_api_domain() = 0;
+    virtual bool get_keep_api_domain() = 0;
+    virtual std::string get_rtc_server_candidates() = 0;
+    virtual bool get_use_auto_detect_network_ip() = 0;
+    virtual std::string get_rtc_server_ip_family() = 0;
 
 public:
     // RTSP config
@@ -453,6 +459,8 @@ public:
     virtual bool get_rtc_twcc_enabled(std::string vhost) = 0;
     virtual bool get_srt_enabled() = 0;
     virtual bool get_srt_enabled(std::string vhost) = 0;
+    virtual std::string get_srt_default_streamid() = 0;
+    virtual bool get_srt_to_rtmp(std::string vhost) = 0;
     virtual bool get_rtc_to_rtmp(std::string vhost) = 0;
     virtual srs_utime_t get_rtc_stun_timeout(std::string vhost) = 0;
     virtual bool get_rtc_stun_strict_check(std::string vhost) = 0;

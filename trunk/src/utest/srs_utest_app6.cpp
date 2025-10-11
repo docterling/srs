@@ -2183,6 +2183,9 @@ MockAppConfig::MockAppConfig()
     rtc_to_rtmp_ = false;
     dash_dispose_ = 0;
     dash_enabled_ = false;
+    api_as_candidates_ = true;
+    resolve_api_domain_ = true;
+    keep_api_domain_ = false;
 }
 
 MockAppConfig::~MockAppConfig()
@@ -2269,6 +2272,16 @@ bool MockAppConfig::get_srt_enabled()
 bool MockAppConfig::get_srt_enabled(std::string vhost)
 {
     return srt_enabled_;
+}
+
+std::string MockAppConfig::get_srt_default_streamid()
+{
+    return "#!::r=live/livestream,m=request";
+}
+
+bool MockAppConfig::get_srt_to_rtmp(std::string vhost)
+{
+    return true;
 }
 
 bool MockAppConfig::get_rtc_to_rtmp(std::string vhost)
@@ -2569,6 +2582,21 @@ void MockAppConfig::set_srt_enabled(bool enabled)
 void MockAppConfig::set_rtc_to_rtmp(bool enabled)
 {
     rtc_to_rtmp_ = enabled;
+}
+
+void MockAppConfig::set_api_as_candidates(bool enabled)
+{
+    api_as_candidates_ = enabled;
+}
+
+void MockAppConfig::set_resolve_api_domain(bool enabled)
+{
+    resolve_api_domain_ = enabled;
+}
+
+void MockAppConfig::set_keep_api_domain(bool enabled)
+{
+    keep_api_domain_ = enabled;
 }
 
 // Mock request implementation
