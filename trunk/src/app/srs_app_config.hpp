@@ -395,6 +395,7 @@ public:
 
 public:
     // Vhost config
+    virtual void get_vhosts(std::vector<SrsConfDirective *> &vhosts) = 0;
     virtual SrsConfDirective *get_vhost(std::string vhost, bool try_default_vhost = true) = 0;
     virtual bool get_vhost_enabled(std::string vhost) = 0;
     virtual bool get_vhost_enabled(SrsConfDirective *conf) = 0;
@@ -545,6 +546,45 @@ public:
     virtual bool get_dvr_enabled(std::string vhost) = 0;
     virtual SrsConfDirective *get_dvr_apply(std::string vhost) = 0;
     virtual srs_utime_t get_dvr_duration(std::string vhost) = 0;
+
+public:
+    // Ingest config
+    virtual std::vector<SrsConfDirective *> get_ingesters(std::string vhost) = 0;
+    virtual SrsConfDirective *get_ingest_by_id(std::string vhost, std::string ingest_id) = 0;
+    virtual bool get_ingest_enabled(SrsConfDirective *conf) = 0;
+    virtual std::string get_ingest_ffmpeg(SrsConfDirective *conf) = 0;
+    virtual std::string get_ingest_input_type(SrsConfDirective *conf) = 0;
+    virtual std::string get_ingest_input_url(SrsConfDirective *conf) = 0;
+
+public:
+    // FFmpeg log config
+    virtual bool get_ff_log_enabled() = 0;
+    virtual std::string get_ff_log_dir() = 0;
+    virtual std::string get_ff_log_level() = 0;
+
+public:
+    // Transcode/Engine config
+    virtual std::vector<SrsConfDirective *> get_transcode_engines(SrsConfDirective *conf) = 0;
+    virtual bool get_engine_enabled(SrsConfDirective *conf) = 0;
+    virtual std::vector<std::string> get_engine_perfile(SrsConfDirective *conf) = 0;
+    virtual std::string get_engine_iformat(SrsConfDirective *conf) = 0;
+    virtual std::vector<std::string> get_engine_vfilter(SrsConfDirective *conf) = 0;
+    virtual std::string get_engine_vcodec(SrsConfDirective *conf) = 0;
+    virtual int get_engine_vbitrate(SrsConfDirective *conf) = 0;
+    virtual double get_engine_vfps(SrsConfDirective *conf) = 0;
+    virtual int get_engine_vwidth(SrsConfDirective *conf) = 0;
+    virtual int get_engine_vheight(SrsConfDirective *conf) = 0;
+    virtual int get_engine_vthreads(SrsConfDirective *conf) = 0;
+    virtual std::string get_engine_vprofile(SrsConfDirective *conf) = 0;
+    virtual std::string get_engine_vpreset(SrsConfDirective *conf) = 0;
+    virtual std::vector<std::string> get_engine_vparams(SrsConfDirective *conf) = 0;
+    virtual std::string get_engine_acodec(SrsConfDirective *conf) = 0;
+    virtual int get_engine_abitrate(SrsConfDirective *conf) = 0;
+    virtual int get_engine_asample_rate(SrsConfDirective *conf) = 0;
+    virtual int get_engine_achannels(SrsConfDirective *conf) = 0;
+    virtual std::vector<std::string> get_engine_aparams(SrsConfDirective *conf) = 0;
+    virtual std::string get_engine_oformat(SrsConfDirective *conf) = 0;
+    virtual std::string get_engine_output(SrsConfDirective *conf) = 0;
 };
 
 // The config service provider.

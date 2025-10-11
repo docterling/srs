@@ -101,9 +101,9 @@ private:
 
 // The SRT connection, for client to publish or play stream.
 class ISrsMpegtsSrtConnection : public ISrsConnection, // It's a resource.
-                         public ISrsStartable,
-                         public ISrsCoroutineHandler,
-                         public ISrsExpire
+                                public ISrsStartable,
+                                public ISrsCoroutineHandler,
+                                public ISrsExpire
 {
 public:
     ISrsMpegtsSrtConnection();

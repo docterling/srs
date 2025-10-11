@@ -10,9 +10,12 @@
 #include <srs_app_config.hpp>
 #include <srs_app_dash.hpp>
 #include <srs_app_dvr.hpp>
+#include <srs_app_ffmpeg.hpp>
 #include <srs_app_fragment.hpp>
 #include <srs_app_gb28181.hpp>
+#include <srs_app_ingest.hpp>
 #include <srs_app_listener.hpp>
+#include <srs_app_rtc_conn.hpp>
 #include <srs_app_rtmp_conn.hpp>
 #include <srs_app_rtmp_source.hpp>
 #include <srs_app_rtsp_source.hpp>
@@ -25,7 +28,6 @@
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_http_client.hpp>
 #include <srs_protocol_st.hpp>
-#include <srs_app_rtc_conn.hpp>
 
 ISrsAppFactory::ISrsAppFactory()
 {
@@ -171,6 +173,16 @@ ISrsRtcConnection *SrsAppFactory::create_rtc_connection(ISrsExecRtcAsyncTask *ex
     SrsRtcConnection *session = new SrsRtcConnection(exec, cid);
     session->assemble();
     return session;
+}
+
+ISrsFFMPEG *SrsAppFactory::create_ffmpeg(std::string ffmpeg_bin)
+{
+    return new SrsFFMPEG(ffmpeg_bin);
+}
+
+ISrsIngesterFFMPEG *SrsAppFactory::create_ingester_ffmpeg()
+{
+    return new SrsIngesterFFMPEG();
 }
 
 ISrsCoroutine *SrsAppFactory::create_coroutine(const std::string &name, ISrsCoroutineHandler *handler, SrsContextId cid)

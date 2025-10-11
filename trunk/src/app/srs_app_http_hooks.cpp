@@ -11,6 +11,7 @@ using namespace std;
 
 #include <srs_app_config.hpp>
 #include <srs_app_dvr.hpp>
+#include <srs_app_factory.hpp>
 #include <srs_app_http_client.hpp>
 #include <srs_app_http_conn.hpp>
 #include <srs_app_st.hpp>
@@ -22,7 +23,6 @@ using namespace std;
 #include <srs_protocol_amf0.hpp>
 #include <srs_protocol_json.hpp>
 #include <srs_protocol_rtmp_stack.hpp>
-#include <srs_app_factory.hpp>
 
 // The HTTP response body should be "0", see https://github.com/ossrs/srs/issues/3215#issuecomment-1319991512
 #define SRS_HTTP_RESPONSE_OK SRS_XSTR(0)

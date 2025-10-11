@@ -3249,6 +3249,16 @@ ISrsRtcConnection *MockDvrAppFactory::create_rtc_connection(ISrsExecRtcAsyncTask
     return NULL;
 }
 
+ISrsFFMPEG *MockDvrAppFactory::create_ffmpeg(std::string ffmpeg_bin)
+{
+    return NULL;
+}
+
+ISrsIngesterFFMPEG *MockDvrAppFactory::create_ingester_ffmpeg()
+{
+    return NULL;
+}
+
 ISrsCoroutine *MockDvrAppFactory::create_coroutine(const std::string &name, ISrsCoroutineHandler *handler, SrsContextId cid)
 {
     return NULL;

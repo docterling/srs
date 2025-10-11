@@ -448,6 +448,40 @@ public:
     virtual int get_dash_window_size(std::string vhost) { return 10; }
     virtual bool get_dash_cleanup(std::string vhost) { return true; }
     virtual srs_utime_t get_dash_dispose(std::string vhost) { return dash_dispose_; }
+    // Ingest config
+    virtual void get_vhosts(std::vector<SrsConfDirective *> &vhosts) {}
+    virtual std::vector<SrsConfDirective *> get_ingesters(std::string vhost) { return std::vector<SrsConfDirective *>(); }
+    virtual SrsConfDirective *get_ingest_by_id(std::string vhost, std::string ingest_id) { return NULL; }
+    virtual bool get_ingest_enabled(SrsConfDirective *conf) { return false; }
+    virtual std::string get_ingest_ffmpeg(SrsConfDirective *conf) { return ""; }
+    virtual std::string get_ingest_input_type(SrsConfDirective *conf) { return ""; }
+    virtual std::string get_ingest_input_url(SrsConfDirective *conf) { return ""; }
+    // FFmpeg log config
+    virtual bool get_ff_log_enabled() { return false; }
+    virtual std::string get_ff_log_dir() { return ""; }
+    virtual std::string get_ff_log_level() { return ""; }
+    // Transcode/Engine config
+    virtual std::vector<SrsConfDirective *> get_transcode_engines(SrsConfDirective *conf) { return std::vector<SrsConfDirective *>(); }
+    virtual bool get_engine_enabled(SrsConfDirective *conf) { return false; }
+    virtual std::vector<std::string> get_engine_perfile(SrsConfDirective *conf) { return std::vector<std::string>(); }
+    virtual std::string get_engine_iformat(SrsConfDirective *conf) { return ""; }
+    virtual std::vector<std::string> get_engine_vfilter(SrsConfDirective *conf) { return std::vector<std::string>(); }
+    virtual std::string get_engine_vcodec(SrsConfDirective *conf) { return ""; }
+    virtual int get_engine_vbitrate(SrsConfDirective *conf) { return 0; }
+    virtual double get_engine_vfps(SrsConfDirective *conf) { return 0; }
+    virtual int get_engine_vwidth(SrsConfDirective *conf) { return 0; }
+    virtual int get_engine_vheight(SrsConfDirective *conf) { return 0; }
+    virtual int get_engine_vthreads(SrsConfDirective *conf) { return 0; }
+    virtual std::string get_engine_vprofile(SrsConfDirective *conf) { return ""; }
+    virtual std::string get_engine_vpreset(SrsConfDirective *conf) { return ""; }
+    virtual std::vector<std::string> get_engine_vparams(SrsConfDirective *conf) { return std::vector<std::string>(); }
+    virtual std::string get_engine_acodec(SrsConfDirective *conf) { return ""; }
+    virtual int get_engine_abitrate(SrsConfDirective *conf) { return 0; }
+    virtual int get_engine_asample_rate(SrsConfDirective *conf) { return 0; }
+    virtual int get_engine_achannels(SrsConfDirective *conf) { return 0; }
+    virtual std::vector<std::string> get_engine_aparams(SrsConfDirective *conf) { return std::vector<std::string>(); }
+    virtual std::string get_engine_oformat(SrsConfDirective *conf) { return ""; }
+    virtual std::string get_engine_output(SrsConfDirective *conf) { return ""; }
     void set_http_hooks_enabled(bool enabled);
     void set_on_stop_urls(const std::vector<std::string> &urls);
     void clear_on_stop_directive();

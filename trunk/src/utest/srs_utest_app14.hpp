@@ -633,6 +633,8 @@ public:
     virtual ISrsFragmentedMp4 *create_fragmented_mp4();
     virtual ISrsIpListener *create_tcp_listener(ISrsTcpHandler *handler);
     virtual ISrsRtcConnection *create_rtc_connection(ISrsExecRtcAsyncTask *exec, const SrsContextId &cid);
+    virtual ISrsFFMPEG *create_ffmpeg(std::string ffmpeg_bin);
+    virtual ISrsIngesterFFMPEG *create_ingester_ffmpeg();
     // ISrsKernelFactory interface methods
     virtual ISrsCoroutine *create_coroutine(const std::string &name, ISrsCoroutineHandler *handler, SrsContextId cid);
     virtual ISrsTime *create_time();

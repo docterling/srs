@@ -12,6 +12,7 @@
 using namespace std;
 
 #include <srs_app_config.hpp>
+#include <srs_app_factory.hpp>
 #include <srs_app_http_api.hpp>
 #include <srs_app_rtc_api.hpp>
 #include <srs_app_rtc_conn.hpp>
@@ -32,7 +33,6 @@ using namespace std;
 #include <srs_protocol_log.hpp>
 #include <srs_protocol_rtc_stun.hpp>
 #include <srs_protocol_utility.hpp>
-#include <srs_app_factory.hpp>
 
 extern SrsPps *_srs_pps_rpkts;
 extern SrsPps *_srs_pps_rstuns;

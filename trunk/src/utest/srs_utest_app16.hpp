@@ -12,13 +12,15 @@
 */
 #include <srs_utest.hpp>
 
+#include <srs_app_ffmpeg.hpp>
+#include <srs_app_ingest.hpp>
 #include <srs_app_listener.hpp>
+#include <srs_app_rtc_conn.hpp>
+#include <srs_app_stream_token.hpp>
 #include <srs_protocol_srt.hpp>
 #include <srs_utest_app10.hpp>
 #include <srs_utest_app11.hpp>
 #include <srs_utest_app6.hpp>
-#include <srs_app_stream_token.hpp>
-#include <srs_app_rtc_conn.hpp>
 
 // Mock ISrsSrtSocket for testing SrsSrtConnection
 class MockSrtSocket : public ISrsSrtSocket
@@ -452,6 +454,169 @@ public:
     virtual srs_error_t protect_rtcp(void *packet, int *nb_cipher);
     virtual bool is_establelished();
     virtual srs_error_t write(void *buf, size_t size, ssize_t *nwrite);
+};
+
+// Mock ISrsFFMPEG for testing SrsIngesterFFMPEG
+class MockFFMPEG : public ISrsFFMPEG
+{
+public:
+    bool start_called_;
+    bool stop_called_;
+    bool cycle_called_;
+    bool fast_stop_called_;
+    bool fast_kill_called_;
+    srs_error_t start_error_;
+    srs_error_t cycle_error_;
+
+public:
+    MockFFMPEG();
+    virtual ~MockFFMPEG();
+
+public:
+    virtual void append_iparam(std::string iparam);
+    virtual void set_oformat(std::string format);
+    virtual std::string output();
+    virtual srs_error_t initialize(std::string in, std::string out, std::string log);
+    virtual srs_error_t initialize_transcode(SrsConfDirective *engine);
+    virtual srs_error_t initialize_copy();
+    virtual srs_error_t start();
+    virtual srs_error_t cycle();
+    virtual void stop();
+    virtual void fast_stop();
+    virtual void fast_kill();
+};
+
+// Mock ISrsIngesterFFMPEG for testing SrsIngester
+class MockIngesterFFMPEG : public ISrsIngesterFFMPEG
+{
+public:
+    bool fast_stop_called_;
+    bool fast_kill_called_;
+    std::string vhost_;
+    std::string id_;
+
+public:
+    MockIngesterFFMPEG();
+    virtual ~MockIngesterFFMPEG();
+
+public:
+    virtual srs_error_t initialize(ISrsFFMPEG *ff, std::string v, std::string i);
+    virtual std::string uri();
+    virtual srs_utime_t alive();
+    virtual bool equals(std::string v, std::string i);
+    virtual bool equals(std::string v);
+    virtual srs_error_t start();
+    virtual void stop();
+    virtual srs_error_t cycle();
+    virtual void fast_stop();
+    virtual void fast_kill();
+};
+
+// Mock ISrsAppFactory for testing SrsIngester
+class MockAppFactoryForIngester : public ISrsAppFactory
+{
+public:
+    MockSrtCoroutine *mock_coroutine_;
+    ISrsTime *mock_time_;
+    int create_coroutine_count_;
+    int create_time_count_;
+
+public:
+    MockAppFactoryForIngester();
+    virtual ~MockAppFactoryForIngester();
+
+public:
+    virtual ISrsFileWriter *create_file_writer();
+    virtual ISrsFileWriter *create_enc_file_writer();
+    virtual ISrsFileReader *create_file_reader();
+    virtual SrsPath *create_path();
+    virtual SrsLiveSource *create_live_source();
+    virtual ISrsOriginHub *create_origin_hub();
+    virtual ISrsHourGlass *create_hourglass(const std::string &name, ISrsHourGlassHandler *handler, srs_utime_t interval);
+    virtual ISrsBasicRtmpClient *create_rtmp_client(std::string url, srs_utime_t cto, srs_utime_t sto);
+    virtual ISrsHttpClient *create_http_client();
+    virtual ISrsFileReader *create_http_file_reader(ISrsHttpResponseReader *r);
+    virtual ISrsFlvDecoder *create_flv_decoder();
+    virtual ISrsRtspSendTrack *create_rtsp_audio_send_track(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc);
+    virtual ISrsRtspSendTrack *create_rtsp_video_send_track(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc);
+    virtual ISrsFlvTransmuxer *create_flv_transmuxer();
+    virtual ISrsMp4Encoder *create_mp4_encoder();
+    virtual ISrsDvrSegmenter *create_dvr_flv_segmenter();
+    virtual ISrsDvrSegmenter *create_dvr_mp4_segmenter();
+    virtual ISrsGbMediaTcpConn *create_gb_media_tcp_conn();
+    virtual ISrsGbSession *create_gb_session();
+    virtual ISrsInitMp4 *create_init_mp4();
+    virtual ISrsFragmentWindow *create_fragment_window();
+    virtual ISrsFragmentedMp4 *create_fragmented_mp4();
+    virtual ISrsIpListener *create_tcp_listener(ISrsTcpHandler *handler);
+    virtual ISrsRtcConnection *create_rtc_connection(ISrsExecRtcAsyncTask *exec, const SrsContextId &cid);
+    virtual ISrsFFMPEG *create_ffmpeg(std::string ffmpeg_bin);
+    virtual ISrsIngesterFFMPEG *create_ingester_ffmpeg();
+    virtual ISrsCoroutine *create_coroutine(const std::string &name, ISrsCoroutineHandler *handler, SrsContextId cid);
+    virtual ISrsTime *create_time();
+    virtual ISrsConfig *create_config();
+    virtual ISrsCond *create_cond();
+    void reset();
+};
+
+// Mock ISrsAppConfig for testing SrsIngester
+class MockAppConfigForIngester : public MockAppConfig
+{
+public:
+    std::vector<SrsConfDirective *> vhosts_;
+
+public:
+    MockAppConfigForIngester();
+    virtual ~MockAppConfigForIngester();
+
+public:
+    virtual void get_vhosts(std::vector<SrsConfDirective *> &vhosts);
+    virtual std::vector<std::string> get_listens();
+    virtual std::vector<SrsConfDirective *> get_ingesters(std::string vhost);
+    virtual bool get_ingest_enabled(SrsConfDirective *conf);
+    virtual std::string get_ingest_ffmpeg(SrsConfDirective *conf);
+    virtual std::string get_ingest_input_type(SrsConfDirective *conf);
+    virtual std::string get_ingest_input_url(SrsConfDirective *conf);
+    virtual std::vector<SrsConfDirective *> get_transcode_engines(SrsConfDirective *conf);
+    virtual bool get_engine_enabled(SrsConfDirective *conf);
+    virtual std::string get_engine_output(SrsConfDirective *conf);
+    virtual std::string get_engine_vcodec(SrsConfDirective *conf);
+    virtual std::string get_engine_acodec(SrsConfDirective *conf);
+    virtual std::vector<std::string> get_engine_perfile(SrsConfDirective *conf);
+    virtual std::string get_engine_iformat(SrsConfDirective *conf);
+    virtual std::vector<std::string> get_engine_vfilter(SrsConfDirective *conf);
+    virtual int get_engine_vbitrate(SrsConfDirective *conf);
+    virtual double get_engine_vfps(SrsConfDirective *conf);
+    virtual int get_engine_vwidth(SrsConfDirective *conf);
+    virtual int get_engine_vheight(SrsConfDirective *conf);
+    virtual int get_engine_vthreads(SrsConfDirective *conf);
+    virtual std::string get_engine_vprofile(SrsConfDirective *conf);
+    virtual std::string get_engine_vpreset(SrsConfDirective *conf);
+    virtual std::vector<std::string> get_engine_vparams(SrsConfDirective *conf);
+    virtual int get_engine_abitrate(SrsConfDirective *conf);
+    virtual int get_engine_asample_rate(SrsConfDirective *conf);
+    virtual int get_engine_achannels(SrsConfDirective *conf);
+    virtual std::vector<std::string> get_engine_aparams(SrsConfDirective *conf);
+    virtual std::string get_engine_oformat(SrsConfDirective *conf);
+    virtual bool get_vhost_enabled(SrsConfDirective *conf);
+    void add_vhost(SrsConfDirective *vhost);
+    void clear_vhosts();
+};
+
+// Mock ISrsTime for testing SrsIngester
+class MockTimeForIngester : public ISrsTime
+{
+public:
+    int usleep_count_;
+    srs_utime_t last_usleep_duration_;
+
+public:
+    MockTimeForIngester();
+    virtual ~MockTimeForIngester();
+
+public:
+    virtual void usleep(srs_utime_t duration);
+    void reset();
 };
 
 #endif

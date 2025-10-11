@@ -3725,7 +3725,7 @@ srs_error_t MockStatisticForHooks::on_video_info(ISrsRequest *req, SrsVideoCodec
 }
 
 srs_error_t MockStatisticForHooks::on_audio_info(ISrsRequest *req, SrsAudioCodecId acodec, SrsAudioSampleRate asample_rate,
-                                                  SrsAudioChannels asound_type, SrsAacObjectType aac_object)
+                                                 SrsAudioChannels asound_type, SrsAacObjectType aac_object)
 {
     return srs_success;
 }
@@ -3849,7 +3849,7 @@ public:
 
         // Create mock body reader for GET requests (e.g., on_hls_notify)
         MockHttpResponseReaderForHooks *reader = new MockHttpResponseReaderForHooks();
-        reader->content_ = "OK";  // Simple response body
+        reader->content_ = "OK"; // Simple response body
         msg->body_reader_ = reader;
 
         client->mock_response_ = msg;
@@ -4116,7 +4116,7 @@ VOID TEST(HttpHooksTest, OnHlsSuccess)
     std::string m3u8 = "/data/hls/test.vhost/live/stream1/playlist.m3u8";
     std::string m3u8_url = "http://127.0.0.1:8080/live/stream1/playlist.m3u8";
     int sn = 123;
-    srs_utime_t duration = 10 * SRS_UTIME_SECONDS;  // 10 seconds
+    srs_utime_t duration = 10 * SRS_UTIME_SECONDS; // 10 seconds
 
     HELPER_EXPECT_SUCCESS(hooks->on_hls(cid, url, req.get(), file, ts_url, m3u8, m3u8_url, sn, duration));
 
@@ -4159,7 +4159,7 @@ VOID TEST(HttpHooksTest, OnHlsNotifySuccess)
     cid.set_value("client-789");
     std::string url = "http://127.0.0.1:8085/api/v1/hls/notify?server=[server_id]&service=[service_id]&app=[app]&stream=[stream]&ts=[ts_url]&param=[param]";
     std::string ts_url = "segment-123.ts";
-    int nb_notify = 1024;  // Read up to 1KB from response
+    int nb_notify = 1024; // Read up to 1KB from response
 
     HELPER_EXPECT_SUCCESS(hooks->on_hls_notify(cid, url, req.get(), ts_url, nb_notify));
 
@@ -4265,4 +4265,3 @@ VOID TEST(HttpHooksTest, OnForwardBackendSuccess)
     hooks->stat_ = NULL;
     mock_factory->mock_http_client_ = NULL;
 }
-

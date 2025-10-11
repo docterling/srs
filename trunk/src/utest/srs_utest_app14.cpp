@@ -2470,6 +2470,16 @@ ISrsRtcConnection *MockAppFactoryForGbPublish::create_rtc_connection(ISrsExecRtc
     return NULL;
 }
 
+ISrsFFMPEG *MockAppFactoryForGbPublish::create_ffmpeg(std::string ffmpeg_bin)
+{
+    return NULL;
+}
+
+ISrsIngesterFFMPEG *MockAppFactoryForGbPublish::create_ingester_ffmpeg()
+{
+    return NULL;
+}
+
 ISrsCoroutine *MockAppFactoryForGbPublish::create_coroutine(const std::string &name, ISrsCoroutineHandler *handler, SrsContextId cid)
 {
     return NULL;
