@@ -23,6 +23,7 @@
 class SrsRtcServer;
 class SrsHourGlass;
 class SrsRtcConnection;
+class ISrsRtcConnection;
 class ISrsRequest;
 class SrsSdp;
 class SrsRtcSource;
@@ -30,6 +31,11 @@ class SrsResourceManager;
 class SrsAsyncCallWorker;
 class ISrsUdpMuxSocket;
 class ISrsResourceManager;
+class ISrsStreamPublishTokenManager;
+class ISrsRtcSourceManager;
+class ISrsDtlsCertificate;
+class ISrsAppConfig;
+class ISrsAppFactory;
 
 // The UDP black hole, for developer to use wireshark to catch plaintext packets.
 // For example, server receive UDP packets at udp://8000, and forward the plaintext packet to black hole,
@@ -96,6 +102,11 @@ class SrsRtcSessionManager : public ISrsExecRtcAsyncTask
 {
 private:
     ISrsResourceManager *conn_manager_;
+    ISrsStreamPublishTokenManager *stream_publish_tokens_;
+    ISrsRtcSourceManager *rtc_sources_;
+    ISrsDtlsCertificate *dtls_certificate_;
+    ISrsAppConfig *config_;
+    ISrsAppFactory *app_factory_;
 
 private:
     // WebRTC async call worker for non-blocking operations.
@@ -109,11 +120,11 @@ public:
     virtual srs_error_t initialize();
 
 public:
-    virtual SrsRtcConnection *find_rtc_session_by_username(const std::string &ufrag);
-    virtual srs_error_t create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, SrsRtcConnection **psession);
+    virtual ISrsRtcConnection *find_rtc_session_by_username(const std::string &ufrag);
+    virtual srs_error_t create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, ISrsRtcConnection **psession);
 
 private:
-    virtual srs_error_t do_create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, SrsRtcConnection *session);
+    virtual srs_error_t do_create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, ISrsRtcConnection *session);
 
 public:
     virtual void srs_update_rtc_sessions();

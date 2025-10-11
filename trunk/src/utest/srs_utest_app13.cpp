@@ -3244,6 +3244,11 @@ ISrsIpListener *MockDvrAppFactory::create_tcp_listener(ISrsTcpHandler *handler)
     return NULL;
 }
 
+ISrsRtcConnection *MockDvrAppFactory::create_rtc_connection(ISrsExecRtcAsyncTask *exec, const SrsContextId &cid)
+{
+    return NULL;
+}
+
 ISrsCoroutine *MockDvrAppFactory::create_coroutine(const std::string &name, ISrsCoroutineHandler *handler, SrsContextId cid)
 {
     return NULL;

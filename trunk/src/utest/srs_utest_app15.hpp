@@ -290,8 +290,8 @@ public:
     virtual ~MockRtcApiServer();
 
 public:
-    virtual srs_error_t create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, SrsRtcConnection **psession);
-    virtual SrsRtcConnection *find_rtc_session_by_username(const std::string &ufrag);
+    virtual srs_error_t create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, ISrsRtcConnection **psession);
+    virtual ISrsRtcConnection *find_rtc_session_by_username(const std::string &ufrag);
 };
 
 // Mock ISrsStatistic for testing RTC API
@@ -447,8 +447,8 @@ public:
     virtual ~MockRtcApiServerForPlay();
 
 public:
-    virtual srs_error_t create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, SrsRtcConnection **psession);
-    virtual SrsRtcConnection *find_rtc_session_by_username(const std::string &ufrag);
+    virtual srs_error_t create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, ISrsRtcConnection **psession);
+    virtual ISrsRtcConnection *find_rtc_session_by_username(const std::string &ufrag);
 };
 
 // Mock ISrsHttpResponseReader for testing SrsHttpHooks

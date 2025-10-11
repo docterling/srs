@@ -579,8 +579,26 @@ public:
     virtual ISrsRtcNetwork *tcp() = 0;
     // Keep alive.
     virtual void alive() = 0;
+    virtual bool is_alive() = 0;
+    virtual bool is_disposing() = 0;
     // Context switching.
     virtual void switch_to_context() = 0;
+    // Session management.
+    virtual srs_error_t add_publisher(SrsRtcUserConfig *ruc, SrsSdp &local_sdp) = 0;
+    virtual srs_error_t add_player(SrsRtcUserConfig *ruc, SrsSdp &local_sdp) = 0;
+    virtual void set_all_tracks_status(std::string stream_uri, bool is_publish, bool status) = 0;
+    // SDP management.
+    virtual void set_remote_sdp(const SrsSdp &sdp) = 0;
+    virtual void set_local_sdp(const SrsSdp &sdp) = 0;
+    virtual void set_state_as_waiting_stun() = 0;
+    // Initialization.
+    virtual srs_error_t initialize(ISrsRequest *r, bool dtls, bool srtp, std::string username) = 0;
+    // Username and token access.
+    virtual std::string username() = 0;
+    virtual std::string token() = 0;
+    virtual void set_publish_token(SrsSharedPtr<SrsStreamPublishToken> publish_token) = 0;
+    // Simulation for testing.
+    virtual void simulate_nack_drop(int nn) = 0;
 };
 
 // A RTC Peer Connection, SDP level object.
@@ -721,6 +739,7 @@ public:
     srs_error_t on_dtls_handshake_done();
     srs_error_t on_dtls_alert(std::string type, std::string desc);
     bool is_alive();
+    bool is_disposing();
     void alive();
 
 public:

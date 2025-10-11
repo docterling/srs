@@ -28,6 +28,7 @@ public:
 
 public:
     virtual srs_error_t initialize() = 0;
+    virtual std::string get_fingerprint() = 0;
 };
 
 // The DTLS certificate.

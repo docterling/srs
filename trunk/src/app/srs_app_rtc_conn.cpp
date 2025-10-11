@@ -2414,6 +2414,11 @@ bool SrsRtcConnection::is_alive()
     return last_stun_time_ + session_timeout_ > srs_time_now_cached();
 }
 
+bool SrsRtcConnection::is_disposing()
+{
+    return disposing_;
+}
+
 void SrsRtcConnection::alive()
 {
     last_stun_time_ = srs_time_now_cached();

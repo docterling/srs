@@ -25,6 +25,7 @@
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_http_client.hpp>
 #include <srs_protocol_st.hpp>
+#include <srs_app_rtc_conn.hpp>
 
 ISrsAppFactory::ISrsAppFactory()
 {
@@ -163,6 +164,13 @@ ISrsFragmentedMp4 *SrsAppFactory::create_fragmented_mp4()
 ISrsIpListener *SrsAppFactory::create_tcp_listener(ISrsTcpHandler *handler)
 {
     return new SrsTcpListener(handler);
+}
+
+ISrsRtcConnection *SrsAppFactory::create_rtc_connection(ISrsExecRtcAsyncTask *exec, const SrsContextId &cid)
+{
+    SrsRtcConnection *session = new SrsRtcConnection(exec, cid);
+    session->assemble();
+    return session;
 }
 
 ISrsCoroutine *SrsAppFactory::create_coroutine(const std::string &name, ISrsCoroutineHandler *handler, SrsContextId cid)

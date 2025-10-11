@@ -1774,7 +1774,7 @@ MockRtcApiServer::~MockRtcApiServer()
     srs_freep(mock_connection_);
 }
 
-srs_error_t MockRtcApiServer::create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, SrsRtcConnection **psession)
+srs_error_t MockRtcApiServer::create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, ISrsRtcConnection **psession)
 {
     create_session_called_ = true;
 
@@ -1793,7 +1793,7 @@ srs_error_t MockRtcApiServer::create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &
     return srs_success;
 }
 
-SrsRtcConnection *MockRtcApiServer::find_rtc_session_by_username(const std::string &ufrag)
+ISrsRtcConnection *MockRtcApiServer::find_rtc_session_by_username(const std::string &ufrag)
 {
     find_username_ = ufrag;
     // Return NULL to simulate session not found (easier to test than full mock)
@@ -2126,7 +2126,7 @@ MockRtcApiServerForPlay::~MockRtcApiServerForPlay()
     srs_freep(mock_connection_);
 }
 
-srs_error_t MockRtcApiServerForPlay::create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, SrsRtcConnection **psession)
+srs_error_t MockRtcApiServerForPlay::create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, ISrsRtcConnection **psession)
 {
     create_session_called_ = true;
 
@@ -2143,7 +2143,7 @@ srs_error_t MockRtcApiServerForPlay::create_rtc_session(SrsRtcUserConfig *ruc, S
     return srs_success;
 }
 
-SrsRtcConnection *MockRtcApiServerForPlay::find_rtc_session_by_username(const std::string &ufrag)
+ISrsRtcConnection *MockRtcApiServerForPlay::find_rtc_session_by_username(const std::string &ufrag)
 {
     return NULL;
 }

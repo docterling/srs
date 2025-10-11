@@ -1418,12 +1418,12 @@ srs_error_t SrsServer::listen_rtc_api()
     return err;
 }
 
-SrsRtcConnection *SrsServer::find_rtc_session_by_username(const std::string &username)
+ISrsRtcConnection *SrsServer::find_rtc_session_by_username(const std::string &username)
 {
     return rtc_session_manager_->find_rtc_session_by_username(username);
 }
 
-srs_error_t SrsServer::create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, SrsRtcConnection **psession)
+srs_error_t SrsServer::create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, ISrsRtcConnection **psession)
 {
     srs_error_t err = srs_success;
 

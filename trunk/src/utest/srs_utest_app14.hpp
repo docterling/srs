@@ -157,7 +157,20 @@ public:
     virtual ISrsRtcNetwork *udp();
     virtual ISrsRtcNetwork *tcp();
     virtual void alive();
+    virtual bool is_alive();
+    virtual bool is_disposing();
     virtual void switch_to_context();
+    virtual srs_error_t add_publisher(SrsRtcUserConfig *ruc, SrsSdp &local_sdp);
+    virtual srs_error_t add_player(SrsRtcUserConfig *ruc, SrsSdp &local_sdp);
+    virtual void set_all_tracks_status(std::string stream_uri, bool is_publish, bool status);
+    virtual void set_remote_sdp(const SrsSdp &sdp);
+    virtual void set_local_sdp(const SrsSdp &sdp);
+    virtual void set_state_as_waiting_stun();
+    virtual srs_error_t initialize(ISrsRequest *r, bool dtls, bool srtp, std::string username);
+    virtual std::string username();
+    virtual std::string token();
+    virtual void set_publish_token(SrsSharedPtr<SrsStreamPublishToken> publish_token);
+    virtual void simulate_nack_drop(int nn);
 
 public:
     void set_on_dtls_alert_error(srs_error_t err);
@@ -477,7 +490,20 @@ public:
     virtual ISrsRtcNetwork *udp();
     virtual ISrsRtcNetwork *tcp();
     virtual void alive();
+    virtual bool is_alive();
+    virtual bool is_disposing();
     virtual void switch_to_context();
+    virtual srs_error_t add_publisher(SrsRtcUserConfig *ruc, SrsSdp &local_sdp);
+    virtual srs_error_t add_player(SrsRtcUserConfig *ruc, SrsSdp &local_sdp);
+    virtual void set_all_tracks_status(std::string stream_uri, bool is_publish, bool status);
+    virtual void set_remote_sdp(const SrsSdp &sdp);
+    virtual void set_local_sdp(const SrsSdp &sdp);
+    virtual void set_state_as_waiting_stun();
+    virtual srs_error_t initialize(ISrsRequest *r, bool dtls, bool srtp, std::string username);
+    virtual std::string username();
+    virtual std::string token();
+    virtual void set_publish_token(SrsSharedPtr<SrsStreamPublishToken> publish_token);
+    virtual void simulate_nack_drop(int nn);
 };
 
 // Mock ISrsPsPackHandler for testing SrsPackContext
@@ -606,6 +632,7 @@ public:
     virtual ISrsFragmentWindow *create_fragment_window();
     virtual ISrsFragmentedMp4 *create_fragmented_mp4();
     virtual ISrsIpListener *create_tcp_listener(ISrsTcpHandler *handler);
+    virtual ISrsRtcConnection *create_rtc_connection(ISrsExecRtcAsyncTask *exec, const SrsContextId &cid);
     // ISrsKernelFactory interface methods
     virtual ISrsCoroutine *create_coroutine(const std::string &name, ISrsCoroutineHandler *handler, SrsContextId cid);
     virtual ISrsTime *create_time();
@@ -847,7 +874,20 @@ public:
     virtual ISrsRtcNetwork *udp();
     virtual ISrsRtcNetwork *tcp();
     virtual void alive();
+    virtual bool is_alive();
+    virtual bool is_disposing();
     virtual void switch_to_context();
+    virtual srs_error_t add_publisher(SrsRtcUserConfig *ruc, SrsSdp &local_sdp);
+    virtual srs_error_t add_player(SrsRtcUserConfig *ruc, SrsSdp &local_sdp);
+    virtual void set_all_tracks_status(std::string stream_uri, bool is_publish, bool status);
+    virtual void set_remote_sdp(const SrsSdp &sdp);
+    virtual void set_local_sdp(const SrsSdp &sdp);
+    virtual void set_state_as_waiting_stun();
+    virtual srs_error_t initialize(ISrsRequest *r, bool dtls, bool srtp, std::string username);
+    virtual std::string username();
+    virtual std::string token();
+    virtual void set_publish_token(SrsSharedPtr<SrsStreamPublishToken> publish_token);
+    virtual void simulate_nack_drop(int nn);
 
 public:
     void reset();

@@ -17,6 +17,7 @@ using namespace std;
 #include <srs_kernel_st.hpp>
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_utility.hpp>
+#include <srs_utest_app14.hpp>
 #include <sstream>
 
 // Mock ISrsSrtSocket implementation
@@ -1855,3 +1856,752 @@ VOID TEST(RtcServerTest, DiscoverCandidates_EipOverride)
     EXPECT_TRUE(candidates.find("198.51.100.20") != candidates.end());
     EXPECT_TRUE(candidates.find("192.168.1.100") != candidates.end());
 }
+
+// Mock ISrsStreamPublishTokenManager implementation
+MockStreamPublishTokenManager::MockStreamPublishTokenManager()
+{
+    acquire_token_error_ = srs_success;
+    acquire_token_count_ = 0;
+    release_token_count_ = 0;
+    token_to_return_ = NULL;
+}
+
+MockStreamPublishTokenManager::~MockStreamPublishTokenManager()
+{
+    srs_freep(acquire_token_error_);
+    // Note: Don't free token_to_return_ because it's managed by SrsSharedPtr in the caller
+}
+
+srs_error_t MockStreamPublishTokenManager::acquire_token(ISrsRequest *req, SrsStreamPublishToken *&token)
+{
+    acquire_token_count_++;
+    if (acquire_token_error_ != srs_success) {
+        token = NULL;
+        return srs_error_copy(acquire_token_error_);
+    }
+
+    // Create a new token if not already created
+    if (!token_to_return_) {
+        token_to_return_ = new SrsStreamPublishToken(req->get_stream_url(), NULL);
+    }
+    token = token_to_return_;
+    return srs_success;
+}
+
+void MockStreamPublishTokenManager::release_token(const std::string &stream_url)
+{
+    release_token_count_++;
+}
+
+void MockStreamPublishTokenManager::set_acquire_token_error(srs_error_t err)
+{
+    srs_freep(acquire_token_error_);
+    acquire_token_error_ = srs_error_copy(err);
+}
+
+void MockStreamPublishTokenManager::reset()
+{
+    srs_freep(acquire_token_error_);
+    // Note: Don't free token_to_return_ here because it may have been freed by SrsSharedPtr
+    // Just set it to NULL
+    acquire_token_error_ = srs_success;
+    acquire_token_count_ = 0;
+    release_token_count_ = 0;
+    token_to_return_ = NULL;
+}
+
+// Mock ISrsRtcConnection implementation
+MockRtcConnectionForSessionManager::MockRtcConnectionForSessionManager()
+{
+    add_publisher_called_ = false;
+    add_player_called_ = false;
+    set_all_tracks_status_called_ = false;
+    set_publish_token_called_ = false;
+    add_publisher_error_ = srs_success;
+    add_player_error_ = srs_success;
+    username_ = "test-username";
+    token_ = "test-token";
+}
+
+MockRtcConnectionForSessionManager::~MockRtcConnectionForSessionManager()
+{
+    srs_freep(add_publisher_error_);
+    srs_freep(add_player_error_);
+}
+
+srs_error_t MockRtcConnectionForSessionManager::add_publisher(SrsRtcUserConfig *ruc, SrsSdp &local_sdp)
+{
+    add_publisher_called_ = true;
+    return srs_error_copy(add_publisher_error_);
+}
+
+srs_error_t MockRtcConnectionForSessionManager::add_player(SrsRtcUserConfig *ruc, SrsSdp &local_sdp)
+{
+    add_player_called_ = true;
+    return srs_error_copy(add_player_error_);
+}
+
+void MockRtcConnectionForSessionManager::set_all_tracks_status(std::string stream_uri, bool is_publish, bool status)
+{
+    set_all_tracks_status_called_ = true;
+}
+
+void MockRtcConnectionForSessionManager::set_publish_token(SrsSharedPtr<SrsStreamPublishToken> publish_token)
+{
+    set_publish_token_called_ = true;
+    publish_token_ = publish_token;
+}
+
+void MockRtcConnectionForSessionManager::reset()
+{
+    add_publisher_called_ = false;
+    add_player_called_ = false;
+    set_all_tracks_status_called_ = false;
+    set_publish_token_called_ = false;
+    srs_freep(add_publisher_error_);
+    srs_freep(add_player_error_);
+    add_publisher_error_ = srs_success;
+    add_player_error_ = srs_success;
+}
+
+// Mock ISrsAppFactory implementation
+MockAppFactoryForSessionManager::MockAppFactoryForSessionManager()
+{
+    mock_connection_ = new MockRtcConnectionForSessionManager();
+    create_rtc_connection_count_ = 0;
+}
+
+MockAppFactoryForSessionManager::~MockAppFactoryForSessionManager()
+{
+    srs_freep(mock_connection_);
+}
+
+ISrsRtcConnection *MockAppFactoryForSessionManager::create_rtc_connection(ISrsExecRtcAsyncTask *exec, const SrsContextId &cid)
+{
+    create_rtc_connection_count_++;
+    // Create a real SrsRtcConnection object for testing
+    // The test will inject mock_connection_ methods into it
+    SrsRtcConnection *session = new SrsRtcConnection(exec, cid);
+    return session;
+}
+
+void MockAppFactoryForSessionManager::reset()
+{
+    create_rtc_connection_count_ = 0;
+}
+
+// Unit test for SrsRtcSessionManager::create_rtc_session
+// This test verifies the major use scenario: token acquisition and error handling
+// Note: Full session creation requires complex initialization, so we test the key logic paths
+VOID TEST(RtcSessionManagerTest, CreateRtcSession_TokenAcquisitionAndErrorHandling)
+{
+    srs_error_t err;
+
+    // Create mock dependencies
+    MockResourceManagerForBindSession mock_conn_manager;
+    MockStreamPublishTokenManager mock_token_manager;
+    MockRtcSourceManager mock_rtc_sources;
+
+    // Create SrsRtcSessionManager
+    SrsUniquePtr<SrsRtcSessionManager> session_manager(new SrsRtcSessionManager());
+
+    // Inject mock dependencies
+    session_manager->conn_manager_ = &mock_conn_manager;
+    session_manager->stream_publish_tokens_ = &mock_token_manager;
+    session_manager->rtc_sources_ = &mock_rtc_sources;
+
+    // Test 1: Verify error handling when token acquisition fails
+    {
+        // Set token acquisition to fail
+        mock_token_manager.set_acquire_token_error(srs_error_new(ERROR_SYSTEM_STREAM_BUSY, "stream busy"));
+
+        // Create RTC user config for publishing
+        SrsUniquePtr<SrsRtcUserConfig> ruc(new SrsRtcUserConfig());
+        ruc->publish_ = true;
+        ruc->req_ = new MockRtcAsyncCallRequest("test.vhost", "live", "stream1");
+
+        // Create local SDP
+        SrsSdp local_sdp;
+
+        // Test: Create RTC session should fail due to token acquisition error
+        ISrsRtcConnection *session = NULL;
+        HELPER_EXPECT_FAILED(session_manager->create_rtc_session(ruc.get(), local_sdp, &session));
+
+        // Verify: Token acquisition was attempted
+        EXPECT_EQ(mock_token_manager.acquire_token_count_, 1);
+
+        // Verify: RTC source was NOT fetched/created (because token acquisition failed first)
+        EXPECT_EQ(mock_rtc_sources.fetch_or_create_count_, 0);
+
+        // Clean up
+        srs_freep(session);
+        srs_freep(ruc->req_);
+    }
+
+    // Test 2: Verify error handling when source fetch/create fails
+    {
+        mock_token_manager.reset();
+        mock_rtc_sources.reset();
+
+        // Set source fetch/create to fail
+        mock_rtc_sources.set_fetch_or_create_error(srs_error_new(ERROR_SYSTEM_CREATE_PIPE, "create source failed"));
+
+        // Create RTC user config for publishing
+        SrsUniquePtr<SrsRtcUserConfig> ruc2(new SrsRtcUserConfig());
+        ruc2->publish_ = true;
+        ruc2->req_ = new MockRtcAsyncCallRequest("test.vhost", "live", "stream2");
+
+        // Create local SDP
+        SrsSdp local_sdp2;
+
+        // Test: Create RTC session should fail due to source creation error
+        ISrsRtcConnection *session2 = NULL;
+        HELPER_EXPECT_FAILED(session_manager->create_rtc_session(ruc2.get(), local_sdp2, &session2));
+
+        // Verify: Token acquisition was attempted
+        EXPECT_EQ(mock_token_manager.acquire_token_count_, 1);
+
+        // Verify: RTC source fetch/create was attempted
+        EXPECT_EQ(mock_rtc_sources.fetch_or_create_count_, 1);
+
+        // Clean up
+        srs_freep(session2);
+        srs_freep(ruc2->req_);
+    }
+
+    // Test 3: Verify error handling when source cannot publish (stream busy)
+    {
+        mock_token_manager.reset();
+        mock_rtc_sources.reset();
+
+        // Set source to not allow publishing (simulate stream busy)
+        // can_publish() returns !is_created_, so set is_created_ to true
+        mock_rtc_sources.mock_source_->is_created_ = true;
+
+        // Create RTC user config for publishing
+        SrsUniquePtr<SrsRtcUserConfig> ruc3(new SrsRtcUserConfig());
+        ruc3->publish_ = true;
+        ruc3->req_ = new MockRtcAsyncCallRequest("test.vhost", "live", "stream3");
+
+        // Create local SDP
+        SrsSdp local_sdp3;
+
+        // Test: Create RTC session should fail because source is busy
+        ISrsRtcConnection *session3 = NULL;
+        HELPER_EXPECT_FAILED(session_manager->create_rtc_session(ruc3.get(), local_sdp3, &session3));
+
+        // Verify: Token acquisition was attempted
+        EXPECT_EQ(mock_token_manager.acquire_token_count_, 1);
+
+        // Verify: RTC source fetch/create was attempted
+        EXPECT_EQ(mock_rtc_sources.fetch_or_create_count_, 1);
+
+        // Clean up
+        srs_freep(session3);
+        srs_freep(ruc3->req_);
+    }
+
+    // Clean up - set to NULL to avoid double-free
+    session_manager->conn_manager_ = NULL;
+    session_manager->stream_publish_tokens_ = NULL;
+    session_manager->rtc_sources_ = NULL;
+}
+
+// Mock ISrsRtcConnection implementation for srs_update_rtc_sessions test
+MockRtcConnectionForUpdateSessions::MockRtcConnectionForUpdateSessions()
+{
+    is_alive_ = true;
+    is_disposing_ = false;
+    username_ = "test-user";
+    switch_to_context_called_ = false;
+    alive_called_ = false;
+    udp_network_ = NULL;
+}
+
+MockRtcConnectionForUpdateSessions::~MockRtcConnectionForUpdateSessions()
+{
+    udp_network_ = NULL;
+}
+
+const SrsContextId &MockRtcConnectionForUpdateSessions::get_id()
+{
+    return cid_;
+}
+
+std::string MockRtcConnectionForUpdateSessions::desc()
+{
+    return "MockRtcConnection";
+}
+
+void MockRtcConnectionForUpdateSessions::on_disposing(ISrsResource *c)
+{
+}
+
+void MockRtcConnectionForUpdateSessions::on_before_dispose(ISrsResource *c)
+{
+}
+
+void MockRtcConnectionForUpdateSessions::expire()
+{
+}
+
+srs_error_t MockRtcConnectionForUpdateSessions::send_rtcp(char *data, int nb_data)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForUpdateSessions::send_rtcp_rr(uint32_t ssrc, SrsRtpRingBuffer *rtp_queue, const uint64_t &last_send_systime, const SrsNtp &last_send_ntp)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForUpdateSessions::send_rtcp_xr_rrtr(uint32_t ssrc)
+{
+    return srs_success;
+}
+
+void MockRtcConnectionForUpdateSessions::check_send_nacks(SrsRtpNackForReceiver *nack, uint32_t ssrc, uint32_t &sent_nacks, uint32_t &timeout_nacks)
+{
+}
+
+srs_error_t MockRtcConnectionForUpdateSessions::send_rtcp_fb_pli(uint32_t ssrc, const SrsContextId &cid_of_subscriber)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForUpdateSessions::do_send_packet(SrsRtpPacket *pkt)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForUpdateSessions::do_check_send_nacks()
+{
+    return srs_success;
+}
+
+void MockRtcConnectionForUpdateSessions::on_timer_nack()
+{
+}
+
+srs_error_t MockRtcConnectionForUpdateSessions::on_dtls_handshake_done()
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForUpdateSessions::on_dtls_alert(std::string type, std::string desc)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForUpdateSessions::on_rtp_cipher(char *data, int nb_data)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForUpdateSessions::on_rtp_plaintext(char *data, int nb_data)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForUpdateSessions::on_rtcp(char *data, int nb_data)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForUpdateSessions::on_binding_request(SrsStunPacket *r, std::string &ice_pwd)
+{
+    return srs_success;
+}
+
+ISrsRtcNetwork *MockRtcConnectionForUpdateSessions::udp()
+{
+    return udp_network_;
+}
+
+ISrsRtcNetwork *MockRtcConnectionForUpdateSessions::tcp()
+{
+    return NULL;
+}
+
+void MockRtcConnectionForUpdateSessions::alive()
+{
+    alive_called_ = true;
+}
+
+bool MockRtcConnectionForUpdateSessions::is_alive()
+{
+    return is_alive_;
+}
+
+bool MockRtcConnectionForUpdateSessions::is_disposing()
+{
+    return is_disposing_;
+}
+
+void MockRtcConnectionForUpdateSessions::switch_to_context()
+{
+    switch_to_context_called_ = true;
+}
+
+srs_error_t MockRtcConnectionForUpdateSessions::add_publisher(SrsRtcUserConfig *ruc, SrsSdp &local_sdp)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForUpdateSessions::add_player(SrsRtcUserConfig *ruc, SrsSdp &local_sdp)
+{
+    return srs_success;
+}
+
+void MockRtcConnectionForUpdateSessions::set_all_tracks_status(std::string stream_uri, bool is_publish, bool status)
+{
+}
+
+void MockRtcConnectionForUpdateSessions::set_remote_sdp(const SrsSdp &sdp)
+{
+}
+
+void MockRtcConnectionForUpdateSessions::set_local_sdp(const SrsSdp &sdp)
+{
+}
+
+void MockRtcConnectionForUpdateSessions::set_state_as_waiting_stun()
+{
+}
+
+srs_error_t MockRtcConnectionForUpdateSessions::initialize(ISrsRequest *r, bool dtls, bool srtp, std::string username)
+{
+    return srs_success;
+}
+
+std::string MockRtcConnectionForUpdateSessions::username()
+{
+    return username_;
+}
+
+std::string MockRtcConnectionForUpdateSessions::token()
+{
+    return "test-token";
+}
+
+void MockRtcConnectionForUpdateSessions::set_publish_token(SrsSharedPtr<SrsStreamPublishToken> publish_token)
+{
+}
+
+void MockRtcConnectionForUpdateSessions::simulate_drop_packet(bool v, int nn)
+{
+}
+
+void MockRtcConnectionForUpdateSessions::simulate_nack_drop(int nn)
+{
+}
+
+// Mock ISrsResourceManager implementation for srs_update_rtc_sessions test
+MockResourceManagerForUpdateSessions::MockResourceManagerForUpdateSessions()
+{
+}
+
+MockResourceManagerForUpdateSessions::~MockResourceManagerForUpdateSessions()
+{
+    reset();
+}
+
+srs_error_t MockResourceManagerForUpdateSessions::start()
+{
+    return srs_success;
+}
+
+bool MockResourceManagerForUpdateSessions::empty()
+{
+    return resources_.empty();
+}
+
+size_t MockResourceManagerForUpdateSessions::size()
+{
+    return resources_.size();
+}
+
+void MockResourceManagerForUpdateSessions::add(ISrsResource *conn, bool *exists)
+{
+    resources_.push_back(conn);
+}
+
+void MockResourceManagerForUpdateSessions::add_with_id(const std::string &id, ISrsResource *conn)
+{
+    resources_.push_back(conn);
+    id_map_[id] = conn;
+}
+
+void MockResourceManagerForUpdateSessions::add_with_fast_id(uint64_t id, ISrsResource *conn)
+{
+    resources_.push_back(conn);
+    fast_id_map_[id] = conn;
+}
+
+void MockResourceManagerForUpdateSessions::add_with_name(const std::string &name, ISrsResource *conn)
+{
+    resources_.push_back(conn);
+    name_map_[name] = conn;
+}
+
+ISrsResource *MockResourceManagerForUpdateSessions::at(int index)
+{
+    if (index < 0 || index >= (int)resources_.size()) {
+        return NULL;
+    }
+    return resources_[index];
+}
+
+ISrsResource *MockResourceManagerForUpdateSessions::find_by_id(std::string id)
+{
+    std::map<std::string, ISrsResource *>::iterator it = id_map_.find(id);
+    if (it != id_map_.end()) {
+        return it->second;
+    }
+    return NULL;
+}
+
+ISrsResource *MockResourceManagerForUpdateSessions::find_by_fast_id(uint64_t id)
+{
+    std::map<uint64_t, ISrsResource *>::iterator it = fast_id_map_.find(id);
+    if (it != fast_id_map_.end()) {
+        return it->second;
+    }
+    return NULL;
+}
+
+ISrsResource *MockResourceManagerForUpdateSessions::find_by_name(std::string name)
+{
+    std::map<std::string, ISrsResource *>::iterator it = name_map_.find(name);
+    if (it != name_map_.end()) {
+        return it->second;
+    }
+    return NULL;
+}
+
+void MockResourceManagerForUpdateSessions::remove(ISrsResource *c)
+{
+    removed_resources_.push_back(c);
+    // Remove from resources_ vector
+    for (std::vector<ISrsResource *>::iterator it = resources_.begin(); it != resources_.end(); ++it) {
+        if (*it == c) {
+            resources_.erase(it);
+            break;
+        }
+    }
+}
+
+void MockResourceManagerForUpdateSessions::subscribe(ISrsDisposingHandler *h)
+{
+}
+
+void MockResourceManagerForUpdateSessions::unsubscribe(ISrsDisposingHandler *h)
+{
+}
+
+void MockResourceManagerForUpdateSessions::reset()
+{
+    resources_.clear();
+    removed_resources_.clear();
+    id_map_.clear();
+    fast_id_map_.clear();
+    name_map_.clear();
+}
+
+// Unit test for SrsRtcSessionManager::srs_update_rtc_sessions
+// This test verifies the major use scenario: checking sessions and disposing dead sessions
+VOID TEST(RtcSessionManagerTest, UpdateRtcSessions_CheckAndDisposeDeadSessions)
+{
+    // Create mock connection manager
+    SrsUniquePtr<MockResourceManagerForUpdateSessions> mock_conn_manager(new MockResourceManagerForUpdateSessions());
+
+    // Create SrsRtcSessionManager
+    SrsUniquePtr<SrsRtcSessionManager> session_manager(new SrsRtcSessionManager());
+
+    // Inject mock connection manager
+    session_manager->conn_manager_ = mock_conn_manager.get();
+
+    // Test scenario: Multiple sessions with different states
+    // - Session 1: Alive session (should be counted, not removed)
+    // - Session 2: Dead session (not alive, should be removed)
+    // - Session 3: Disposing session (should be ignored)
+    // - Session 4: Alive session (should be counted, not removed)
+
+    // Create mock sessions
+    MockRtcConnectionForUpdateSessions *session1 = new MockRtcConnectionForUpdateSessions();
+    session1->is_alive_ = true;
+    session1->is_disposing_ = false;
+    session1->username_ = "user1";
+
+    MockRtcConnectionForUpdateSessions *session2 = new MockRtcConnectionForUpdateSessions();
+    session2->is_alive_ = false; // Dead session
+    session2->is_disposing_ = false;
+    session2->username_ = "user2";
+
+    MockRtcConnectionForUpdateSessions *session3 = new MockRtcConnectionForUpdateSessions();
+    session3->is_alive_ = false;
+    session3->is_disposing_ = true; // Already disposing
+    session3->username_ = "user3";
+
+    MockRtcConnectionForUpdateSessions *session4 = new MockRtcConnectionForUpdateSessions();
+    session4->is_alive_ = true;
+    session4->is_disposing_ = false;
+    session4->username_ = "user4";
+
+    // Add sessions to mock connection manager
+    mock_conn_manager->add(session1);
+    mock_conn_manager->add(session2);
+    mock_conn_manager->add(session3);
+    mock_conn_manager->add(session4);
+
+    // Verify initial state
+    EXPECT_EQ(mock_conn_manager->size(), 4);
+    EXPECT_EQ(mock_conn_manager->removed_resources_.size(), 0);
+
+    // Call srs_update_rtc_sessions
+    session_manager->srs_update_rtc_sessions();
+
+    // Verify results:
+    // 1. Dead session (session2) should be removed
+    EXPECT_EQ(mock_conn_manager->removed_resources_.size(), 1);
+    EXPECT_EQ(mock_conn_manager->removed_resources_[0], session2);
+
+    // 2. switch_to_context should be called for dead session
+    EXPECT_TRUE(session2->switch_to_context_called_);
+
+    // 3. Alive sessions should NOT be removed
+    EXPECT_FALSE(session1->switch_to_context_called_);
+    EXPECT_FALSE(session4->switch_to_context_called_);
+
+    // 4. Disposing session should be ignored (not removed again)
+    EXPECT_FALSE(session3->switch_to_context_called_);
+
+    // 5. Connection manager should have 3 sessions left (session1, session3, session4)
+    EXPECT_EQ(mock_conn_manager->size(), 3);
+
+    // Clean up - set to NULL to avoid double-free
+    session_manager->conn_manager_ = NULL;
+
+    // Free mock sessions
+    srs_freep(session1);
+    srs_freep(session2);
+    srs_freep(session3);
+    srs_freep(session4);
+}
+
+// Mock ISrsRtcNetwork implementation for on_udp_packet tests
+MockRtcNetworkForUdpNetwork::MockRtcNetworkForUdpNetwork()
+{
+    on_stun_called_ = false;
+    on_rtp_called_ = false;
+    on_rtcp_called_ = false;
+    on_dtls_called_ = false;
+}
+
+MockRtcNetworkForUdpNetwork::~MockRtcNetworkForUdpNetwork()
+{
+}
+
+srs_error_t MockRtcNetworkForUdpNetwork::initialize(SrsSessionConfig *cfg, bool dtls, bool srtp)
+{
+    return srs_success;
+}
+
+void MockRtcNetworkForUdpNetwork::set_state(SrsRtcNetworkState state)
+{
+}
+
+srs_error_t MockRtcNetworkForUdpNetwork::on_dtls_handshake_done()
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcNetworkForUdpNetwork::on_dtls_alert(std::string type, std::string desc)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcNetworkForUdpNetwork::on_dtls(char *data, int nb_data)
+{
+    on_dtls_called_ = true;
+    return srs_success;
+}
+
+srs_error_t MockRtcNetworkForUdpNetwork::on_stun(SrsStunPacket *r, char *data, int nb_data)
+{
+    on_stun_called_ = true;
+    return srs_success;
+}
+
+srs_error_t MockRtcNetworkForUdpNetwork::on_rtp(char *data, int nb_data)
+{
+    on_rtp_called_ = true;
+    return srs_success;
+}
+
+srs_error_t MockRtcNetworkForUdpNetwork::on_rtcp(char *data, int nb_data)
+{
+    on_rtcp_called_ = true;
+    return srs_success;
+}
+
+srs_error_t MockRtcNetworkForUdpNetwork::protect_rtp(void *packet, int *nb_cipher)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcNetworkForUdpNetwork::protect_rtcp(void *packet, int *nb_cipher)
+{
+    return srs_success;
+}
+
+bool MockRtcNetworkForUdpNetwork::is_establelished()
+{
+    return true;
+}
+
+srs_error_t MockRtcNetworkForUdpNetwork::write(void *buf, size_t size, ssize_t *nwrite)
+{
+    return srs_success;
+}
+
+// Test SrsRtcSessionManager::on_udp_packet with no session found (error case)
+VOID TEST(RtcSessionManagerTest, OnUdpPacket_NoSessionFound)
+{
+    srs_error_t err = srs_success;
+
+    // Create session manager
+    SrsUniquePtr<SrsRtcSessionManager> session_manager(new SrsRtcSessionManager());
+
+    // Create mock connection manager (empty - no sessions)
+    SrsUniquePtr<MockResourceManagerForUpdateSessions> mock_conn_manager(new MockResourceManagerForUpdateSessions());
+
+    // Inject mock connection manager
+    session_manager->conn_manager_ = mock_conn_manager.get();
+
+    // Create RTP packet (V=2, PT=96 for RTP)
+    char rtp_packet[20];
+    memset(rtp_packet, 0, sizeof(rtp_packet));
+    rtp_packet[0] = (char)0x80; // V=2 (10000000)
+    rtp_packet[1] = 96;   // PT=96 (RTP payload type)
+
+    // Create mock UDP socket
+    SrsUniquePtr<MockUdpMuxSocket> mock_socket(new MockUdpMuxSocket());
+    mock_socket->data_ = rtp_packet;
+    mock_socket->size_ = 20;
+    mock_socket->fast_id_ = 12345; // Non-existent session
+    mock_socket->peer_id_ = "192.168.1.100:8000";
+
+    // Call on_udp_packet
+    err = session_manager->on_udp_packet(mock_socket.get());
+
+    // Verify: Should fail when no session is found
+    HELPER_EXPECT_FAILED(err);
+
+    // Clean up
+    session_manager->conn_manager_ = NULL;
+}
+
+// Note: The remaining tests for RTP, RTCP, DTLS, and STUN packets require more complex setup
+// including proper mock UDP networks and session initialization. The above test covers the
+// basic error path when no session is found, which is a key scenario in on_udp_packet.

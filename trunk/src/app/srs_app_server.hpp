@@ -70,6 +70,7 @@ class ISrsStatistic;
 class ISrsHourGlass;
 class ISrsAppFactory;
 class ISrsUdpMuxSocket;
+class ISrsRtcConnection;
 
 // Initialize global shared variables cross all threads.
 extern srs_error_t srs_global_initialize();
@@ -104,8 +105,8 @@ public:
     virtual ~ISrsRtcApiServer();
 
 public:
-    virtual srs_error_t create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, SrsRtcConnection **psession) = 0;
-    virtual SrsRtcConnection *find_rtc_session_by_username(const std::string &ufrag) = 0;
+    virtual srs_error_t create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, ISrsRtcConnection **psession) = 0;
+    virtual ISrsRtcConnection *find_rtc_session_by_username(const std::string &ufrag) = 0;
 };
 
 // SrsServer is the main server class of SRS (Simple Realtime Server) that provides comprehensive
@@ -305,8 +306,8 @@ private:
     virtual srs_error_t listen_rtc_api();
 
 public:
-    virtual SrsRtcConnection *find_rtc_session_by_username(const std::string &ufrag);
-    virtual srs_error_t create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, SrsRtcConnection **psession);
+    virtual ISrsRtcConnection *find_rtc_session_by_username(const std::string &ufrag);
+    virtual srs_error_t create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, ISrsRtcConnection **psession);
 
 private:
     virtual srs_error_t srs_update_server_statistics();

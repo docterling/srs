@@ -1654,7 +1654,66 @@ void MockRtcConnectionForTcpConn::alive()
 {
 }
 
+bool MockRtcConnectionForTcpConn::is_alive()
+{
+    return true;
+}
+
+bool MockRtcConnectionForTcpConn::is_disposing()
+{
+    return false;
+}
+
 void MockRtcConnectionForTcpConn::switch_to_context()
+{
+}
+
+srs_error_t MockRtcConnectionForTcpConn::add_publisher(SrsRtcUserConfig * /*ruc*/, SrsSdp & /*local_sdp*/)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForTcpConn::add_player(SrsRtcUserConfig * /*ruc*/, SrsSdp & /*local_sdp*/)
+{
+    return srs_success;
+}
+
+void MockRtcConnectionForTcpConn::set_all_tracks_status(std::string /*stream_uri*/, bool /*is_publish*/, bool /*status*/)
+{
+}
+
+void MockRtcConnectionForTcpConn::set_remote_sdp(const SrsSdp & /*sdp*/)
+{
+}
+
+void MockRtcConnectionForTcpConn::set_local_sdp(const SrsSdp & /*sdp*/)
+{
+}
+
+void MockRtcConnectionForTcpConn::set_state_as_waiting_stun()
+{
+}
+
+srs_error_t MockRtcConnectionForTcpConn::initialize(ISrsRequest * /*r*/, bool /*dtls*/, bool /*srtp*/, std::string /*username*/)
+{
+    return srs_success;
+}
+
+std::string MockRtcConnectionForTcpConn::username()
+{
+    return "";
+}
+
+std::string MockRtcConnectionForTcpConn::token()
+{
+    return "";
+}
+
+void MockRtcConnectionForTcpConn::set_publish_token(SrsSharedPtr<SrsStreamPublishToken> /*publish_token*/)
+{
+}
+
+void MockRtcConnectionForTcpConn::simulate_nack_drop(int /*nn*/)
 {
 }
 
@@ -2406,6 +2465,11 @@ ISrsIpListener *MockAppFactoryForGbPublish::create_tcp_listener(ISrsTcpHandler *
     return NULL;
 }
 
+ISrsRtcConnection *MockAppFactoryForGbPublish::create_rtc_connection(ISrsExecRtcAsyncTask *exec, const SrsContextId &cid)
+{
+    return NULL;
+}
+
 ISrsCoroutine *MockAppFactoryForGbPublish::create_coroutine(const std::string &name, ISrsCoroutineHandler *handler, SrsContextId cid)
 {
     return NULL;
@@ -2903,7 +2967,66 @@ void MockRtcConnectionForUdpNetwork::alive()
 {
 }
 
+bool MockRtcConnectionForUdpNetwork::is_alive()
+{
+    return true;
+}
+
+bool MockRtcConnectionForUdpNetwork::is_disposing()
+{
+    return false;
+}
+
 void MockRtcConnectionForUdpNetwork::switch_to_context()
+{
+}
+
+srs_error_t MockRtcConnectionForUdpNetwork::add_publisher(SrsRtcUserConfig * /*ruc*/, SrsSdp & /*local_sdp*/)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForUdpNetwork::add_player(SrsRtcUserConfig * /*ruc*/, SrsSdp & /*local_sdp*/)
+{
+    return srs_success;
+}
+
+void MockRtcConnectionForUdpNetwork::set_all_tracks_status(std::string /*stream_uri*/, bool /*is_publish*/, bool /*status*/)
+{
+}
+
+void MockRtcConnectionForUdpNetwork::set_remote_sdp(const SrsSdp & /*sdp*/)
+{
+}
+
+void MockRtcConnectionForUdpNetwork::set_local_sdp(const SrsSdp & /*sdp*/)
+{
+}
+
+void MockRtcConnectionForUdpNetwork::set_state_as_waiting_stun()
+{
+}
+
+srs_error_t MockRtcConnectionForUdpNetwork::initialize(ISrsRequest * /*r*/, bool /*dtls*/, bool /*srtp*/, std::string /*username*/)
+{
+    return srs_success;
+}
+
+std::string MockRtcConnectionForUdpNetwork::username()
+{
+    return "";
+}
+
+std::string MockRtcConnectionForUdpNetwork::token()
+{
+    return "";
+}
+
+void MockRtcConnectionForUdpNetwork::set_publish_token(SrsSharedPtr<SrsStreamPublishToken> /*publish_token*/)
+{
+}
+
+void MockRtcConnectionForUdpNetwork::simulate_nack_drop(int /*nn*/)
 {
 }
 
@@ -4096,9 +4219,68 @@ void MockRtcConnectionForTcpConnHandshake::alive()
 {
 }
 
+bool MockRtcConnectionForTcpConnHandshake::is_alive()
+{
+    return true;
+}
+
+bool MockRtcConnectionForTcpConnHandshake::is_disposing()
+{
+    return false;
+}
+
 void MockRtcConnectionForTcpConnHandshake::switch_to_context()
 {
     switch_to_context_called_ = true;
+}
+
+srs_error_t MockRtcConnectionForTcpConnHandshake::add_publisher(SrsRtcUserConfig * /*ruc*/, SrsSdp & /*local_sdp*/)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtcConnectionForTcpConnHandshake::add_player(SrsRtcUserConfig * /*ruc*/, SrsSdp & /*local_sdp*/)
+{
+    return srs_success;
+}
+
+void MockRtcConnectionForTcpConnHandshake::set_all_tracks_status(std::string /*stream_uri*/, bool /*is_publish*/, bool /*status*/)
+{
+}
+
+void MockRtcConnectionForTcpConnHandshake::set_remote_sdp(const SrsSdp & /*sdp*/)
+{
+}
+
+void MockRtcConnectionForTcpConnHandshake::set_local_sdp(const SrsSdp & /*sdp*/)
+{
+}
+
+void MockRtcConnectionForTcpConnHandshake::set_state_as_waiting_stun()
+{
+}
+
+srs_error_t MockRtcConnectionForTcpConnHandshake::initialize(ISrsRequest * /*r*/, bool /*dtls*/, bool /*srtp*/, std::string /*username*/)
+{
+    return srs_success;
+}
+
+std::string MockRtcConnectionForTcpConnHandshake::username()
+{
+    return "";
+}
+
+std::string MockRtcConnectionForTcpConnHandshake::token()
+{
+    return "";
+}
+
+void MockRtcConnectionForTcpConnHandshake::set_publish_token(SrsSharedPtr<SrsStreamPublishToken> /*publish_token*/)
+{
+}
+
+void MockRtcConnectionForTcpConnHandshake::simulate_nack_drop(int /*nn*/)
+{
 }
 
 void MockRtcConnectionForTcpConnHandshake::reset()

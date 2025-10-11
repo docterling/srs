@@ -38,6 +38,8 @@ class ISrsFragmentedMp4;
 class SrsFinalFactory;
 class ISrsIpListener;
 class ISrsTcpHandler;
+class ISrsRtcConnection;
+class ISrsExecRtcAsyncTask;
 
 // The factory to create app objects.
 class ISrsAppFactory : public ISrsKernelFactory
@@ -74,6 +76,7 @@ public:
     virtual ISrsFragmentWindow *create_fragment_window() = 0;
     virtual ISrsFragmentedMp4 *create_fragmented_mp4() = 0;
     virtual ISrsIpListener *create_tcp_listener(ISrsTcpHandler *handler) = 0;
+    virtual ISrsRtcConnection *create_rtc_connection(ISrsExecRtcAsyncTask *exec, const SrsContextId &cid) = 0;
 };
 
 // The factory to create app objects.
@@ -114,6 +117,7 @@ public:
     virtual ISrsFragmentWindow *create_fragment_window();
     virtual ISrsFragmentedMp4 *create_fragmented_mp4();
     virtual ISrsIpListener *create_tcp_listener(ISrsTcpHandler *handler);
+    virtual ISrsRtcConnection *create_rtc_connection(ISrsExecRtcAsyncTask *exec, const SrsContextId &cid);
 
 public:
     virtual ISrsCoroutine *create_coroutine(const std::string &name, ISrsCoroutineHandler *handler, SrsContextId cid);

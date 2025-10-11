@@ -263,7 +263,7 @@ srs_error_t SrsGoApiRtcPlay::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessa
     }
 
     // TODO: FIXME: When server enabled, but vhost disabled, should report error.
-    SrsRtcConnection *session = NULL;
+    ISrsRtcConnection *session = NULL;
     if ((err = server_->create_rtc_session(ruc, local_sdp, &session)) != srs_success) {
         return srs_error_wrap(err, "create session, dtls=%u, srtp=%u, eip=%s", ruc->dtls_, ruc->srtp_, ruc->eip_.c_str());
     }
@@ -544,7 +544,7 @@ srs_error_t SrsGoApiRtcPublish::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMe
 
     // TODO: FIXME: When server enabled, but vhost disabled, should report error.
     // We must do stat the client before hooks, because hooks depends on it.
-    SrsRtcConnection *session = NULL;
+    ISrsRtcConnection *session = NULL;
     if ((err = server_->create_rtc_session(ruc, local_sdp, &session)) != srs_success) {
         return srs_error_wrap(err, "create session");
     }
@@ -672,7 +672,7 @@ srs_error_t SrsGoApiRtcWhip::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessa
             return srs_error_new(ERROR_RTC_INVALID_SESSION, "token empty");
         }
 
-        SrsRtcConnection *session = server_->find_rtc_session_by_username(username);
+        ISrsRtcConnection *session = server_->find_rtc_session_by_username(username);
         if (session && token != session->token()) {
             return srs_error_new(ERROR_RTC_INVALID_SESSION, "token %s not match", token.c_str());
         }
@@ -847,7 +847,7 @@ srs_error_t SrsGoApiRtcNACK::do_serve_http(ISrsHttpResponseWriter *w, ISrsHttpMe
         return srs_error_new(ERROR_RTC_INVALID_PARAMS, "invalid drop=%s/%d", dropv.c_str(), drop);
     }
 
-    SrsRtcConnection *session = server_->find_rtc_session_by_username(username);
+    ISrsRtcConnection *session = server_->find_rtc_session_by_username(username);
     if (!session) {
         return srs_error_new(ERROR_RTC_NO_SESSION, "no session username=%s", username.c_str());
     }
