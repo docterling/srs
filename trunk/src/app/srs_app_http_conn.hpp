@@ -26,6 +26,7 @@ class ISrsRequest;
 class SrsLiveConsumer;
 class SrsStSocket;
 class SrsHttpParser;
+class ISrsHttpParser;
 class ISrsHttpMessage;
 class SrsHttpHandler;
 class SrsMessageQueue;
@@ -34,8 +35,20 @@ class SrsFastStream;
 class SrsHttpUri;
 class SrsHttpMessage;
 class SrsHttpStreamServer;
+class ISrsHttpStreamServer;
 class SrsHttpStaticServer;
+class ISrsHttpStaticServer;
 class SrsNetworkDelta;
+class ISrsNetworkDelta;
+class SrsHttpCorsMux;
+class ISrsHttpCorsMux;
+class SrsHttpAuthMux;
+class ISrsHttpAuthMux;
+class SrsSslConnection;
+class ISrsSslConnection;
+class ISrsHttpConn;
+class ISrsAppConfig;
+class ISrsStatistic;
 
 // The owner of HTTP connection.
 class ISrsHttpConnOwner
@@ -50,9 +63,9 @@ public:
     // Handle the HTTP message r, which may be parsed partially.
     // For the static service or api, discard any body.
     // For the stream caster, for instance, http flv streaming, may discard the flv header or not.
-    virtual srs_error_t on_http_message(ISrsHttpMessage *r, SrsHttpResponseWriter *w) = 0;
+    virtual srs_error_t on_http_message(ISrsHttpMessage *r, ISrsHttpResponseWriter *w) = 0;
     // When message is processed, we may need to do more things.
-    virtual srs_error_t on_message_done(ISrsHttpMessage *r, SrsHttpResponseWriter *w) = 0;
+    virtual srs_error_t on_message_done(ISrsHttpMessage *r, ISrsHttpResponseWriter *w) = 0;
     // When connection is destroy, should use manager to dispose it.
     // The r0 is the original error, we will use the returned new error.
     virtual srs_error_t on_conn_done(srs_error_t r0) = 0;
@@ -66,6 +79,8 @@ public:
     virtual ~ISrsHttpConn();
 
 public:
+    // Get the delta object for statistics.
+    virtual ISrsKbpsDelta *delta() = 0;
     // Whether the connection coroutine is error or terminated.
     virtual srs_error_t pull() = 0;
     // Whether enable the CORS(cross-domain).
@@ -80,11 +95,14 @@ public:
 // The http connection which request the static or stream content.
 class SrsHttpConn : public ISrsHttpConn
 {
+private:
+    ISrsAppConfig *config_;
+
 protected:
-    SrsHttpParser *parser_;
+    ISrsHttpParser *parser_;
     ISrsHttpServeMux *http_mux_;
-    SrsHttpCorsMux *cors_;
-    SrsHttpAuthMux *auth_;
+    ISrsHttpCorsMux *cors_;
+    ISrsHttpAuthMux *auth_;
     ISrsHttpConnOwner *handler_;
 
 protected:
@@ -98,7 +116,7 @@ protected:
 
 private:
     // The delta for statistic.
-    SrsNetworkDelta *delta_;
+    ISrsNetworkDelta *delta_;
     // The create time in microseconds.
     // for current connection to log self create time and calculate the living time.
     srs_utime_t create_time_;
@@ -148,15 +166,29 @@ public:
     virtual void expire();
 };
 
-// Drop body of request, only process the response.
-class SrsHttpxConn : public ISrsConnection, public ISrsStartable, public ISrsHttpConnOwner, public ISrsReloadHandler
+// The HTTP connection manager.
+class ISrsHttpxConn : public ISrsConnection, public ISrsStartable, public ISrsHttpConnOwner
 {
+public:
+    ISrsHttpxConn();
+    virtual ~ISrsHttpxConn();
+
+public:
+};
+
+// Drop body of request, only process the response.
+class SrsHttpxConn : public ISrsHttpxConn
+{
+private:
+    ISrsAppConfig *config_;
+    ISrsStatistic *stat_;
+
 private:
     // The manager object to manage the connection.
     ISrsResourceManager *manager_;
     ISrsProtocolReadWriter *io_;
-    SrsSslConnection *ssl_;
-    SrsHttpConn *conn_;
+    ISrsSslConnection *ssl_;
+    ISrsHttpConn *conn_;
     // We should never enable the stat, unless HTTP stream connection requires.
     bool enable_stat_;
     // ssl key & cert file
@@ -179,8 +211,8 @@ public:
     // Interface ISrsHttpConnOwner.
 public:
     virtual srs_error_t on_start();
-    virtual srs_error_t on_http_message(ISrsHttpMessage *r, SrsHttpResponseWriter *w);
-    virtual srs_error_t on_message_done(ISrsHttpMessage *r, SrsHttpResponseWriter *w);
+    virtual srs_error_t on_http_message(ISrsHttpMessage *r, ISrsHttpResponseWriter *w);
+    virtual srs_error_t on_message_done(ISrsHttpMessage *r, ISrsHttpResponseWriter *w);
     virtual srs_error_t on_conn_done(srs_error_t r0);
     // Interface ISrsResource.
 public:
@@ -198,11 +230,21 @@ public:
 };
 
 // The http server, use http stream or static server to serve requests.
-class SrsHttpServer : public ISrsHttpServeMux
+class ISrsHttpServer : public ISrsHttpServeMux
+{
+public:
+    ISrsHttpServer();
+    virtual ~ISrsHttpServer();
+
+public:
+};
+
+// The http server, use http stream or static server to serve requests.
+class SrsHttpServer : public ISrsHttpServer
 {
 private:
-    SrsHttpStaticServer *http_static_;
-    SrsHttpStreamServer *http_stream_;
+    ISrsHttpStaticServer *http_static_;
+    ISrsHttpStreamServer *http_stream_;
 
 public:
     SrsHttpServer();

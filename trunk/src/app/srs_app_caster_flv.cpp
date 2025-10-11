@@ -412,12 +412,12 @@ srs_error_t SrsDynamicHttpConn::on_start()
     return srs_success;
 }
 
-srs_error_t SrsDynamicHttpConn::on_http_message(ISrsHttpMessage *r, SrsHttpResponseWriter *w)
+srs_error_t SrsDynamicHttpConn::on_http_message(ISrsHttpMessage *r, ISrsHttpResponseWriter *w)
 {
     return srs_success;
 }
 
-srs_error_t SrsDynamicHttpConn::on_message_done(ISrsHttpMessage *r, SrsHttpResponseWriter *w)
+srs_error_t SrsDynamicHttpConn::on_message_done(ISrsHttpMessage *r, ISrsHttpResponseWriter *w)
 {
     return srs_success;
 }

@@ -117,8 +117,19 @@ public:
     virtual srs_error_t writev(const iovec *iov, int iov_size, ssize_t *nwrite);
 };
 
+// The interface for SSL connection.
+class ISrsSslConnection : public ISrsProtocolReadWriter
+{
+public:
+    ISrsSslConnection();
+    virtual ~ISrsSslConnection();
+
+public:
+    virtual srs_error_t handshake(std::string key_file, std::string crt_file) = 0;
+};
+
 // The SSL connection over TCP transport, in server mode.
-class SrsSslConnection : public ISrsProtocolReadWriter
+class SrsSslConnection : public ISrsSslConnection
 {
 private:
     // The under-layer plaintext transport.

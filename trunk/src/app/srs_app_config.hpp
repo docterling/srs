@@ -325,6 +325,12 @@ public:
     virtual bool get_raw_api_allow_query() = 0;
     // Whether allow rpc update.
     virtual bool get_raw_api_allow_update() = 0;
+    // Whether http api auth enabled.
+    virtual bool get_http_api_auth_enabled() = 0;
+    // Get the http api auth username.
+    virtual std::string get_http_api_auth_username() = 0;
+    // Get the http api auth password.
+    virtual std::string get_http_api_auth_password() = 0;
     // Dumps the http_api sections to json for raw api info.
     virtual srs_error_t raw_to_json(SrsJsonObject *obj) = 0;
 

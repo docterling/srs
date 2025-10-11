@@ -22,9 +22,30 @@ class SrsHttpResponseReader;
 class ISrsProtocolReadWriter;
 class SrsProtocolUtility;
 
+// The interface for HTTP parser.
+class ISrsHttpParser
+{
+public:
+    ISrsHttpParser();
+    virtual ~ISrsHttpParser();
+
+public:
+    // initialize the llhttp parser with specified type,
+    // one parser can only parse request or response messages.
+    virtual srs_error_t initialize(enum llhttp_type type) = 0;
+    // Whether allow jsonp parser, which indicates the method in query string.
+    virtual void set_jsonp(bool allow_jsonp) = 0;
+    // always parse a http message,
+    // that is, the *ppmsg always NOT-NULL when return success.
+    // or error and *ppmsg must be NULL.
+    // @remark, if success, *ppmsg always NOT-NULL, *ppmsg always is_complete().
+    // @remark user must free the ppmsg if not NULL.
+    virtual srs_error_t parse_message(ISrsReader *reader, ISrsHttpMessage **ppmsg) = 0;
+};
+
 // A wrapper for llhttp,
 // provides HTTP message originted service.
-class SrsHttpParser
+class SrsHttpParser : public ISrsHttpParser
 {
 private:
     llhttp_settings_t settings_;

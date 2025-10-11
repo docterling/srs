@@ -599,6 +599,14 @@ srs_error_t SrsVodStream::serve_ts_ctx(ISrsHttpResponseWriter *w, ISrsHttpMessag
     return err;
 }
 
+ISrsHttpStaticServer::ISrsHttpStaticServer()
+{
+}
+
+ISrsHttpStaticServer::~ISrsHttpStaticServer()
+{
+}
+
 SrsHttpStaticServer::SrsHttpStaticServer()
 {
     _srs_config->subscribe(this);
@@ -607,6 +615,11 @@ SrsHttpStaticServer::SrsHttpStaticServer()
 SrsHttpStaticServer::~SrsHttpStaticServer()
 {
     _srs_config->unsubscribe(this);
+}
+
+srs_error_t SrsHttpStaticServer::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r)
+{
+    return mux_.serve_http(w, r);
 }
 
 srs_error_t SrsHttpStaticServer::initialize()

@@ -1057,6 +1057,14 @@ bool SrsHttpServeMux::path_match(string pattern, string path)
     return false;
 }
 
+ISrsHttpCorsMux::ISrsHttpCorsMux()
+{
+}
+
+ISrsHttpCorsMux::~ISrsHttpCorsMux()
+{
+}
+
 SrsHttpCorsMux::SrsHttpCorsMux(ISrsHttpHandler *h)
 {
     enabled = false;
@@ -1116,6 +1124,14 @@ srs_error_t SrsHttpCorsMux::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessag
     }
 
     return next_->serve_http(w, r);
+}
+
+ISrsHttpAuthMux::ISrsHttpAuthMux()
+{
+}
+
+ISrsHttpAuthMux::~ISrsHttpAuthMux()
+{
 }
 
 SrsHttpAuthMux::SrsHttpAuthMux(ISrsHttpHandler *h)

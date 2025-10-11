@@ -510,8 +510,19 @@ private:
     virtual bool path_match(std::string pattern, std::string path);
 };
 
+// The interface for CORS mux.
+class ISrsHttpCorsMux : public ISrsHttpHandler
+{
+public:
+    ISrsHttpCorsMux();
+    virtual ~ISrsHttpCorsMux();
+
+public:
+    virtual srs_error_t initialize(bool cros_enabled) = 0;
+};
+
 // The filter http mux, directly serve the http CORS requests
-class SrsHttpCorsMux : public ISrsHttpHandler
+class SrsHttpCorsMux : public ISrsHttpCorsMux
 {
 private:
     bool required;
@@ -529,11 +540,22 @@ public:
     virtual srs_error_t serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r);
 };
 
+// The interface for AUTH mux.
+class ISrsHttpAuthMux : public ISrsHttpHandler
+{
+public:
+    ISrsHttpAuthMux();
+    virtual ~ISrsHttpAuthMux();
+
+public:
+    virtual srs_error_t initialize(bool enabled, std::string username, std::string password) = 0;
+};
+
 // The filter http mux, directly serve the http AUTH requests,
 // while proxy to the worker mux for services.
 // @see https://www.rfc-editor.org/rfc/rfc7617
 // @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/WWW-Authenticate
-class SrsHttpAuthMux : public ISrsHttpHandler
+class SrsHttpAuthMux : public ISrsHttpAuthMux
 {
 private:
     bool enabled_;

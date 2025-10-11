@@ -20,6 +20,14 @@ using namespace std;
 #include <srs_protocol_stream.hpp>
 #include <srs_protocol_utility.hpp>
 
+ISrsHttpParser::ISrsHttpParser()
+{
+}
+
+ISrsHttpParser::~ISrsHttpParser()
+{
+}
+
 SrsHttpParser::SrsHttpParser()
 {
     buffer_ = new SrsFastStream();

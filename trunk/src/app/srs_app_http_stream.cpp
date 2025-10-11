@@ -1046,6 +1046,14 @@ bool SrsLiveEntry::is_mp3()
     return is_mp3_;
 }
 
+ISrsHttpStreamServer::ISrsHttpStreamServer()
+{
+}
+
+ISrsHttpStreamServer::~ISrsHttpStreamServer()
+{
+}
+
 SrsHttpStreamServer::SrsHttpStreamServer()
 {
     async_ = new SrsAsyncCallWorker();

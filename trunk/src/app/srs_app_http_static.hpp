@@ -86,8 +86,22 @@ protected:
 };
 
 // The http static server instance,
+class ISrsHttpStaticServer : public ISrsHttpHandler
+{
+public:
+    ISrsHttpStaticServer();
+    virtual ~ISrsHttpStaticServer();
+
+public:
+    virtual srs_error_t initialize() = 0;
+
+public:
+    SrsHttpServeMux mux_;
+};
+
+// The http static server instance,
 // serve http static file and flv/mp4 vod stream.
-class SrsHttpStaticServer : public ISrsReloadHandler
+class SrsHttpStaticServer : public ISrsHttpStaticServer, public ISrsReloadHandler
 {
 public:
     SrsHttpServeMux mux_;
@@ -98,6 +112,9 @@ public:
 
 public:
     virtual srs_error_t initialize();
+    // Interface ISrsHttpHandler
+public:
+    virtual srs_error_t serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r);
 
 private:
     virtual srs_error_t mount_vhost(std::string vhost, std::string &pmount);
