@@ -422,16 +422,29 @@ public:
     virtual srs_error_t dynamic_match(ISrsHttpMessage *request, ISrsHttpHandler **ph) = 0;
 };
 
-// The server mux, all http server should implements it.
-class ISrsHttpServeMux : public ISrsHttpHandler
+// The common http handler, for example, the http serve mux.
+class ISrsCommonHttpHandler : public ISrsHttpHandler
+{
+public:
+    ISrsCommonHttpHandler();
+    virtual ~ISrsCommonHttpHandler();
+
+public:
+    // Register HTTP handler to mux.
+    virtual srs_error_t handle(std::string pattern, ISrsHttpHandler *handler) = 0;
+};
+
+// The http serve mux interface.
+class ISrsHttpServeMux : public ISrsCommonHttpHandler
 {
 public:
     ISrsHttpServeMux();
     virtual ~ISrsHttpServeMux();
 
 public:
-    // Register HTTP handler to mux.
-    virtual srs_error_t handle(std::string pattern, ISrsHttpHandler *handler) = 0;
+    // Find the handler for request.
+    virtual srs_error_t find_handler(ISrsHttpMessage *r, ISrsHttpHandler **ph) = 0;
+    virtual void unhandle(std::string pattern, ISrsHttpHandler *handler) = 0;
 };
 
 // ServeMux is an HTTP request multiplexer.
@@ -498,7 +511,7 @@ public:
     virtual srs_error_t handle(std::string pattern, ISrsHttpHandler *handler);
     // Remove the handler for pattern. Note that this will not free the handler.
     void unhandle(std::string pattern, ISrsHttpHandler *handler);
-    // Interface ISrsHttpServeMux
+    // Interface ISrsCommonHttpHandler
 public:
     virtual srs_error_t serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r);
 
@@ -535,7 +548,7 @@ public:
 
 public:
     virtual srs_error_t initialize(bool cros_enabled);
-    // Interface ISrsHttpServeMux
+    // Interface ISrsCommonHttpHandler
 public:
     virtual srs_error_t serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r);
 };
@@ -569,7 +582,7 @@ public:
 
 public:
     virtual srs_error_t initialize(bool enabled, std::string username, std::string password);
-    // Interface ISrsHttpServeMux
+    // Interface ISrsCommonHttpHandler
 public:
     virtual srs_error_t serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r);
 

@@ -535,7 +535,7 @@ VOID TEST(GB28181Test, ListenerInitialize)
     srs_freep(mock_listener);
 }
 
-// Mock ISrsHttpServeMux implementation
+// Mock ISrsCommonHttpHandler implementation
 MockHttpServeMuxForGbListener::MockHttpServeMuxForGbListener()
 {
     handle_called_ = false;
@@ -578,7 +578,7 @@ MockApiServerOwnerForGbListener::~MockApiServerOwnerForGbListener()
     mux_ = NULL;
 }
 
-ISrsHttpServeMux *MockApiServerOwnerForGbListener::api_server()
+ISrsCommonHttpHandler *MockApiServerOwnerForGbListener::api_server()
 {
     return mux_;
 }

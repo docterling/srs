@@ -69,8 +69,8 @@ public:
     virtual std::string get_exporter_listen();
 };
 
-// Mock ISrsHttpServeMux for testing SrsServer::http_handle()
-class MockHttpServeMux : public ISrsHttpServeMux
+// Mock ISrsCommonHttpHandler for testing SrsServer::http_handle()
+class MockHttpServeMux : public ISrsCommonHttpHandler
 {
 public:
     int handle_count_;

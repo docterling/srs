@@ -33,7 +33,7 @@ class SrsRtcConnection;
 class ISrsAsyncCallTask;
 class SrsSignalManager;
 class SrsServer;
-class ISrsHttpServeMux;
+class ISrsCommonHttpHandler;
 class SrsHttpServer;
 class SrsIngester;
 class SrsHttpHeartbeat;
@@ -94,7 +94,7 @@ public:
     virtual ~ISrsApiServerOwner();
 
 public:
-    virtual ISrsHttpServeMux *api_server() = 0;
+    virtual ISrsCommonHttpHandler *api_server() = 0;
 };
 
 // The RTC API server owner interface.
@@ -142,7 +142,7 @@ private:
     ISrsAppFactory *app_factory_;
 
 private:
-    ISrsHttpServeMux *http_api_mux_;
+    ISrsCommonHttpHandler *http_api_mux_;
     SrsHttpServer *http_server_;
 
 private:
@@ -229,7 +229,7 @@ private:
 
 public:
     // Get the HTTP API server mux.
-    ISrsHttpServeMux *api_server();
+    ISrsCommonHttpHandler *api_server();
 
     // server startup workflow, @see run_master()
 public:

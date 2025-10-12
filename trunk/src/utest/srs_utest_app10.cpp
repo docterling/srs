@@ -269,7 +269,7 @@ VOID TEST(SrsServerTest, HttpHandleSuccess)
     EXPECT_TRUE(server.get() != NULL);
 
     // Inject mock HTTP API mux
-    ISrsHttpServeMux *original_mux = server->http_api_mux_;
+    ISrsCommonHttpHandler *original_mux = server->http_api_mux_;
     server->http_api_mux_ = mock_mux;
 
     // Set reuse_api_over_server_ to false to test all handler registrations

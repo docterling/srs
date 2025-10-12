@@ -100,7 +100,7 @@ private:
 
 protected:
     ISrsHttpParser *parser_;
-    ISrsHttpServeMux *http_mux_;
+    ISrsCommonHttpHandler *http_mux_;
     ISrsHttpCorsMux *cors_;
     ISrsHttpAuthMux *auth_;
     ISrsHttpConnOwner *handler_;
@@ -122,7 +122,7 @@ private:
     srs_utime_t create_time_;
 
 public:
-    SrsHttpConn(ISrsHttpConnOwner *handler, ISrsProtocolReadWriter *fd, ISrsHttpServeMux *m, std::string cip, int port);
+    SrsHttpConn(ISrsHttpConnOwner *handler, ISrsProtocolReadWriter *fd, ISrsCommonHttpHandler *m, std::string cip, int port);
     virtual ~SrsHttpConn();
     // Interface ISrsResource.
 public:
@@ -196,7 +196,7 @@ private:
     const std::string ssl_cert_file_;
 
 public:
-    SrsHttpxConn(ISrsResourceManager *cm, ISrsProtocolReadWriter *io, ISrsHttpServeMux *m, std::string cip, int port, std::string key, std::string cert);
+    SrsHttpxConn(ISrsResourceManager *cm, ISrsProtocolReadWriter *io, ISrsCommonHttpHandler *m, std::string cip, int port, std::string key, std::string cert);
     virtual ~SrsHttpxConn();
 
 public:
@@ -230,7 +230,7 @@ public:
 };
 
 // The http server, use http stream or static server to serve requests.
-class ISrsHttpServer : public ISrsHttpServeMux
+class ISrsHttpServer : public ISrsCommonHttpHandler
 {
 public:
     ISrsHttpServer();
@@ -252,7 +252,7 @@ public:
 
 public:
     virtual srs_error_t initialize();
-    // Interface ISrsHttpServeMux
+    // Interface ISrsCommonHttpHandler
 public:
     virtual srs_error_t handle(std::string pattern, ISrsHttpHandler *handler);
     // Interface ISrsHttpHandler

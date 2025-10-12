@@ -35,7 +35,7 @@ class SrsRawHEVCStream;
 class SrsMediaPacket;
 class SrsPithyPrint;
 class SrsRawAacStream;
-class ISrsHttpServeMux;
+class ISrsCommonHttpHandler;
 class ISrsGbMuxer;
 class ISrsGbSession;
 class ISrsPackContext;

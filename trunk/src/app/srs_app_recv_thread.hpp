@@ -27,6 +27,9 @@ class SrsLiveConsumer;
 class SrsHttpConn;
 class SrsHttpxConn;
 class ISrsRtmpServer;
+class SrsRecvThread;
+class ISrsRecvThread;
+class ISrsAppConfig;
 
 // The message consumer which consume a message.
 class ISrsMessageConsumer
@@ -61,8 +64,21 @@ public:
     virtual void on_stop() = 0;
 };
 
+// The recv thread interface.
+class ISrsRecvThread : public ISrsCoroutineHandler
+{
+public:
+    ISrsRecvThread();
+    virtual ~ISrsRecvThread();
+
+public:
+    virtual SrsContextId cid() = 0;
+    virtual srs_error_t start() = 0;
+    virtual void stop() = 0;
+};
+
 // The recv thread, use message handler to handle each received message.
-class SrsRecvThread : public ISrsCoroutineHandler
+class SrsRecvThread : public ISrsRecvThread
 {
 protected:
     ISrsCoroutine *trd_;
@@ -93,15 +109,25 @@ private:
     virtual srs_error_t do_cycle();
 };
 
+// The queue recv thread interface.
+class ISrsQueueRecvThread : public ISrsMessagePumper
+{
+public:
+    ISrsQueueRecvThread();
+    virtual ~ISrsQueueRecvThread();
+
+public:
+};
+
 // The recv thread used to replace the timeout recv,
 // which hurt performance for the epoll_ctrl is frequently used.
 // @see: SrsRtmpConn::playing
 // @see: https://github.com/ossrs/srs/issues/217
-class SrsQueueRecvThread : public ISrsMessagePumper
+class SrsQueueRecvThread : public ISrsQueueRecvThread
 {
 private:
     std::vector<SrsRtmpCommonMessage *> queue_;
-    SrsRecvThread trd_;
+    ISrsRecvThread *trd_;
     ISrsRtmpServer *rtmp_;
     // The recv thread error code.
     srs_error_t recv_error_;
@@ -130,17 +156,29 @@ public:
     virtual void on_stop();
 };
 
-// The publish recv thread got message and callback the source method to process message.
-// @see: https://github.com/ossrs/srs/issues/237
-class SrsPublishRecvThread : public ISrsMessagePumper, public ISrsReloadHandler
+// The publish recv thread interface.
+class ISrsPublishRecvThread : public ISrsMessagePumper,
 #ifdef SRS_PERF_MERGED_READ
-    ,
-                             public IMergeReadHandler
+                              public IMergeReadHandler
 #endif
 {
+public:
+    ISrsPublishRecvThread();
+    virtual ~ISrsPublishRecvThread();
+
+public:
+};
+
+// The publish recv thread got message and callback the source method to process message.
+// @see: https://github.com/ossrs/srs/issues/237
+class SrsPublishRecvThread : public ISrsPublishRecvThread
+{
+private:
+    ISrsAppConfig *config_;
+
 private:
     uint32_t nn_msgs_for_yield_;
-    SrsRecvThread trd_;
+    ISrsRecvThread *trd_;
     ISrsRtmpServer *rtmp_;
     ISrsRequest *req_;
     // The msgs already got.
@@ -168,6 +206,7 @@ private:
 public:
     SrsPublishRecvThread(ISrsRtmpServer *rtmp_sdk, ISrsRequest *_req,
                          int mr_sock_fd, srs_utime_t tm, SrsRtmpConn *conn, SrsSharedPtr<SrsLiveSource> source, SrsContextId parent_cid);
+    void assemble();
     virtual ~SrsPublishRecvThread();
 
 public:
@@ -199,11 +238,21 @@ private:
     virtual void set_socket_buffer(srs_utime_t sleep_v);
 };
 
+// The HTTP receive thread interface.
+class ISrsHttpRecvThread : public ISrsCoroutineHandler
+{
+public:
+    ISrsHttpRecvThread();
+    virtual ~ISrsHttpRecvThread();
+
+public:
+};
+
 // The HTTP receive thread, try to read messages util EOF.
 // For example, the HTTP FLV serving thread will use the receive thread to break
 // when client closed the request, to avoid FD leak.
 // @see https://github.com/ossrs/srs/issues/636#issuecomment-298208427
-class SrsHttpRecvThread : public ISrsCoroutineHandler
+class SrsHttpRecvThread : public ISrsHttpRecvThread
 {
 private:
     SrsHttpxConn *conn_;

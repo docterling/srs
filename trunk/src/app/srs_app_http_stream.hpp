@@ -29,6 +29,7 @@ class ISrsTsTransmuxer;
 class ISrsAacTransmuxer;
 class ISrsBufferCache;
 class ISrsMp3Transmuxer;
+class ISrsCommonHttpHandler;
 
 // The cache for HTTP Live Streaming encoder.
 class ISrsBufferCache
@@ -322,7 +323,7 @@ public:
 };
 
 // The HTTP Live Streaming Server, to serve FLV/TS/MP3/AAC stream.
-class ISrsHttpStreamServer : public ISrsReloadHandler, public ISrsHttpDynamicMatcher
+class ISrsHttpStreamServer : public ISrsHttpDynamicMatcher
 {
 public:
     ISrsHttpStreamServer();
@@ -334,9 +335,7 @@ public:
     // HTTP flv/ts/mp3/aac stream
     virtual srs_error_t http_mount(ISrsRequest *r) = 0;
     virtual void http_unmount(ISrsRequest *r) = 0;
-
-public:
-    SrsHttpServeMux mux_;
+    virtual ISrsHttpServeMux *mux() = 0;
 };
 
 // The HTTP Live Streaming Server, to serve FLV/TS/MP3/AAC stream.
@@ -345,12 +344,12 @@ class SrsHttpStreamServer : public ISrsHttpStreamServer
 {
 private:
     ISrsAppConfig *config_;
+    ISrsHttpServeMux *mux_;
 
 private:
     ISrsAsyncCallWorker *async_;
 
 public:
-    SrsHttpServeMux mux_;
     // The http live streaming template, to create streams.
     std::map<std::string, SrsLiveEntry *> templateHandlers_;
     // The http live streaming streams, created by template.
@@ -363,6 +362,7 @@ public:
 
 public:
     virtual srs_error_t initialize();
+    virtual ISrsHttpServeMux *mux();
 
 public:
     // HTTP flv/ts/mp3/aac stream
@@ -383,10 +383,10 @@ class SrsHttpStreamDestroy : public ISrsAsyncCallTask
 private:
     std::string sid_;
     std::map<std::string, SrsLiveEntry *> *streamHandlers_;
-    SrsHttpServeMux *mux_;
+    ISrsHttpServeMux *mux_;
 
 public:
-    SrsHttpStreamDestroy(SrsHttpServeMux *mux, std::map<std::string, SrsLiveEntry *> *handlers, std::string sid);
+    SrsHttpStreamDestroy(ISrsHttpServeMux *mux, std::map<std::string, SrsLiveEntry *> *handlers, std::string sid);
     virtual ~SrsHttpStreamDestroy();
 
 public:

@@ -39,6 +39,14 @@ ISrsMessagePumper::~ISrsMessagePumper()
 {
 }
 
+ISrsRecvThread::ISrsRecvThread()
+{
+}
+
+ISrsRecvThread::~ISrsRecvThread()
+{
+}
+
 SrsRecvThread::SrsRecvThread(ISrsMessagePumper *p, ISrsRtmpServer *r, srs_utime_t tm, SrsContextId parent_cid)
 {
     rtmp_ = r;
@@ -144,12 +152,20 @@ srs_error_t SrsRecvThread::do_cycle()
     return err;
 }
 
+ISrsQueueRecvThread::ISrsQueueRecvThread()
+{
+}
+
+ISrsQueueRecvThread::~ISrsQueueRecvThread()
+{
+}
+
 SrsQueueRecvThread::SrsQueueRecvThread(SrsLiveConsumer *consumer, ISrsRtmpServer *rtmp_sdk, srs_utime_t tm, SrsContextId parent_cid)
-    : trd_(this, rtmp_sdk, tm, parent_cid)
 {
     _consumer = consumer;
     rtmp_ = rtmp_sdk;
     recv_error_ = srs_success;
+    trd_ = new SrsRecvThread(this, rtmp_sdk, tm, parent_cid);
 }
 
 SrsQueueRecvThread::~SrsQueueRecvThread()
@@ -165,13 +181,14 @@ SrsQueueRecvThread::~SrsQueueRecvThread()
     queue_.clear();
 
     srs_freep(recv_error_);
+    srs_freep(trd_);
 }
 
 srs_error_t SrsQueueRecvThread::start()
 {
     srs_error_t err = srs_success;
 
-    if ((err = trd_.start()) != srs_success) {
+    if ((err = trd_->start()) != srs_success) {
         return srs_error_wrap(err, "queue recv thread");
     }
 
@@ -180,7 +197,7 @@ srs_error_t SrsQueueRecvThread::start()
 
 void SrsQueueRecvThread::stop()
 {
-    trd_.stop();
+    trd_->stop();
 }
 
 bool SrsQueueRecvThread::empty()
@@ -257,9 +274,16 @@ void SrsQueueRecvThread::on_stop()
     rtmp_->set_auto_response(true);
 }
 
+ISrsPublishRecvThread::ISrsPublishRecvThread()
+{
+}
+
+ISrsPublishRecvThread::~ISrsPublishRecvThread()
+{
+}
+
 SrsPublishRecvThread::SrsPublishRecvThread(ISrsRtmpServer *rtmp_sdk, ISrsRequest *_req,
                                            int mr_sock_fd, srs_utime_t tm, SrsRtmpConn *conn, SrsSharedPtr<SrsLiveSource> source, SrsContextId parent_cid)
-    : trd_(this, rtmp_sdk, tm, parent_cid)
 {
     rtmp_ = rtmp_sdk;
 
@@ -275,22 +299,27 @@ SrsPublishRecvThread::SrsPublishRecvThread(ISrsRtmpServer *rtmp_sdk, ISrsRequest
     req_ = _req;
     mr_fd_ = mr_sock_fd;
 
-    // the mr settings,
-    mr_ = _srs_config->get_mr_enabled(req_->vhost_);
-    mr_sleep_ = _srs_config->get_mr_sleep(req_->vhost_);
+    trd_ = new SrsRecvThread(this, rtmp_sdk, tm, parent_cid);
 
-    realtime_ = _srs_config->get_realtime_enabled(req_->vhost_, false);
+    config_ = _srs_config;
+}
 
-    _srs_config->subscribe(this);
+void SrsPublishRecvThread::assemble()
+{
+    mr_ = config_->get_mr_enabled(req_->vhost_);
+    mr_sleep_ = config_->get_mr_sleep(req_->vhost_);
+    realtime_ = config_->get_realtime_enabled(req_->vhost_, false);
 }
 
 SrsPublishRecvThread::~SrsPublishRecvThread()
 {
-    _srs_config->unsubscribe(this);
+    trd_->stop();
 
-    trd_.stop();
     srs_cond_destroy(error_);
     srs_freep(recv_error_);
+    srs_freep(trd_);
+
+    config_ = NULL;
 }
 
 srs_error_t SrsPublishRecvThread::wait(srs_utime_t tm)
@@ -334,18 +363,18 @@ srs_error_t SrsPublishRecvThread::start()
 {
     srs_error_t err = srs_success;
 
-    if ((err = trd_.start()) != srs_success) {
+    if ((err = trd_->start()) != srs_success) {
         err = srs_error_wrap(err, "publish recv thread");
     }
 
-    ncid_ = cid_ = trd_.cid();
+    ncid_ = cid_ = trd_->cid();
 
     return err;
 }
 
 void SrsPublishRecvThread::stop()
 {
-    trd_.stop();
+    trd_->stop();
 }
 
 srs_error_t SrsPublishRecvThread::consume(SrsRtmpCommonMessage *msg)
@@ -490,6 +519,14 @@ void SrsPublishRecvThread::set_socket_buffer(srs_utime_t sleep_v)
               SRS_MR_SMALL_BYTES, realtime_);
 
     rtmp_->set_recv_buffer(nb_rbuf);
+}
+
+ISrsHttpRecvThread::ISrsHttpRecvThread()
+{
+}
+
+ISrsHttpRecvThread::~ISrsHttpRecvThread()
+{
 }
 
 SrsHttpRecvThread::SrsHttpRecvThread(SrsHttpxConn *c)

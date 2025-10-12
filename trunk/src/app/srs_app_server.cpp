@@ -382,7 +382,7 @@ void SrsServer::gracefully_dispose()
     srs_trace("final wait for %dms", srsu2msi(config_->get_grace_final_wait()));
 }
 
-ISrsHttpServeMux *SrsServer::api_server()
+ISrsCommonHttpHandler *SrsServer::api_server()
 {
     return http_api_mux_;
 }

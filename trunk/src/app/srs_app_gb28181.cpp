@@ -386,7 +386,7 @@ srs_error_t SrsGbListener::listen_api()
 {
     srs_error_t err = srs_success;
 
-    ISrsHttpServeMux *mux = api_server_owner_->api_server();
+    ISrsCommonHttpHandler *mux = api_server_owner_->api_server();
     if (!mux) {
         return err;
     }

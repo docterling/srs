@@ -230,8 +230,8 @@ public:
     virtual int get_stream_caster_listen(SrsConfDirective *conf);
 };
 
-// Mock ISrsHttpServeMux for testing SrsGbListener::listen_api
-class MockHttpServeMuxForGbListener : public ISrsHttpServeMux
+// Mock ISrsCommonHttpHandler for testing SrsGbListener::listen_api
+class MockHttpServeMuxForGbListener : public ISrsCommonHttpHandler
 {
 public:
     bool handle_called_;
@@ -252,14 +252,14 @@ public:
 class MockApiServerOwnerForGbListener : public ISrsApiServerOwner
 {
 public:
-    ISrsHttpServeMux *mux_;
+    ISrsCommonHttpHandler *mux_;
 
 public:
     MockApiServerOwnerForGbListener();
     virtual ~MockApiServerOwnerForGbListener();
 
 public:
-    virtual ISrsHttpServeMux *api_server();
+    virtual ISrsCommonHttpHandler *api_server();
 };
 
 // Mock ISrsIpListener for testing SrsGbListener::listen

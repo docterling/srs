@@ -12,6 +12,8 @@
 #include <srs_core.hpp>
 
 class ISrsFileReaderFactory;
+class ISrsCommonHttpHandler;
+class ISrsHttpServeMux;
 
 // HLS virtual connection, build on query string ctx of hls stream.
 class SrsHlsVirtualConn : public ISrsExpire
@@ -94,17 +96,15 @@ public:
 
 public:
     virtual srs_error_t initialize() = 0;
-
-public:
-    SrsHttpServeMux mux_;
+    virtual ISrsHttpServeMux *mux() = 0;
 };
 
 // The http static server instance,
 // serve http static file and flv/mp4 vod stream.
-class SrsHttpStaticServer : public ISrsHttpStaticServer, public ISrsReloadHandler
+class SrsHttpStaticServer : public ISrsHttpStaticServer
 {
-public:
-    SrsHttpServeMux mux_;
+private:
+    ISrsHttpServeMux *mux_;
 
 public:
     SrsHttpStaticServer();
@@ -112,6 +112,8 @@ public:
 
 public:
     virtual srs_error_t initialize();
+    virtual ISrsHttpServeMux *mux();
+
     // Interface ISrsHttpHandler
 public:
     virtual srs_error_t serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r);

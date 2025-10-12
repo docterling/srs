@@ -797,7 +797,15 @@ ISrsHttpDynamicMatcher::~ISrsHttpDynamicMatcher()
 {
 }
 
-ISrsHttpServeMux::ISrsHttpServeMux() : ISrsHttpHandler()
+ISrsCommonHttpHandler::ISrsCommonHttpHandler()
+{
+}
+
+ISrsCommonHttpHandler::~ISrsCommonHttpHandler()
+{
+}
+
+ISrsHttpServeMux::ISrsHttpServeMux()
 {
 }
 
