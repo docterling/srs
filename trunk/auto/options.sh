@@ -15,6 +15,7 @@ SRS_CXX14=NO
 SRS_BACKTRACE=YES
 SRS_NGINX=NO
 SRS_UTEST=NO
+SRS_FORCE_PUBLIC4UTEST=NO
 # Always enable the bellow features.
 SRS_STREAM_CASTER=YES
 SRS_INGEST=YES
@@ -596,6 +597,13 @@ function apply_auto_options() {
     if [[ $SRS_CXX11 != NO ]]; then
         echo "Warning: C++11 support has been disabled. Forcing C++98 compatibility mode."
         SRS_CXX11=NO
+    fi
+
+    # When utest is enabled, automatically enable SRS_FORCE_PUBLIC4UTEST to make private members public
+    # This ensures consistent class layout between production code and utest code with AddressSanitizer
+    if [[ $SRS_UTEST == YES ]]; then
+        echo "Enable SRS_FORCE_PUBLIC4UTEST for utest to make private members public."
+        SRS_FORCE_PUBLIC4UTEST=YES
     fi
 
     # Force disable C++14 always - C++98 compatibility is required

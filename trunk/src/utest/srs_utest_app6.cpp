@@ -17,6 +17,201 @@ using namespace std;
 #include <srs_protocol_sdp.hpp>
 #include <srs_utest_app2.hpp>
 
+// Mock ISrsResourceManager implementation
+MockResourceManagerForBindSession::MockResourceManagerForBindSession()
+{
+    session_to_return_ = NULL;
+}
+
+MockResourceManagerForBindSession::~MockResourceManagerForBindSession()
+{
+}
+
+srs_error_t MockResourceManagerForBindSession::start()
+{
+    return srs_success;
+}
+
+bool MockResourceManagerForBindSession::empty()
+{
+    return true;
+}
+
+size_t MockResourceManagerForBindSession::size()
+{
+    return 0;
+}
+
+void MockResourceManagerForBindSession::add(ISrsResource *conn, bool *exists)
+{
+}
+
+void MockResourceManagerForBindSession::add_with_id(const std::string &id, ISrsResource *conn)
+{
+}
+
+void MockResourceManagerForBindSession::add_with_fast_id(uint64_t id, ISrsResource *conn)
+{
+}
+
+void MockResourceManagerForBindSession::add_with_name(const std::string & /*name*/, ISrsResource * /*conn*/)
+{
+}
+
+ISrsResource *MockResourceManagerForBindSession::at(int index)
+{
+    return NULL;
+}
+
+ISrsResource *MockResourceManagerForBindSession::find_by_id(std::string id)
+{
+    return NULL;
+}
+
+ISrsResource *MockResourceManagerForBindSession::find_by_fast_id(uint64_t id)
+{
+    return session_to_return_;
+}
+
+ISrsResource *MockResourceManagerForBindSession::find_by_name(std::string /*name*/)
+{
+    return NULL;
+}
+
+void MockResourceManagerForBindSession::remove(ISrsResource *c)
+{
+}
+
+void MockResourceManagerForBindSession::subscribe(ISrsDisposingHandler *h)
+{
+}
+
+void MockResourceManagerForBindSession::unsubscribe(ISrsDisposingHandler *h)
+{
+}
+
+void MockResourceManagerForBindSession::reset()
+{
+    session_to_return_ = NULL;
+}
+
+// Mock ISrsEphemeralDelta implementation
+MockEphemeralDelta::MockEphemeralDelta()
+{
+    in_bytes_ = 0;
+    out_bytes_ = 0;
+}
+
+MockEphemeralDelta::~MockEphemeralDelta()
+{
+}
+
+void MockEphemeralDelta::add_delta(int64_t in, int64_t out)
+{
+    in_bytes_ += in;
+    out_bytes_ += out;
+}
+
+void MockEphemeralDelta::remark(int64_t *in, int64_t *out)
+{
+    if (in)
+        *in = in_bytes_;
+    if (out)
+        *out = out_bytes_;
+    in_bytes_ = 0;
+    out_bytes_ = 0;
+}
+
+void MockEphemeralDelta::reset()
+{
+    in_bytes_ = 0;
+    out_bytes_ = 0;
+}
+
+// Mock ISrsUdpMuxSocket implementation
+MockUdpMuxSocket::MockUdpMuxSocket()
+{
+    sendto_error_ = srs_success;
+    sendto_called_count_ = 0;
+    last_sendto_size_ = 0;
+    peer_ip_ = "192.168.1.100";
+    peer_port_ = 5000;
+    peer_id_ = "192.168.1.100:5000";
+    fast_id_ = 0;
+    data_ = NULL;
+    size_ = 0;
+}
+
+MockUdpMuxSocket::~MockUdpMuxSocket()
+{
+    srs_freep(sendto_error_);
+    data_ = NULL;
+}
+
+srs_error_t MockUdpMuxSocket::sendto(void *data, int size, srs_utime_t timeout)
+{
+    sendto_called_count_++;
+    last_sendto_size_ = size;
+    return srs_error_copy(sendto_error_);
+}
+
+std::string MockUdpMuxSocket::get_peer_ip() const
+{
+    return peer_ip_;
+}
+
+int MockUdpMuxSocket::get_peer_port() const
+{
+    return peer_port_;
+}
+
+std::string MockUdpMuxSocket::peer_id()
+{
+    return peer_id_;
+}
+
+uint64_t MockUdpMuxSocket::fast_id()
+{
+    return fast_id_;
+}
+
+SrsUdpMuxSocket *MockUdpMuxSocket::copy_sendonly()
+{
+    // Return self for testing purposes - in real implementation this creates a copy
+    return (SrsUdpMuxSocket *)this;
+}
+
+int MockUdpMuxSocket::recvfrom(srs_utime_t timeout)
+{
+    // Mock implementation - return the size of data received
+    return size_;
+}
+
+char *MockUdpMuxSocket::data()
+{
+    // Mock implementation - return the data buffer
+    return data_;
+}
+
+int MockUdpMuxSocket::size()
+{
+    // Mock implementation - return the size of data
+    return size_;
+}
+
+void MockUdpMuxSocket::reset()
+{
+    srs_freep(sendto_error_);
+    sendto_called_count_ = 0;
+    last_sendto_size_ = 0;
+}
+
+void MockUdpMuxSocket::set_sendto_error(srs_error_t err)
+{
+    srs_freep(sendto_error_);
+    sendto_error_ = srs_error_copy(err);
+}
+
 // Mock DTLS implementation
 MockDtls::MockDtls()
 {

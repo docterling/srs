@@ -13,9 +13,9 @@
 // @see https://stackoverflow.com/questions/47839718/sstream-redeclared-with-public-access-compiler-error
 #include "gtest/gtest.h"
 
-// Public all private and protected members.
-#define private public
-#define protected public
+// Note: The #define private public and #define protected public are now handled in srs_core.hpp
+// when SRS_FORCE_PUBLIC4UTEST is enabled (automatically enabled when --utest=on is specified).
+// This ensures consistent class layout between production code and utest code with AddressSanitizer.
 
 /*
 #include <srs_utest.hpp>

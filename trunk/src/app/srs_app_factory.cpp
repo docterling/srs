@@ -12,13 +12,17 @@
 #include <srs_app_dvr.hpp>
 #include <srs_app_ffmpeg.hpp>
 #include <srs_app_fragment.hpp>
+#ifdef SRS_GB28181
 #include <srs_app_gb28181.hpp>
+#endif
 #include <srs_app_ingest.hpp>
 #include <srs_app_listener.hpp>
 #include <srs_app_rtc_conn.hpp>
 #include <srs_app_rtmp_conn.hpp>
 #include <srs_app_rtmp_source.hpp>
+#ifdef SRS_RTSP
 #include <srs_app_rtsp_source.hpp>
+#endif
 #include <srs_app_st.hpp>
 #include <srs_kernel_file.hpp>
 #include <srs_kernel_flv.hpp>

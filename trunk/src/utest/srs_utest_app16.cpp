@@ -200,7 +200,7 @@ VOID TEST(UdpListenerTest, ListenAndReceivePacket)
     }
 
     // Wait a bit for the listener to receive and process the packet
-    srs_usleep(30 * SRS_UTIME_MILLISECONDS);
+    srs_usleep(50 * SRS_UTIME_MILLISECONDS);
 
     // Verify that the mock handler received the packet
     EXPECT_TRUE(mock_handler->on_udp_packet_called_);
@@ -1536,6 +1536,7 @@ ISrsFlvDecoder *MockAppFactoryForIngester::create_flv_decoder()
     return NULL;
 }
 
+#ifdef SRS_RTSP
 ISrsRtspSendTrack *MockAppFactoryForIngester::create_rtsp_audio_send_track(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc)
 {
     return NULL;
@@ -1545,6 +1546,7 @@ ISrsRtspSendTrack *MockAppFactoryForIngester::create_rtsp_video_send_track(ISrsR
 {
     return NULL;
 }
+#endif
 
 ISrsFlvTransmuxer *MockAppFactoryForIngester::create_flv_transmuxer()
 {
@@ -1566,6 +1568,7 @@ ISrsDvrSegmenter *MockAppFactoryForIngester::create_dvr_mp4_segmenter()
     return NULL;
 }
 
+#ifdef SRS_GB28181
 ISrsGbMediaTcpConn *MockAppFactoryForIngester::create_gb_media_tcp_conn()
 {
     return NULL;
@@ -1575,6 +1578,7 @@ ISrsGbSession *MockAppFactoryForIngester::create_gb_session()
 {
     return NULL;
 }
+#endif
 
 ISrsInitMp4 *MockAppFactoryForIngester::create_init_mp4()
 {

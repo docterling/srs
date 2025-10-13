@@ -12,7 +12,9 @@
 */
 #include <srs_utest.hpp>
 
+#ifdef SRS_RTSP
 #include <srs_app_rtsp_conn.hpp>
+#endif
 #include <srs_app_stream_bridge.hpp>
 #include <srs_protocol_rtmp_stack.hpp>
 #include <srs_utest_app6.hpp>

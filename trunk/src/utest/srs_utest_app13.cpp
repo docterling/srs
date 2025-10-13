@@ -3214,6 +3214,7 @@ ISrsDvrSegmenter *MockDvrAppFactory::create_dvr_mp4_segmenter()
     return segmenter;
 }
 
+#ifdef SRS_GB28181
 ISrsGbMediaTcpConn *MockDvrAppFactory::create_gb_media_tcp_conn()
 {
     return NULL;
@@ -3223,6 +3224,7 @@ ISrsGbSession *MockDvrAppFactory::create_gb_session()
 {
     return NULL;
 }
+#endif
 
 ISrsInitMp4 *MockDvrAppFactory::create_init_mp4()
 {

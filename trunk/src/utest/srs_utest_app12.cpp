@@ -8,7 +8,9 @@
 using namespace std;
 
 #include <srs_app_rtc_source.hpp>
+#ifdef SRS_RTSP
 #include <srs_app_rtsp_source.hpp>
+#endif
 #include <srs_app_srt_source.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_buffer.hpp>
@@ -1613,6 +1615,7 @@ VOID TEST(SrsSrtSourceTest, OnPacketDistribution)
     // Note: mock_bridge will be freed by source destructor
 }
 
+#ifdef SRS_RTSP
 // Test SrsRtspConsumer enqueue and update_source_id
 // This test covers the major use scenario: enqueueing RTP packets and signaling waiting threads
 VOID TEST(SrsRtspConsumerTest, EnqueueAndUpdateSourceId)
@@ -3549,3 +3552,4 @@ VOID TEST(SrsRtspVideoSendTrackTest, OnRtpActiveTrackWithPTConversion)
     EXPECT_EQ(180000, (int)mock_conn.last_packet_->header_.get_timestamp());
     EXPECT_TRUE(mock_conn.last_packet_->header_.get_marker());
 }
+#endif // SRS_RTSP

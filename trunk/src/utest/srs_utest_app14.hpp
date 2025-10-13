@@ -15,7 +15,9 @@
 #include <srs_app_config.hpp>
 #include <srs_app_dvr.hpp>
 #include <srs_app_factory.hpp>
+#ifdef SRS_GB28181
 #include <srs_app_gb28181.hpp>
+#endif
 #include <srs_app_server.hpp>
 #include <srs_protocol_http_client.hpp>
 #include <srs_protocol_http_stack.hpp>
@@ -177,23 +179,6 @@ public:
     void reset();
 };
 
-// Mock ISrsEphemeralDelta for testing SrsRtcUdpNetwork
-class MockEphemeralDelta : public ISrsEphemeralDelta
-{
-public:
-    int64_t in_bytes_;
-    int64_t out_bytes_;
-
-public:
-    MockEphemeralDelta();
-    virtual ~MockEphemeralDelta();
-
-public:
-    virtual void add_delta(int64_t in, int64_t out);
-    virtual void remark(int64_t *in, int64_t *out);
-    void reset();
-};
-
 // Mock ISrsIpListener for testing SrsGbListener::initialize
 class MockIpListener : public ISrsIpListener
 {
@@ -304,34 +289,6 @@ public:
     virtual std::string desc();
     virtual srs_error_t cycle();
     virtual void on_executor_done(ISrsInterruptable *executor);
-    void reset();
-};
-
-// Mock ISrsResourceManager for testing SrsGbMediaTcpConn::bind_session
-class MockResourceManagerForBindSession : public ISrsResourceManager
-{
-public:
-    ISrsResource *session_to_return_;
-
-public:
-    MockResourceManagerForBindSession();
-    virtual ~MockResourceManagerForBindSession();
-
-public:
-    virtual srs_error_t start();
-    virtual bool empty();
-    virtual size_t size();
-    virtual void add(ISrsResource *conn, bool *exists = NULL);
-    virtual void add_with_id(const std::string &id, ISrsResource *conn);
-    virtual void add_with_fast_id(uint64_t id, ISrsResource *conn);
-    virtual void add_with_name(const std::string &name, ISrsResource *conn);
-    virtual ISrsResource *at(int index);
-    virtual ISrsResource *find_by_id(std::string id);
-    virtual ISrsResource *find_by_fast_id(uint64_t id);
-    virtual ISrsResource *find_by_name(std::string name);
-    virtual void remove(ISrsResource *c);
-    virtual void subscribe(ISrsDisposingHandler *h);
-    virtual void unsubscribe(ISrsDisposingHandler *h);
     void reset();
 };
 
@@ -628,8 +585,10 @@ public:
     virtual ISrsMp4Encoder *create_mp4_encoder();
     virtual SrsDvrFlvSegmenter *create_dvr_flv_segmenter();
     virtual SrsDvrMp4Segmenter *create_dvr_mp4_segmenter();
+#ifdef SRS_GB28181
     virtual ISrsGbMediaTcpConn *create_gb_media_tcp_conn();
     virtual ISrsGbSession *create_gb_session();
+#endif
     virtual ISrsInitMp4 *create_init_mp4();
     virtual ISrsFragmentWindow *create_fragment_window();
     virtual ISrsFragmentedMp4 *create_fragmented_mp4();
@@ -742,40 +701,6 @@ public:
     virtual void subscribe(ISrsDisposingHandler *h);
     virtual void unsubscribe(ISrsDisposingHandler *h);
     void reset();
-};
-
-// Mock ISrsUdpMuxSocket for testing SrsRtcUdpNetwork STUN handling
-class MockUdpMuxSocket : public ISrsUdpMuxSocket
-{
-public:
-    srs_error_t sendto_error_;
-    int sendto_called_count_;
-    int last_sendto_size_;
-    std::string peer_ip_;
-    int peer_port_;
-    std::string peer_id_;
-    uint64_t fast_id_;
-    char *data_;
-    int size_;
-
-public:
-    MockUdpMuxSocket();
-    virtual ~MockUdpMuxSocket();
-
-public:
-    virtual srs_error_t sendto(void *data, int size, srs_utime_t timeout);
-    virtual std::string get_peer_ip() const;
-    virtual int get_peer_port() const;
-    virtual std::string peer_id();
-    virtual uint64_t fast_id();
-    virtual SrsUdpMuxSocket *copy_sendonly();
-    virtual int recvfrom(srs_utime_t timeout);
-    virtual char *data();
-    virtual int size();
-
-public:
-    void reset();
-    void set_sendto_error(srs_error_t err);
 };
 
 // Mock ISrsProtocolReadWriter for testing SrsRtcTcpNetwork write operations

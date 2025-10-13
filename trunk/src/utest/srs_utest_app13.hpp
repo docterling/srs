@@ -18,8 +18,10 @@
 #include <srs_app_factory.hpp>
 #include <srs_app_rtc_source.hpp>
 #include <srs_app_rtmp_conn.hpp>
+#ifdef SRS_RTSP
 #include <srs_app_rtsp_conn.hpp>
 #include <srs_app_rtsp_source.hpp>
+#endif
 #include <srs_app_statistic.hpp>
 #include <srs_kernel_balance.hpp>
 #include <srs_kernel_flv.hpp>
@@ -29,7 +31,9 @@
 #include <srs_protocol_json.hpp>
 #include <srs_protocol_rtmp_conn.hpp>
 #include <srs_protocol_rtmp_stack.hpp>
+#ifdef SRS_RTSP
 #include <srs_protocol_rtsp_stack.hpp>
+#endif
 #include <srs_utest_app12.hpp>
 #include <srs_utest_app6.hpp>
 
@@ -636,8 +640,10 @@ public:
     virtual ISrsMp4Encoder *create_mp4_encoder();
     virtual ISrsDvrSegmenter *create_dvr_flv_segmenter();
     virtual ISrsDvrSegmenter *create_dvr_mp4_segmenter();
+#ifdef SRS_GB28181
     virtual ISrsGbMediaTcpConn *create_gb_media_tcp_conn();
     virtual ISrsGbSession *create_gb_session();
+#endif
     virtual ISrsInitMp4 *create_init_mp4();
     virtual ISrsFragmentWindow *create_fragment_window();
     virtual ISrsFragmentedMp4 *create_fragmented_mp4();

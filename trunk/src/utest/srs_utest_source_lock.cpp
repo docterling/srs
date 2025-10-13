@@ -700,7 +700,7 @@ VOID TEST(SourceLockTest, RtcSourceManager_FetchNonExistent)
     // Fetch non-existent source should return NULL
     SrsSharedPtr<SrsRtcSource> source = manager.fetch(&req);
     EXPECT_TRUE(source.get() == NULL);
-}
+} 
 
 #ifdef SRS_RTSP
 typedef MockOtherSourceAsyncCreator<SrsRtspSourceManager, SrsRtspSource> MockRtspSourceAsyncCreator;
@@ -814,4 +814,4 @@ VOID TEST(SourceLockTest, RtspSourceManager_BasicFunctionality)
     HELPER_EXPECT_SUCCESS(manager.fetch_or_create(&req, source2));
     EXPECT_EQ(source.get(), source2.get());
 }
-#endif
+#endif // SRS_RTSP

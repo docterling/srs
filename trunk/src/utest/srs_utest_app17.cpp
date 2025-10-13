@@ -3035,7 +3035,7 @@ VOID TEST(QueueRecvThreadTest, BasicQueueOperations)
     // Queue should have one message
     EXPECT_FALSE(queue_thread->empty());
     EXPECT_EQ(1, queue_thread->size());
-    EXPECT_TRUE(queue_thread->interrupted());  // interrupted() returns true when queue is not empty
+    EXPECT_TRUE(queue_thread->interrupted()); // interrupted() returns true when queue is not empty
 
     // Test 3: Consume second message
     SrsRtmpCommonMessage *msg2 = new SrsRtmpCommonMessage();
@@ -3088,12 +3088,12 @@ VOID TEST(QueueRecvThreadTest, BasicQueueOperations)
     // Test 8: Test on_start() and on_stop() - verify set_auto_response is called
     queue_thread->on_start();
     EXPECT_TRUE(mock_rtmp->set_auto_response_called_);
-    EXPECT_FALSE(mock_rtmp->auto_response_value_);  // Should be set to false
+    EXPECT_FALSE(mock_rtmp->auto_response_value_); // Should be set to false
 
     mock_rtmp->reset();
     queue_thread->on_stop();
     EXPECT_TRUE(mock_rtmp->set_auto_response_called_);
-    EXPECT_TRUE(mock_rtmp->auto_response_value_);  // Should be set to true
+    EXPECT_TRUE(mock_rtmp->auto_response_value_); // Should be set to true
 }
 
 // Test SrsPublishRecvThread basic operations
@@ -3105,7 +3105,7 @@ VOID TEST(PublishRecvThreadTest, BasicOperations)
     // Create mock dependencies
     SrsUniquePtr<MockRtmpServerForQueueRecvThread> mock_rtmp(new MockRtmpServerForQueueRecvThread());
     SrsUniquePtr<MockSrsRequest> mock_req(new MockSrsRequest("__defaultVhost__", "live", "test_stream"));
-    SrsSharedPtr<SrsLiveSource> mock_source;  // NULL is fine for this test
+    SrsSharedPtr<SrsLiveSource> mock_source; // NULL is fine for this test
 
     // Create SrsPublishRecvThread (without starting the actual recv thread)
     SrsUniquePtr<SrsPublishRecvThread> publish_thread(new SrsPublishRecvThread(

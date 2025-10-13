@@ -537,14 +537,18 @@ public:
     virtual ISrsHttpClient *create_http_client();
     virtual ISrsFileReader *create_http_file_reader(ISrsHttpResponseReader *r);
     virtual ISrsFlvDecoder *create_flv_decoder();
+#ifdef SRS_RTSP
     virtual ISrsRtspSendTrack *create_rtsp_audio_send_track(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc);
     virtual ISrsRtspSendTrack *create_rtsp_video_send_track(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc);
+#endif
     virtual ISrsFlvTransmuxer *create_flv_transmuxer();
     virtual ISrsMp4Encoder *create_mp4_encoder();
     virtual ISrsDvrSegmenter *create_dvr_flv_segmenter();
     virtual ISrsDvrSegmenter *create_dvr_mp4_segmenter();
+#ifdef SRS_GB28181
     virtual ISrsGbMediaTcpConn *create_gb_media_tcp_conn();
     virtual ISrsGbSession *create_gb_session();
+#endif
     virtual ISrsInitMp4 *create_init_mp4();
     virtual ISrsFragmentWindow *create_fragment_window();
     virtual ISrsFragmentedMp4 *create_fragmented_mp4();
