@@ -162,7 +162,7 @@ ISrsQueueRecvThread::~ISrsQueueRecvThread()
 
 SrsQueueRecvThread::SrsQueueRecvThread(SrsLiveConsumer *consumer, ISrsRtmpServer *rtmp_sdk, srs_utime_t tm, SrsContextId parent_cid)
 {
-    _consumer = consumer;
+    consumer_ = consumer;
     rtmp_ = rtmp_sdk;
     recv_error_ = srs_success;
     trd_ = new SrsRecvThread(this, rtmp_sdk, tm, parent_cid);
@@ -232,8 +232,8 @@ srs_error_t SrsQueueRecvThread::consume(SrsRtmpCommonMessage *msg)
     // @see SrsRtmpConn::process_play_control_msg
     queue_.push_back(msg);
 #ifdef SRS_PERF_QUEUE_COND_WAIT
-    if (_consumer) {
-        _consumer->wakeup();
+    if (consumer_) {
+        consumer_->wakeup();
     }
 #endif
     return srs_success;
@@ -254,8 +254,8 @@ void SrsQueueRecvThread::interrupt(srs_error_t err)
     recv_error_ = srs_error_copy(err);
 
 #ifdef SRS_PERF_QUEUE_COND_WAIT
-    if (_consumer) {
-        _consumer->wakeup();
+    if (consumer_) {
+        consumer_->wakeup();
     }
 #endif
 }
@@ -287,12 +287,12 @@ SrsPublishRecvThread::SrsPublishRecvThread(ISrsRtmpServer *rtmp_sdk, ISrsRequest
 {
     rtmp_ = rtmp_sdk;
 
-    _conn = conn;
+    conn_ = conn;
     source_ = source;
 
     nn_msgs_for_yield_ = 0;
     recv_error_ = srs_success;
-    _nb_msgs = 0;
+    nb_msgs_ = 0;
     video_frames_ = 0;
     error_ = srs_cond_new();
 
@@ -336,7 +336,7 @@ srs_error_t SrsPublishRecvThread::wait(srs_utime_t tm)
 
 int64_t SrsPublishRecvThread::nb_msgs()
 {
-    return _nb_msgs;
+    return nb_msgs_;
 }
 
 uint64_t SrsPublishRecvThread::nb_video_frames()
@@ -387,7 +387,7 @@ srs_error_t SrsPublishRecvThread::consume(SrsRtmpCommonMessage *msg)
         cid_ = ncid_;
     }
 
-    _nb_msgs++;
+    nb_msgs_++;
 
     if (msg->header_.is_video()) {
         video_frames_++;
@@ -398,7 +398,7 @@ srs_error_t SrsPublishRecvThread::consume(SrsRtmpCommonMessage *msg)
                 srs_time_now_realtime(), msg->header_.timestamp, msg->size);
 
     // the rtmp connection will handle this message
-    err = _conn->handle_publish_message(source_, msg);
+    err = conn_->handle_publish_message(source_, msg);
 
     // must always free it,
     // the source will copy it if need to use.

@@ -131,7 +131,7 @@ private:
     ISrsRtmpServer *rtmp_;
     // The recv thread error code.
     srs_error_t recv_error_;
-    SrsLiveConsumer *_consumer;
+    SrsLiveConsumer *consumer_;
 
 public:
     // TODO: FIXME: Refine timeout in time unit.
@@ -182,7 +182,7 @@ private:
     ISrsRtmpServer *rtmp_;
     ISrsRequest *req_;
     // The msgs already got.
-    int64_t _nb_msgs;
+    int64_t nb_msgs_;
     // The video frames we got.
     uint64_t video_frames_;
     // For mr(merged read),
@@ -194,7 +194,7 @@ private:
     bool realtime_;
     // The recv thread error code.
     srs_error_t recv_error_;
-    SrsRtmpConn *_conn;
+    SrsRtmpConn *conn_;
     // The params for conn callback.
     SrsSharedPtr<SrsLiveSource> source_;
     // The error timeout cond

@@ -11,11 +11,14 @@ using namespace std;
 #include <srs_app_caster_flv.hpp>
 #include <srs_app_http_conn.hpp>
 #include <srs_app_mpegts_udp.hpp>
+#include <srs_app_recv_thread.hpp>
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_packet.hpp>
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_http_conn.hpp>
 #include <srs_protocol_http_stack.hpp>
+#include <srs_protocol_rtmp_stack.hpp>
+#include <srs_utest_coworkers.hpp>
 #include <srs_utest_http.hpp>
 #include <srs_utest_kernel3.hpp>
 
@@ -2854,4 +2857,310 @@ VOID TEST(HttpxConnTest, OnConnDoneWithNonTimeoutError)
     // Clean up
     srs_freep(err);
     srs_freep(mock_manager);
+}
+
+// Mock ISrsRtmpServer implementation for SrsQueueRecvThread
+MockRtmpServerForQueueRecvThread::MockRtmpServerForQueueRecvThread()
+{
+    set_auto_response_called_ = false;
+    auto_response_value_ = true;
+}
+
+MockRtmpServerForQueueRecvThread::~MockRtmpServerForQueueRecvThread()
+{
+}
+
+void MockRtmpServerForQueueRecvThread::set_recv_timeout(srs_utime_t tm)
+{
+}
+
+void MockRtmpServerForQueueRecvThread::set_send_timeout(srs_utime_t tm)
+{
+}
+
+srs_error_t MockRtmpServerForQueueRecvThread::handshake()
+{
+    return srs_success;
+}
+
+srs_error_t MockRtmpServerForQueueRecvThread::connect_app(ISrsRequest *req)
+{
+    return srs_success;
+}
+
+uint32_t MockRtmpServerForQueueRecvThread::proxy_real_ip()
+{
+    return 0;
+}
+
+srs_error_t MockRtmpServerForQueueRecvThread::set_window_ack_size(int ack_size)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtmpServerForQueueRecvThread::set_peer_bandwidth(int bandwidth, int type)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtmpServerForQueueRecvThread::set_chunk_size(int chunk_size)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtmpServerForQueueRecvThread::response_connect_app(ISrsRequest *req, const char *server_ip)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtmpServerForQueueRecvThread::on_bw_done()
+{
+    return srs_success;
+}
+
+srs_error_t MockRtmpServerForQueueRecvThread::identify_client(int stream_id, SrsRtmpConnType &type, std::string &stream_name, srs_utime_t &duration)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtmpServerForQueueRecvThread::start_play(int stream_id)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtmpServerForQueueRecvThread::start_fmle_publish(int stream_id)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtmpServerForQueueRecvThread::start_haivision_publish(int stream_id)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtmpServerForQueueRecvThread::fmle_unpublish(int stream_id, double unpublish_tid)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtmpServerForQueueRecvThread::start_flash_publish(int stream_id)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtmpServerForQueueRecvThread::start_publishing(int stream_id)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtmpServerForQueueRecvThread::redirect(ISrsRequest *r, std::string url, bool &accepted)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtmpServerForQueueRecvThread::send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs, int stream_id)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtmpServerForQueueRecvThread::decode_message(SrsRtmpCommonMessage *msg, SrsRtmpCommand **ppacket)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtmpServerForQueueRecvThread::send_and_free_packet(SrsRtmpCommand *packet, int stream_id)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtmpServerForQueueRecvThread::on_play_client_pause(int stream_id, bool is_pause)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtmpServerForQueueRecvThread::set_in_window_ack_size(int ack_size)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtmpServerForQueueRecvThread::recv_message(SrsRtmpCommonMessage **pmsg)
+{
+    return srs_success;
+}
+
+void MockRtmpServerForQueueRecvThread::set_auto_response(bool v)
+{
+    set_auto_response_called_ = true;
+    auto_response_value_ = v;
+}
+
+void MockRtmpServerForQueueRecvThread::set_merge_read(bool v, IMergeReadHandler *handler)
+{
+}
+
+void MockRtmpServerForQueueRecvThread::set_recv_buffer(int buffer_size)
+{
+}
+
+void MockRtmpServerForQueueRecvThread::reset()
+{
+    set_auto_response_called_ = false;
+    auto_response_value_ = true;
+}
+
+// Test SrsQueueRecvThread basic queue operations
+// This test covers the major use scenario: consume messages, check queue state, pump messages, and handle errors
+VOID TEST(QueueRecvThreadTest, BasicQueueOperations)
+{
+    srs_error_t err;
+
+    // Create mock RTMP server
+    SrsUniquePtr<MockRtmpServerForQueueRecvThread> mock_rtmp(new MockRtmpServerForQueueRecvThread());
+
+    // Create SrsQueueRecvThread (without starting the actual recv thread)
+    SrsUniquePtr<SrsQueueRecvThread> queue_thread(new SrsQueueRecvThread(NULL, mock_rtmp.get(), 5 * SRS_UTIME_SECONDS, SrsContextId()));
+
+    // Test 1: Initially queue should be empty
+    EXPECT_TRUE(queue_thread->empty());
+    EXPECT_EQ(0, queue_thread->size());
+    EXPECT_FALSE(queue_thread->interrupted());
+
+    // Test 2: Consume first message
+    SrsRtmpCommonMessage *msg1 = new SrsRtmpCommonMessage();
+    msg1->header_.message_type_ = RTMP_MSG_VideoMessage;
+    msg1->header_.payload_length_ = 10;
+    msg1->create_payload(10);
+    HELPER_EXPECT_SUCCESS(queue_thread->consume(msg1));
+
+    // Queue should have one message
+    EXPECT_FALSE(queue_thread->empty());
+    EXPECT_EQ(1, queue_thread->size());
+    EXPECT_TRUE(queue_thread->interrupted());  // interrupted() returns true when queue is not empty
+
+    // Test 3: Consume second message
+    SrsRtmpCommonMessage *msg2 = new SrsRtmpCommonMessage();
+    msg2->header_.message_type_ = RTMP_MSG_AudioMessage;
+    msg2->header_.payload_length_ = 20;
+    msg2->create_payload(20);
+    HELPER_EXPECT_SUCCESS(queue_thread->consume(msg2));
+
+    // Queue should have two messages
+    EXPECT_FALSE(queue_thread->empty());
+    EXPECT_EQ(2, queue_thread->size());
+
+    // Test 4: Pump first message (FIFO order)
+    SrsRtmpCommonMessage *pumped_msg1 = queue_thread->pump();
+    EXPECT_TRUE(pumped_msg1 != NULL);
+    EXPECT_EQ(RTMP_MSG_VideoMessage, pumped_msg1->header_.message_type_);
+    EXPECT_EQ(10, pumped_msg1->header_.payload_length_);
+    srs_freep(pumped_msg1);
+
+    // Queue should have one message left
+    EXPECT_FALSE(queue_thread->empty());
+    EXPECT_EQ(1, queue_thread->size());
+
+    // Test 5: Pump second message
+    SrsRtmpCommonMessage *pumped_msg2 = queue_thread->pump();
+    EXPECT_TRUE(pumped_msg2 != NULL);
+    EXPECT_EQ(RTMP_MSG_AudioMessage, pumped_msg2->header_.message_type_);
+    EXPECT_EQ(20, pumped_msg2->header_.payload_length_);
+    srs_freep(pumped_msg2);
+
+    // Queue should be empty again
+    EXPECT_TRUE(queue_thread->empty());
+    EXPECT_EQ(0, queue_thread->size());
+    EXPECT_FALSE(queue_thread->interrupted());
+
+    // Test 6: Test error_code() - initially should be success
+    err = queue_thread->error_code();
+    HELPER_EXPECT_SUCCESS(err);
+
+    // Test 7: Test interrupt() with error
+    srs_error_t test_error = srs_error_new(ERROR_SOCKET_READ, "test error");
+    queue_thread->interrupt(test_error);
+
+    // Error code should now return the error
+    err = queue_thread->error_code();
+    EXPECT_TRUE(err != srs_success);
+    EXPECT_EQ(ERROR_SOCKET_READ, srs_error_code(err));
+    srs_freep(err);
+
+    // Test 8: Test on_start() and on_stop() - verify set_auto_response is called
+    queue_thread->on_start();
+    EXPECT_TRUE(mock_rtmp->set_auto_response_called_);
+    EXPECT_FALSE(mock_rtmp->auto_response_value_);  // Should be set to false
+
+    mock_rtmp->reset();
+    queue_thread->on_stop();
+    EXPECT_TRUE(mock_rtmp->set_auto_response_called_);
+    EXPECT_TRUE(mock_rtmp->auto_response_value_);  // Should be set to true
+}
+
+// Test SrsPublishRecvThread basic operations
+// This test covers the major use scenario: wait(), nb_msgs(), nb_video_frames(), error_code(), set_cid(), get_cid()
+VOID TEST(PublishRecvThreadTest, BasicOperations)
+{
+    srs_error_t err;
+
+    // Create mock dependencies
+    SrsUniquePtr<MockRtmpServerForQueueRecvThread> mock_rtmp(new MockRtmpServerForQueueRecvThread());
+    SrsUniquePtr<MockSrsRequest> mock_req(new MockSrsRequest("__defaultVhost__", "live", "test_stream"));
+    SrsSharedPtr<SrsLiveSource> mock_source;  // NULL is fine for this test
+
+    // Create SrsPublishRecvThread (without starting the actual recv thread)
+    SrsUniquePtr<SrsPublishRecvThread> publish_thread(new SrsPublishRecvThread(
+        mock_rtmp.get(), mock_req.get(), -1, 5 * SRS_UTIME_SECONDS, NULL, mock_source, SrsContextId()));
+
+    // Test 1: Initially nb_msgs should be 0
+    EXPECT_EQ(0, publish_thread->nb_msgs());
+
+    // Test 2: Initially nb_video_frames should be 0
+    EXPECT_EQ(0, publish_thread->nb_video_frames());
+
+    // Test 3: Test error_code() - initially should be success
+    err = publish_thread->error_code();
+    HELPER_EXPECT_SUCCESS(err);
+
+    // Test 4: Test set_cid() and get_cid()
+    SrsContextId test_cid;
+    test_cid.set_value("test-context-id");
+    publish_thread->set_cid(test_cid);
+    SrsContextId retrieved_cid = publish_thread->get_cid();
+    EXPECT_STREQ(test_cid.c_str(), retrieved_cid.c_str());
+
+    // Test 5: Test wait() with timeout - should return success when no error
+    err = publish_thread->wait(100 * SRS_UTIME_MILLISECONDS);
+    HELPER_EXPECT_SUCCESS(err);
+
+    // Test 6: Test consume() to increment message counters
+    SrsRtmpCommonMessage *video_msg = new SrsRtmpCommonMessage();
+    video_msg->header_.message_type_ = RTMP_MSG_VideoMessage;
+    video_msg->header_.payload_length_ = 100;
+    video_msg->create_payload(100);
+
+    // Note: consume() will try to call _conn->handle_publish_message() which will fail with NULL _conn
+    // So we expect this to fail, but we can still test the counter increment by checking nb_msgs
+    // For this basic test, we'll just verify the initial state and error handling
+
+    // Test 7: Test interrupt() with error
+    srs_error_t test_error = srs_error_new(ERROR_SOCKET_READ, "test error");
+    publish_thread->interrupt(test_error);
+
+    // Error code should now return the error
+    err = publish_thread->error_code();
+    EXPECT_TRUE(err != srs_success);
+    EXPECT_EQ(ERROR_SOCKET_READ, srs_error_code(err));
+    srs_freep(err);
+
+    // Test 8: Test wait() after error - should return the error immediately
+    err = publish_thread->wait(100 * SRS_UTIME_MILLISECONDS);
+    EXPECT_TRUE(err != srs_success);
+    EXPECT_EQ(ERROR_SOCKET_READ, srs_error_code(err));
+    srs_freep(err);
+
+    // Test 9: Test interrupted() - should always return false for publish recv thread
+    EXPECT_FALSE(publish_thread->interrupted());
+
+    // Clean up
+    srs_freep(video_msg);
 }

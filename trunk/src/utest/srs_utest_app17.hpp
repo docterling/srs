@@ -647,4 +647,46 @@ public:
     virtual void expire();
 };
 
+// Mock ISrsRtmpServer for testing SrsQueueRecvThread
+class MockRtmpServerForQueueRecvThread : public ISrsRtmpServer
+{
+public:
+    bool set_auto_response_called_;
+    bool auto_response_value_;
+
+public:
+    MockRtmpServerForQueueRecvThread();
+    virtual ~MockRtmpServerForQueueRecvThread();
+
+public:
+    virtual void set_recv_timeout(srs_utime_t tm);
+    virtual void set_send_timeout(srs_utime_t tm);
+    virtual srs_error_t handshake();
+    virtual srs_error_t connect_app(ISrsRequest *req);
+    virtual uint32_t proxy_real_ip();
+    virtual srs_error_t set_window_ack_size(int ack_size);
+    virtual srs_error_t set_peer_bandwidth(int bandwidth, int type);
+    virtual srs_error_t set_chunk_size(int chunk_size);
+    virtual srs_error_t response_connect_app(ISrsRequest *req, const char *server_ip);
+    virtual srs_error_t on_bw_done();
+    virtual srs_error_t identify_client(int stream_id, SrsRtmpConnType &type, std::string &stream_name, srs_utime_t &duration);
+    virtual srs_error_t start_play(int stream_id);
+    virtual srs_error_t start_fmle_publish(int stream_id);
+    virtual srs_error_t start_haivision_publish(int stream_id);
+    virtual srs_error_t fmle_unpublish(int stream_id, double unpublish_tid);
+    virtual srs_error_t start_flash_publish(int stream_id);
+    virtual srs_error_t start_publishing(int stream_id);
+    virtual srs_error_t redirect(ISrsRequest *r, std::string url, bool &accepted);
+    virtual srs_error_t send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs, int stream_id);
+    virtual srs_error_t decode_message(SrsRtmpCommonMessage *msg, SrsRtmpCommand **ppacket);
+    virtual srs_error_t send_and_free_packet(SrsRtmpCommand *packet, int stream_id);
+    virtual srs_error_t on_play_client_pause(int stream_id, bool is_pause);
+    virtual srs_error_t set_in_window_ack_size(int ack_size);
+    virtual srs_error_t recv_message(SrsRtmpCommonMessage **pmsg);
+    virtual void set_auto_response(bool v);
+    virtual void set_merge_read(bool v, IMergeReadHandler *handler);
+    virtual void set_recv_buffer(int buffer_size);
+    void reset();
+};
+
 #endif
