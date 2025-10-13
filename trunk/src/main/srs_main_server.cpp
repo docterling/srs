@@ -96,10 +96,10 @@ srs_error_t do_main(int argc, char **argv, char **envp)
     }
 #endif
 
-    // Initialize global and thread-local variables.
-    if ((err = srs_global_initialize()) != srs_success) {
-        return srs_error_wrap(err, "global init");
-    }
+    // Root global objects, should be created before any other global objects.
+    _srs_log = new SrsFileLog();
+    _srs_context = new SrsThreadContext();
+    _srs_config = new SrsConfig();
 
     // For background context id.
     _srs_context->set_id(_srs_context->generate_id());
@@ -450,6 +450,14 @@ srs_error_t run_directly_or_daemon()
 srs_error_t run_srs_server()
 {
     srs_error_t err = srs_success;
+
+    // Initialize global and thread-local variables.
+    if ((err = srs_global_initialize()) != srs_success) {
+        return srs_error_wrap(err, "global init");
+    }
+
+    // For primordial thread, share the default cid.
+    _srs_context->set_id(_srs_context->get_id());
 
     _srs_server = new SrsServer();
 

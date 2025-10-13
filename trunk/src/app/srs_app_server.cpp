@@ -78,14 +78,10 @@ extern std::string _srs_reload_id;
 extern SrsRtcBlackhole *_srs_blackhole;
 extern SrsDtlsCertificate *_srs_rtc_dtls_certificate;
 
+bool _srs_global_initialized = false;
 srs_error_t srs_global_initialize()
 {
-    srs_error_t err = srs_success;
-
-    // Root global objects.
-    _srs_log = new SrsFileLog();
-    _srs_context = new SrsThreadContext();
-    _srs_config = new SrsConfig();
+    srs_error_t err = srs_success; 
 
     // Initialize the global kbps statistics variables
     if ((err = srs_global_kbps_initialize()) != srs_success) {
@@ -139,6 +135,9 @@ srs_error_t srs_global_initialize()
     _srs_reload_state = SrsReloadStateInit;
     SrsRand rand;
     _srs_reload_id = rand.gen_str(7);
+
+    // Global initialization done
+    _srs_global_initialized = true;
 
     return err;
 }
