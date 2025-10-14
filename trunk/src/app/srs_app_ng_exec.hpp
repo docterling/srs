@@ -36,7 +36,7 @@ public:
 // @see https://github.com/ossrs/srs/issues/367
 class SrsNgExec : public ISrsCoroutineHandler, public ISrsNgExec
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsCoroutine *trd_;
     SrsPithyPrint *pprint_;
     std::string input_stream_name_;
@@ -53,10 +53,10 @@ public:
 public:
     virtual srs_error_t cycle();
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t do_cycle();
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t parse_exec_publish(ISrsRequest *req);
     virtual void clear_exec_publish();
     virtual void show_exec_log_message();

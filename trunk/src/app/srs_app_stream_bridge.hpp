@@ -85,7 +85,7 @@ public:
 // Then, deliver the RTP packets to RTP target, which binds to a RTC/RTSP source.
 class SrsRtmpBridge : public ISrsRtmpBridge
 {
-private:
+SRS_DECLARE_PRIVATE:
 #ifdef SRS_FFMPEG_FIT
     SrsRtcRtpBuilder *rtp_builder_;
 #endif
@@ -135,7 +135,7 @@ public:
 // Then, deliver the AV frames to frame target, which binds to a RTMP/RTC source.
 class SrsSrtBridge : public ISrsSrtBridge, public ISrsFrameTarget
 {
-private:
+SRS_DECLARE_PRIVATE:
     // Convert SRT TS packets to media frame packets.
     SrsSrtFrameBuilder *frame_builder_;
     // Deliver media frame packets to RTMP target.
@@ -184,7 +184,7 @@ public:
 // Then, deliver the RTMP frame packet to RTMP target, which binds to a live source.
 class SrsRtcBridge : public ISrsRtcBridge
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsRequest *req_;
 #ifdef SRS_FFMPEG_FIT
     // Collect and build WebRTC RTP packets to AV frames.

@@ -51,17 +51,17 @@ public:
 // A transcode engine: ffmepg, used to transcode a stream to another.
 class SrsFFMPEG : public ISrsFFMPEG
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppConfig *config_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsProcess *process_;
     std::vector<std::string> params_;
 
-private:
+SRS_DECLARE_PRIVATE:
     std::string log_file_;
 
-private:
+SRS_DECLARE_PRIVATE:
     std::string ffmpeg_;
     std::vector<std::string> iparams_;
     std::vector<std::string> perfile_;

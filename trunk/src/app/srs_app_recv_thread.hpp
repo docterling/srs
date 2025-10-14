@@ -80,7 +80,7 @@ public:
 // The recv thread, use message handler to handle each received message.
 class SrsRecvThread : public ISrsRecvThread
 {
-protected:
+SRS_DECLARE_PROTECTED:
     ISrsCoroutine *trd_;
     ISrsMessagePumper *pumper_;
     ISrsRtmpServer *rtmp_;
@@ -105,7 +105,7 @@ public:
 public:
     virtual srs_error_t cycle();
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t do_cycle();
 };
 
@@ -125,7 +125,7 @@ public:
 // @see: https://github.com/ossrs/srs/issues/217
 class SrsQueueRecvThread : public ISrsQueueRecvThread
 {
-private:
+SRS_DECLARE_PRIVATE:
     std::vector<SrsRtmpCommonMessage *> queue_;
     ISrsRecvThread *trd_;
     ISrsRtmpServer *rtmp_;
@@ -173,10 +173,10 @@ public:
 // @see: https://github.com/ossrs/srs/issues/237
 class SrsPublishRecvThread : public ISrsPublishRecvThread
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppConfig *config_;
 
-private:
+SRS_DECLARE_PRIVATE:
     uint32_t nn_msgs_for_yield_;
     ISrsRecvThread *trd_;
     ISrsRtmpServer *rtmp_;
@@ -234,7 +234,7 @@ public:
     virtual void on_read(ssize_t nread);
 #endif
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual void set_socket_buffer(srs_utime_t sleep_v);
 };
 
@@ -254,7 +254,7 @@ public:
 // @see https://github.com/ossrs/srs/issues/636#issuecomment-298208427
 class SrsHttpRecvThread : public ISrsHttpRecvThread
 {
-private:
+SRS_DECLARE_PRIVATE:
     SrsHttpxConn *conn_;
     ISrsCoroutine *trd_;
 

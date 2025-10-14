@@ -44,10 +44,10 @@ class ISrsAppFactory;
 // A UDP listener, for udp stream caster server.
 class SrsUdpCasterListener : public ISrsListener
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppConfig *config_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsIpListener *listener_;
     ISrsMpegtsOverUdp *caster_;
 
@@ -78,7 +78,7 @@ public:
 // we must recalc the timestamp.
 class SrsMpegtsQueue : public ISrsMpegtsQueue
 {
-private:
+SRS_DECLARE_PRIVATE:
     // The key: dts, value: msg.
     std::map<int64_t, SrsMediaPacket *> msgs_;
     int nb_audios_;
@@ -107,19 +107,19 @@ public:
 // The mpegts over udp stream caster.
 class SrsMpegtsOverUdp : public ISrsMpegtsOverUdp
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppConfig *config_;
     ISrsAppFactory *app_factory_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsTsContext *context_;
     SrsSimpleStream *buffer_;
     std::string output_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsBasicRtmpClient *sdk_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsRawH264Stream *avc_;
     std::string h264_sps_;
     bool h264_sps_changed_;
@@ -127,11 +127,11 @@ private:
     bool h264_pps_changed_;
     bool h264_sps_pps_sent_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsRawAacStream *aac_;
     std::string aac_specific_config_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsMpegtsQueue *queue_;
     ISrsPithyPrint *pprint_;
 
@@ -145,23 +145,23 @@ public:
 public:
     virtual srs_error_t on_udp_packet(const sockaddr *from, const int fromlen, char *buf, int nb_buf);
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t on_udp_bytes(std::string host, int port, char *buf, int nb_buf);
     // Interface ISrsTsHandler
 public:
     virtual srs_error_t on_ts_message(SrsTsMessage *msg);
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t on_ts_video(SrsTsMessage *msg, SrsBuffer *avs);
     virtual srs_error_t write_h264_sps_pps(uint32_t dts, uint32_t pts);
     virtual srs_error_t write_h264_ipb_frame(char *frame, int frame_size, uint32_t dts, uint32_t pts);
     virtual srs_error_t on_ts_audio(SrsTsMessage *msg, SrsBuffer *avs);
     virtual srs_error_t write_audio_raw_frame(char *frame, int frame_size, SrsRawAacStreamCodec *codec, uint32_t dts);
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t rtmp_write_packet(char type, uint32_t timestamp, char *data, int size);
 
-private:
+SRS_DECLARE_PRIVATE:
     // Connect to RTMP server.
     virtual srs_error_t connect();
     // Close the connection to RTMP server.

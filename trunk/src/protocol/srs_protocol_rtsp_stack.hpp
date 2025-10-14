@@ -264,7 +264,7 @@ public:
     // Encode message to string.
     virtual srs_error_t encode(std::stringstream &ss);
 
-protected:
+SRS_DECLARE_PROTECTED:
     // Sub classes override this to encode the headers.
     virtual srs_error_t encode_header(std::stringstream &ss);
 };
@@ -283,7 +283,7 @@ public:
     SrsRtspOptionsResponse(int cseq);
     virtual ~SrsRtspOptionsResponse();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual srs_error_t encode_header(std::stringstream &ss);
 };
 
@@ -298,7 +298,7 @@ public:
     SrsRtspDescribeResponse(int cseq);
     virtual ~SrsRtspDescribeResponse();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual srs_error_t encode_header(std::stringstream &ss);
 };
 
@@ -330,7 +330,7 @@ public:
     SrsRtspSetupResponse(int cseq);
     virtual ~SrsRtspSetupResponse();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual srs_error_t encode_header(std::stringstream &ss);
 };
 
@@ -341,7 +341,7 @@ public:
     SrsRtspPlayResponse(int cseq);
     virtual ~SrsRtspPlayResponse();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual srs_error_t encode_header(std::stringstream &ss);
 };
 

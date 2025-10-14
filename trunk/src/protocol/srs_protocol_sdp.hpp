@@ -154,7 +154,7 @@ public:
     bool is_audio() const { return type_ == "audio"; }
     bool is_video() const { return type_ == "video"; }
 
-private:
+SRS_DECLARE_PRIVATE:
     srs_error_t parse_attribute(const std::string &content);
     srs_error_t parse_attr_rtpmap(const std::string &value);
     srs_error_t parse_attr_rtcp(const std::string &value);
@@ -166,7 +166,7 @@ private:
     srs_error_t parse_attr_ssrc_group(const std::string &value);
     srs_error_t parse_attr_extmap(const std::string &value);
 
-private:
+SRS_DECLARE_PRIVATE:
     SrsSSRCInfo &fetch_or_create_ssrc_info(uint32_t ssrc);
 
 public:
@@ -224,10 +224,10 @@ public:
     std::string get_ice_pwd() const;
     std::string get_dtls_role() const;
 
-private:
+SRS_DECLARE_PRIVATE:
     srs_error_t parse_line(const std::string &line);
 
-private:
+SRS_DECLARE_PRIVATE:
     srs_error_t parse_origin(const std::string &content);
     srs_error_t parse_version(const std::string &content);
     srs_error_t parse_session_name(const std::string &content);
@@ -237,7 +237,7 @@ private:
     srs_error_t parse_media_description(const std::string &content);
     srs_error_t parse_attr_group(const std::string &content);
 
-private:
+SRS_DECLARE_PRIVATE:
     bool in_media_session_;
 
 public:

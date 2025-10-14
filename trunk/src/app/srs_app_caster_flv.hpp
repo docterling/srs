@@ -49,10 +49,10 @@ public:
 // A TCP listener, for flv stream server.
 class SrsHttpFlvListener : public ISrsHttpFlvListener
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppConfig *config_;
 
-private:
+SRS_DECLARE_PRIVATE:
     SrsTcpListener *listener_;
     ISrsAppCasterFlv *caster_;
 
@@ -83,10 +83,10 @@ public:
 // The stream caster for flv stream over HTTP POST.
 class SrsAppCasterFlv : public ISrsAppCasterFlv
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppConfig *config_;
 
-private:
+SRS_DECLARE_PRIVATE:
     std::string output_;
     SrsHttpServeMux *http_mux_;
     std::vector<ISrsConnection *> conns_;
@@ -135,11 +135,11 @@ public:
 // The dynamic http connection, never drop the body.
 class SrsDynamicHttpConn : public ISrsDynamicHttpConn
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppConfig *config_;
     ISrsAppFactory *app_factory_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // The manager object to manage the connection.
     ISrsResourceManager *manager_;
     std::string output_;
@@ -148,7 +148,7 @@ private:
     ISrsProtocolReadWriter *skt_;
     ISrsHttpConn *conn_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // The ip and port of client.
     std::string ip_;
     int port_;
@@ -160,7 +160,7 @@ public:
 public:
     virtual srs_error_t proxy(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, std::string o);
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t do_proxy(ISrsHttpResponseReader *rr, SrsFlvDecoder *dec);
     // Extract APIs from SrsTcpConnection.
     // Interface ISrsHttpConnOwner.
@@ -194,7 +194,7 @@ public:
 // The http wrapper for file reader, to read http post stream like a file.
 class SrsHttpFileReader : public ISrsHttpFileReader
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsHttpResponseReader *http_;
     SrsFileReader *file_reader_;
 

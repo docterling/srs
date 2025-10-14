@@ -45,7 +45,7 @@ public:
 
 class MockFileRemover
 {
-private:
+SRS_DECLARE_PRIVATE:
     std::string path_;
 
 public:
@@ -124,7 +124,7 @@ public:
 
 class MockBufferReader : public ISrsReader
 {
-private:
+SRS_DECLARE_PRIVATE:
     std::string str;
 
 public:

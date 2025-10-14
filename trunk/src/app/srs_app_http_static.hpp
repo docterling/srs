@@ -35,7 +35,7 @@ public:
 // Server HLS streaming.
 class SrsHlsStream : public ISrsFastTimerHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     // The period of validity of the ctx
     std::map<std::string, SrsHlsVirtualConn *> map_ctx_info_;
 
@@ -47,7 +47,7 @@ public:
     virtual srs_error_t serve_m3u8_ctx(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, ISrsFileReaderFactory *factory, std::string fullpath, ISrsRequest *req, bool *served);
     virtual void on_serve_ts_ctx(ISrsHttpResponseWriter *w, ISrsHttpMessage *r);
 
-private:
+SRS_DECLARE_PRIVATE:
     srs_error_t serve_new_session(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, ISrsRequest *req, std::string &ctx);
     srs_error_t serve_exists_session(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, ISrsFileReaderFactory *factory, std::string fullpath);
     bool ctx_is_exist(std::string ctx);
@@ -56,24 +56,24 @@ private:
     void http_hooks_on_stop(ISrsRequest *req);
     bool is_interrupt(std::string id);
     // interface ISrsFastTimerHandler
-private:
+SRS_DECLARE_PRIVATE:
     srs_error_t on_timer(srs_utime_t interval);
 
-private:
+SRS_DECLARE_PRIVATE:
     SrsSecurity *security_;
 };
 
 // The Vod streaming, like FLV, MP4 or HLS streaming.
 class SrsVodStream : public SrsHttpFileServer
 {
-private:
+SRS_DECLARE_PRIVATE:
     SrsHlsStream hls_;
 
 public:
     SrsVodStream(std::string root_dir);
     virtual ~SrsVodStream();
 
-protected:
+SRS_DECLARE_PROTECTED:
     // The flv vod stream supports flv?start=offset-bytes.
     // For example, http://server/file.flv?start=10240
     // server will write flv header and sequence header,
@@ -103,7 +103,7 @@ public:
 // serve http static file and flv/mp4 vod stream.
 class SrsHttpStaticServer : public ISrsHttpStaticServer
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsHttpServeMux *mux_;
 
 public:
@@ -118,7 +118,7 @@ public:
 public:
     virtual srs_error_t serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r);
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t mount_vhost(std::string vhost, std::string &pmount);
 };
 

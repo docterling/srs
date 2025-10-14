@@ -45,7 +45,7 @@ class SrsRtcBlackhole
 public:
     bool blackhole_;
 
-private:
+SRS_DECLARE_PRIVATE:
     sockaddr_in *blackhole_addr_;
     srs_netfd_t blackhole_stfd_;
 
@@ -100,7 +100,7 @@ extern std::string srs_dns_resolve(std::string host, int &family);
 // RTC session manager to handle WebRTC session lifecycle and management.
 class SrsRtcSessionManager : public ISrsExecRtcAsyncTask
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsResourceManager *conn_manager_;
     ISrsStreamPublishTokenManager *stream_publish_tokens_;
     ISrsRtcSourceManager *rtc_sources_;
@@ -108,7 +108,7 @@ private:
     ISrsAppConfig *config_;
     ISrsAppFactory *app_factory_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // WebRTC async call worker for non-blocking operations.
     SrsAsyncCallWorker *rtc_async_;
 
@@ -123,7 +123,7 @@ public:
     virtual ISrsRtcConnection *find_rtc_session_by_username(const std::string &ufrag);
     virtual srs_error_t create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, ISrsRtcConnection **psession);
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t do_create_rtc_session(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, ISrsRtcConnection *session);
 
 public:

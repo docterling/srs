@@ -123,12 +123,12 @@ public:
 // The resource manager remove resource and delete it asynchronously.
 class SrsResourceManager : public ISrsCoroutineHandler, public ISrsResourceManager
 {
-private:
+SRS_DECLARE_PRIVATE:
     std::string label_;
     SrsContextId cid_;
     bool verbose_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsCoroutine *trd_;
     ISrsCond *cond_;
     // Callback handlers.
@@ -141,7 +141,7 @@ private:
     std::vector<ISrsResource *> zombies_;
     std::vector<ISrsResource *> *p_disposing_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // The connections without any id.
     std::vector<ISrsResource *> conns_;
     // The connections with resource id.
@@ -183,7 +183,7 @@ public:
 public:
     virtual void remove(ISrsResource *c);
 
-private:
+SRS_DECLARE_PRIVATE:
     void do_remove(ISrsResource *c);
     void check_remove(ISrsResource *c, bool &in_zombie, bool &in_disposing);
     void clear();
@@ -210,7 +210,7 @@ private:
 template <typename T>
 class SrsSharedResource : public ISrsResource
 {
-private:
+SRS_DECLARE_PRIVATE:
     SrsSharedPtr<T> ptr_;
 
 public:
@@ -244,7 +244,7 @@ public:
         return *this;
     }
 
-private:
+SRS_DECLARE_PRIVATE:
     // Overload the * operator.
     T &operator*()
     {

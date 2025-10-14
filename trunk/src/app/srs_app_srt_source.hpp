@@ -48,7 +48,7 @@ public:
     char *data();
     int size();
 
-private:
+SRS_DECLARE_PRIVATE:
     SrsMediaPacket *shared_buffer_;
     // The size of SRT packet or SRT payload.
     int actual_buffer_size_;
@@ -70,7 +70,7 @@ public:
 // The SRT source manager.
 class SrsSrtSourceManager : public ISrsHourGlassHandler, public ISrsSrtSourceManager
 {
-private:
+SRS_DECLARE_PRIVATE:
     srs_mutex_t lock_;
     std::map<std::string, SrsSharedPtr<SrsSrtSource> > pool_;
     SrsHourGlass *timer_;
@@ -82,7 +82,7 @@ public:
 public:
     virtual srs_error_t initialize();
     // interface ISrsHourGlassHandler
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t setup_ticks();
     virtual srs_error_t notify(int event, srs_utime_t interval, srs_utime_t tick);
 
@@ -116,7 +116,7 @@ public:
 // The SRT consumer, consume packets from SRT stream source.
 class SrsSrtConsumer : public ISrsSrtConsumer
 {
-private:
+SRS_DECLARE_PRIVATE:
     // Because source references to this object, so we should directly use the source ptr.
     ISrsSrtSource *source_;
 
@@ -124,7 +124,7 @@ public:
     SrsSrtConsumer(ISrsSrtSource *source);
     virtual ~SrsSrtConsumer();
 
-private:
+SRS_DECLARE_PRIVATE:
     std::vector<SrsSrtPacket *> queue_;
     // when source id changed, notice all consumers
     bool should_update_source_id_;
@@ -162,7 +162,7 @@ public:
 public:
     virtual srs_error_t on_ts_message(SrsTsMessage *msg);
 
-private:
+SRS_DECLARE_PRIVATE:
     srs_error_t on_ts_video_avc(SrsTsMessage *msg, SrsBuffer *avs);
     srs_error_t on_ts_audio(SrsTsMessage *msg, SrsBuffer *avs);
     srs_error_t check_sps_pps_change(SrsTsMessage *msg);
@@ -173,10 +173,10 @@ private:
     srs_error_t check_vps_sps_pps_change(SrsTsMessage *msg);
     srs_error_t on_hevc_frame(SrsTsMessage *msg, std::vector<std::pair<char *, int> > &ipb_frames);
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsFrameTarget *frame_target_;
 
-private:
+SRS_DECLARE_PRIVATE:
     SrsTsContext *ts_ctx_;
     // Record sps/pps had changed, if change, need to generate new video sh frame.
     bool sps_pps_change_;
@@ -190,10 +190,10 @@ private:
     bool audio_sh_change_;
     std::string audio_sh_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsRequest *req_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // SRT to rtmp, video stream id.
     int video_streamid_;
     // SRT to rtmp, audio stream id.
@@ -218,7 +218,7 @@ public:
 // A SRT source is a stream, to publish and to play with.
 class SrsSrtSource : public ISrsSrtSource
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsStatistic *stat_;
 
 public:
@@ -261,7 +261,7 @@ public:
 public:
     srs_error_t on_packet(SrsSrtPacket *packet);
 
-private:
+SRS_DECLARE_PRIVATE:
     // Source id.
     SrsContextId _source_id;
     // previous source id.
@@ -273,7 +273,7 @@ private:
     // The last die time, while die means neither publishers nor players.
     srs_utime_t stream_die_at_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsSrtBridge *srt_bridge_;
 };
 

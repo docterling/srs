@@ -56,14 +56,14 @@ class ISrsSecurity;
 // The simple rtmp client for SRS.
 class SrsSimpleRtmpClient : public SrsBasicRtmpClient
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppConfig *config_;
 
 public:
     SrsSimpleRtmpClient(std::string u, srs_utime_t ctm, srs_utime_t stm);
     virtual ~SrsSimpleRtmpClient();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual srs_error_t connect_app();
 };
 
@@ -106,7 +106,7 @@ public:
 // The base transport layer for RTMP connections over plain TCP.
 class SrsRtmpTransport : public ISrsRtmpTransport
 {
-protected:
+SRS_DECLARE_PROTECTED:
     srs_netfd_t stfd_;
     SrsTcpConnection *skt_;
 
@@ -135,10 +135,10 @@ public:
 // The SSL/TLS transport layer for RTMPS connections.
 class SrsRtmpsTransport : public SrsRtmpTransport
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppConfig *config_;
 
-private:
+SRS_DECLARE_PRIVATE:
     SrsSslConnection *ssl_;
 
 public:
@@ -164,7 +164,7 @@ class SrsRtmpConn : public ISrsConnection, // It's a resource.
     // For the thread to directly access any field of connection.
     friend class SrsPublishRecvThread;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsResourceManager *manager_;
     ISrsAppConfig *config_;
     ISrsStreamPublishTokenManager *stream_publish_tokens_;
@@ -177,7 +177,7 @@ private:
     ISrsRtspSourceManager *rtsp_sources_;
 #endif
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsRtmpServer *rtmp_;
     SrsRefer *refer_;
     SrsBandwidth *bandwidth_;
@@ -205,7 +205,7 @@ private:
     // About the rtmp client.
     SrsClientInfo *info_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsRtmpTransport *transport_;
     // Each connection start a green thread,
     // when thread stop, the connection will be delete by server.
@@ -228,13 +228,13 @@ public:
 public:
     virtual std::string desc();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual srs_error_t do_cycle();
 
 public:
     virtual ISrsKbpsDelta *delta();
 
-private:
+SRS_DECLARE_PRIVATE:
     // When valid and connected to vhost/app, service the client.
     virtual srs_error_t service_cycle();
     // The stream(play/publish) service cycle, identify client first.
@@ -251,16 +251,16 @@ private:
     virtual srs_error_t process_play_control_msg(SrsLiveConsumer *consumer, SrsRtmpCommonMessage *msg);
     virtual void set_sock_options();
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t check_edge_token_traverse_auth();
     virtual srs_error_t do_token_traverse_auth(SrsRtmpClient *client);
 
-private:
+SRS_DECLARE_PRIVATE:
     // When the connection disconnect, call this method.
     // e.g. log msg of connection and report to other system.
     virtual srs_error_t on_disconnect();
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t http_hooks_on_connect();
     virtual void http_hooks_on_close();
     virtual srs_error_t http_hooks_on_publish();

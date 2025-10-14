@@ -34,7 +34,7 @@ public:
 // The DTLS certificate.
 class SrsDtlsCertificate : public ISrsDtlsCertificate
 {
-private:
+SRS_DECLARE_PRIVATE:
     std::string fingerprint_;
     bool ecdsa_mode_;
     X509 *dtls_cert_;
@@ -104,7 +104,7 @@ enum SrsDtlsState {
 
 class SrsDtlsImpl
 {
-protected:
+SRS_DECLARE_PROTECTED:
     SSL_CTX *dtls_ctx_;
     SSL *dtls_;
     BIO *bio_in_;
@@ -113,7 +113,7 @@ protected:
     // @remark: dtls_version_ default value is SrsDtlsVersionAuto.
     SrsDtlsVersion version_;
 
-protected:
+SRS_DECLARE_PROTECTED:
     // Whether the handshake is done, for us only.
     // @remark For us only, means peer maybe not done, we also need to handle the DTLS packet.
     bool handshake_done_for_us_;
@@ -135,7 +135,7 @@ public:
     virtual srs_error_t start_active_handshake();
     virtual srs_error_t on_dtls(char *data, int nb_data);
 
-protected:
+SRS_DECLARE_PROTECTED:
     srs_error_t do_on_dtls(char *data, int nb_data);
     void state_trace(uint8_t *data, int length, bool incoming, int r0);
 
@@ -143,7 +143,7 @@ public:
     srs_error_t get_srtp_key(std::string &recv_key, std::string &send_key);
     void callback_by_ssl(std::string type, std::string desc);
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual srs_error_t on_handshake_done() = 0;
     virtual bool is_dtls_client() = 0;
     virtual srs_error_t start_arq() = 0;
@@ -151,7 +151,7 @@ protected:
 
 class SrsDtlsClientImpl : public SrsDtlsImpl, public ISrsCoroutineHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     // ARQ thread, for role active(DTLS client).
     // @note If passive(DTLS server), the ARQ is driven by DTLS client.
     ISrsCoroutine *trd_;
@@ -167,11 +167,11 @@ public:
 public:
     virtual srs_error_t initialize(std::string version, std::string role);
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual srs_error_t on_handshake_done();
     virtual bool is_dtls_client();
 
-protected:
+SRS_DECLARE_PROTECTED:
     srs_error_t start_arq();
     void stop_arq();
 
@@ -188,7 +188,7 @@ public:
 public:
     virtual srs_error_t initialize(std::string version, std::string role);
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual srs_error_t on_handshake_done();
     virtual bool is_dtls_client();
     srs_error_t start_arq();
@@ -208,7 +208,7 @@ public:
     srs_error_t get_srtp_key(std::string &recv_key, std::string &send_key);
     void callback_by_ssl(std::string type, std::string desc);
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual srs_error_t on_handshake_done();
     virtual bool is_dtls_client();
     virtual srs_error_t start_arq();
@@ -231,7 +231,7 @@ public:
 // The DTLS transport.
 class SrsDtls : public ISrsDtls
 {
-private:
+SRS_DECLARE_PRIVATE:
     SrsDtlsImpl *impl_;
     ISrsDtlsCallback *callback_;
 
@@ -271,7 +271,7 @@ public:
 // The SRTP transport.
 class SrsSRTP : public ISrsSRTP
 {
-private:
+SRS_DECLARE_PRIVATE:
     srtp_t recv_ctx_;
     srtp_t send_ctx_;
 

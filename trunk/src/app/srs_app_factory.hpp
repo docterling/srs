@@ -86,7 +86,7 @@ public:
 // The factory to create app objects.
 class SrsAppFactory : public ISrsAppFactory
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsKernelFactory *kernel_factory_;
 
 public:

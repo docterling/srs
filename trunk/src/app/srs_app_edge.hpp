@@ -87,17 +87,17 @@ public:
 // The RTMP upstream of edge.
 class SrsEdgeRtmpUpstream : public ISrsEdgeUpstream
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppConfig *config_;
     ISrsAppFactory *app_factory_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // For RTMP 302, if not empty,
     // use this <ip[:port]> as upstream.
     std::string redirect_;
     ISrsBasicRtmpClient *sdk_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // Current selected server, the ip:port.
     std::string selected_ip_;
     int selected_port_;
@@ -122,20 +122,20 @@ public:
 // The HTTP FLV upstream of edge.
 class SrsEdgeFlvUpstream : public ISrsEdgeUpstream
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppConfig *config_;
     ISrsAppFactory *app_factory_;
 
-private:
+SRS_DECLARE_PRIVATE:
     std::string schema_;
     ISrsHttpClient *sdk_;
     ISrsHttpMessage *hr_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsFileReader *reader_;
     ISrsFlvDecoder *decoder_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // We might modify the request by HTTP redirect.
     ISrsRequest *req_;
     // Current selected server, the ip:port.
@@ -149,7 +149,7 @@ public:
 public:
     virtual srs_error_t connect(ISrsRequest *r, ISrsLbRoundRobin *lb);
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t do_connect(ISrsRequest *r, ISrsLbRoundRobin *lb, int redirect_depth);
 
 public:
@@ -182,14 +182,14 @@ public:
 // The edge used to ingest stream from origin.
 class SrsEdgeIngester : public ISrsCoroutineHandler, public ISrsEdgeIngester
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppConfig *config_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // Because source references to this object, so we should directly use the source ptr.
     ISrsLiveSource *source_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsPlayEdge *edge_;
     ISrsRequest *req_;
     ISrsCoroutine *trd_;
@@ -209,10 +209,10 @@ public:
 public:
     virtual srs_error_t cycle();
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t do_cycle();
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t ingest(std::string &redirect);
     virtual srs_error_t process_publish_message(SrsRtmpCommonMessage *msg, std::string &redirect);
 };
@@ -240,14 +240,14 @@ public:
 // The edge used to forward stream to origin.
 class SrsEdgeForwarder : public ISrsCoroutineHandler, public ISrsEdgeForwarder
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppConfig *config_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // Because source references to this object, so we should directly use the source ptr.
     ISrsLiveSource *source_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsPublishEdge *edge_;
     ISrsRequest *req_;
     ISrsCoroutine *trd_;
@@ -276,7 +276,7 @@ public:
 public:
     virtual srs_error_t cycle();
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t do_cycle();
 
 public:
@@ -298,7 +298,7 @@ public:
 // The play edge control service.
 class SrsPlayEdge : public ISrsPlayEdge
 {
-private:
+SRS_DECLARE_PRIVATE:
     SrsEdgeState state_;
     ISrsEdgeIngester *ingester_;
 
@@ -334,7 +334,7 @@ public:
 // The publish edge control service.
 class SrsPublishEdge : public ISrsPublishEdge
 {
-private:
+SRS_DECLARE_PRIVATE:
     SrsEdgeState state_;
     ISrsEdgeForwarder *forwarder_;
 

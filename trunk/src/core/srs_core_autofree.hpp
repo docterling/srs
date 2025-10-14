@@ -32,7 +32,7 @@
 template <class T>
 class SrsUniquePtr
 {
-private:
+SRS_DECLARE_PRIVATE:
     T *ptr_;
     void (*deleter_)(T *);
 
@@ -63,19 +63,19 @@ public:
         return ptr_;
     }
 
-private:
+SRS_DECLARE_PRIVATE:
     // Copy the unique ptr.
     SrsUniquePtr(const SrsUniquePtr<T> &);
     // The assign operator.
     SrsUniquePtr<T> &operator=(const SrsUniquePtr<T> &);
 
-private:
+SRS_DECLARE_PRIVATE:
     // Overload the * operator.
     T &operator*();
     // Overload the bool operator.
     operator bool() const;
 #if __cplusplus >= 201103L // C++11
-private:
+SRS_DECLARE_PRIVATE:
     // The move constructor.
     SrsUniquePtr(SrsUniquePtr<T> &&);
     // The move assign operator.
@@ -96,7 +96,7 @@ private:
 template <class T>
 class SrsUniquePtr<T[]>
 {
-private:
+SRS_DECLARE_PRIVATE:
     T *ptr_;
 
 public:
@@ -125,19 +125,19 @@ public:
         return ptr_[index];
     }
 
-private:
+SRS_DECLARE_PRIVATE:
     // Copy the unique ptr.
     SrsUniquePtr(const SrsUniquePtr<T> &);
     // The assign operator.
     SrsUniquePtr<T> &operator=(const SrsUniquePtr<T> &);
 
-private:
+SRS_DECLARE_PRIVATE:
     // Overload the * operator.
     T &operator*();
     // Overload the bool operator.
     operator bool() const;
 #if __cplusplus >= 201103L // C++11
-private:
+SRS_DECLARE_PRIVATE:
     // The move constructor.
     SrsUniquePtr(SrsUniquePtr<T> &&);
     // The move assign operator.
@@ -157,7 +157,7 @@ private:
 template <class T>
 class SrsSharedPtr
 {
-private:
+SRS_DECLARE_PRIVATE:
     // The pointer to the object.
     T *ptr_;
     // The reference count of the object.
@@ -181,7 +181,7 @@ public:
         reset();
     }
 
-private:
+SRS_DECLARE_PRIVATE:
     // Reset the shared ptr.
     void reset()
     {
@@ -235,7 +235,7 @@ public:
         return *this;
     }
 
-private:
+SRS_DECLARE_PRIVATE:
     // Overload the * operator.
     T &operator*()
     {

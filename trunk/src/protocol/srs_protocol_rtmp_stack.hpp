@@ -121,7 +121,7 @@ public:
     // The message type set the RTMP message type in header.
     virtual int get_message_type();
 
-protected:
+SRS_DECLARE_PROTECTED:
     // The subpacket can override to calc the packet size.
     virtual int get_size();
     // The subpacket can override to encode the payload to stream.
@@ -134,7 +134,7 @@ protected:
 // and to send out RTMP message over RTMP chunk stream.
 class SrsProtocol
 {
-private:
+SRS_DECLARE_PRIVATE:
     class AckWindowSize
     {
     public:
@@ -147,7 +147,7 @@ private:
         AckWindowSize();
     };
     // For peer in/out
-private:
+SRS_DECLARE_PRIVATE:
     // The underlayer socket object, send/recv bytes.
     ISrsProtocolReadWriter *skt_;
     // The requests sent out, used to build the response.
@@ -155,7 +155,7 @@ private:
     // value: the request command name
     std::map<double, std::string> requests_;
     // For peer in
-private:
+SRS_DECLARE_PRIVATE:
     // The chunk stream to decode RTMP messages.
     std::map<int, SrsChunkStream *> chunk_streams_;
     // Cache some frequently used chunk header.
@@ -181,7 +181,7 @@ private:
     // When not auto response message, manual flush the messages in queue.
     std::vector<SrsRtmpCommand *> manual_response_queue_;
     // For peer out
-private:
+SRS_DECLARE_PRIVATE:
     // Cache for multiple messages send,
     // initialize to iovec[SRS_CONSTS_IOVS_MAX] and realloc when consumed,
     // it's ok to realloc the iovs cache, for all ptr is ok.
@@ -338,7 +338,7 @@ public:
         return err;
     }
 
-private:
+SRS_DECLARE_PRIVATE:
     // Send out the messages, donot free it,
     // The caller must free the param msgs.
     virtual srs_error_t do_send_messages(SrsMediaPacket **msgs, int nb_msgs);
@@ -367,13 +367,13 @@ private:
     // When message sentout, update the context.
     virtual srs_error_t on_send_packet(SrsMessageHeader *mh, SrsRtmpCommand *packet);
 
-private:
+SRS_DECLARE_PRIVATE:
     // Auto response the ack message.
     virtual srs_error_t response_acknowledgement_message();
     // Auto response the ping message.
     virtual srs_error_t response_ping_message(int32_t timestamp);
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual void print_debug_info();
 };
 
@@ -543,7 +543,7 @@ bool srs_client_type_is_publish(SrsRtmpConnType type);
 // For smart switch between complex and simple handshake.
 class SrsHandshakeBytes
 {
-private:
+SRS_DECLARE_PRIVATE:
     SrsRand rand_;
 
 public:
@@ -589,10 +589,10 @@ struct SrsServerInfo {
 // implements the client role protocol.
 class SrsRtmpClient
 {
-private:
+SRS_DECLARE_PRIVATE:
     SrsHandshakeBytes *hs_bytes_;
 
-protected:
+SRS_DECLARE_PROTECTED:
     SrsProtocol *protocol_;
     ISrsProtocolReadWriter *io_;
 
@@ -702,7 +702,7 @@ public:
 // such as connect to vhost/app, play stream, get audio/video data.
 class SrsRtmpServer : public ISrsRtmpServer
 {
-private:
+SRS_DECLARE_PRIVATE:
     SrsHandshakeBytes *hs_bytes_;
     SrsProtocol *protocol_;
     ISrsProtocolReadWriter *io_;
@@ -868,13 +868,13 @@ public:
         return protocol_->expect_message<T>(pmsg, ppacket);
     }
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t identify_create_stream_client(SrsCreateStreamPacket *req, int stream_id, int depth, SrsRtmpConnType &type, std::string &stream_name, srs_utime_t &duration);
     virtual srs_error_t identify_fmle_publish_client(SrsFMLEStartPacket *req, SrsRtmpConnType &type, std::string &stream_name);
     virtual srs_error_t identify_haivision_publish_client(SrsFMLEStartPacket *req, SrsRtmpConnType &type, std::string &stream_name);
     virtual srs_error_t identify_flash_publish_client(SrsPublishPacket *req, SrsRtmpConnType &type, std::string &stream_name);
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t identify_play_client(SrsPlayPacket *req, SrsRtmpConnType &type, std::string &stream_name, srs_utime_t &duration);
 };
 
@@ -907,7 +907,7 @@ public:
 public:
     virtual int get_message_type();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int get_size();
     virtual srs_error_t encode_packet(SrsBuffer *stream);
 };
@@ -937,7 +937,7 @@ public:
 public:
     virtual int get_message_type();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int get_size();
     virtual srs_error_t encode_packet(SrsBuffer *stream);
 };
@@ -971,7 +971,7 @@ public:
 public:
     virtual int get_message_type();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int get_size();
     virtual srs_error_t encode_packet(SrsBuffer *stream);
 };
@@ -997,7 +997,7 @@ public:
 public:
     virtual int get_message_type();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int get_size();
     virtual srs_error_t encode_packet(SrsBuffer *stream);
 };
@@ -1030,7 +1030,7 @@ public:
 public:
     virtual int get_message_type();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int get_size();
     virtual srs_error_t encode_packet(SrsBuffer *stream);
 };
@@ -1058,7 +1058,7 @@ public:
 public:
     virtual int get_message_type();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int get_size();
     virtual srs_error_t encode_packet(SrsBuffer *stream);
 };
@@ -1109,7 +1109,7 @@ public:
 public:
     virtual int get_message_type();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int get_size();
     virtual srs_error_t encode_packet(SrsBuffer *stream);
     // Factory method to create specified FMLE packet.
@@ -1145,7 +1145,7 @@ public:
 public:
     virtual int get_message_type();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int get_size();
     virtual srs_error_t encode_packet(SrsBuffer *stream);
 };
@@ -1192,7 +1192,7 @@ public:
 public:
     virtual int get_message_type();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int get_size();
     virtual srs_error_t encode_packet(SrsBuffer *stream);
 };
@@ -1285,7 +1285,7 @@ public:
 public:
     virtual int get_message_type();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int get_size();
     virtual srs_error_t encode_packet(SrsBuffer *stream);
 };
@@ -1320,7 +1320,7 @@ public:
 public:
     virtual int get_message_type();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int get_size();
     virtual srs_error_t encode_packet(SrsBuffer *stream);
 };
@@ -1346,7 +1346,7 @@ public:
 public:
     virtual int get_message_type();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int get_size();
     virtual srs_error_t encode_packet(SrsBuffer *stream);
 };
@@ -1379,7 +1379,7 @@ public:
 public:
     virtual int get_message_type();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int get_size();
     virtual srs_error_t encode_packet(SrsBuffer *stream);
 };
@@ -1407,7 +1407,7 @@ public:
 public:
     virtual int get_message_type();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int get_size();
     virtual srs_error_t encode_packet(SrsBuffer *stream);
 };
@@ -1433,7 +1433,7 @@ public:
 public:
     virtual int get_message_type();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int get_size();
     virtual srs_error_t encode_packet(SrsBuffer *stream);
 };
@@ -1463,7 +1463,7 @@ public:
 public:
     virtual int get_message_type();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int get_size();
     virtual srs_error_t encode_packet(SrsBuffer *stream);
 };
@@ -1486,7 +1486,7 @@ public:
 public:
     virtual int get_message_type();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int get_size();
     virtual srs_error_t encode_packet(SrsBuffer *stream);
 };
@@ -1509,7 +1509,7 @@ public:
 public:
     virtual int get_message_type();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int get_size();
     virtual srs_error_t encode_packet(SrsBuffer *stream);
 };
@@ -1534,7 +1534,7 @@ public:
 public:
     virtual int get_message_type();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int get_size();
     virtual srs_error_t encode_packet(SrsBuffer *stream);
 };
@@ -1565,7 +1565,7 @@ public:
 public:
     virtual int get_message_type();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int get_size();
     virtual srs_error_t encode_packet(SrsBuffer *stream);
 };
@@ -1676,7 +1676,7 @@ public:
 public:
     virtual int get_message_type();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int get_size();
     virtual srs_error_t encode_packet(SrsBuffer *stream);
 };

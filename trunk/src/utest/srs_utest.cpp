@@ -69,6 +69,14 @@ srs_error_t prepare_main()
 {
     srs_error_t err = srs_success;
 
+    // Root global objects, should be created before any other global objects.
+    _srs_log = new SrsFileLog();
+    _srs_context = new SrsThreadContext();
+    _srs_config = new SrsConfig();
+
+    // For background context id.
+    _srs_context->set_id(_srs_context->generate_id());
+
     if ((err = srs_global_initialize()) != srs_success) {
         return srs_error_wrap(err, "init global");
     }
@@ -222,7 +230,7 @@ public:
         return cp;
     }
 
-private:
+SRS_DECLARE_PRIVATE:
     MockSrsContextId *bind_;
 };
 

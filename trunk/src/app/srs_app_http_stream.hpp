@@ -51,14 +51,14 @@ public:
 // A cache for HTTP Live Streaming encoder, to make android(weixin) happy.
 class SrsBufferCache : public ISrsCoroutineHandler, public ISrsBufferCache
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppConfig *config_;
     ISrsLiveSourceManager *live_sources_;
 
-private:
+SRS_DECLARE_PRIVATE:
     srs_utime_t fast_cache_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsMessageQueue *queue_;
     ISrsRequest *req_;
     ISrsCoroutine *trd_;
@@ -107,7 +107,7 @@ public:
 // Transmux RTMP to HTTP Live Streaming.
 class SrsFlvStreamEncoder : public ISrsBufferEncoder
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsFlvTransmuxer *enc_;
     bool header_written_;
     bool has_audio_;
@@ -138,14 +138,14 @@ public:
     // Write the tags in a time.
     virtual srs_error_t write_tags(SrsMediaPacket **msgs, int count);
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t write_header(bool has_video, bool has_audio);
 };
 
 // Transmux RTMP to HTTP TS Streaming.
 class SrsTsStreamEncoder : public ISrsBufferEncoder
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsTsTransmuxer *enc_;
 
 public:
@@ -171,7 +171,7 @@ public:
 // Transmux RTMP with AAC stream to HTTP AAC Streaming.
 class SrsAacStreamEncoder : public ISrsBufferEncoder
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAacTransmuxer *enc_;
     ISrsBufferCache *cache_;
 
@@ -193,7 +193,7 @@ public:
 // Transmux RTMP with MP3 stream to HTTP MP3 Streaming.
 class SrsMp3StreamEncoder : public ISrsBufferEncoder
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsMp3Transmuxer *enc_;
     ISrsBufferCache *cache_;
 
@@ -215,7 +215,7 @@ public:
 // Write stream to http response direclty.
 class SrsBufferWriter : public SrsFileWriter
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsHttpResponseWriter *writer_;
 
 public:
@@ -251,13 +251,13 @@ public:
 // TODO: FIXME: Rename to SrsHttpLive
 class SrsLiveStream : public ISrsLiveStream
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppConfig *config_;
     ISrsLiveSourceManager *live_sources_;
     ISrsStatistic *stat_;
     ISrsHttpHooks *hooks_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsRequest *req_;
     ISrsBufferCache *cache_;
     ISrsSecurity *security_;
@@ -274,7 +274,7 @@ public:
 public:
     virtual srs_error_t serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r);
 
-private:
+SRS_DECLARE_PRIVATE:
     srs_error_t serve_http_impl(ISrsHttpResponseWriter *w, ISrsHttpMessage *r);
 
 public:
@@ -283,7 +283,7 @@ public:
 public:
     virtual void expire();
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t do_serve_http(SrsLiveSource *source, ISrsLiveConsumer *consumer, ISrsHttpResponseWriter *w, ISrsHttpMessage *r);
     virtual srs_error_t http_hooks_on_play(ISrsHttpMessage *r);
     virtual void http_hooks_on_stop(ISrsHttpMessage *r);
@@ -292,7 +292,7 @@ private:
 
 // The Live Entry, to handle HTTP Live Streaming.
 struct SrsLiveEntry {
-private:
+SRS_DECLARE_PRIVATE:
     bool is_flv_;
     bool is_ts_;
     bool is_aac_;
@@ -342,11 +342,11 @@ public:
 // TODO: Support multiple stream.
 class SrsHttpStreamServer : public ISrsHttpStreamServer
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppConfig *config_;
     ISrsHttpServeMux *mux_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAsyncCallWorker *async_;
 
 public:
@@ -373,14 +373,14 @@ public:
 public:
     virtual srs_error_t dynamic_match(ISrsHttpMessage *request, ISrsHttpHandler **ph);
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t initialize_flv_streaming();
     virtual srs_error_t initialize_flv_entry(std::string vhost);
 };
 
 class SrsHttpStreamDestroy : public ISrsAsyncCallTask
 {
-private:
+SRS_DECLARE_PRIVATE:
     std::string sid_;
     std::map<std::string, SrsLiveEntry *> *streamHandlers_;
     ISrsHttpServeMux *mux_;

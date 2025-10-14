@@ -48,7 +48,7 @@ public:
 
 class SrsCircuitBreaker : public ISrsCircuitBreaker, public ISrsFastTimerHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     bool enabled_;
     int high_threshold_;
     int high_pulse_;
@@ -57,7 +57,7 @@ private:
     int dying_threshold_;
     int dying_pulse_;
 
-private:
+SRS_DECLARE_PRIVATE:
     int hybrid_high_water_level_;
     int hybrid_critical_water_level_;
     int hybrid_dying_water_level_;
@@ -74,7 +74,7 @@ public:
     bool hybrid_critical_water_level();
     bool hybrid_dying_water_level();
 
-private:
+SRS_DECLARE_PRIVATE:
     srs_error_t on_timer(srs_utime_t interval);
 };
 

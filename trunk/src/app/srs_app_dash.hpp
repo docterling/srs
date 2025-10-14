@@ -49,7 +49,7 @@ public:
 // The init mp4 for FMP4.
 class SrsInitMp4 : public ISrsInitMp4
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsFileWriter *fw_;
     ISrsMp4M2tsInitEncoder *init_;
     ISrsFragment *fragment_;
@@ -96,10 +96,10 @@ public:
 // The FMP4(Fragmented MP4) for DASH streaming.
 class SrsFragmentedMp4 : public ISrsFragmentedMp4
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppConfig *config_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsFileWriter *fw_;
     ISrsMp4M2tsSegmentEncoder *enc_;
     ISrsFragment *fragment_;
@@ -160,14 +160,14 @@ public:
 // The writer to write MPD for DASH.
 class SrsMpdWriter : public ISrsMpdWriter
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppConfig *config_;
     ISrsAppFactory *app_factory_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsRequest *req_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // The duration of fragment in srs_utime_t.
     srs_utime_t fragment_;
     // The period to update the mpd in srs_utime_t.
@@ -187,7 +187,7 @@ private:
     // The number of current audio segment.
     uint64_t audio_number_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // The home for fragment, relative to home.
     std::string fragment_home_;
 
@@ -235,16 +235,16 @@ public:
 // The controller for DASH, control the MPD and FMP4 generating system.
 class SrsDashController : public ISrsDashController
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppConfig *config_;
     ISrsAppFactory *app_factory_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsRequest *req_;
     SrsFormat *format_;
     ISrsMpdWriter *mpd_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsFragmentedMp4 *vcurrent_;
     ISrsFragmentWindow *vfragments_;
     ISrsFragmentedMp4 *acurrent_;
@@ -258,11 +258,11 @@ private:
     // Had the video reaped, use to align audio/video segment's timestamp.
     bool video_reaped_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // The fragment duration in srs_utime_t to reap it.
     srs_utime_t fragment_;
 
-private:
+SRS_DECLARE_PRIVATE:
     std::string home_;
     int video_track_id_;
     int audio_track_id_;
@@ -281,7 +281,7 @@ public:
     virtual srs_error_t on_audio(SrsMediaPacket *shared_audio, SrsFormat *format);
     virtual srs_error_t on_video(SrsMediaPacket *shared_video, SrsFormat *format);
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t refresh_mpd(SrsFormat *format);
     virtual srs_error_t refresh_init_mp4(SrsMediaPacket *msg, SrsFormat *format);
 };
@@ -309,15 +309,15 @@ public:
 // The MPEG-DASH encoder, transmux RTMP to DASH.
 class SrsDash : public ISrsDash
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppConfig *config_;
 
-private:
+SRS_DECLARE_PRIVATE:
     bool enabled_;
     bool disposable_;
     srs_utime_t last_update_time_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsRequest *req_;
     ISrsOriginHub *hub_;
     ISrsDashController *controller_;

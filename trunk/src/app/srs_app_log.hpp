@@ -20,11 +20,11 @@
 // when you want to use different level, override this classs, set the protected _level.
 class SrsFileLog : public ISrsLog, public ISrsReloadHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     // Defined in SrsLogLevel.
     SrsLogLevel level_;
 
-private:
+SRS_DECLARE_PRIVATE:
     char *log_data_;
     // Log to file if specified srs_log_file
     int fd_;
@@ -42,7 +42,7 @@ public:
     virtual void reopen();
     virtual void log(SrsLogLevel level, const char *tag, const SrsContextId &context_id, const char *fmt, va_list args);
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual void write_log(int &fd, char *str_log, int size, int level);
     virtual void open_log_file();
 };

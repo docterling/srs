@@ -35,7 +35,7 @@ public:
 
 class MockTcpHandler : public ISrsTcpHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     srs_netfd_t fd;
 
 public:

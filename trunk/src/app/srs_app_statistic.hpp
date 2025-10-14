@@ -178,7 +178,7 @@ public:
 // The global statistic instance.
 class SrsStatistic : public ISrsStatistic
 {
-private:
+SRS_DECLARE_PRIVATE:
     // The id to identify the sever.
     std::string server_id_;
     // The id to identify the service.
@@ -186,27 +186,27 @@ private:
     // The pid to identify the service process.
     std::string service_pid_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // The key: vhost id, value: vhost object.
     std::map<std::string, SrsStatisticVhost *> vhosts_;
     // The key: vhost url, value: vhost Object.
     // @remark a fast index for vhosts.
     std::map<std::string, SrsStatisticVhost *> rvhosts_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // The key: stream id, value: stream Object.
     std::map<std::string, SrsStatisticStream *> streams_;
     // The key: stream url, value: stream Object.
     // @remark a fast index for streams.
     std::map<std::string, SrsStatisticStream *> rstreams_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // The key: client id, value: stream object.
     std::map<std::string, SrsStatisticClient *> clients_;
     // The server total kbps.
     SrsKbps *kbps_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // The total of clients connections.
     int64_t nb_clients_;
     // The total of clients errors.
@@ -252,7 +252,7 @@ public:
     //      exists in stat.
     virtual void on_disconnect(std::string id, srs_error_t err);
 
-private:
+SRS_DECLARE_PRIVATE:
     // Cleanup the stream if stream is not active and for the last client.
     void cleanup_stream(SrsStatisticStream *stream);
 
@@ -284,7 +284,7 @@ public:
     // Dumps the hints about SRS server.
     void dumps_hints_kv(std::stringstream &ss);
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual SrsStatisticVhost *create_vhost(ISrsRequest *req);
     virtual SrsStatisticStream *create_stream(SrsStatisticVhost *vhost, ISrsRequest *req);
 

@@ -60,24 +60,24 @@ public:
 // A RTSP play stream, client pull and play stream from SRS.
 class SrsRtspPlayStream : public ISrsRtspPlayStream, public ISrsCoroutineHandler, public ISrsRtcSourceChangeCallback
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppFactory *app_factory_;
     ISrsStatistic *stat_;
     ISrsRtspSourceManager *rtsp_sources_;
 
-private:
+SRS_DECLARE_PRIVATE:
     SrsContextId cid_;
     ISrsCoroutine *trd_;
     ISrsRtspConnection *session_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsRequest *req_;
     SrsSharedPtr<SrsRtspSource> source_;
     // key: publish_ssrc, value: send track to process rtp/rtcp
     std::map<uint32_t, ISrsRtspSendTrack *> audio_tracks_;
     std::map<uint32_t, ISrsRtspSendTrack *> video_tracks_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // Fast cache for tracks.
     uint32_t cache_ssrc0_;
     uint32_t cache_ssrc1_;
@@ -86,7 +86,7 @@ private:
     ISrsRtspSendTrack *cache_track1_;
     ISrsRtspSendTrack *cache_track2_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // Whether player started.
     bool is_started;
 
@@ -110,7 +110,7 @@ public:
 public:
     virtual srs_error_t cycle();
 
-private:
+SRS_DECLARE_PRIVATE:
     srs_error_t send_packet(SrsRtpPacket *&pkt);
 
 public:
@@ -136,17 +136,17 @@ class SrsRtspConnection : public ISrsResource, // It's a resource.
                           public ISrsStartable,
                           public ISrsRtspConnection
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsRtspSourceManager *rtsp_sources_;
     ISrsResourceManager *rtsp_manager_;
     ISrsStatistic *stat_;
     ISrsAppConfig *config_;
     ISrsHttpHooks *hooks_;
 
-private:
+SRS_DECLARE_PRIVATE:
     bool disposing_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // TODO: FIXME: Rename it.
     // The timeout of session, keep alive by STUN ping pong.
     srs_utime_t session_timeout;
@@ -191,7 +191,7 @@ public:
 public:
     ISrsKbpsDelta *delta();
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t do_describe(SrsRtspRequest *req, std::string &sdp);
     virtual srs_error_t do_setup(SrsRtspRequest *req, uint32_t *ssrc);
     virtual srs_error_t do_play(SrsRtspRequest *req, SrsRtspConnection *conn);
@@ -217,7 +217,7 @@ public:
 public:
     virtual srs_error_t cycle();
 
-private:
+SRS_DECLARE_PRIVATE:
     srs_error_t do_cycle();
     srs_error_t on_rtsp_request(SrsRtspRequest *req_raw);
 
@@ -233,14 +233,14 @@ public:
     bool is_alive();
     void alive();
 
-private:
+SRS_DECLARE_PRIVATE:
     srs_error_t http_hooks_on_play(ISrsRequest *req);
     srs_error_t get_ssrc_by_stream_id(uint32_t stream_id, uint32_t *ssrc);
 };
 
 class SrsRtspTcpNetwork : public ISrsStreamWriter
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsProtocolReadWriter *skt_;
     int channel_;
 

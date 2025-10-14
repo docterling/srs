@@ -49,7 +49,7 @@ public:
 // Ingester ffmpeg object.
 class SrsIngesterFFMPEG : public ISrsIngesterFFMPEG
 {
-private:
+SRS_DECLARE_PRIVATE:
     std::string vhost_;
     std::string id_;
     ISrsFFMPEG *ffmpeg_;
@@ -91,14 +91,14 @@ public:
 // push to SRS(or any RTMP server) over RTMP.
 class SrsIngester : public ISrsIngester, public ISrsCoroutineHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppFactory *app_factory_;
     ISrsAppConfig *config_;
 
-private:
+SRS_DECLARE_PRIVATE:
     std::vector<ISrsIngesterFFMPEG *> ingesters_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsCoroutine *trd_;
     ISrsPithyPrint *pprint_;
     // Whether the ingesters are expired, for example, the listen port changed,
@@ -118,7 +118,7 @@ public:
     virtual srs_error_t start();
     virtual void stop();
 
-private:
+SRS_DECLARE_PRIVATE:
     // Notify FFMPEG to fast stop.
     virtual void fast_stop();
     // When SRS quit, directly kill FFMPEG after fast stop.
@@ -127,10 +127,10 @@ private:
 public:
     virtual srs_error_t cycle();
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t do_cycle();
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual void clear_engines();
     virtual srs_error_t parse();
     virtual srs_error_t parse_ingesters(SrsConfDirective *vhost);

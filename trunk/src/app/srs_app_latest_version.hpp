@@ -19,12 +19,12 @@
 
 class SrsLatestVersion : public ISrsCoroutineHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsCoroutine *trd_;
     std::string server_id_;
     std::string session_id_;
 
-private:
+SRS_DECLARE_PRIVATE:
     std::string match_version_;
     std::string stable_version_;
 
@@ -38,7 +38,7 @@ public:
 public:
     virtual srs_error_t cycle();
 
-private:
+SRS_DECLARE_PRIVATE:
     srs_error_t query_latest_version(std::string &url);
 };
 

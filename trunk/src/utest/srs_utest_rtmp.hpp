@@ -25,7 +25,7 @@ public:
     MockPacket();
     virtual ~MockPacket();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int get_size();
 };
 

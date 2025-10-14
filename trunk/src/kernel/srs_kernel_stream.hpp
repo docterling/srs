@@ -17,7 +17,7 @@
  */
 class SrsSimpleStream
 {
-private:
+SRS_DECLARE_PRIVATE:
     std::vector<char> data_;
 
 public:

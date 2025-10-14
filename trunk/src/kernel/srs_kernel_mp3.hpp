@@ -32,7 +32,7 @@ public:
  */
 class SrsMp3Transmuxer : public ISrsMp3Transmuxer
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsFileWriter *writer_;
 
 public:

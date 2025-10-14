@@ -25,7 +25,7 @@ class SrsExecutorCoroutine;
 // @see https://github.com/ossrs/srs/pull/908
 class SrsDummyCoroutine : public ISrsCoroutine
 {
-private:
+SRS_DECLARE_PRIVATE:
     SrsContextId cid_;
 
 public:
@@ -55,7 +55,7 @@ public:
 //      Please read https://github.com/ossrs/srs/issues/78
 class SrsSTCoroutine : public ISrsCoroutine
 {
-private:
+SRS_DECLARE_PRIVATE:
     SrsFastCoroutine *impl_;
 
 public:
@@ -96,24 +96,24 @@ public:
 // High performance coroutine.
 class SrsFastCoroutine : public ISrsCoroutine
 {
-private:
+SRS_DECLARE_PRIVATE:
     std::string name_;
     int stack_size_;
     ISrsCoroutineHandler *handler_;
 
-private:
+SRS_DECLARE_PRIVATE:
     srs_thread_t trd_;
     SrsContextId cid_;
     srs_error_t trd_err_;
 
-private:
+SRS_DECLARE_PRIVATE:
     bool started_;
     bool interrupted_;
     bool disposed_;
     // Cycle done, no need to interrupt it.
     bool cycle_done_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // Sub state in disposed, we need to wait for thread to quit.
     bool stopping_;
     SrsContextId stopping_cid_;
@@ -140,7 +140,7 @@ public:
     const SrsContextId &cid();
     virtual void set_cid(const SrsContextId &cid);
 
-private:
+SRS_DECLARE_PRIVATE:
     srs_error_t cycle();
     static void *pfn(void *arg);
 };
@@ -148,7 +148,7 @@ private:
 // Like goroutine sync.WaitGroup.
 class SrsWaitGroup
 {
-private:
+SRS_DECLARE_PRIVATE:
     int nn_;
     srs_cond_t done_;
 
@@ -203,13 +203,13 @@ class SrsExecutorCoroutine : public ISrsResource, // It's a resource.
                              public ISrsContextIdGetter,
                              public ISrsCoroutineHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsResourceManager *manager_;
     ISrsResource *resource_;
     ISrsCoroutineHandler *handler_;
     ISrsExecutorHandler *callback_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsCoroutine *trd_;
 
 public:

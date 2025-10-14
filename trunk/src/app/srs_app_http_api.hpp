@@ -38,7 +38,7 @@ extern srs_error_t srs_api_response_code(ISrsHttpResponseWriter *w, ISrsHttpMess
 // For http root.
 class SrsGoApiRoot : public ISrsHttpHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsStatistic *stat_;
 
 public:
@@ -51,7 +51,7 @@ public:
 
 class SrsGoApiApi : public ISrsHttpHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsStatistic *stat_;
 
 public:
@@ -64,7 +64,7 @@ public:
 
 class SrsGoApiV1 : public ISrsHttpHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsStatistic *stat_;
 
 public:
@@ -77,7 +77,7 @@ public:
 
 class SrsGoApiVersion : public ISrsHttpHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsStatistic *stat_;
 
 public:
@@ -90,7 +90,7 @@ public:
 
 class SrsGoApiSummaries : public ISrsHttpHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsStatistic *stat_;
 
 public:
@@ -103,7 +103,7 @@ public:
 
 class SrsGoApiRusages : public ISrsHttpHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsStatistic *stat_;
 
 public:
@@ -116,7 +116,7 @@ public:
 
 class SrsGoApiSelfProcStats : public ISrsHttpHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsStatistic *stat_;
 
 public:
@@ -129,7 +129,7 @@ public:
 
 class SrsGoApiSystemProcStats : public ISrsHttpHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsStatistic *stat_;
 
 public:
@@ -142,7 +142,7 @@ public:
 
 class SrsGoApiMemInfos : public ISrsHttpHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsStatistic *stat_;
 
 public:
@@ -155,7 +155,7 @@ public:
 
 class SrsGoApiAuthors : public ISrsHttpHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsStatistic *stat_;
 
 public:
@@ -168,7 +168,7 @@ public:
 
 class SrsGoApiFeatures : public ISrsHttpHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsStatistic *stat_;
 
 public:
@@ -181,7 +181,7 @@ public:
 
 class SrsGoApiRequests : public ISrsHttpHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsStatistic *stat_;
 
 public:
@@ -194,7 +194,7 @@ public:
 
 class SrsGoApiVhosts : public ISrsHttpHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsStatistic *stat_;
 
 public:
@@ -207,7 +207,7 @@ public:
 
 class SrsGoApiStreams : public ISrsHttpHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsStatistic *stat_;
 
 public:
@@ -220,7 +220,7 @@ public:
 
 class SrsGoApiClients : public ISrsHttpHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsStatistic *stat_;
 
 public:
@@ -233,14 +233,14 @@ public:
 
 class SrsGoApiRaw : public ISrsHttpHandler, public ISrsReloadHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsStatistic *stat_;
     ISrsAppConfig *config_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsSignalHandler *handler_;
 
-private:
+SRS_DECLARE_PRIVATE:
     bool raw_api_;
     bool allow_reload_;
     bool allow_query_;
@@ -257,7 +257,7 @@ public:
 
 class SrsGoApiClusters : public ISrsHttpHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsStatistic *stat_;
 
 public:
@@ -270,7 +270,7 @@ public:
 
 class SrsGoApiError : public ISrsHttpHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsStatistic *stat_;
 
 public:
@@ -284,7 +284,7 @@ public:
 #ifdef SRS_GPERF
 class SrsGoApiTcmalloc : public ISrsHttpHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsStatistic *stat_;
 
 public:
@@ -299,10 +299,10 @@ public:
 #ifdef SRS_VALGRIND
 class SrsGoApiValgrind : public ISrsHttpHandler, public ISrsCoroutineHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsStatistic *stat_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsCoroutine *trd_;
     std::string task_;
 
@@ -321,7 +321,7 @@ public:
 #ifdef SRS_SIGNAL_API
 class SrsGoApiSignal : public ISrsHttpHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsStatistic *stat_;
 
 public:
@@ -335,11 +335,11 @@ public:
 
 class SrsGoApiMetrics : public ISrsHttpHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsStatistic *stat_;
     ISrsAppConfig *config_;
 
-private:
+SRS_DECLARE_PRIVATE:
     bool enabled_;
     std::string label_;
     std::string tag_;

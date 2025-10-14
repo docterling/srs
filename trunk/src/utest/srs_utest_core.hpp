@@ -16,7 +16,7 @@
 
 class MyNormalObject
 {
-private:
+SRS_DECLARE_PRIVATE:
     int id_;
 
 public:

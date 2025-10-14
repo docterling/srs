@@ -153,7 +153,7 @@ public:
 
 class SrsHttpHooks : public ISrsHttpHooks
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppFactory *factory_;
     ISrsStatistic *stat_;
     ISrsAppConfig *config_;
@@ -176,7 +176,7 @@ public:
     srs_error_t discover_co_workers(std::string url, std::string &host, int &port);
     srs_error_t on_forward_backend(std::string url, ISrsRequest *req, std::vector<std::string> &rtmp_urls);
 
-private:
+SRS_DECLARE_PRIVATE:
     srs_error_t do_post(ISrsHttpClient *hc, std::string url, std::string req, int &code, std::string &res);
 };
 

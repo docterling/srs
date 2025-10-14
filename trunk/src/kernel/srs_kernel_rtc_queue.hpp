@@ -30,7 +30,7 @@ class SrsRtpRingBuffer;
 // We store the received packets in ring buffer.
 class SrsRtpRingBuffer
 {
-private:
+SRS_DECLARE_PRIVATE:
     // Capacity of the ring-buffer.
     uint16_t capacity_;
     // Ring bufer.
@@ -106,7 +106,7 @@ struct SrsRtpNackInfo {
 
 class SrsRtpNackForReceiver
 {
-private:
+SRS_DECLARE_PRIVATE:
     // Nack queue, seq order, oldest to newest.
     std::map<uint16_t, SrsRtpNackInfo, SrsSeqCompareLess> queue_;
     // Max nack count.
@@ -114,10 +114,10 @@ private:
     SrsRtpRingBuffer *rtp_;
     SrsNackOption opts_;
 
-private:
+SRS_DECLARE_PRIVATE:
     srs_utime_t pre_check_time_;
 
-private:
+SRS_DECLARE_PRIVATE:
     int rtt_;
 
 public:

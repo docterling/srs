@@ -43,7 +43,7 @@ public:
 // Of course, we can add the multiple user support, which is SrsPithyPrint.
 class SrsStageManager
 {
-private:
+SRS_DECLARE_PRIVATE:
     std::map<int, SrsStageInfo *> stages_;
 
 public:
@@ -63,7 +63,7 @@ public:
     // The number of call of can_print().
     uint32_t nn_count_;
 
-private:
+SRS_DECLARE_PRIVATE:
     double ratio_;
     SrsStageManager stages_;
     std::map<int, srs_utime_t> ticks_;
@@ -82,7 +82,7 @@ public:
 // An standalone pithy print, without shared stages.
 class SrsAlonePithyPrint
 {
-private:
+SRS_DECLARE_PRIVATE:
     SrsStageInfo info_;
     srs_utime_t previous_tick_;
 
@@ -127,14 +127,14 @@ public:
 //        }
 class SrsPithyPrint : public ISrsPithyPrint
 {
-private:
+SRS_DECLARE_PRIVATE:
     int client_id_;
     SrsStageInfo *cache_;
     int stage_id_;
     srs_utime_t age_;
     srs_utime_t previous_tick_;
 
-private:
+SRS_DECLARE_PRIVATE:
     SrsPithyPrint(int _stage_id);
 
 public:
@@ -157,7 +157,7 @@ public:
     static SrsPithyPrint *create_srt_publish();
     virtual ~SrsPithyPrint();
 
-private:
+SRS_DECLARE_PRIVATE:
     // Enter the specified stage, return the client id.
     virtual int enter_stage();
     // Leave the specified stage, release the client id.

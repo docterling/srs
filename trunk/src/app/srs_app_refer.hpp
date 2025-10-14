@@ -25,7 +25,7 @@ public:
     // @param refer the refer in config.
     virtual srs_error_t check(std::string page_url, SrsConfDirective *refer);
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t check_single_refer(std::string page_url, std::string refer);
 };
 

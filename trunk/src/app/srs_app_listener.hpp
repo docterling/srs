@@ -94,19 +94,19 @@ public:
 // Bind udp port, start thread to recv packet and handler it.
 class SrsUdpListener : public ISrsCoroutineHandler, public ISrsIpListener
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppFactory *factory_;
 
-protected:
+SRS_DECLARE_PROTECTED:
     std::string label_;
     srs_netfd_t lfd_;
     ISrsCoroutine *trd_;
 
-protected:
+SRS_DECLARE_PROTECTED:
     char *buf_;
     int nb_buf_;
 
-protected:
+SRS_DECLARE_PROTECTED:
     ISrsUdpHandler *handler_;
     std::string ip_;
     int port_;
@@ -119,11 +119,11 @@ public:
     ISrsListener *set_label(const std::string &label);
     ISrsListener *set_endpoint(const std::string &i, int p);
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual int fd();
     virtual srs_netfd_t stfd();
 
-private:
+SRS_DECLARE_PRIVATE:
     void set_socket_buffer();
 
 public:
@@ -133,22 +133,22 @@ public:
 public:
     virtual srs_error_t cycle();
 
-private:
+SRS_DECLARE_PRIVATE:
     srs_error_t do_cycle();
 };
 
 // Bind and listen tcp port, use handler to process the client.
 class SrsTcpListener : public ISrsCoroutineHandler, public ISrsIpListener
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppFactory *factory_;
 
-private:
+SRS_DECLARE_PRIVATE:
     std::string label_;
     srs_netfd_t lfd_;
     ISrsCoroutine *trd_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsTcpHandler *handler_;
     std::string ip_;
     int port_;
@@ -170,17 +170,17 @@ public:
 public:
     virtual srs_error_t cycle();
 
-private:
+SRS_DECLARE_PRIVATE:
     srs_error_t do_cycle();
 };
 
 // Bind and listen tcp port, use handler to process the client.
 class SrsMultipleTcpListeners : public ISrsIpListener, public ISrsTcpHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppFactory *factory_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsTcpHandler *handler_;
     std::vector<ISrsIpListener *> listeners_;
 
@@ -223,13 +223,13 @@ public:
 // TODO: FIXME: Rename it. Refine it for performance issue.
 class SrsUdpMuxSocket : public ISrsUdpMuxSocket
 {
-private:
+SRS_DECLARE_PRIVATE:
     // For sender yield only.
     uint32_t nn_msgs_for_yield_;
     std::map<uint32_t, std::string> cache_;
     SrsBuffer *cache_buffer_;
 
-private:
+SRS_DECLARE_PRIVATE:
     char *buf_;
     int nb_buf_;
     int nread_;
@@ -237,11 +237,11 @@ private:
     sockaddr_storage from_;
     int fromlen_;
 
-private:
+SRS_DECLARE_PRIVATE:
     std::string peer_ip_;
     int peer_port_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // Cache for peer id.
     std::string peer_id_;
     // If the address changed, we should generate the peer_id.
@@ -271,19 +271,19 @@ public:
 
 class SrsUdpMuxListener : public ISrsCoroutineHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppFactory *factory_;
 
-private:
+SRS_DECLARE_PRIVATE:
     srs_netfd_t lfd_;
     ISrsCoroutine *trd_;
     SrsContextId cid_;
 
-private:
+SRS_DECLARE_PRIVATE:
     char *buf_;
     int nb_buf_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsUdpMuxHandler *handler_;
     std::string ip_;
     int port_;
@@ -302,7 +302,7 @@ public:
 public:
     virtual srs_error_t cycle();
 
-private:
+SRS_DECLARE_PRIVATE:
     void set_socket_buffer();
 };
 

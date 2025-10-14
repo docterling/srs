@@ -45,19 +45,19 @@ public:
 // Forward the stream to other servers.
 class SrsForwarder : public ISrsCoroutineHandler, public ISrsForwarder
 {
-private:
+SRS_DECLARE_PRIVATE:
     // The ep to forward, server[:port].
     std::string ep_forward_;
     ISrsRequest *req_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // The source or stream context id to bind to.
     SrsContextId source_cid_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsCoroutine *trd_;
 
-private:
+SRS_DECLARE_PRIVATE:
     SrsOriginHub *hub_;
     SrsSimpleRtmpClient *sdk_;
     SrsRtmpJitter *jitter_;
@@ -90,10 +90,10 @@ public:
 public:
     virtual srs_error_t cycle();
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t do_cycle();
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t forward();
 };
 

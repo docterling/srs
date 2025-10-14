@@ -59,7 +59,7 @@ enum SrsStunMessageAttribute {
 
 class SrsStunPacket
 {
-private:
+SRS_DECLARE_PRIVATE:
     uint16_t message_type_;
     std::string username_;
     std::string local_ufrag_;
@@ -97,7 +97,7 @@ public:
     srs_error_t decode(const char *buf, const int nb_buf);
     srs_error_t encode(const std::string &pwd, SrsBuffer *stream);
 
-private:
+SRS_DECLARE_PRIVATE:
     srs_error_t encode_binding_response(const std::string &pwd, SrsBuffer *stream);
     std::string encode_username();
     std::string encode_mapped_address();

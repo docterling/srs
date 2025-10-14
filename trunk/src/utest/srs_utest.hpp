@@ -120,7 +120,7 @@ public:
 // @remark The size of memory to allocate, should smaller than page size, generally 4096 bytes.
 class MockProtectedBuffer
 {
-private:
+SRS_DECLARE_PRIVATE:
     char *raw_memory_;
 
 public:
@@ -139,7 +139,7 @@ public:
 // The chan never free the args, you must manage the memory.
 class SrsCoroutineChan
 {
-private:
+SRS_DECLARE_PRIVATE:
     std::vector<void *> args_;
     srs_mutex_t lock_;
 
@@ -206,7 +206,7 @@ public:
 #define SRS_COROUTINE_GO_IMPL(context, id, code_block)                \
     class AnonymousCoroutineHandler##id : public ISrsCoroutineHandler \
     {                                                                 \
-    private:                                                          \
+    SRS_DECLARE_PRIVATE:                                                          \
         SrsCoroutineChan *ctx_;                                       \
                                                                       \
     public:                                                           \
@@ -283,7 +283,7 @@ public:
 // but with proper HTTP response formatting
 class SrsHttpTestServer : public ISrsCoroutineHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsCoroutine *trd_;
     srs_netfd_t fd_;
     string response_body_;
@@ -304,14 +304,14 @@ public:
 public:
     virtual srs_error_t cycle();
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t do_cycle(srs_netfd_t cfd);
 };
 
 // Simple HTTPS test server similar to Go's httptest.NewServer but with SSL support
 class SrsHttpsTestServer : public ISrsCoroutineHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsCoroutine *trd_;
     srs_netfd_t fd_;
     string response_body_;
@@ -329,10 +329,10 @@ public:
     virtual int get_port();
 
     // Interface ISrsCoroutineHandler
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t cycle();
 
-private:
+SRS_DECLARE_PRIVATE:
     srs_error_t handle_client(srs_netfd_t client_fd);
 };
 
@@ -340,7 +340,7 @@ private:
 // This server handles basic RTMP handshake and connect app operations
 class SrsRtmpTestServer : public ISrsCoroutineHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsCoroutine *trd_;
     srs_netfd_t fd_;
     string app_;
@@ -366,7 +366,7 @@ public:
 public:
     virtual srs_error_t cycle();
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t do_cycle(srs_netfd_t cfd);
     virtual srs_error_t handle_rtmp_client(srs_netfd_t cfd);
 };
@@ -374,7 +374,7 @@ private:
 // Test TCP server for testing SrsTcpConnection
 class SrsTestTcpServer : public ISrsCoroutineHandler, public ISrsTcpHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsCoroutine *trd_;
     SrsTcpListener *listener_;
     string ip_;
@@ -403,7 +403,7 @@ public:
 // Test TCP client for testing SrsTcpConnection
 class SrsTestTcpClient
 {
-private:
+SRS_DECLARE_PRIVATE:
     SrsTcpClient *client_;
     SrsTcpConnection *conn_;
     string host_;
@@ -425,7 +425,7 @@ public:
 // Test UDP server for testing UDP socket communication
 class SrsUdpTestServer : public ISrsCoroutineHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     srs_netfd_t lfd_;
     ISrsCoroutine *trd_;
     SrsStSocket *socket_;
@@ -450,7 +450,7 @@ public:
 // Test UDP client for testing UDP socket communication
 class SrsUdpTestClient
 {
-private:
+SRS_DECLARE_PRIVATE:
     srs_netfd_t stfd_;
     SrsStSocket *socket_;
     string host_;

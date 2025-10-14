@@ -177,7 +177,7 @@ public:
 // ISO_IEC_14496-12-base-format-2012.pdf, page 16
 class SrsMp4Box : public ISrsCodec
 {
-private:
+SRS_DECLARE_PRIVATE:
     // The size is the entire size of the box, including the size and type header, fields,
     // And all contained boxes. This facilitates general parsing of the file.
     //
@@ -195,10 +195,10 @@ public:
     // For box 'uuid'.
     std::vector<char> usertype_;
 
-protected:
+SRS_DECLARE_PROTECTED:
     std::vector<SrsMp4Box *> boxes_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // The position at buffer to start demux the box.
     int start_pos_;
 
@@ -240,12 +240,12 @@ public:
     virtual srs_error_t encode(SrsBuffer *buf);
     virtual srs_error_t decode(SrsBuffer *buf);
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual srs_error_t encode_boxes(SrsBuffer *buf);
     virtual srs_error_t decode_boxes(SrsBuffer *buf);
     // Sub classes can override these functions for special codec.
     // @remark For mdat box, we use completely different codec.
-protected:
+SRS_DECLARE_PROTECTED:
     // The size of header, not including the contained boxes.
     virtual int nb_header();
     // It's not necessary to check the buffer, because we already know the size in parent function,
@@ -276,7 +276,7 @@ public:
     SrsMp4FullBox();
     virtual ~SrsMp4FullBox();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -299,7 +299,7 @@ public:
     // An informative integer for the minor version of the major brand
     uint32_t minor_version_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // A list, to the end of the box, of brands
     std::vector<SrsMp4BoxBrand> compatible_brands_;
 
@@ -312,7 +312,7 @@ public:
     virtual void set_compatible_brands(SrsMp4BoxBrand b0, SrsMp4BoxBrand b1, SrsMp4BoxBrand b2);
     virtual void set_compatible_brands(SrsMp4BoxBrand b0, SrsMp4BoxBrand b1, SrsMp4BoxBrand b2, SrsMp4BoxBrand b3);
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -370,7 +370,7 @@ public:
     SrsMp4MovieFragmentHeaderBox();
     virtual ~SrsMp4MovieFragmentHeaderBox();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -452,7 +452,7 @@ public:
     SrsMp4TrackFragmentHeaderBox();
     virtual ~SrsMp4TrackFragmentHeaderBox();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -478,7 +478,7 @@ public:
     SrsMp4TrackFragmentDecodeTimeBox();
     virtual ~SrsMp4TrackFragmentDecodeTimeBox();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -554,7 +554,7 @@ public:
     SrsMp4TrackFragmentRunBox();
     virtual ~SrsMp4TrackFragmentRunBox();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -629,7 +629,7 @@ public:
     // because the mdat only decode the header.
     virtual srs_error_t decode(SrsBuffer *buf);
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual srs_error_t encode_boxes(SrsBuffer *buf);
     virtual srs_error_t decode_boxes(SrsBuffer *buf);
 
@@ -641,14 +641,14 @@ public:
 // ISO_IEC_14496-12-base-format-2012.pdf, page 29
 class SrsMp4FreeSpaceBox : public SrsMp4Box
 {
-private:
+SRS_DECLARE_PRIVATE:
     std::vector<char> data_;
 
 public:
     SrsMp4FreeSpaceBox(SrsMp4BoxType v);
     virtual ~SrsMp4FreeSpaceBox();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -685,7 +685,7 @@ public:
     // Get the number of audio tracks.
     virtual int nb_soun_tracks();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -738,7 +738,7 @@ public:
     // Get the duration in ms.
     virtual uint64_t duration();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -787,7 +787,7 @@ public:
     SrsMp4TrackExtendsBox();
     virtual ~SrsMp4TrackExtendsBox();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -915,7 +915,7 @@ public:
     SrsMp4TrackHeaderBox();
     virtual ~SrsMp4TrackHeaderBox();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -985,7 +985,7 @@ public:
     SrsMp4EditListBox();
     virtual ~SrsMp4EditListBox();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -1042,7 +1042,7 @@ public:
     // longest track in the presentation. If the duration cannot be determined then duration is set to all 1s.
     uint64_t duration_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // The language code for this media. See ISO 639-2/T for the set of three character
     // codes. Each character is packed as the difference between its ASCII value and 0x60. Since the code
     // is confined to being three lower-case letters, these values are strictly positive.
@@ -1067,7 +1067,7 @@ public:
     virtual char language2();
     virtual void set_language2(char v);
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -1101,7 +1101,7 @@ public:
     virtual bool is_video();
     virtual bool is_audio();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -1152,7 +1152,7 @@ public:
     SrsMp4VideoMeidaHeaderBox();
     virtual ~SrsMp4VideoMeidaHeaderBox();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -1174,7 +1174,7 @@ public:
     SrsMp4SoundMeidaHeaderBox();
     virtual ~SrsMp4SoundMeidaHeaderBox();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -1220,7 +1220,7 @@ public:
     SrsMp4DataEntryUrlBox();
     virtual ~SrsMp4DataEntryUrlBox();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -1240,7 +1240,7 @@ public:
     SrsMp4DataEntryUrnBox();
     virtual ~SrsMp4DataEntryUrnBox();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -1256,7 +1256,7 @@ public:
 // in this table to the samples in the track. A track may be split over several sources in this way.
 class SrsMp4DataReferenceBox : public SrsMp4FullBox
 {
-private:
+SRS_DECLARE_PRIVATE:
     std::vector<SrsMp4DataEntryBox *> entries_;
 
 public:
@@ -1269,7 +1269,7 @@ public:
     // Note that box must be SrsMp4DataEntryBox*
     virtual void append(SrsMp4Box *box);
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -1315,7 +1315,7 @@ public:
     virtual SrsMp4SyncSampleBox *stss();
     virtual void set_stss(SrsMp4SyncSampleBox *v);
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -1336,7 +1336,7 @@ public:
     SrsMp4SampleEntry();
     virtual ~SrsMp4SampleEntry();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -1386,7 +1386,7 @@ public:
     virtual SrsMp4HvcCBox *hvcC();
     virtual void set_hvcC(SrsMp4HvcCBox *v);
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -1406,7 +1406,7 @@ public:
     SrsMp4AvccBox();
     virtual ~SrsMp4AvccBox();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -1426,7 +1426,7 @@ public:
     SrsMp4HvcCBox();
     virtual ~SrsMp4HvcCBox();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -1458,7 +1458,7 @@ public:
     // For AAC codec, get the asc.
     virtual SrsMp4DecoderSpecificInfo *asc();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -1491,7 +1491,7 @@ public:
     SrsMp4ESTagEs tag; // bit(8)
     // The decoded or encoded variant length.
     int32_t vlen; // bit(28)
-private:
+SRS_DECLARE_PRIVATE:
     // The position at buffer to start demux the box.
     int start_pos;
 
@@ -1508,7 +1508,7 @@ public:
     virtual srs_error_t encode(SrsBuffer *buf);
     virtual srs_error_t decode(SrsBuffer *buf);
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int32_t nb_payload() = 0;
     virtual srs_error_t encode_payload(SrsBuffer *buf) = 0;
     virtual srs_error_t decode_payload(SrsBuffer *buf) = 0;
@@ -1549,7 +1549,7 @@ public:
     SrsMp4DecoderSpecificInfo();
     virtual ~SrsMp4DecoderSpecificInfo();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int32_t nb_payload();
     virtual srs_error_t encode_payload(SrsBuffer *buf);
     virtual srs_error_t decode_payload(SrsBuffer *buf);
@@ -1577,7 +1577,7 @@ public:
     SrsMp4DecoderConfigDescriptor();
     virtual ~SrsMp4DecoderConfigDescriptor();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int32_t nb_payload();
     virtual srs_error_t encode_payload(SrsBuffer *buf);
     virtual srs_error_t decode_payload(SrsBuffer *buf);
@@ -1597,7 +1597,7 @@ public:
     SrsMp4SLConfigDescriptor();
     virtual ~SrsMp4SLConfigDescriptor();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int32_t nb_payload();
     virtual srs_error_t encode_payload(SrsBuffer *buf);
     virtual srs_error_t decode_payload(SrsBuffer *buf);
@@ -1626,7 +1626,7 @@ public:
     SrsMp4ES_Descriptor();
     virtual ~SrsMp4ES_Descriptor();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int32_t nb_payload();
     virtual srs_error_t encode_payload(SrsBuffer *buf);
     virtual srs_error_t decode_payload(SrsBuffer *buf);
@@ -1652,7 +1652,7 @@ public:
     // For AAC codec, get the asc.
     virtual SrsMp4DecoderSpecificInfo *asc();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -1667,7 +1667,7 @@ public:
 // information needed for that coding.
 class SrsMp4SampleDescriptionBox : public SrsMp4FullBox
 {
-private:
+SRS_DECLARE_PRIVATE:
     std::vector<SrsMp4SampleEntry *> entries_;
 
 public:
@@ -1686,7 +1686,7 @@ public:
     // Note that box must be SrsMp4SampleEntry*
     virtual void append(SrsMp4Box *box);
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -1726,7 +1726,7 @@ public:
     // An integer that gives the number of entries in the following table.
     std::vector<SrsMp4SttsEntry> entries_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // The index for counter to calc the dts for samples.
     uint32_t index_;
     uint32_t count_;
@@ -1741,7 +1741,7 @@ public:
     // When got an sample, index starts from 0.
     virtual srs_error_t on_sample(uint32_t sample_index, SrsMp4SttsEntry **ppentry);
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -1786,7 +1786,7 @@ public:
     // An integer that gives the number of entries in the following table.
     std::vector<SrsMp4CttsEntry> entries_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // The index for counter to calc the dts for samples.
     uint32_t index_;
     uint32_t count_;
@@ -1801,7 +1801,7 @@ public:
     // When got an sample, index starts from 0.
     virtual srs_error_t on_sample(uint32_t sample_index, SrsMp4CttsEntry **ppentry);
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -1831,7 +1831,7 @@ public:
     // Whether the sample is sync, index starts from 0.
     virtual bool is_sync(uint32_t sample_index);
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -1876,7 +1876,7 @@ public:
     // The numbers of the samples that are sync samples in the stream.
     SrsMp4StscEntry *entries_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // The index for counter to calc the dts for samples.
     uint32_t index_;
 
@@ -1890,7 +1890,7 @@ public:
     // When got an chunk, index starts from 0.
     virtual SrsMp4StscEntry *on_chunk(uint32_t chunk_index);
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -1917,7 +1917,7 @@ public:
     SrsMp4ChunkOffsetBox();
     virtual ~SrsMp4ChunkOffsetBox();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -1944,7 +1944,7 @@ public:
     SrsMp4ChunkLargeOffsetBox();
     virtual ~SrsMp4ChunkLargeOffsetBox();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -1979,7 +1979,7 @@ public:
     // Get the size of sample.
     virtual srs_error_t get_sample_size(uint32_t sample_index, uint32_t *psample_size);
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -2001,7 +2001,7 @@ public:
     SrsMp4UserDataBox();
     virtual ~SrsMp4UserDataBox();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -2040,7 +2040,7 @@ public:
     SrsMp4SegmentIndexBox();
     virtual ~SrsMp4SegmentIndexBox();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -2079,7 +2079,7 @@ public:
     SrsMp4SampleAuxiliaryInfoSizeBox();
     virtual ~SrsMp4SampleAuxiliaryInfoSizeBox();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -2117,7 +2117,7 @@ public:
     SrsMp4SampleAuxiliaryInfoOffsetBox();
     virtual ~SrsMp4SampleAuxiliaryInfoOffsetBox();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -2162,7 +2162,7 @@ public:
 
     virtual std::stringstream &dumps(std::stringstream &ss, SrsMp4DumpContext dc);
 
-private:
+SRS_DECLARE_PRIVATE:
     SrsMp4FullBox *senc_;
     uint8_t per_sample_iv_size_;
     uint8_t *iv_;
@@ -2195,7 +2195,7 @@ class SrsMp4SampleEncryptionBox : public SrsMp4FullBox
 public:
     std::vector<SrsMp4SampleEncryptionEntry *> entries_;
 
-private:
+SRS_DECLARE_PRIVATE:
     uint8_t per_sample_iv_size_;
 
 public:
@@ -2204,7 +2204,7 @@ public:
     SrsMp4SampleEncryptionBox(uint8_t per_sample_iv_size);
     virtual ~SrsMp4SampleEncryptionBox();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -2220,14 +2220,14 @@ public:
 // }
 class SrsMp4OriginalFormatBox : public SrsMp4Box
 {
-private:
+SRS_DECLARE_PRIVATE:
     uint32_t data_format_;
 
 public:
     SrsMp4OriginalFormatBox(uint32_t original_format);
     virtual ~SrsMp4OriginalFormatBox();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -2263,7 +2263,7 @@ public:
 public:
     virtual void set_scheme_uri(char *uri, uint32_t uri_size);
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -2387,7 +2387,7 @@ public:
 public:
     virtual void set_default_constant_IV(uint8_t *iv, uint8_t iv_size);
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int nb_header();
     virtual srs_error_t encode_header(SrsBuffer *buf);
     virtual srs_error_t decode_header(SrsBuffer *buf);
@@ -2438,7 +2438,7 @@ public:
 // Handles timing offset between audio and video tracks to ensure proper A/V sync in MP4 files.
 class SrsMp4DvrJitter
 {
-private:
+SRS_DECLARE_PRIVATE:
     uint64_t video_start_dts_;
     uint64_t audio_start_dts_;
     bool has_first_video_;
@@ -2455,7 +2455,7 @@ public:
     // to maintain A/V synchronization in MP4 files
     virtual uint32_t get_first_sample_delta(SrsFrameType track);
 
-private:
+SRS_DECLARE_PRIVATE:
     // Reset the jitter state (useful for new recording sessions)
     virtual void reset();
     // Check if both audio and video start times have been captured
@@ -2473,7 +2473,7 @@ private:
 //      The keyframe is specified by stss.
 class SrsMp4SampleManager
 {
-private:
+SRS_DECLARE_PRIVATE:
     SrsMp4DvrJitter *jitter_; // MP4 A/V sync jitter handler
 
 public:
@@ -2497,13 +2497,13 @@ public:
     // @param The dts is the dts of last segment.
     virtual srs_error_t write(SrsMp4TrackFragmentBox *traf, uint64_t dts);
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t write_track(SrsFrameType track,
                                     SrsMp4DecodingTime2SampleBox *stts, SrsMp4SyncSampleBox *stss, SrsMp4CompositionTime2SampleBox *ctts,
                                     SrsMp4Sample2ChunkBox *stsc, SrsMp4SampleSizeBox *stsz, SrsMp4FullBox *co);
     virtual srs_error_t do_load(std::map<uint64_t, SrsMp4Sample *> &tses, SrsMp4MovieBox *moov);
 
-private:
+SRS_DECLARE_PRIVATE:
     // Load the samples of track from stco, stsz and stsc.
     // @param tses The temporary samples, key is offset, value is sample.
     // @param tt The type of sample, convert to flv tag type.
@@ -2517,7 +2517,7 @@ private:
 // @remark For mdat box, we only decode the header, then skip the data.
 class SrsMp4BoxReader
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsReadSeeker *rsio_;
     // The temporary buffer to read from buffer.
     char *buf_;
@@ -2533,7 +2533,7 @@ public:
     // Read a MP4 box to pbox, the stream is fill with the bytes of box to decode.
     virtual srs_error_t read(SrsSimpleStream *stream, SrsMp4Box **ppbox);
 
-private:
+SRS_DECLARE_PRIVATE:
     srs_error_t do_read(SrsSimpleStream *stream, SrsMp4Box *&box);
 
 public:
@@ -2544,7 +2544,7 @@ public:
 // The MP4 demuxer.
 class SrsMp4Decoder
 {
-private:
+SRS_DECLARE_PRIVATE:
     // The major brand of decoder, parse from ftyp.
     SrsMp4BoxBrand brand_;
     // The samples build from moov.
@@ -2559,7 +2559,7 @@ public:
     // TODO: FIXME: Use SrsFormat instead.
     SrsVideoCodecId vcodec_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // For H.264/AVC, the avcc contains the sps/pps.
     std::vector<char> pavcc_;
     // Whether avcc is written to reader.
@@ -2576,13 +2576,13 @@ public:
     // The audio sound type.
     SrsAudioChannels channels_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // For AAC, the asc in esds box.
     std::vector<char> pasc_;
     // Whether asc is written to reader.
     bool asc_written_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // Underlayer reader and seeker.
     // @remark The demuxer must use seeker for general MP4 to seek the moov.
     ISrsReadSeeker *rsio_;
@@ -2612,11 +2612,11 @@ public:
     virtual srs_error_t read_sample(SrsMp4HandlerType *pht, uint16_t *pft, uint16_t *pct,
                                     uint32_t *pdts, uint32_t *ppts, uint8_t **psample, uint32_t *pnb_sample);
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t parse_ftyp(SrsMp4FileTypeBox *ftyp);
     virtual srs_error_t parse_moov(SrsMp4MovieBox *moov);
 
-private:
+SRS_DECLARE_PRIVATE:
     // Load the next box from reader.
     // @param required_box_type The box type required, 0 for any box.
     virtual srs_error_t load_next_box(SrsMp4Box **ppbox, uint32_t required_box_type);
@@ -2646,7 +2646,7 @@ public:
 // The MP4 muxer.
 class SrsMp4Encoder : public ISrsMp4Encoder
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsWriteSeeker *wsio_;
     // The mdat offset at file, we must update the header when flush.
     off_t mdat_offset_;
@@ -2666,7 +2666,7 @@ public:
     // The audio sound type.
     SrsAudioChannels channels_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // For AAC, the asc in esds box.
     std::vector<char> pasc_;
     // The number of audio samples.
@@ -2679,7 +2679,7 @@ public:
     // Forbidden if no video stream.
     SrsVideoCodecId vcodec_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // For H.264/AVC, the avcc contains the sps/pps.
     std::vector<char> pavcc_;
     // For H.265/HEVC, the hvcC contains the vps/sps/pps.
@@ -2715,7 +2715,7 @@ public:
 
     virtual void set_audio_codec(SrsAudioCodecId vcodec, SrsAudioSampleRate sample_rate, SrsAudioSampleBits sound_bits, SrsAudioChannels channels);
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t copy_sequence_header(SrsFormat *format, bool vsh, uint8_t *sample, uint32_t nb_sample);
     virtual srs_error_t do_write_sample(SrsMp4Sample *ps, uint8_t *sample, uint32_t nb_sample);
     virtual SrsMp4ObjectType get_audio_object_type();
@@ -2739,10 +2739,10 @@ public:
 // TODO: What the M2ts short for?
 class SrsMp4M2tsInitEncoder : public ISrsMp4M2tsInitEncoder
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsWriter *writer_;
 
-private:
+SRS_DECLARE_PRIVATE:
     uint8_t crypt_byte_block_;
     uint8_t skip_byte_block_;
     unsigned char kid_[16];
@@ -2782,7 +2782,7 @@ public:
      */
     virtual srs_error_t write(SrsFormat *format, int v_tid, int a_tid);
 
-private:
+SRS_DECLARE_PRIVATE:
     /**
      * box->type = 'encv' or 'enca'
      * |encv|
@@ -2824,13 +2824,13 @@ public:
 // TODO: fmp4 support package more than one tracks.
 class SrsMp4M2tsSegmentEncoder : public ISrsMp4M2tsSegmentEncoder
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsWriter *writer_;
     uint32_t sequence_number_;
     srs_utime_t decode_basetime_;
     uint32_t track_id_;
 
-private:
+SRS_DECLARE_PRIVATE:
     uint32_t nb_audios_;
     uint32_t nb_videos_;
     uint32_t styp_bytes_;
@@ -2863,7 +2863,7 @@ public:
 // TODO: fmp4 support package more than one tracks.
 class SrsFmp4SegmentEncoder
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsWriter *writer_;
     uint32_t sequence_number_;
     // TODO: audio, video may have different basetime.
@@ -2871,7 +2871,7 @@ private:
     uint32_t audio_track_id_;
     uint32_t video_track_id_;
 
-private:
+SRS_DECLARE_PRIVATE:
     uint32_t nb_audios_;
     uint32_t nb_videos_;
     uint32_t styp_bytes_;
@@ -2880,7 +2880,7 @@ private:
     SrsMp4SampleManager *audio_samples_;
     SrsMp4SampleManager *video_samples_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // Encryption
     unsigned char *key_;
     unsigned char iv_[16];

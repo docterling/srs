@@ -19,7 +19,7 @@ public:
 public:
     virtual void heartbeat();
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t do_heartbeat();
 };
 

@@ -32,10 +32,10 @@ class SrsTcpClient;
 // The SSL client over TCP transport.
 class SrsSslClient : public ISrsReader, public ISrsStreamWriter
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsProtocolReadWriter *transport_;
 
-private:
+SRS_DECLARE_PRIVATE:
     SSL_CTX *ssl_ctx_;
     SSL *ssl_;
     BIO *bio_in_;
@@ -82,7 +82,7 @@ public:
 //      hc.post("/api/v1/version", "Hello world!", NULL);
 class SrsHttpClient : public ISrsHttpClient
 {
-private:
+SRS_DECLARE_PRIVATE:
     // The underlayer TCP transport, set to NULL when disconnect, or never not NULL when connected.
     // We will disconnect transport when initialize or channel error, such as send/recv error.
     SrsTcpClient *transport_;
@@ -90,7 +90,7 @@ private:
     std::map<std::string, std::string> headers_;
     SrsNetworkKbps *kbps_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // The timeout in srs_utime_t.
     srs_utime_t timeout_;
     srs_utime_t recv_timeout_;
@@ -99,7 +99,7 @@ private:
     std::string host_;
     int port_;
 
-private:
+SRS_DECLARE_PRIVATE:
     SrsSslClient *ssl_transport_;
 
 public:
@@ -136,7 +136,7 @@ public:
 public:
     virtual void kbps_sample(const char *label, srs_utime_t age);
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual void disconnect();
     virtual srs_error_t connect();
     ISrsStreamWriter *writer();

@@ -17,8 +17,11 @@
 // This ensures consistent class layout between production code and utest code with AddressSanitizer.
 // The macro is automatically enabled when --utest=on is specified in configure.
 #ifdef SRS_FORCE_PUBLIC4UTEST
-    #define private public
-    #define protected public
+    #define SRS_DECLARE_PRIVATE public
+    #define SRS_DECLARE_PROTECTED public
+#else
+    #define SRS_DECLARE_PRIVATE private
+    #define SRS_DECLARE_PROTECTED protected
 #endif
 
 // To convert macro values to string.
@@ -76,7 +79,7 @@ typedef SrsCplxError *srs_error_t;
 #if 1
 class _SrsContextId
 {
-private:
+SRS_DECLARE_PRIVATE:
     std::string v_;
 
 public:

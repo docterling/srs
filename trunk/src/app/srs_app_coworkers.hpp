@@ -19,13 +19,13 @@ class SrsLiveSource;
 // For origin cluster.
 class SrsCoWorkers
 {
-private:
+SRS_DECLARE_PRIVATE:
     static SrsCoWorkers *instance_;
 
-private:
+SRS_DECLARE_PRIVATE:
     std::map<std::string, ISrsRequest *> streams_;
 
-private:
+SRS_DECLARE_PRIVATE:
     SrsCoWorkers();
     virtual ~SrsCoWorkers();
 
@@ -35,7 +35,7 @@ public:
 public:
     virtual SrsJsonAny *dumps(std::string vhost, std::string coworker, std::string app, std::string stream);
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual ISrsRequest *find_stream_info(std::string vhost, std::string app, std::string stream);
 
 public:

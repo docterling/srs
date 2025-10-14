@@ -34,20 +34,20 @@ public:
     MockSrsConfig();
     virtual ~MockSrsConfig();
 
-private:
+SRS_DECLARE_PRIVATE:
     std::map<std::string, std::string> included_files;
 
 public:
     virtual srs_error_t mock_parse(std::string buf);
     virtual srs_error_t mock_include(const std::string file_name, const std::string content);
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual srs_error_t build_buffer(std::string src, srs_internal::SrsConfigBuffer **pbuffer);
 };
 
 class ISrsSetEnvConfig
 {
-private:
+SRS_DECLARE_PRIVATE:
     std::string key;
     SrsConfig *conf;
 
@@ -65,7 +65,7 @@ public:
         conf->env_cache_ = new SrsConfDirective();
     }
 
-private:
+SRS_DECLARE_PRIVATE:
     // Adds, changes environment variables, which may starts with $.
     int srs_setenv(const std::string &key, const std::string &value, bool overwrite);
     // Deletes environment variables, which may starts with $.

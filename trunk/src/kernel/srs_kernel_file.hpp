@@ -38,7 +38,7 @@ public:
 // file writer, to write to file.
 class SrsFileWriter : public ISrsFileWriter
 {
-private:
+SRS_DECLARE_PRIVATE:
     std::string path_;
     FILE *fp_;
     char *buf_;
@@ -107,7 +107,7 @@ public:
  */
 class SrsFileReader : public ISrsFileReader
 {
-private:
+SRS_DECLARE_PRIVATE:
     std::string path_;
     int fd_;
 

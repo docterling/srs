@@ -37,7 +37,7 @@ public:
     // Free specified count of messages.
     virtual void free(int count);
 
-private:
+SRS_DECLARE_PRIVATE:
     // Zero initialize the message array.
     virtual void zero(int count);
 };

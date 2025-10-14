@@ -38,11 +38,11 @@ public:
 // ffmpegs to transcode the specified stream.
 class SrsEncoder : public ISrsCoroutineHandler, public ISrsMediaEncoder
 {
-private:
+SRS_DECLARE_PRIVATE:
     std::string input_stream_name_;
     std::vector<SrsFFMPEG *> ffmpegs_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsCoroutine *trd_;
     SrsPithyPrint *pprint_;
 
@@ -57,10 +57,10 @@ public:
 public:
     virtual srs_error_t cycle();
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t do_cycle();
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual void clear_engines();
     virtual SrsFFMPEG *at(int index);
     virtual srs_error_t parse_scope_engines(ISrsRequest *req);

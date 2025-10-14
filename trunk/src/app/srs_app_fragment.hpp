@@ -51,7 +51,7 @@ public:
 // It's a media file, for example FLV or MP4, with duration.
 class SrsFragment : public ISrsFragment
 {
-private:
+SRS_DECLARE_PRIVATE:
     // The duration in srs_utime_t.
     srs_utime_t dur_;
     // The full file path of fragment.
@@ -132,7 +132,7 @@ public:
 // The fragment window manage a series of fragment.
 class SrsFragmentWindow : public ISrsFragmentWindow
 {
-private:
+SRS_DECLARE_PRIVATE:
     std::vector<ISrsFragment *> fragments_;
     // The expired fragments, need to be free in future.
     std::vector<ISrsFragment *> expired_fragments_;

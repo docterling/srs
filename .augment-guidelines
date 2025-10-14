@@ -301,6 +301,58 @@ code_patterns:
       exceptions: "Only applies to SRS-defined classes/structs - do NOT change 3rd party code like llhttp"
       rationale: "Consistent naming convention across SRS codebase for better code readability and maintenance - underscore distinguishes member variables from local variables and parameters"
 
+  access_specifiers_for_testing:
+    - pattern: "SRS_DECLARE_PRIVATE and SRS_DECLARE_PROTECTED macros"
+      description: "MANDATORY - Always use SRS_DECLARE_PRIVATE instead of 'private' and SRS_DECLARE_PROTECTED instead of 'protected' in class definitions"
+      purpose: "Enables unit tests to access private and protected members for dependency injection and mocking"
+
+      macro_definition: |
+        #ifdef SRS_FORCE_PUBLIC4UTEST
+            #define SRS_DECLARE_PRIVATE public
+            #define SRS_DECLARE_PROTECTED public
+        #else
+            #define SRS_DECLARE_PRIVATE private
+            #define SRS_DECLARE_PROTECTED protected
+        #endif
+
+      usage: |
+        WRONG: Using standard C++ access specifiers
+        class SrsBufferCache {
+        private:
+            ISrsAppConfig *config_;
+            ISrsRequest *req_;
+        protected:
+            virtual srs_error_t do_start();
+        public:
+            srs_error_t start();
+        };
+
+        CORRECT: Using SRS access specifier macros
+        class SrsBufferCache {
+        SRS_DECLARE_PRIVATE:
+            ISrsAppConfig *config_;
+            ISrsRequest *req_;
+        SRS_DECLARE_PROTECTED:
+            virtual srs_error_t do_start();
+        public:
+            srs_error_t start();
+        };
+
+      rules:
+        - "ALWAYS use SRS_DECLARE_PRIVATE instead of 'private' keyword"
+        - "ALWAYS use SRS_DECLARE_PROTECTED instead of 'protected' keyword"
+        - "Use standard 'public' keyword for public members (no macro needed)"
+        - "This applies to ALL production code classes in trunk/src/"
+        - "When SRS_FORCE_PUBLIC4UTEST is defined, all private/protected members become public for testing"
+
+      benefits:
+        - "Enables unit tests to inject mock dependencies into private member fields"
+        - "Allows tests to access and verify internal state"
+        - "Makes classes fully testable without breaking encapsulation in production"
+        - "Provides clean separation between production and test builds"
+
+      rationale: "This pattern allows unit tests to access private/protected members for dependency injection and mocking, while maintaining proper encapsulation in production builds. It's essential for writing comprehensive unit tests that can mock all dependencies."
+
   commenting_style:
     - pattern: "C++ style comments"
       description: "MANDATORY - Use C++ style comments (//) instead of C style comments (/* */)"

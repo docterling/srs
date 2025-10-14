@@ -24,7 +24,7 @@ class SrsFormat;
 // RTP video builder for packaging video NALUs into RTP packets
 class SrsRtpVideoBuilder
 {
-private:
+SRS_DECLARE_PRIVATE:
     uint16_t video_sequence_;
     uint32_t video_ssrc_;
     uint8_t video_payload_type_;

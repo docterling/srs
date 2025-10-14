@@ -318,11 +318,11 @@ public:
  */
 class SrsAmf0Object : public SrsAmf0Any
 {
-private:
+SRS_DECLARE_PRIVATE:
     srs_internal::SrsUnSortedHashtable *properties_;
     srs_internal::SrsAmf0ObjectEOF *eof_;
 
-private:
+SRS_DECLARE_PRIVATE:
     friend class SrsAmf0Any;
     /**
      * make amf0 object to private,
@@ -410,12 +410,12 @@ public:
  */
 class SrsAmf0EcmaArray : public SrsAmf0Any
 {
-private:
+SRS_DECLARE_PRIVATE:
     srs_internal::SrsUnSortedHashtable *properties_;
     srs_internal::SrsAmf0ObjectEOF *eof_;
     int32_t count_;
 
-private:
+SRS_DECLARE_PRIVATE:
     friend class SrsAmf0Any;
     /**
      * make amf0 object to private,
@@ -498,11 +498,11 @@ public:
  */
 class SrsAmf0StrictArray : public SrsAmf0Any
 {
-private:
+SRS_DECLARE_PRIVATE:
     std::vector<SrsAmf0Any *> properties_;
     int32_t count_;
 
-private:
+SRS_DECLARE_PRIVATE:
     friend class SrsAmf0Any;
     /**
      * make amf0 object to private,
@@ -630,7 +630,7 @@ class SrsAmf0String : public SrsAmf0Any
 public:
     std::string value_;
 
-private:
+SRS_DECLARE_PRIVATE:
     friend class SrsAmf0Any;
     /**
      * make amf0 string to private,
@@ -660,7 +660,7 @@ class SrsAmf0Boolean : public SrsAmf0Any
 public:
     bool value_;
 
-private:
+SRS_DECLARE_PRIVATE:
     friend class SrsAmf0Any;
     /**
      * make amf0 boolean to private,
@@ -689,7 +689,7 @@ class SrsAmf0Number : public SrsAmf0Any
 public:
     double value_;
 
-private:
+SRS_DECLARE_PRIVATE:
     friend class SrsAmf0Any;
     /**
      * make amf0 number to private,
@@ -715,11 +715,11 @@ public:
  */
 class SrsAmf0Date : public SrsAmf0Any
 {
-private:
+SRS_DECLARE_PRIVATE:
     int64_t date_value_;
     int16_t time_zone_;
 
-private:
+SRS_DECLARE_PRIVATE:
     friend class SrsAmf0Any;
     /**
      * make amf0 date to private,
@@ -754,7 +754,7 @@ public:
  */
 class SrsAmf0Null : public SrsAmf0Any
 {
-private:
+SRS_DECLARE_PRIVATE:
     friend class SrsAmf0Any;
     /**
      * make amf0 null to private,
@@ -779,7 +779,7 @@ public:
  */
 class SrsAmf0Undefined : public SrsAmf0Any
 {
-private:
+SRS_DECLARE_PRIVATE:
     friend class SrsAmf0Any;
     /**
      * make amf0 undefined to private,
@@ -805,7 +805,7 @@ public:
  */
 class SrsUnSortedHashtable
 {
-private:
+SRS_DECLARE_PRIVATE:
     typedef std::pair<std::string, SrsAmf0Any *> SrsAmf0ObjectPropertyType;
     std::vector<SrsAmf0ObjectPropertyType> properties_;
 

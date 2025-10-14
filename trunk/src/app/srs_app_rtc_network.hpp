@@ -62,7 +62,7 @@ public:
 // A group of networks, each has its own DTLS and SRTP context.
 class SrsRtcNetworks : public ISrsRtcNetworks
 {
-private:
+SRS_DECLARE_PRIVATE:
     // Network over UDP.
     ISrsRtcNetwork *udp_;
     // Network over TCP
@@ -70,7 +70,7 @@ private:
     // Network over dummy
     ISrsRtcNetwork *dummy_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // WebRTC session object.
     ISrsRtcConnection *conn_;
     // Delta object for statistics.
@@ -170,17 +170,17 @@ public:
 // The WebRTC over UDP network.
 class SrsRtcUdpNetwork : public ISrsRtcNetwork
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsResourceManager *conn_manager_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // WebRTC session object.
     ISrsRtcConnection *conn_;
     // Delta object for statistics.
     ISrsEphemeralDelta *delta_;
     SrsRtcNetworkState state_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // Pithy print for address change, use port as error code.
     SrsErrorPithyPrint *pp_address_change_;
     // The peer address, client maybe use more than one address, it's the current selected one.
@@ -200,7 +200,7 @@ public:
     // When got STUN ping message. The peer address may change, we can identify that by STUN messages.
     srs_error_t on_stun(SrsStunPacket *r, char *data, int nb_data);
 
-private:
+SRS_DECLARE_PRIVATE:
     srs_error_t on_binding_request(SrsStunPacket *r, std::string ice_pwd);
     // DTLS transport functions.
 public:
@@ -229,17 +229,17 @@ public:
 
 class SrsRtcTcpNetwork : public ISrsRtcNetwork
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsRtcConnection *conn_;
     ISrsEphemeralDelta *delta_;
     ISrsProtocolReadWriter *sendonly_skt_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // The DTLS transport over this network.
     ISrsRtcTransport *transport_;
     SrsSharedResource<ISrsRtcTcpConn> owner_;
 
-private:
+SRS_DECLARE_PRIVATE:
     std::string peer_ip_;
     int peer_port_;
     SrsRtcNetworkState state_;
@@ -266,7 +266,7 @@ public:
     // When got STUN ping message. The peer address may change, we can identify that by STUN messages.
     srs_error_t on_stun(SrsStunPacket *r, char *data, int nb_data);
 
-private:
+SRS_DECLARE_PRIVATE:
     srs_error_t on_binding_request(SrsStunPacket *r, std::string ice_pwd);
     // DTLS transport functions.
 public:
@@ -308,15 +308,15 @@ public:
 // For WebRTC over TCP.
 class SrsRtcTcpConn : public ISrsRtcTcpConn
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsResourceManager *conn_manager_;
     ISrsStatistic *stat_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // Because session references to this object, so we should directly use the session ptr.
     ISrsRtcConnection *session_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // The ip and port of client.
     std::string ip_;
     int port_;
@@ -326,7 +326,7 @@ private:
     // Packet cache.
     char *pkt_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // The shared resource which own this object, we should never free it because it's managed by shared ptr.
     SrsSharedResource<ISrsRtcTcpConn> *wrapper_;
     // The owner coroutine, allow user to interrupt the loop.
@@ -334,7 +334,7 @@ private:
     ISrsContextIdSetter *owner_cid_;
     SrsContextId cid_;
 
-private:
+SRS_DECLARE_PRIVATE:
     void setup();
 
 public:
@@ -364,7 +364,7 @@ public:
 public:
     virtual srs_error_t cycle();
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t do_cycle();
     srs_error_t handshake();
     srs_error_t read_packet(char *pkt, int *nb_pkt);

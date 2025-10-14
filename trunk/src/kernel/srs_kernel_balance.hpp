@@ -50,7 +50,7 @@ public:
 //
 class SrsLbRoundRobin : public ISrsLbRoundRobin
 {
-private:
+SRS_DECLARE_PRIVATE:
     int index_;
     uint32_t count_;
     std::string elem_;

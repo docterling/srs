@@ -60,10 +60,10 @@ public:
 // The segmenter for DVR, to write a segment file in flv/mp4.
 class SrsDvrSegmenter : public ISrsReloadHandler, public ISrsDvrSegmenter
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppConfig *config_;
 
-protected:
+SRS_DECLARE_PROTECTED:
     // The underlayer file object.
     ISrsFileWriter *fs_;
     // Whether wait keyframe to reap segment.
@@ -71,11 +71,11 @@ protected:
     // The FLV/MP4 fragment file.
     SrsFragment *fragment_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsRequest *req_;
     ISrsDvrPlan *plan_;
 
-private:
+SRS_DECLARE_PRIVATE:
     SrsRtmpJitter *jitter_;
     SrsRtmpJitterAlgorithm jitter_algorithm_;
 
@@ -109,14 +109,14 @@ public:
     // @remark ignore when already closed.
     virtual srs_error_t close();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual srs_error_t open_encoder() = 0;
     virtual srs_error_t encode_metadata(SrsMediaPacket *metadata) = 0;
     virtual srs_error_t encode_audio(SrsMediaPacket *audio, SrsFormat *format) = 0;
     virtual srs_error_t encode_video(SrsMediaPacket *video, SrsFormat *format) = 0;
     virtual srs_error_t close_encoder() = 0;
 
-private:
+SRS_DECLARE_PRIVATE:
     // Generate the flv segment path.
     virtual std::string generate_path();
     // When update the duration of segment by rtmp msg.
@@ -126,14 +126,14 @@ private:
 // The FLV segmenter to use FLV encoder to write file.
 class SrsDvrFlvSegmenter : public SrsDvrSegmenter
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppFactory *app_factory_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // The FLV encoder, for FLV target.
     ISrsFlvTransmuxer *enc_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // The offset of file for duration value.
     // The next 8 bytes is the double value.
     int64_t duration_offset_;
@@ -150,7 +150,7 @@ public:
 public:
     virtual srs_error_t refresh_metadata();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual srs_error_t open_encoder();
     virtual srs_error_t encode_metadata(SrsMediaPacket *metadata);
     virtual srs_error_t encode_audio(SrsMediaPacket *audio, SrsFormat *format);
@@ -161,10 +161,10 @@ protected:
 // The MP4 segmenter to use MP4 encoder to write file.
 class SrsDvrMp4Segmenter : public SrsDvrSegmenter
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppFactory *app_factory_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // The MP4 encoder, for MP4 target.
     ISrsMp4Encoder *enc_;
 
@@ -175,7 +175,7 @@ public:
 public:
     virtual srs_error_t refresh_metadata();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual srs_error_t open_encoder();
     virtual srs_error_t encode_metadata(SrsMediaPacket *metadata);
     virtual srs_error_t encode_audio(SrsMediaPacket *audio, SrsFormat *format);
@@ -186,11 +186,11 @@ protected:
 // the dvr async call.
 class SrsDvrAsyncCallOnDvr : public ISrsAsyncCallTask
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsHttpHooks *hooks_;
     ISrsAppConfig *config_;
 
-private:
+SRS_DECLARE_PRIVATE:
     SrsContextId cid_;
     std::string path_;
     ISrsRequest *req_;
@@ -224,14 +224,14 @@ public:
 // The DVR plan, when and how to reap segment.
 class SrsDvrPlan : public ISrsReloadHandler, public ISrsDvrPlan
 {
-protected:
+SRS_DECLARE_PROTECTED:
     ISrsAsyncCallWorker *async_;
     ISrsAppConfig *config_;
 
 public:
     ISrsRequest *req_;
 
-protected:
+SRS_DECLARE_PROTECTED:
     ISrsOriginHub *hub_;
     ISrsDvrSegmenter *segment_;
     bool dvr_enabled_;
@@ -271,7 +271,7 @@ public:
 // The DVR segment plan: reap flv when duration exceed.
 class SrsDvrSegmentPlan : public SrsDvrPlan
 {
-private:
+SRS_DECLARE_PRIVATE:
     // in config, in srs_utime_t
     srs_utime_t cduration_;
     bool wait_keyframe_;
@@ -289,7 +289,7 @@ public:
     virtual srs_error_t on_audio(SrsMediaPacket *shared_audio, SrsFormat *format);
     virtual srs_error_t on_video(SrsMediaPacket *shared_video, SrsFormat *format);
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t update_duration(SrsMediaPacket *msg);
 };
 
@@ -313,16 +313,16 @@ public:
 // DVR(Digital Video Recorder) to record RTMP stream to flv/mp4 file.
 class SrsDvr : public ISrsReloadHandler, public ISrsDvr
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppConfig *config_;
     ISrsAppFactory *app_factory_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsOriginHub *hub_;
     ISrsDvrPlan *plan_;
     ISrsRequest *req_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // whether the dvr is actived by filter, which is specified by dvr_apply.
     // we always initialize the dvr, which crote plan and segment object,
     // but they never create actual piece of file util the apply active it.

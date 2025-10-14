@@ -30,10 +30,10 @@ public:
 // Transmux the RTMP packets to AAC stream.
 class SrsAacTransmuxer : public ISrsAacTransmuxer
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsStreamWriter *writer_;
 
-private:
+SRS_DECLARE_PRIVATE:
     SrsAacObjectType aac_object_;
     int8_t aac_sample_rate_;
     int8_t aac_channels_;

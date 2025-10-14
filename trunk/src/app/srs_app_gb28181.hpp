@@ -91,12 +91,12 @@ std::string srs_gb_state(SrsGbSessionState ostate, SrsGbSessionState state);
 //      {"port":9000, "is_tcp": true}
 class SrsGoApiGbPublish : public ISrsHttpHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppConfig *config_;
     ISrsResourceManager *gb_manager_;
     ISrsAppFactory *app_factory_;
 
-private:
+SRS_DECLARE_PRIVATE:
     SrsConfDirective *conf_;
 
 public:
@@ -106,7 +106,7 @@ public:
 public:
     virtual srs_error_t serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r);
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t do_serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, SrsJsonObject *res);
     srs_error_t bind_session(std::string stream, uint64_t ssrc);
 };
@@ -139,26 +139,26 @@ public:
 // media objects use directly pointer to session, while session use shared ptr.
 class SrsGbSession : public ISrsGbSession
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppConfig *config_;
 
-private:
+SRS_DECLARE_PRIVATE:
     SrsContextId cid_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // The shared resource which own this object, we should never free it because it's managed by shared ptr.
     SrsSharedResource<ISrsGbSession> *wrapper_;
     // The owner coroutine, allow user to interrupt the loop.
     ISrsInterruptable *owner_coroutine_;
     ISrsContextIdSetter *owner_cid_;
 
-private:
+SRS_DECLARE_PRIVATE:
     SrsGbSessionState state_;
 
     SrsSharedResource<ISrsGbMediaTcpConn> media_;
     ISrsGbMuxer *muxer_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // When wait for media connecting, timeout if exceed.
     srs_utime_t connecting_starttime_;
     // The time we enter reinviting state.
@@ -166,7 +166,7 @@ private:
     // The number of timeout, dispose session if exceed.
     uint32_t nn_timeout_;
 
-private:
+SRS_DECLARE_PRIVATE:
     SrsAlonePithyPrint *ppp_;
     srs_utime_t startime_;
     uint64_t total_packs_;
@@ -175,7 +175,7 @@ private:
     uint64_t total_msgs_dropped_;
     uint64_t total_reserved_;
 
-private:
+SRS_DECLARE_PRIVATE:
     uint32_t media_id_;
     srs_utime_t media_starttime_;
     uint64_t media_msgs_;
@@ -213,11 +213,11 @@ public:
 public:
     virtual srs_error_t cycle();
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t do_cycle();
     srs_error_t drive_state();
 
-private:
+SRS_DECLARE_PRIVATE:
     SrsGbSessionState set_state(SrsGbSessionState v);
     // Interface ISrsResource
 public:
@@ -238,13 +238,13 @@ public:
 // The Media listener for GB.
 class SrsGbListener : public ISrsGbListener, public ISrsTcpHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppConfig *config_;
     ISrsApiServerOwner *api_server_owner_;
     ISrsResourceManager *gb_manager_;
     ISrsAppFactory *app_factory_;
 
-private:
+SRS_DECLARE_PRIVATE:
     SrsConfDirective *conf_;
     ISrsIpListener *media_listener_;
 
@@ -260,7 +260,7 @@ public:
 public:
     virtual srs_error_t on_tcp_client(ISrsListener *listener, srs_netfd_t stfd);
 
-private:
+SRS_DECLARE_PRIVATE:
     srs_error_t listen_api();
 };
 
@@ -301,16 +301,16 @@ public:
 class SrsGbMediaTcpConn : public ISrsGbMediaTcpConn, // It's a resource, coroutine handler, and executor handler.
                           public ISrsPsPackHandler
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsResourceManager *gb_manager_;
 
-private:
+SRS_DECLARE_PRIVATE:
     bool connected_;
     // The owner session object, note that we use the raw pointer and should never free it.
     ISrsGbSession *session_;
     uint32_t nn_rtcp_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // The shared resource which own this object, we should never free it because it's managed by shared ptr.
     SrsSharedResource<ISrsGbMediaTcpConn> *wrapper_;
     // The owner coroutine, allow user to interrupt the loop.
@@ -318,7 +318,7 @@ private:
     ISrsContextIdSetter *owner_cid_;
     SrsContextId cid_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsPackContext *pack_;
     ISrsProtocolReadWriter *conn_;
     uint8_t *buffer_;
@@ -351,13 +351,13 @@ public:
 public:
     virtual srs_error_t cycle();
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t do_cycle();
     // Interface ISrsPsPackHandler
 public:
     virtual srs_error_t on_ps_pack(SrsPsPacket *ps, const std::vector<SrsTsMessage *> &msgs);
 
-private:
+SRS_DECLARE_PRIVATE:
     // Create session if no one, or bind to an existed session.
     srs_error_t bind_session(uint32_t ssrc, ISrsGbSession **psession);
 };
@@ -379,7 +379,7 @@ public:
 // we must recalc the timestamp.
 class SrsMpegpsQueue : public ISrsMpegpsQueue
 {
-private:
+SRS_DECLARE_PRIVATE:
     // The key: dts, value: msg.
     std::map<int64_t, SrsMediaPacket *> msgs_;
     int nb_audios_;
@@ -409,16 +409,16 @@ public:
 // Mux GB28181 to RTMP.
 class SrsGbMuxer : public ISrsGbMuxer
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsAppFactory *app_factory_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // The owner session object, note that we use the raw pointer and should never free it.
     ISrsGbSession *session_;
     std::string output_;
     ISrsBasicRtmpClient *sdk_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsRawH264Stream *avc_;
     std::string h264_sps_;
     bool h264_sps_changed_;
@@ -433,11 +433,11 @@ private:
     std::string h265_pps_;
     bool vps_sps_pps_sent_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsRawAacStream *aac_;
     std::string aac_specific_config_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsMpegpsQueue *queue_;
     ISrsPithyPrint *pprint_;
 
@@ -449,7 +449,7 @@ public:
     void setup(std::string output);
     srs_error_t on_ts_message(SrsTsMessage *msg);
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t on_ts_video(SrsTsMessage *msg, SrsBuffer *avs);
     virtual srs_error_t mux_h264(SrsTsMessage *msg, SrsBuffer *avs);
     virtual srs_error_t write_h264_sps_pps(uint32_t dts, uint32_t pts);
@@ -461,7 +461,7 @@ private:
     virtual srs_error_t write_audio_raw_frame(char *frame, int frame_size, SrsRawAacStreamCodec *codec, uint32_t dts);
     virtual srs_error_t rtmp_write_packet(char type, uint32_t timestamp, char *data, int size);
 
-private:
+SRS_DECLARE_PRIVATE:
     // Connect to RTMP server.
     virtual srs_error_t connect();
     // Close the connection to RTMP server.
@@ -484,7 +484,7 @@ class SrsRecoverablePsContext : public ISrsRecoverablePsContext
 public:
     ISrsPsContext *ctx_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // If decoding error, enter the recover mode. Drop all left bytes util next pack header.
     int recover_;
 
@@ -497,7 +497,7 @@ public:
     // parsed by previous decoding, we should move to the start of payload bytes.
     virtual srs_error_t decode_rtp(SrsBuffer *stream, int reserved, ISrsPsMessageHandler *handler);
 
-private:
+SRS_DECLARE_PRIVATE:
     // Decode the RTP payload as PS pack stream.
     virtual srs_error_t decode(SrsBuffer *stream, ISrsPsMessageHandler *handler);
     // When got error, drop data and enter recover mode.
@@ -530,7 +530,7 @@ public:
 // PS pack stream.
 class SrsPackContext : public ISrsPackContext
 {
-private:
+SRS_DECLARE_PRIVATE:
     // To process a pack of TS/PS messages.
     ISrsPsPackHandler *handler_;
     // Note that it might be freed, so never use its fields.

@@ -36,14 +36,14 @@ srs_error_t openssl_generate_key(char *public_key, int32_t size);
 // The DH wrapper.
 class SrsDH
 {
-private:
+SRS_DECLARE_PRIVATE:
     DH *pdh;
 
 public:
     SrsDH();
     virtual ~SrsDH();
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual void close();
 
 public:
@@ -67,7 +67,7 @@ public:
     //       user should never ignore this size.
     virtual srs_error_t copy_shared_key(const char *ppkey, int32_t ppkey_size, char *skey, int32_t &skey_size);
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t do_initialize();
 };
 // The schema type.
@@ -91,7 +91,7 @@ enum srs_schema_type {
 // @see also: http://blog.csdn.net/win_lin/article/details/13006803
 class SrsKeyBlock
 {
-private:
+SRS_DECLARE_PRIVATE:
     SrsRand rand_;
 
 public:
@@ -119,7 +119,7 @@ public:
     // @stream contains c1s1_key_bytes the key start bytes
     srs_error_t parse(SrsBuffer *stream);
 
-private:
+SRS_DECLARE_PRIVATE:
     // Calculate the offset of key,
     // The key->offset cannot be used as the offset of key.
     int calc_valid_offset();
@@ -133,7 +133,7 @@ private:
 // @see also: http://blog.csdn.net/win_lin/article/details/13006803
 class SrsDigestBlock
 {
-private:
+SRS_DECLARE_PRIVATE:
     SrsRand rand_;
 
 public:
@@ -161,7 +161,7 @@ public:
     // @stream contains c1s1_digest_bytes the digest start bytes
     srs_error_t parse(SrsBuffer *stream);
 
-private:
+SRS_DECLARE_PRIVATE:
     // Calculate the offset of digest,
     // The key->offset cannot be used as the offset of digest.
     int calc_valid_offset();
@@ -174,7 +174,7 @@ class SrsC1S1;
 // while the concrete class to implements in schema0 or schema1.
 class SrsC1S1Strategy
 {
-protected:
+SRS_DECLARE_PROTECTED:
     SrsKeyBlock key_;
     SrsDigestBlock digest_;
 
@@ -389,7 +389,7 @@ public:
 // @see also: http://blog.csdn.net/win_lin/article/details/13006803
 class SrsC2S2
 {
-private:
+SRS_DECLARE_PRIVATE:
     SrsRand rand_;
 
 public:

@@ -19,7 +19,7 @@
 // which identify the client.
 class SrsThreadContext : public ISrsContext
 {
-private:
+SRS_DECLARE_PRIVATE:
     std::map<srs_thread_t, SrsContextId> cache_;
 
 public:
@@ -31,7 +31,7 @@ public:
     virtual const SrsContextId &get_id();
     virtual const SrsContextId &set_id(const SrsContextId &v);
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual void clear_cid();
 };
 

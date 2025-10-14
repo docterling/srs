@@ -71,10 +71,10 @@ public:
 // A pps manager every some duration.
 class SrsPps
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsClock *clk_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // samples
     SrsRateSample sample_10s_;
     SrsRateSample sample_30s_;
@@ -252,7 +252,7 @@ void srs_global_rtc_update(SrsKbsRtcStats *stats);
  */
 class SrsKbpsSlice
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsClock *clk_;
 
 public:
@@ -315,7 +315,7 @@ public:
 // sent out each UDP packet.
 class SrsEphemeralDelta : public ISrsEphemeralDelta
 {
-private:
+SRS_DECLARE_PRIVATE:
     uint64_t in_;
     uint64_t out_;
 
@@ -344,7 +344,7 @@ public:
 // A network delta data source for SrsKbps.
 class SrsNetworkDelta : public ISrsNetworkDelta
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsProtocolStatistic *in_;
     ISrsProtocolStatistic *out_;
     uint64_t in_base_;
@@ -375,7 +375,7 @@ public:
  */
 class SrsKbps
 {
-private:
+SRS_DECLARE_PRIVATE:
     SrsKbpsSlice *is_;
     SrsKbpsSlice *os_;
     ISrsClock *clk_;
@@ -411,7 +411,7 @@ public:
 // A sugar to use SrsNetworkDelta and SrsKbps.
 class SrsNetworkKbps
 {
-private:
+SRS_DECLARE_PRIVATE:
     SrsNetworkDelta *delta_;
     SrsKbps *kbps_;
 

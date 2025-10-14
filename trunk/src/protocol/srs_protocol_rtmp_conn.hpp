@@ -68,15 +68,15 @@ public:
 //      client.close();
 class SrsBasicRtmpClient : public ISrsBasicRtmpClient
 {
-private:
+SRS_DECLARE_PRIVATE:
     std::string url_;
     srs_utime_t connect_timeout_;
     srs_utime_t stream_timeout_;
 
-protected:
+SRS_DECLARE_PROTECTED:
     ISrsRequest *req_;
 
-private:
+SRS_DECLARE_PRIVATE:
     SrsTcpClient *transport_;
     SrsRtmpClient *client_;
     SrsNetworkKbps *kbps_;
@@ -100,7 +100,7 @@ public:
     virtual srs_error_t connect();
     virtual void close();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual srs_error_t connect_app();
     virtual srs_error_t do_connect_app(std::string local_ip, bool debug);
 

@@ -434,7 +434,7 @@ extern bool srs_is_server_gracefully_close(srs_error_t err);
 // please @read https://github.com/ossrs/srs/issues/913
 class SrsCplxError
 {
-private:
+SRS_DECLARE_PRIVATE:
     int code_;
     SrsCplxError *wrapped_;
     std::string msg_;
@@ -449,13 +449,13 @@ private:
     std::string desc_;
     std::string summary_;
 
-private:
+SRS_DECLARE_PRIVATE:
     SrsCplxError();
 
 public:
     virtual ~SrsCplxError();
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual std::string description();
     virtual std::string summary();
 

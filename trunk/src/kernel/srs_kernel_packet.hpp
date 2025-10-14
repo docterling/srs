@@ -252,17 +252,17 @@ public:
     virtual SrsParsedVideoPacket *video();
     virtual SrsVideoCodecConfig *vcodec();
 
-private:
+SRS_DECLARE_PRIVATE:
     // Demux the video packet in H.264 codec.
     // The packet is muxed in FLV format, defined in flv specification.
     //          Demux the sps/pps from sequence header.
     //          Demux the samples from NALUs.
     virtual srs_error_t video_avc_demux(SrsBuffer *stream, int64_t timestamp);
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t hevc_demux_hvcc(SrsBuffer *stream);
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t hevc_demux_vps_sps_pps(SrsHevcHvccNalu *nal);
     virtual srs_error_t hevc_demux_vps_rbsp(char *rbsp, int nb_rbsp);
     virtual srs_error_t hevc_demux_sps_rbsp(char *rbsp, int nb_rbsp);
@@ -274,13 +274,13 @@ public:
     virtual srs_error_t hevc_demux_sps(SrsBuffer *stream);
     virtual srs_error_t hevc_demux_pps(SrsBuffer *stream);
 
-private:
+SRS_DECLARE_PRIVATE:
     // Parse the H.264 SPS/PPS.
     virtual srs_error_t avc_demux_sps_pps(SrsBuffer *stream);
     virtual srs_error_t avc_demux_sps();
     virtual srs_error_t avc_demux_sps_rbsp(char *rbsp, int nb_rbsp);
 
-private:
+SRS_DECLARE_PRIVATE:
     // Parse the H.264 or H.265 NALUs.
     virtual srs_error_t video_nalu_demux(SrsBuffer *stream);
     // Demux the avc NALU in "AnnexB" from ISO_IEC_14496-10-AVC-2003.pdf, page 211.
@@ -290,7 +290,7 @@ private:
     virtual srs_error_t avc_demux_ibmf_format(SrsBuffer *stream);
     virtual srs_error_t do_avc_demux_ibmf_format(SrsBuffer *stream);
 
-private:
+SRS_DECLARE_PRIVATE:
     // Demux the audio packet in AAC codec.
     //          Demux the asc from sequence header.
     //          Demux the sampels from RAW data.

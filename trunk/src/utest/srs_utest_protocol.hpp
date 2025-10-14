@@ -105,7 +105,7 @@ public:
 
 class MockStatistic : public ISrsProtocolStatistic
 {
-private:
+SRS_DECLARE_PRIVATE:
     int64_t in;
     int64_t out;
 
@@ -126,7 +126,7 @@ public:
 
 class MockWallClock : public SrsWallClock
 {
-private:
+SRS_DECLARE_PRIVATE:
     int64_t clock;
 
 public:

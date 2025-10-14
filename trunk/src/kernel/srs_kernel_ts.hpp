@@ -338,18 +338,18 @@ public:
 // The context of ts, to decode the ts stream.
 class SrsTsContext : public ISrsTsContext
 {
-private:
+SRS_DECLARE_PRIVATE:
     // Whether context is ready, failed if try to write data when not ready.
     // When PAT and PMT writen, the context is ready.
     // @see https://github.com/ossrs/srs/issues/834
     bool ready_;
 
-private:
+SRS_DECLARE_PRIVATE:
     std::map<int, SrsTsChannel *> pids_;
     bool pure_audio_;
     int8_t sync_byte_;
 
-private:
+SRS_DECLARE_PRIVATE:
     // when any codec changed, write the PAT/PMT.
     SrsVideoCodecId vcodec_;
     SrsAudioCodecId acodec_;
@@ -391,7 +391,7 @@ public:
     // @param ac The audio codec, write the PAT/PMT table when changed.
     virtual srs_error_t encode(ISrsStreamWriter *writer, SrsTsMessage *msg, SrsVideoCodecId vc, SrsAudioCodecId ac);
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t encode_pat_pmt(ISrsStreamWriter *writer, int16_t vpid, SrsTsStream vs, int16_t apid, SrsTsStream as);
     virtual srs_error_t encode_pes(ISrsStreamWriter *writer, SrsTsMessage *msg, int16_t pid, SrsTsStream sid, bool pure_audio);
 };
@@ -471,7 +471,7 @@ public:
     // The continuity counter may be discontinuous when the discontinuity_indicator is set to '1' (refer to 2.4.3.4). In the case of
     // a null packet the value of the continuity_counter is undefined.
     uint8_t continuity_counter_; // 4bits
-private:
+SRS_DECLARE_PRIVATE:
     SrsTsAdaptationField *adaptation_field_;
     SrsTsPayload *payload_;
 
@@ -742,7 +742,7 @@ public:
     // decoder.
     int nb_af_reserved_;
 
-private:
+SRS_DECLARE_PRIVATE:
     SrsTsPacket *packet_;
 
 public:
@@ -788,7 +788,7 @@ enum SrsTsPsiId {
 // The payload of ts packet, can be PES or PSI payload.
 class SrsTsPayload
 {
-protected:
+SRS_DECLARE_PROTECTED:
     SrsTsPacket *packet_;
 
 public:
@@ -1071,7 +1071,7 @@ public:
     virtual int size();
     virtual srs_error_t encode(SrsBuffer *stream);
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t decode_33bits_dts_pts(SrsBuffer *stream, int64_t *pv);
     virtual srs_error_t encode_33bits_dts_pts(SrsBuffer *stream, uint8_t fb, int64_t v);
 };
@@ -1145,7 +1145,7 @@ public:
     virtual int size();
     virtual srs_error_t encode(SrsBuffer *stream);
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int psi_size() = 0;
     virtual srs_error_t psi_encode(SrsBuffer *stream) = 0;
     virtual srs_error_t psi_decode(SrsBuffer *stream) = 0;
@@ -1226,10 +1226,10 @@ public:
     SrsTsPayloadPAT(SrsTsPacket *p);
     virtual ~SrsTsPayloadPAT();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual srs_error_t psi_decode(SrsBuffer *stream);
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int psi_size();
     virtual srs_error_t psi_encode(SrsBuffer *stream);
 };
@@ -1331,10 +1331,10 @@ public:
     SrsTsPayloadPMT(SrsTsPacket *p);
     virtual ~SrsTsPayloadPMT();
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual srs_error_t psi_decode(SrsBuffer *stream);
 
-protected:
+SRS_DECLARE_PROTECTED:
     virtual int psi_size();
     virtual srs_error_t psi_encode(SrsBuffer *stream);
 };
@@ -1366,12 +1366,12 @@ public:
 // Write the TS message to TS context.
 class SrsTsContextWriter : public ISrsTsContextWriter
 {
-private:
+SRS_DECLARE_PRIVATE:
     // User must config the codec in right way.
     SrsVideoCodecId vcodec_;
     SrsAudioCodecId acodec_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsTsContext *context_;
     ISrsStreamWriter *writer_;
     std::string path_;
@@ -1411,11 +1411,11 @@ public:
 public:
     srs_error_t config_cipher(unsigned char *key, unsigned char *iv);
 
-private:
+SRS_DECLARE_PRIVATE:
     unsigned char *key;
     unsigned char iv[16];
 
-private:
+SRS_DECLARE_PRIVATE:
     char *buf;
     int nb_buf;
 };
@@ -1469,7 +1469,7 @@ public:
     virtual SrsTsMessage *video();
     virtual void set_video(SrsTsMessage *msg);
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t do_cache_mp3(SrsParsedAudioPacket *frame);
     virtual srs_error_t do_cache_aac(SrsParsedAudioPacket *frame);
     virtual srs_error_t do_cache_avc(SrsParsedVideoPacket *frame);
@@ -1497,13 +1497,13 @@ public:
 // Transmux the RTMP stream to HTTP-TS stream.
 class SrsTsTransmuxer : public ISrsTsTransmuxer
 {
-private:
+SRS_DECLARE_PRIVATE:
     ISrsStreamWriter *writer_;
     bool has_audio_;
     bool has_video_;
     bool guess_has_av_;
 
-private:
+SRS_DECLARE_PRIVATE:
     ISrsFormat *format_;
     ISrsTsMessageCache *tsmc_;
     ISrsTsContextWriter *tscw_;
@@ -1529,7 +1529,7 @@ public:
     virtual srs_error_t write_audio(int64_t timestamp, char *data, int size);
     virtual srs_error_t write_video(int64_t timestamp, char *data, int size);
 
-private:
+SRS_DECLARE_PRIVATE:
     virtual srs_error_t flush_audio();
     virtual srs_error_t flush_video();
 };
