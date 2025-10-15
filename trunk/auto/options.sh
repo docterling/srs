@@ -549,6 +549,10 @@ function apply_auto_options() {
         SRS_SANITIZER=YES
     fi
 
+    if [[ $SRS_SANITIZER == RESERVED && $SRS_UTEST == YES ]]; then
+        SRS_SANITIZER=YES
+    fi
+
     # If enable gperf, disable sanitizer.
     if [[ $SRS_GPERF == YES && $SRS_SANITIZER == YES ]]; then
         echo "Disable sanitizer for gperf"
