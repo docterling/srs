@@ -396,6 +396,20 @@ public:
     // Heartbeat config
     virtual bool get_heartbeat_enabled() = 0;
     virtual srs_utime_t get_heartbeat_interval() = 0;
+    virtual std::string get_heartbeat_url() = 0;
+    virtual std::string get_heartbeat_device_id() = 0;
+    virtual bool get_heartbeat_summaries() = 0;
+    virtual bool get_heartbeat_ports() = 0;
+
+public:
+    // Circuit breaker config
+    virtual bool get_circuit_breaker() = 0;
+    virtual int get_high_threshold() = 0;
+    virtual int get_high_pulse() = 0;
+    virtual int get_critical_threshold() = 0;
+    virtual int get_critical_pulse() = 0;
+    virtual int get_dying_threshold() = 0;
+    virtual int get_dying_pulse() = 0;
 
 public:
     // RTMPS config
@@ -1522,7 +1536,7 @@ public:
     virtual std::string get_heartbeat_device_id();
     // Whether report with summaries of http api: /api/v1/summaries.
     virtual bool get_heartbeat_summaries();
-    bool get_heartbeat_ports();
+    virtual bool get_heartbeat_ports();
     // stats section
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on

@@ -11,6 +11,10 @@
 
 #include <srs_kernel_hourglass.hpp>
 
+class ISrsAppConfig;
+class ISrsSharedTimer;
+class ISrsHost;
+
 // Interface for circuit breaker functionality to protect server in high load conditions.
 // The circuit breaker monitors CPU usage and enables different levels of protection:
 // - High water level: Disables some unnecessary features to reduce CPU load
@@ -48,6 +52,12 @@ public:
 
 class SrsCircuitBreaker : public ISrsCircuitBreaker, public ISrsFastTimerHandler
 {
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
+    ISrsAppConfig *config_;
+    ISrsSharedTimer *shared_timer_;
+    ISrsHost *host_;
+
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     bool enabled_;

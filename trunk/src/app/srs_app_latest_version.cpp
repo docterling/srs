@@ -11,6 +11,7 @@
 #include <srs_app_http_conn.hpp>
 #include <srs_app_statistic.hpp>
 
+#include <srs_app_factory.hpp>
 #include <srs_app_utility.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_error.hpp>
@@ -18,7 +19,6 @@
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_json.hpp>
 #include <srs_protocol_utility.hpp>
-#include <srs_app_factory.hpp>
 
 #include <sstream>
 #include <unistd.h>

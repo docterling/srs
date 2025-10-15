@@ -403,6 +403,17 @@ public:
     virtual int get_stats_network() { return 0; }
     virtual bool get_heartbeat_enabled() { return false; }
     virtual srs_utime_t get_heartbeat_interval() { return 0; }
+    virtual std::string get_heartbeat_url() { return ""; }
+    virtual std::string get_heartbeat_device_id() { return ""; }
+    virtual bool get_heartbeat_summaries() { return false; }
+    virtual bool get_heartbeat_ports() { return false; }
+    virtual bool get_circuit_breaker() { return false; }
+    virtual int get_high_threshold() { return 0; }
+    virtual int get_high_pulse() { return 0; }
+    virtual int get_critical_threshold() { return 0; }
+    virtual int get_critical_pulse() { return 0; }
+    virtual int get_dying_threshold() { return 0; }
+    virtual int get_dying_pulse() { return 0; }
     virtual std::string get_rtmps_ssl_cert() { return ""; }
     virtual std::string get_rtmps_ssl_key() { return ""; }
     virtual SrsConfDirective *get_vhost(std::string vhost, bool try_default_vhost = true) { return NULL; }

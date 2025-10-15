@@ -13,18 +13,21 @@
 #include <srs_utest.hpp>
 
 #include <srs_app_caster_flv.hpp>
+#include <srs_app_circuit_breaker.hpp>
 #include <srs_app_config.hpp>
 #include <srs_app_factory.hpp>
 #include <srs_app_ffmpeg.hpp>
 #include <srs_app_listener.hpp>
 #include <srs_app_mpegts_udp.hpp>
+#include <srs_app_utility.hpp>
 #include <srs_kernel_pithy_print.hpp>
+#include <srs_protocol_http_client.hpp>
 #include <srs_protocol_raw_avc.hpp>
 #include <srs_protocol_rtmp_conn.hpp>
-#include <srs_protocol_http_client.hpp>
 #include <srs_utest_app10.hpp>
 #include <srs_utest_app11.hpp>
 #include <srs_utest_app6.hpp>
+#include <srs_utest_kernel.hpp>
 
 // Mock ISrsAppConfig for testing SrsUdpCasterListener
 class MockAppConfigForUdpCaster : public MockAppConfig
@@ -875,6 +878,215 @@ public:
 public:
     virtual ISrsHttpClient *create_http_client();
     void reset();
+};
+
+// Mock ISrsHttpMessage for testing SrsHttpHeartbeat
+class MockHttpMessageForHeartbeat : public ISrsHttpMessage
+{
+public:
+    int status_code_;
+    std::string body_content_;
+    ISrsReader *body_reader_;
+
+public:
+    MockHttpMessageForHeartbeat();
+    virtual ~MockHttpMessageForHeartbeat();
+
+public:
+    virtual uint8_t method();
+    virtual uint16_t status_code();
+    virtual std::string method_str();
+    virtual std::string url();
+    virtual std::string host();
+    virtual std::string path();
+    virtual std::string query();
+    virtual std::string ext();
+    virtual srs_error_t body_read_all(std::string &body);
+    virtual ISrsHttpResponseReader *body_reader();
+    virtual int64_t content_length();
+    virtual std::string query_get(std::string key);
+    virtual SrsHttpHeader *header();
+    virtual bool is_jsonp();
+    virtual bool is_keep_alive();
+    virtual ISrsRequest *to_request(std::string vhost);
+    virtual std::string parse_rest_id(std::string pattern);
+    virtual uint8_t message_type();
+    virtual bool is_http_get();
+    virtual bool is_http_put();
+    virtual bool is_http_post();
+    virtual bool is_http_delete();
+    virtual bool is_http_options();
+    virtual std::string uri();
+    void reset();
+};
+
+// Mock ISrsHttpClient for testing SrsHttpHeartbeat
+class MockHttpClientForHeartbeat : public ISrsHttpClient
+{
+public:
+    bool initialize_called_;
+    bool post_called_;
+    std::string schema_;
+    std::string host_;
+    int port_;
+    std::string path_;
+    std::string request_body_;
+    MockHttpMessageForHeartbeat *mock_response_;
+    srs_error_t initialize_error_;
+    srs_error_t post_error_;
+    bool should_delete_response_;
+
+public:
+    MockHttpClientForHeartbeat();
+    virtual ~MockHttpClientForHeartbeat();
+
+public:
+    virtual srs_error_t initialize(std::string schema, std::string h, int p, srs_utime_t tm = SRS_HTTP_CLIENT_TIMEOUT);
+    virtual srs_error_t get(std::string path, std::string req, ISrsHttpMessage **ppmsg);
+    virtual srs_error_t post(std::string path, std::string req, ISrsHttpMessage **ppmsg);
+    virtual void set_recv_timeout(srs_utime_t tm);
+    virtual void kbps_sample(const char *label, srs_utime_t age);
+    void reset();
+};
+
+// Mock ISrsAppFactory for testing SrsHttpHeartbeat
+class MockAppFactoryForHeartbeat : public SrsAppFactory
+{
+public:
+    MockHttpClientForHeartbeat *mock_http_client_;
+    bool create_http_client_called_;
+    bool should_delete_client_;
+
+public:
+    MockAppFactoryForHeartbeat();
+    virtual ~MockAppFactoryForHeartbeat();
+
+public:
+    virtual ISrsHttpClient *create_http_client();
+    void reset();
+};
+
+// Mock ISrsAppConfig for testing SrsHttpHeartbeat
+class MockAppConfigForHeartbeat : public MockAppConfig
+{
+public:
+    std::string heartbeat_url_;
+    std::string heartbeat_device_id_;
+    bool heartbeat_summaries_;
+    bool heartbeat_ports_;
+    int stats_network_;
+    bool http_stream_enabled_;
+    bool http_api_enabled_;
+    bool srt_enabled_;
+    bool rtsp_server_enabled_;
+    bool rtc_server_enabled_;
+    bool rtc_server_tcp_enabled_;
+    std::vector<std::string> listens_;
+    std::vector<std::string> http_stream_listens_;
+    std::vector<std::string> http_api_listens_;
+    std::vector<std::string> srt_listens_;
+    std::vector<std::string> rtsp_server_listens_;
+    std::vector<std::string> rtc_server_listens_;
+    std::vector<std::string> rtc_server_tcp_listens_;
+
+public:
+    MockAppConfigForHeartbeat();
+    virtual ~MockAppConfigForHeartbeat();
+
+public:
+    virtual std::string get_heartbeat_url();
+    virtual std::string get_heartbeat_device_id();
+    virtual bool get_heartbeat_summaries();
+    virtual bool get_heartbeat_ports();
+    virtual int get_stats_network();
+    virtual std::vector<std::string> get_listens();
+    virtual bool get_http_stream_enabled();
+    virtual std::vector<std::string> get_http_stream_listens();
+    virtual bool get_http_api_enabled();
+    virtual std::vector<std::string> get_http_api_listens();
+    virtual bool get_srt_enabled();
+    virtual std::vector<std::string> get_srt_listens();
+    virtual bool get_rtsp_server_enabled();
+    virtual std::vector<std::string> get_rtsp_server_listens();
+    virtual bool get_rtc_server_enabled();
+    virtual std::vector<std::string> get_rtc_server_listens();
+    virtual bool get_rtc_server_tcp_enabled();
+    virtual std::vector<std::string> get_rtc_server_tcp_listens();
+};
+
+// Mock ISrsAppConfig for testing SrsCircuitBreaker
+class MockAppConfigForCircuitBreaker : public MockAppConfig
+{
+public:
+    bool circuit_breaker_enabled_;
+    int high_threshold_;
+    int high_pulse_;
+    int critical_threshold_;
+    int critical_pulse_;
+    int dying_threshold_;
+    int dying_pulse_;
+
+public:
+    MockAppConfigForCircuitBreaker();
+    virtual ~MockAppConfigForCircuitBreaker();
+
+public:
+    virtual bool get_circuit_breaker();
+    virtual int get_high_threshold();
+    virtual int get_high_pulse();
+    virtual int get_critical_threshold();
+    virtual int get_critical_pulse();
+    virtual int get_dying_threshold();
+    virtual int get_dying_pulse();
+};
+
+// Mock ISrsFastTimer for testing SrsCircuitBreaker
+class MockFastTimerForCircuitBreaker : public ISrsFastTimer
+{
+public:
+    bool subscribe_called_;
+    ISrsFastTimerHandler *subscribed_handler_;
+
+public:
+    MockFastTimerForCircuitBreaker();
+    virtual ~MockFastTimerForCircuitBreaker();
+
+public:
+    virtual srs_error_t start();
+    virtual void subscribe(ISrsFastTimerHandler *handler);
+    virtual void unsubscribe(ISrsFastTimerHandler *handler);
+    void reset();
+};
+
+// Mock ISrsSharedTimer for testing SrsCircuitBreaker
+class MockSharedTimerForCircuitBreaker : public ISrsSharedTimer
+{
+public:
+    MockFastTimerForCircuitBreaker *timer1s_;
+
+public:
+    MockSharedTimerForCircuitBreaker();
+    virtual ~MockSharedTimerForCircuitBreaker();
+
+public:
+    virtual ISrsFastTimer *timer20ms();
+    virtual ISrsFastTimer *timer100ms();
+    virtual ISrsFastTimer *timer1s();
+    virtual ISrsFastTimer *timer5s();
+};
+
+// Mock ISrsHost for testing SrsCircuitBreaker
+class MockHostForCircuitBreaker : public ISrsHost
+{
+public:
+    SrsProcSelfStat *proc_stat_;
+
+public:
+    MockHostForCircuitBreaker();
+    virtual ~MockHostForCircuitBreaker();
+
+public:
+    virtual SrsProcSelfStat *self_proc_stat();
 };
 
 #endif
