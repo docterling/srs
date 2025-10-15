@@ -552,10 +552,11 @@ function apply_auto_options() {
         SRS_SHARED_SRTP=YES
     fi
 
-    # Enable asan, but disable for Centos
+    # Disable sanitizer by default to avoid issues with daemon mode.
+    # Enable sanitizer only for utest and when explicitly requested.
     # @see https://github.com/ossrs/srs/issues/3347
-    if [[ $SRS_SANITIZER == RESERVED && $OS_IS_CENTOS != YES ]]; then
-        echo "Enable asan by auto options."
+    if [[ $SRS_SANITIZER == RESERVED && $SRS_UTEST == YES ]]; then
+        echo "Enable asan for utest."
         SRS_SANITIZER=YES
     fi
 
