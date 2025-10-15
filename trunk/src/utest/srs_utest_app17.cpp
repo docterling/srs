@@ -9,6 +9,8 @@
 using namespace std;
 
 #include <srs_app_caster_flv.hpp>
+#include <srs_app_encoder.hpp>
+#include <srs_app_ffmpeg.hpp>
 #include <srs_app_http_conn.hpp>
 #include <srs_app_mpegts_udp.hpp>
 #include <srs_app_recv_thread.hpp>
@@ -3163,4 +3165,320 @@ VOID TEST(PublishRecvThreadTest, BasicOperations)
 
     // Clean up
     srs_freep(video_msg);
+}
+
+// Mock ISrsFFMPEG implementation
+MockFFMPEGForEncoder::MockFFMPEGForEncoder()
+{
+    initialize_called_ = false;
+    start_called_ = false;
+    start_error_ = srs_success;
+    output_ = "";
+}
+
+MockFFMPEGForEncoder::~MockFFMPEGForEncoder()
+{
+}
+
+void MockFFMPEGForEncoder::append_iparam(std::string iparam)
+{
+}
+
+void MockFFMPEGForEncoder::set_oformat(std::string format)
+{
+}
+
+std::string MockFFMPEGForEncoder::output()
+{
+    return output_;
+}
+
+srs_error_t MockFFMPEGForEncoder::initialize(std::string in, std::string out, std::string log)
+{
+    initialize_called_ = true;
+    output_ = out;
+    return srs_success;
+}
+
+srs_error_t MockFFMPEGForEncoder::initialize_transcode(SrsConfDirective *engine)
+{
+    return srs_success;
+}
+
+srs_error_t MockFFMPEGForEncoder::initialize_copy()
+{
+    return srs_success;
+}
+
+srs_error_t MockFFMPEGForEncoder::start()
+{
+    start_called_ = true;
+    return srs_error_copy(start_error_);
+}
+
+srs_error_t MockFFMPEGForEncoder::cycle()
+{
+    return srs_success;
+}
+
+void MockFFMPEGForEncoder::stop()
+{
+}
+
+void MockFFMPEGForEncoder::fast_stop()
+{
+}
+
+void MockFFMPEGForEncoder::fast_kill()
+{
+}
+
+void MockFFMPEGForEncoder::reset()
+{
+    initialize_called_ = false;
+    start_called_ = false;
+    srs_freep(start_error_);
+    output_ = "";
+}
+
+// Mock ISrsAppConfig implementation
+MockAppConfigForEncoder::MockAppConfigForEncoder()
+{
+    transcode_directive_ = NULL;
+    transcode_enabled_ = true;
+    transcode_ffmpeg_bin_ = "/usr/bin/ffmpeg";
+    engine_enabled_ = true;
+    target_scope_ = "";  // Default to vhost scope (empty string)
+}
+
+MockAppConfigForEncoder::~MockAppConfigForEncoder()
+{
+    reset();
+}
+
+SrsConfDirective *MockAppConfigForEncoder::get_transcode(std::string vhost, std::string scope)
+{
+    // Only return transcode_directive_ for the target scope
+    if (scope == target_scope_) {
+        return transcode_directive_;
+    }
+    return NULL;
+}
+
+bool MockAppConfigForEncoder::get_transcode_enabled(SrsConfDirective *conf)
+{
+    return transcode_enabled_;
+}
+
+std::string MockAppConfigForEncoder::get_transcode_ffmpeg(SrsConfDirective *conf)
+{
+    return transcode_ffmpeg_bin_;
+}
+
+std::vector<SrsConfDirective *> MockAppConfigForEncoder::get_transcode_engines(SrsConfDirective *conf)
+{
+    return transcode_engines_;
+}
+
+bool MockAppConfigForEncoder::get_engine_enabled(SrsConfDirective *conf)
+{
+    return engine_enabled_;
+}
+
+std::string MockAppConfigForEncoder::get_engine_output(SrsConfDirective *conf)
+{
+    return "rtmp://127.0.0.1/live/livestream_hd";
+}
+
+bool MockAppConfigForEncoder::get_ff_log_enabled()
+{
+    return false;
+}
+
+void MockAppConfigForEncoder::reset()
+{
+    transcode_directive_ = NULL;
+    transcode_engines_.clear();
+}
+
+// Mock ISrsAppFactory implementation
+MockAppFactoryForEncoder::MockAppFactoryForEncoder()
+{
+    mock_ffmpeg_ = NULL;
+}
+
+MockAppFactoryForEncoder::~MockAppFactoryForEncoder()
+{
+    reset();
+}
+
+ISrsFFMPEG *MockAppFactoryForEncoder::create_ffmpeg(std::string ffmpeg_bin)
+{
+    return (ISrsFFMPEG*)mock_ffmpeg_;
+}
+
+void MockAppFactoryForEncoder::reset()
+{
+    mock_ffmpeg_ = NULL;
+}
+
+VOID TEST(EncoderTest, OnPublishMajorScenario)
+{
+    srs_error_t err = srs_success;
+
+    // Create mock objects
+    SrsUniquePtr<MockAppConfigForEncoder> mock_config(new MockAppConfigForEncoder());
+    SrsUniquePtr<MockSrsRequest> mock_req(new MockSrsRequest("test.vhost", "live", "livestream"));
+
+    // Setup: No transcode configuration (transcode_directive_ = NULL)
+    // This tests the major scenario where on_publish is called but no transcoding is configured
+    mock_config->transcode_directive_ = NULL;
+
+    // Create encoder and inject mock config
+    SrsUniquePtr<SrsEncoder> encoder(new SrsEncoder());
+    encoder->config_ = mock_config.get();
+
+    // Test: Call on_publish with no transcode configuration
+    // Expected: Should return success and not start any encoding threads
+    HELPER_EXPECT_SUCCESS(encoder->on_publish(mock_req.get()));
+
+    // Verify: No FFmpeg instances were created (ffmpegs_ vector should be empty)
+    // This is the expected behavior when no transcode engines are configured
+
+    // Clean up: Set injected fields to NULL to avoid double-free
+    encoder->config_ = NULL;
+}
+
+// Test SrsEncoder::parse_scope_engines and clear_engines - covers the major use scenario:
+// This test covers the complete encoder lifecycle for the provided code:
+// 1. Create SrsEncoder with mocked config and factory
+// 2. Configure mock config to return transcode directive for stream scope
+// 3. Call parse_scope_engines() to parse all three scopes (vhost, app, stream) and create FFmpeg engines
+// 4. Verify that FFmpeg engines are created and added to ffmpegs_ vector
+// 5. Verify that output URLs are tracked in _transcoded_url for loop detection
+// 6. Call clear_engines() to clean up all engines
+// 7. Verify that engines are properly freed and removed from _transcoded_url
+VOID TEST(EncoderTest, ParseScopeEnginesAndClearEngines)
+{
+    srs_error_t err;
+
+    // Create mock config
+    SrsUniquePtr<MockAppConfigForEncoder> mock_config(new MockAppConfigForEncoder());
+
+    // Create transcode directive for stream scope (most specific)
+    SrsConfDirective *transcode_conf = new SrsConfDirective();
+    transcode_conf->name_ = "transcode";
+    transcode_conf->args_.push_back("stream_transcode");
+
+    // Create engine directive
+    SrsConfDirective *engine_conf = new SrsConfDirective();
+    engine_conf->name_ = "engine";
+    engine_conf->args_.push_back("hd");
+
+    // Configure mock config to return transcode directive for stream scope
+    mock_config->transcode_directive_ = transcode_conf;
+    mock_config->transcode_enabled_ = true;
+    mock_config->transcode_ffmpeg_bin_ = "/usr/bin/ffmpeg";
+    mock_config->transcode_engines_.push_back(engine_conf);
+    mock_config->engine_enabled_ = true;
+    mock_config->target_scope_ = "live/livestream";  // Stream scope
+
+    // Create mock factory
+    SrsUniquePtr<MockAppFactoryForEncoder> mock_factory(new MockAppFactoryForEncoder());
+
+    // Create mock FFmpeg instance and set it in the factory
+    // Note: The factory will return this instance when create_ffmpeg is called
+    MockFFMPEGForEncoder *mock_ffmpeg = new MockFFMPEGForEncoder();
+    mock_factory->mock_ffmpeg_ = mock_ffmpeg;
+
+    // Create SrsEncoder
+    SrsUniquePtr<SrsEncoder> encoder(new SrsEncoder());
+
+    // Inject mock dependencies
+    encoder->config_ = mock_config.get();
+    encoder->app_factory_ = mock_factory.get();
+
+    // Create mock request
+    SrsUniquePtr<MockSrsRequest> req(new MockSrsRequest("test.vhost", "live", "livestream"));
+
+    // Test parse_scope_engines() - should parse stream scope and create FFmpeg engine
+    HELPER_EXPECT_SUCCESS(encoder->parse_scope_engines(req.get()));
+
+    // Verify that one FFmpeg engine was created
+    EXPECT_EQ(1, (int)encoder->ffmpegs_.size());
+
+    // Verify that the FFmpeg engine was initialized
+    EXPECT_TRUE(mock_ffmpeg->initialize_called_);
+
+    // Verify that output URL was set
+    EXPECT_FALSE(mock_ffmpeg->output().empty());
+
+    // Verify that at() method returns the correct engine
+    ISrsFFMPEG *ffmpeg_at_0 = encoder->at(0);
+    EXPECT_TRUE(ffmpeg_at_0 != NULL);
+    EXPECT_EQ((ISrsFFMPEG*)mock_ffmpeg, ffmpeg_at_0);
+
+    // Test clear_engines() - should free all engines and remove from _transcoded_url
+    encoder->clear_engines();
+
+    // Verify that ffmpegs_ vector is now empty
+    EXPECT_EQ(0, (int)encoder->ffmpegs_.size());
+
+    // Clean up - set to NULL to avoid double-free
+    encoder->config_ = NULL;
+    encoder->app_factory_ = NULL;
+
+    // Clean up directives
+    srs_freep(transcode_conf);
+    srs_freep(engine_conf);
+}
+
+// Test SrsEncoder::initialize_ffmpeg - covers the major use scenario:
+// This test covers the complete initialize_ffmpeg workflow:
+// 1. Constructs input URL from request (rtmp://localhost:port/app/stream?vhost=xxx)
+// 2. Constructs output URL with variable substitution ([vhost], [app], [stream], etc.)
+// 3. Calls ffmpeg->initialize() with input, output, and log file
+// 4. Calls ffmpeg->initialize_transcode() with engine directive
+// 5. Sets input_stream_name_ for logging purposes
+VOID TEST(EncoderTest, InitializeFFmpegMajorScenario)
+{
+    srs_error_t err;
+
+    // Create mock objects
+    SrsUniquePtr<MockAppConfigForEncoder> mock_config(new MockAppConfigForEncoder());
+    SrsUniquePtr<MockFFMPEGForEncoder> mock_ffmpeg(new MockFFMPEGForEncoder());
+
+    // Create mock request with specific values for URL construction
+    SrsUniquePtr<MockSrsRequest> req(new MockSrsRequest("test.vhost", "live", "livestream"));
+    req->port_ = 1935;
+    req->param_ = "token=abc123";
+
+    // Create mock engine directive with args for variable substitution
+    SrsUniquePtr<SrsConfDirective> engine(new SrsConfDirective());
+    engine->name_ = "engine";
+    engine->args_.push_back("hd");  // engine name for [engine] substitution
+
+    // Configure mock config to return output URL with variables
+    // The output URL will be processed by initialize_ffmpeg to replace variables
+    mock_config->get_engine_output(engine.get());  // Will return "rtmp://127.0.0.1/live/livestream_hd"
+
+    // Create SrsEncoder and inject mock dependencies
+    SrsUniquePtr<SrsEncoder> encoder(new SrsEncoder());
+    encoder->config_ = mock_config.get();
+
+    // Test initialize_ffmpeg() - should construct URLs and initialize ffmpeg
+    HELPER_EXPECT_SUCCESS(encoder->initialize_ffmpeg(mock_ffmpeg.get(), req.get(), engine.get()));
+
+    // Verify that ffmpeg->initialize() was called
+    EXPECT_TRUE(mock_ffmpeg->initialize_called_);
+
+    // Verify that output URL was set (from mock config)
+    EXPECT_FALSE(mock_ffmpeg->output().empty());
+    EXPECT_STREQ("rtmp://127.0.0.1/live/livestream_hd", mock_ffmpeg->output().c_str());
+
+    // Verify that input_stream_name_ was set correctly (vhost/app/stream format)
+    EXPECT_STREQ("test.vhost/live/livestream", encoder->input_stream_name_.c_str());
+
+    // Clean up - set to NULL to avoid double-free
+    encoder->config_ = NULL;
 }

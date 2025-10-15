@@ -544,6 +544,9 @@ public:
     virtual std::string get_ff_log_dir() { return ""; }
     virtual std::string get_ff_log_level() { return ""; }
     // Transcode/Engine config
+    virtual SrsConfDirective *get_transcode(std::string vhost, std::string scope) { return NULL; }
+    virtual bool get_transcode_enabled(SrsConfDirective *conf) { return false; }
+    virtual std::string get_transcode_ffmpeg(SrsConfDirective *conf) { return ""; }
     virtual std::vector<SrsConfDirective *> get_transcode_engines(SrsConfDirective *conf) { return std::vector<SrsConfDirective *>(); }
     virtual bool get_engine_enabled(SrsConfDirective *conf) { return false; }
     virtual std::vector<std::string> get_engine_perfile(SrsConfDirective *conf) { return std::vector<std::string>(); }

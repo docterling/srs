@@ -571,6 +571,9 @@ public:
 
 public:
     // Transcode/Engine config
+    virtual SrsConfDirective *get_transcode(std::string vhost, std::string scope) = 0;
+    virtual bool get_transcode_enabled(SrsConfDirective *conf) = 0;
+    virtual std::string get_transcode_ffmpeg(SrsConfDirective *conf) = 0;
     virtual std::vector<SrsConfDirective *> get_transcode_engines(SrsConfDirective *conf) = 0;
     virtual bool get_engine_enabled(SrsConfDirective *conf) = 0;
     virtual std::vector<std::string> get_engine_perfile(SrsConfDirective *conf) = 0;

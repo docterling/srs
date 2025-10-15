@@ -15,6 +15,7 @@
 #include <srs_app_caster_flv.hpp>
 #include <srs_app_config.hpp>
 #include <srs_app_factory.hpp>
+#include <srs_app_ffmpeg.hpp>
 #include <srs_app_listener.hpp>
 #include <srs_app_mpegts_udp.hpp>
 #include <srs_kernel_pithy_print.hpp>
@@ -686,6 +687,75 @@ public:
     virtual void set_auto_response(bool v);
     virtual void set_merge_read(bool v, IMergeReadHandler *handler);
     virtual void set_recv_buffer(int buffer_size);
+    void reset();
+};
+
+// Mock ISrsFFMPEG for testing SrsEncoder
+class MockFFMPEGForEncoder : public ISrsFFMPEG
+{
+public:
+    bool initialize_called_;
+    bool start_called_;
+    srs_error_t start_error_;
+    std::string output_;
+
+public:
+    MockFFMPEGForEncoder();
+    virtual ~MockFFMPEGForEncoder();
+
+public:
+    virtual void append_iparam(std::string iparam);
+    virtual void set_oformat(std::string format);
+    virtual std::string output();
+    virtual srs_error_t initialize(std::string in, std::string out, std::string log);
+    virtual srs_error_t initialize_transcode(SrsConfDirective *engine);
+    virtual srs_error_t initialize_copy();
+    virtual srs_error_t start();
+    virtual srs_error_t cycle();
+    virtual void stop();
+    virtual void fast_stop();
+    virtual void fast_kill();
+    void reset();
+};
+
+// Mock ISrsAppConfig for testing SrsEncoder
+class MockAppConfigForEncoder : public MockAppConfig
+{
+public:
+    SrsConfDirective *transcode_directive_;
+    bool transcode_enabled_;
+    std::string transcode_ffmpeg_bin_;
+    std::vector<SrsConfDirective *> transcode_engines_;
+    bool engine_enabled_;
+    std::string target_scope_;  // The scope for which to return transcode_directive_
+
+public:
+    MockAppConfigForEncoder();
+    virtual ~MockAppConfigForEncoder();
+
+public:
+    virtual SrsConfDirective *get_transcode(std::string vhost, std::string scope);
+    virtual bool get_transcode_enabled(SrsConfDirective *conf);
+    virtual std::string get_transcode_ffmpeg(SrsConfDirective *conf);
+    virtual std::vector<SrsConfDirective *> get_transcode_engines(SrsConfDirective *conf);
+    virtual bool get_engine_enabled(SrsConfDirective *conf);
+    virtual std::string get_engine_output(SrsConfDirective *conf);
+    virtual bool get_ff_log_enabled();
+    void reset();
+};
+
+// Mock ISrsAppFactory for testing SrsEncoder
+class MockAppFactoryForEncoder : public SrsAppFactory
+{
+public:
+    MockFFMPEGForEncoder *mock_ffmpeg_;
+
+public:
+    MockAppFactoryForEncoder();
+    virtual ~MockAppFactoryForEncoder();
+
+public:
+    virtual ISrsFFMPEG *create_ffmpeg(std::string ffmpeg_bin);
     void reset();
 };
 
