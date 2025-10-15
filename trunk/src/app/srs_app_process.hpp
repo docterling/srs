@@ -57,13 +57,15 @@ public:
 //      process->stop();
 class SrsProcess : public ISrsProcess
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     bool is_started_;
     // Whether SIGTERM send but need to wait or SIGKILL.
     bool fast_stopped_;
     pid_t pid_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     std::string bin_;
     std::string stdout_file_;
     std::string stderr_file_;
@@ -87,9 +89,11 @@ public:
     // @remark the argv[0] must be the binary.
     virtual srs_error_t initialize(std::string binary, std::vector<std::string> argv);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Redirect standard I/O.
-    virtual srs_error_t redirect_io();
+    virtual srs_error_t
+    redirect_io();
 
 public:
     // Start the process, ignore when already started.

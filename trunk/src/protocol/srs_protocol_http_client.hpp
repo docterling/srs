@@ -32,10 +32,12 @@ class SrsTcpClient;
 // The SSL client over TCP transport.
 class SrsSslClient : public ISrsReader, public ISrsStreamWriter
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsProtocolReadWriter *transport_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     SSL_CTX *ssl_ctx_;
     SSL *ssl_;
     BIO *bio_in_;
@@ -82,7 +84,8 @@ public:
 //      hc.post("/api/v1/version", "Hello world!", NULL);
 class SrsHttpClient : public ISrsHttpClient
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // The underlayer TCP transport, set to NULL when disconnect, or never not NULL when connected.
     // We will disconnect transport when initialize or channel error, such as send/recv error.
     SrsTcpClient *transport_;
@@ -90,7 +93,8 @@ SRS_DECLARE_PRIVATE:
     std::map<std::string, std::string> headers_;
     SrsNetworkKbps *kbps_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // The timeout in srs_utime_t.
     srs_utime_t timeout_;
     srs_utime_t recv_timeout_;
@@ -99,7 +103,8 @@ SRS_DECLARE_PRIVATE:
     std::string host_;
     int port_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     SrsSslClient *ssl_transport_;
 
 public:
@@ -136,7 +141,8 @@ public:
 public:
     virtual void kbps_sample(const char *label, srs_utime_t age);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     virtual void disconnect();
     virtual srs_error_t connect();
     ISrsStreamWriter *writer();

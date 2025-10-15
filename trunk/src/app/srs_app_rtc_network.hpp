@@ -62,7 +62,8 @@ public:
 // A group of networks, each has its own DTLS and SRTP context.
 class SrsRtcNetworks : public ISrsRtcNetworks
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Network over UDP.
     ISrsRtcNetwork *udp_;
     // Network over TCP
@@ -70,7 +71,8 @@ SRS_DECLARE_PRIVATE:
     // Network over dummy
     ISrsRtcNetwork *dummy_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // WebRTC session object.
     ISrsRtcConnection *conn_;
     // Delta object for statistics.
@@ -170,17 +172,20 @@ public:
 // The WebRTC over UDP network.
 class SrsRtcUdpNetwork : public ISrsRtcNetwork
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsResourceManager *conn_manager_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // WebRTC session object.
     ISrsRtcConnection *conn_;
     // Delta object for statistics.
     ISrsEphemeralDelta *delta_;
     SrsRtcNetworkState state_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Pithy print for address change, use port as error code.
     SrsErrorPithyPrint *pp_address_change_;
     // The peer address, client maybe use more than one address, it's the current selected one.
@@ -200,7 +205,8 @@ public:
     // When got STUN ping message. The peer address may change, we can identify that by STUN messages.
     srs_error_t on_stun(SrsStunPacket *r, char *data, int nb_data);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     srs_error_t on_binding_request(SrsStunPacket *r, std::string ice_pwd);
     // DTLS transport functions.
 public:
@@ -229,17 +235,20 @@ public:
 
 class SrsRtcTcpNetwork : public ISrsRtcNetwork
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsRtcConnection *conn_;
     ISrsEphemeralDelta *delta_;
     ISrsProtocolReadWriter *sendonly_skt_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // The DTLS transport over this network.
     ISrsRtcTransport *transport_;
     SrsSharedResource<ISrsRtcTcpConn> owner_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     std::string peer_ip_;
     int peer_port_;
     SrsRtcNetworkState state_;
@@ -266,7 +275,8 @@ public:
     // When got STUN ping message. The peer address may change, we can identify that by STUN messages.
     srs_error_t on_stun(SrsStunPacket *r, char *data, int nb_data);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     srs_error_t on_binding_request(SrsStunPacket *r, std::string ice_pwd);
     // DTLS transport functions.
 public:
@@ -308,15 +318,18 @@ public:
 // For WebRTC over TCP.
 class SrsRtcTcpConn : public ISrsRtcTcpConn
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsResourceManager *conn_manager_;
     ISrsStatistic *stat_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Because session references to this object, so we should directly use the session ptr.
     ISrsRtcConnection *session_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // The ip and port of client.
     std::string ip_;
     int port_;
@@ -326,7 +339,8 @@ SRS_DECLARE_PRIVATE:
     // Packet cache.
     char *pkt_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // The shared resource which own this object, we should never free it because it's managed by shared ptr.
     SrsSharedResource<ISrsRtcTcpConn> *wrapper_;
     // The owner coroutine, allow user to interrupt the loop.
@@ -334,7 +348,8 @@ SRS_DECLARE_PRIVATE:
     ISrsContextIdSetter *owner_cid_;
     SrsContextId cid_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     void setup();
 
 public:
@@ -364,7 +379,8 @@ public:
 public:
     virtual srs_error_t cycle();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     virtual srs_error_t do_cycle();
     srs_error_t handshake();
     srs_error_t read_packet(char *pkt, int *nb_pkt);

@@ -268,13 +268,15 @@ public:
 // Transmux RTMP packets to FLV stream.
 class SrsFlvTransmuxer : public ISrsFlvTransmuxer
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     bool has_audio_;
     bool has_video_;
     bool drop_if_not_match_;
     ISrsWriter *writer_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     char tag_header_[SRS_FLV_TAG_HEADER_SIZE];
 
 public:
@@ -317,7 +319,8 @@ public:
     // @remark assert data_size is not negative.
     static int size_tag(int data_size);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // The cache tag header.
     int nb_tag_headers_;
     char *tag_headers_;
@@ -332,7 +335,8 @@ public:
     // Write the tags in a time.
     virtual srs_error_t write_tags(SrsMediaPacket **msgs, int count);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     virtual void cache_metadata(char type, char *data, int size, char *cache);
     virtual void cache_audio(int64_t timestamp, char *data, int size, char *cache);
     virtual void cache_video(int64_t timestamp, char *data, int size, char *cache);
@@ -363,7 +367,8 @@ public:
 // Decode flv file.
 class SrsFlvDecoder : public ISrsFlvDecoder
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsReader *reader_;
 
 public:
@@ -396,7 +401,8 @@ public:
 // then seek to specified offset.
 class SrsFlvVodStreamDecoder
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsFileReader *reader_;
 
 public:

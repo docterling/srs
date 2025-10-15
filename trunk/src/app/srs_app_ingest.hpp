@@ -49,7 +49,8 @@ public:
 // Ingester ffmpeg object.
 class SrsIngesterFFMPEG : public ISrsIngesterFFMPEG
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     std::string vhost_;
     std::string id_;
     ISrsFFMPEG *ffmpeg_;
@@ -91,14 +92,17 @@ public:
 // push to SRS(or any RTMP server) over RTMP.
 class SrsIngester : public ISrsIngester, public ISrsCoroutineHandler
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppFactory *app_factory_;
     ISrsAppConfig *config_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     std::vector<ISrsIngesterFFMPEG *> ingesters_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsCoroutine *trd_;
     ISrsPithyPrint *pprint_;
     // Whether the ingesters are expired, for example, the listen port changed,
@@ -118,19 +122,23 @@ public:
     virtual srs_error_t start();
     virtual void stop();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Notify FFMPEG to fast stop.
-    virtual void fast_stop();
+    virtual void
+    fast_stop();
     // When SRS quit, directly kill FFMPEG after fast stop.
     virtual void fast_kill();
     // Interface ISrsReusableThreadHandler.
 public:
     virtual srs_error_t cycle();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     virtual srs_error_t do_cycle();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     virtual void clear_engines();
     virtual srs_error_t parse();
     virtual srs_error_t parse_ingesters(SrsConfDirective *vhost);

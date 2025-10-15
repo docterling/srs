@@ -51,7 +51,8 @@ public:
 // server will add the connection to manager, and delete it when remove.
 class SrsTcpConnection : public ISrsProtocolReadWriter
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // The underlayer st fd handler.
     srs_netfd_t stfd_;
     // The underlayer socket.
@@ -84,7 +85,8 @@ public:
 // cache or buffer.
 class SrsBufferedReadWriter : public ISrsProtocolReadWriter
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // The under-layer transport.
     ISrsProtocolReadWriter *io_;
     // Fixed, small and fast buffer. Note that it must be very small piece of cache, make sure matches all protocols,
@@ -101,7 +103,8 @@ public:
     // Peek the head of cache to buf in size of bytes.
     srs_error_t peek(char *buf, int *size);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     srs_error_t reload_buffer();
     // Interface ISrsProtocolReadWriter
 public:
@@ -131,11 +134,13 @@ public:
 // The SSL connection over TCP transport, in server mode.
 class SrsSslConnection : public ISrsSslConnection
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // The under-layer plaintext transport.
     ISrsProtocolReadWriter *transport_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     SSL_CTX *ssl_ctx_;
     SSL *ssl_;
     BIO *bio_in_;

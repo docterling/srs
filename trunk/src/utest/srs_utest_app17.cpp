@@ -13,6 +13,7 @@ using namespace std;
 #include <srs_app_ffmpeg.hpp>
 #include <srs_app_http_conn.hpp>
 #include <srs_app_mpegts_udp.hpp>
+#include <srs_app_process.hpp>
 #include <srs_app_recv_thread.hpp>
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_packet.hpp>
@@ -3248,7 +3249,7 @@ MockAppConfigForEncoder::MockAppConfigForEncoder()
     transcode_enabled_ = true;
     transcode_ffmpeg_bin_ = "/usr/bin/ffmpeg";
     engine_enabled_ = true;
-    target_scope_ = "";  // Default to vhost scope (empty string)
+    target_scope_ = ""; // Default to vhost scope (empty string)
 }
 
 MockAppConfigForEncoder::~MockAppConfigForEncoder()
@@ -3314,7 +3315,7 @@ MockAppFactoryForEncoder::~MockAppFactoryForEncoder()
 
 ISrsFFMPEG *MockAppFactoryForEncoder::create_ffmpeg(std::string ffmpeg_bin)
 {
-    return (ISrsFFMPEG*)mock_ffmpeg_;
+    return (ISrsFFMPEG *)mock_ffmpeg_;
 }
 
 void MockAppFactoryForEncoder::reset()
@@ -3381,7 +3382,7 @@ VOID TEST(EncoderTest, ParseScopeEnginesAndClearEngines)
     mock_config->transcode_ffmpeg_bin_ = "/usr/bin/ffmpeg";
     mock_config->transcode_engines_.push_back(engine_conf);
     mock_config->engine_enabled_ = true;
-    mock_config->target_scope_ = "live/livestream";  // Stream scope
+    mock_config->target_scope_ = "live/livestream"; // Stream scope
 
     // Create mock factory
     SrsUniquePtr<MockAppFactoryForEncoder> mock_factory(new MockAppFactoryForEncoder());
@@ -3416,7 +3417,7 @@ VOID TEST(EncoderTest, ParseScopeEnginesAndClearEngines)
     // Verify that at() method returns the correct engine
     ISrsFFMPEG *ffmpeg_at_0 = encoder->at(0);
     EXPECT_TRUE(ffmpeg_at_0 != NULL);
-    EXPECT_EQ((ISrsFFMPEG*)mock_ffmpeg, ffmpeg_at_0);
+    EXPECT_EQ((ISrsFFMPEG *)mock_ffmpeg, ffmpeg_at_0);
 
     // Test clear_engines() - should free all engines and remove from _transcoded_url
     encoder->clear_engines();
@@ -3456,11 +3457,11 @@ VOID TEST(EncoderTest, InitializeFFmpegMajorScenario)
     // Create mock engine directive with args for variable substitution
     SrsUniquePtr<SrsConfDirective> engine(new SrsConfDirective());
     engine->name_ = "engine";
-    engine->args_.push_back("hd");  // engine name for [engine] substitution
+    engine->args_.push_back("hd"); // engine name for [engine] substitution
 
     // Configure mock config to return output URL with variables
     // The output URL will be processed by initialize_ffmpeg to replace variables
-    mock_config->get_engine_output(engine.get());  // Will return "rtmp://127.0.0.1/live/livestream_hd"
+    mock_config->get_engine_output(engine.get()); // Will return "rtmp://127.0.0.1/live/livestream_hd"
 
     // Create SrsEncoder and inject mock dependencies
     SrsUniquePtr<SrsEncoder> encoder(new SrsEncoder());
@@ -3481,4 +3482,52 @@ VOID TEST(EncoderTest, InitializeFFmpegMajorScenario)
 
     // Clean up - set to NULL to avoid double-free
     encoder->config_ = NULL;
+}
+
+VOID TEST(ProcessTest, InitializeWithRedirection)
+{
+    srs_error_t err;
+
+    // Create SrsProcess instance
+    SrsUniquePtr<SrsProcess> process(new SrsProcess());
+
+    // Test major use scenario: FFmpeg command with stdout and stderr redirection
+    // Simulates: ffmpeg -i input.flv -c copy output.flv 1>/dev/null 2>/dev/null
+    string binary = "/usr/bin/ffmpeg";
+    vector<string> argv;
+    argv.push_back("/usr/bin/ffmpeg");
+    argv.push_back("-i");
+    argv.push_back("input.flv");
+    argv.push_back("-c");
+    argv.push_back("copy");
+    argv.push_back("output.flv");
+    argv.push_back("1>/dev/null");
+    argv.push_back("2>/dev/null");
+
+    // Initialize the process
+    HELPER_EXPECT_SUCCESS(process->initialize(binary, argv));
+
+    // Verify binary is set correctly
+    EXPECT_STREQ("/usr/bin/ffmpeg", process->bin_.c_str());
+
+    // Verify stdout redirection is parsed correctly
+    EXPECT_STREQ("/dev/null", process->stdout_file_.c_str());
+
+    // Verify stderr redirection is parsed correctly
+    EXPECT_STREQ("/dev/null", process->stderr_file_.c_str());
+
+    // Verify params_ contains only the actual command parameters (without redirection)
+    EXPECT_EQ(6, (int)process->params_.size());
+    EXPECT_STREQ("/usr/bin/ffmpeg", process->params_[0].c_str());
+    EXPECT_STREQ("-i", process->params_[1].c_str());
+    EXPECT_STREQ("input.flv", process->params_[2].c_str());
+    EXPECT_STREQ("-c", process->params_[3].c_str());
+    EXPECT_STREQ("copy", process->params_[4].c_str());
+    EXPECT_STREQ("output.flv", process->params_[5].c_str());
+
+    // Verify actual_cli_ contains command without redirection
+    EXPECT_STREQ("/usr/bin/ffmpeg -i input.flv -c copy output.flv", process->actual_cli_.c_str());
+
+    // Verify cli_ contains full original command with redirection
+    EXPECT_STREQ("/usr/bin/ffmpeg -i input.flv -c copy output.flv 1>/dev/null 2>/dev/null", process->cli_.c_str());
 }

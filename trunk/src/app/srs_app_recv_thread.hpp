@@ -80,7 +80,8 @@ public:
 // The recv thread, use message handler to handle each received message.
 class SrsRecvThread : public ISrsRecvThread
 {
-SRS_DECLARE_PROTECTED:
+// clang-format off
+SRS_DECLARE_PROTECTED: // clang-format on
     ISrsCoroutine *trd_;
     ISrsMessagePumper *pumper_;
     ISrsRtmpServer *rtmp_;
@@ -105,7 +106,8 @@ public:
 public:
     virtual srs_error_t cycle();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     virtual srs_error_t do_cycle();
 };
 
@@ -125,7 +127,8 @@ public:
 // @see: https://github.com/ossrs/srs/issues/217
 class SrsQueueRecvThread : public ISrsQueueRecvThread
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     std::vector<SrsRtmpCommonMessage *> queue_;
     ISrsRecvThread *trd_;
     ISrsRtmpServer *rtmp_;
@@ -173,10 +176,12 @@ public:
 // @see: https://github.com/ossrs/srs/issues/237
 class SrsPublishRecvThread : public ISrsPublishRecvThread
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppConfig *config_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     uint32_t nn_msgs_for_yield_;
     ISrsRecvThread *trd_;
     ISrsRtmpServer *rtmp_;
@@ -234,7 +239,8 @@ public:
     virtual void on_read(ssize_t nread);
 #endif
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     virtual void set_socket_buffer(srs_utime_t sleep_v);
 };
 
@@ -254,7 +260,8 @@ public:
 // @see https://github.com/ossrs/srs/issues/636#issuecomment-298208427
 class SrsHttpRecvThread : public ISrsHttpRecvThread
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     SrsHttpxConn *conn_;
     ISrsCoroutine *trd_;
 

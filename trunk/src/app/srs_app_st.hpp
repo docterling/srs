@@ -25,7 +25,8 @@ class SrsExecutorCoroutine;
 // @see https://github.com/ossrs/srs/pull/908
 class SrsDummyCoroutine : public ISrsCoroutine
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     SrsContextId cid_;
 
 public:
@@ -55,7 +56,8 @@ public:
 //      Please read https://github.com/ossrs/srs/issues/78
 class SrsSTCoroutine : public ISrsCoroutine
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     SrsFastCoroutine *impl_;
 
 public:
@@ -96,24 +98,28 @@ public:
 // High performance coroutine.
 class SrsFastCoroutine : public ISrsCoroutine
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     std::string name_;
     int stack_size_;
     ISrsCoroutineHandler *handler_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     srs_thread_t trd_;
     SrsContextId cid_;
     srs_error_t trd_err_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     bool started_;
     bool interrupted_;
     bool disposed_;
     // Cycle done, no need to interrupt it.
     bool cycle_done_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Sub state in disposed, we need to wait for thread to quit.
     bool stopping_;
     SrsContextId stopping_cid_;
@@ -140,7 +146,8 @@ public:
     const SrsContextId &cid();
     virtual void set_cid(const SrsContextId &cid);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     srs_error_t cycle();
     static void *pfn(void *arg);
 };
@@ -148,7 +155,8 @@ SRS_DECLARE_PRIVATE:
 // Like goroutine sync.WaitGroup.
 class SrsWaitGroup
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     int nn_;
     srs_cond_t done_;
 
@@ -203,13 +211,15 @@ class SrsExecutorCoroutine : public ISrsResource, // It's a resource.
                              public ISrsContextIdGetter,
                              public ISrsCoroutineHandler
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsResourceManager *manager_;
     ISrsResource *resource_;
     ISrsCoroutineHandler *handler_;
     ISrsExecutorHandler *callback_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsCoroutine *trd_;
 
 public:

@@ -48,7 +48,8 @@ public:
     char *data();
     int size();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     SrsMediaPacket *shared_buffer_;
     // The size of SRT packet or SRT payload.
     int actual_buffer_size_;
@@ -70,7 +71,8 @@ public:
 // The SRT source manager.
 class SrsSrtSourceManager : public ISrsHourGlassHandler, public ISrsSrtSourceManager
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     srs_mutex_t lock_;
     std::map<std::string, SrsSharedPtr<SrsSrtSource> > pool_;
     SrsHourGlass *timer_;
@@ -82,7 +84,8 @@ public:
 public:
     virtual srs_error_t initialize();
     // interface ISrsHourGlassHandler
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     virtual srs_error_t setup_ticks();
     virtual srs_error_t notify(int event, srs_utime_t interval, srs_utime_t tick);
 
@@ -116,7 +119,8 @@ public:
 // The SRT consumer, consume packets from SRT stream source.
 class SrsSrtConsumer : public ISrsSrtConsumer
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Because source references to this object, so we should directly use the source ptr.
     ISrsSrtSource *source_;
 
@@ -124,7 +128,8 @@ public:
     SrsSrtConsumer(ISrsSrtSource *source);
     virtual ~SrsSrtConsumer();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     std::vector<SrsSrtPacket *> queue_;
     // when source id changed, notice all consumers
     bool should_update_source_id_;
@@ -162,7 +167,8 @@ public:
 public:
     virtual srs_error_t on_ts_message(SrsTsMessage *msg);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     srs_error_t on_ts_video_avc(SrsTsMessage *msg, SrsBuffer *avs);
     srs_error_t on_ts_audio(SrsTsMessage *msg, SrsBuffer *avs);
     srs_error_t check_sps_pps_change(SrsTsMessage *msg);
@@ -173,10 +179,12 @@ SRS_DECLARE_PRIVATE:
     srs_error_t check_vps_sps_pps_change(SrsTsMessage *msg);
     srs_error_t on_hevc_frame(SrsTsMessage *msg, std::vector<std::pair<char *, int> > &ipb_frames);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsFrameTarget *frame_target_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     SrsTsContext *ts_ctx_;
     // Record sps/pps had changed, if change, need to generate new video sh frame.
     bool sps_pps_change_;
@@ -190,10 +198,12 @@ SRS_DECLARE_PRIVATE:
     bool audio_sh_change_;
     std::string audio_sh_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsRequest *req_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // SRT to rtmp, video stream id.
     int video_streamid_;
     // SRT to rtmp, audio stream id.
@@ -218,7 +228,8 @@ public:
 // A SRT source is a stream, to publish and to play with.
 class SrsSrtSource : public ISrsSrtSource
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsStatistic *stat_;
 
 public:
@@ -261,7 +272,8 @@ public:
 public:
     srs_error_t on_packet(SrsSrtPacket *packet);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Source id.
     SrsContextId _source_id;
     // previous source id.
@@ -273,7 +285,8 @@ SRS_DECLARE_PRIVATE:
     // The last die time, while die means neither publishers nor players.
     srs_utime_t stream_die_at_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsSrtBridge *srt_bridge_;
 };
 

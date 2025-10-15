@@ -19,7 +19,8 @@ public:
 public:
     virtual void heartbeat();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     virtual srs_error_t do_heartbeat();
 };
 

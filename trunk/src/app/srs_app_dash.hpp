@@ -49,7 +49,8 @@ public:
 // The init mp4 for FMP4.
 class SrsInitMp4 : public ISrsInitMp4
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsFileWriter *fw_;
     ISrsMp4M2tsInitEncoder *init_;
     ISrsFragment *fragment_;
@@ -96,10 +97,12 @@ public:
 // The FMP4(Fragmented MP4) for DASH streaming.
 class SrsFragmentedMp4 : public ISrsFragmentedMp4
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppConfig *config_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsFileWriter *fw_;
     ISrsMp4M2tsSegmentEncoder *enc_;
     ISrsFragment *fragment_;
@@ -160,14 +163,17 @@ public:
 // The writer to write MPD for DASH.
 class SrsMpdWriter : public ISrsMpdWriter
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppConfig *config_;
     ISrsAppFactory *app_factory_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsRequest *req_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // The duration of fragment in srs_utime_t.
     srs_utime_t fragment_;
     // The period to update the mpd in srs_utime_t.
@@ -187,7 +193,8 @@ SRS_DECLARE_PRIVATE:
     // The number of current audio segment.
     uint64_t audio_number_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // The home for fragment, relative to home.
     std::string fragment_home_;
 
@@ -235,16 +242,19 @@ public:
 // The controller for DASH, control the MPD and FMP4 generating system.
 class SrsDashController : public ISrsDashController
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppConfig *config_;
     ISrsAppFactory *app_factory_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsRequest *req_;
     SrsFormat *format_;
     ISrsMpdWriter *mpd_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsFragmentedMp4 *vcurrent_;
     ISrsFragmentWindow *vfragments_;
     ISrsFragmentedMp4 *acurrent_;
@@ -258,11 +268,13 @@ SRS_DECLARE_PRIVATE:
     // Had the video reaped, use to align audio/video segment's timestamp.
     bool video_reaped_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // The fragment duration in srs_utime_t to reap it.
     srs_utime_t fragment_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     std::string home_;
     int video_track_id_;
     int audio_track_id_;
@@ -281,7 +293,8 @@ public:
     virtual srs_error_t on_audio(SrsMediaPacket *shared_audio, SrsFormat *format);
     virtual srs_error_t on_video(SrsMediaPacket *shared_video, SrsFormat *format);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     virtual srs_error_t refresh_mpd(SrsFormat *format);
     virtual srs_error_t refresh_init_mp4(SrsMediaPacket *msg, SrsFormat *format);
 };
@@ -309,15 +322,18 @@ public:
 // The MPEG-DASH encoder, transmux RTMP to DASH.
 class SrsDash : public ISrsDash
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppConfig *config_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     bool enabled_;
     bool disposable_;
     srs_utime_t last_update_time_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsRequest *req_;
     ISrsOriginHub *hub_;
     ISrsDashController *controller_;

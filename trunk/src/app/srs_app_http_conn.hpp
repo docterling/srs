@@ -95,17 +95,20 @@ public:
 // The http connection which request the static or stream content.
 class SrsHttpConn : public ISrsHttpConn
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppConfig *config_;
 
-SRS_DECLARE_PROTECTED:
+// clang-format off
+SRS_DECLARE_PROTECTED: // clang-format on
     ISrsHttpParser *parser_;
     ISrsCommonHttpHandler *http_mux_;
     ISrsHttpCorsMux *cors_;
     ISrsHttpAuthMux *auth_;
     ISrsHttpConnOwner *handler_;
 
-SRS_DECLARE_PROTECTED:
+// clang-format off
+SRS_DECLARE_PROTECTED: // clang-format on
     ISrsProtocolReadWriter *skt_;
     // Each connection start a green thread,
     // when thread stop, the connection will be delete by server.
@@ -114,7 +117,8 @@ SRS_DECLARE_PROTECTED:
     std::string ip_;
     int port_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // The delta for statistic.
     ISrsNetworkDelta *delta_;
     // The create time in microseconds.
@@ -137,7 +141,8 @@ public:
 public:
     virtual srs_error_t cycle();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     virtual srs_error_t do_cycle();
     virtual srs_error_t process_requests(ISrsRequest **preq);
     virtual srs_error_t process_request(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, int rid);
@@ -179,11 +184,13 @@ public:
 // Drop body of request, only process the response.
 class SrsHttpxConn : public ISrsHttpxConn
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppConfig *config_;
     ISrsStatistic *stat_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // The manager object to manage the connection.
     ISrsResourceManager *manager_;
     ISrsProtocolReadWriter *io_;
@@ -242,7 +249,8 @@ public:
 // The http server, use http stream or static server to serve requests.
 class SrsHttpServer : public ISrsHttpServer
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsHttpStaticServer *http_static_;
     ISrsHttpStreamServer *http_stream_;
 

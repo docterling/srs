@@ -19,12 +19,14 @@
 
 class SrsLatestVersion : public ISrsCoroutineHandler
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsCoroutine *trd_;
     std::string server_id_;
     std::string session_id_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     std::string match_version_;
     std::string stable_version_;
 
@@ -38,7 +40,8 @@ public:
 public:
     virtual srs_error_t cycle();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     srs_error_t query_latest_version(std::string &url);
 };
 

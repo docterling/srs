@@ -49,10 +49,12 @@ public:
 // A TCP listener, for flv stream server.
 class SrsHttpFlvListener : public ISrsHttpFlvListener
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppConfig *config_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     SrsTcpListener *listener_;
     ISrsAppCasterFlv *caster_;
 
@@ -83,10 +85,12 @@ public:
 // The stream caster for flv stream over HTTP POST.
 class SrsAppCasterFlv : public ISrsAppCasterFlv
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppConfig *config_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     std::string output_;
     SrsHttpServeMux *http_mux_;
     std::vector<ISrsConnection *> conns_;
@@ -135,11 +139,13 @@ public:
 // The dynamic http connection, never drop the body.
 class SrsDynamicHttpConn : public ISrsDynamicHttpConn
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppConfig *config_;
     ISrsAppFactory *app_factory_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // The manager object to manage the connection.
     ISrsResourceManager *manager_;
     std::string output_;
@@ -148,7 +154,8 @@ SRS_DECLARE_PRIVATE:
     ISrsProtocolReadWriter *skt_;
     ISrsHttpConn *conn_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // The ip and port of client.
     std::string ip_;
     int port_;
@@ -160,7 +167,8 @@ public:
 public:
     virtual srs_error_t proxy(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, std::string o);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     virtual srs_error_t do_proxy(ISrsHttpResponseReader *rr, SrsFlvDecoder *dec);
     // Extract APIs from SrsTcpConnection.
     // Interface ISrsHttpConnOwner.
@@ -194,7 +202,8 @@ public:
 // The http wrapper for file reader, to read http post stream like a file.
 class SrsHttpFileReader : public ISrsHttpFileReader
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsHttpResponseReader *http_;
     SrsFileReader *file_reader_;
 

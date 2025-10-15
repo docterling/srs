@@ -45,7 +45,8 @@ public:
 
 class MockFileRemover
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     std::string path_;
 
 public:
@@ -124,7 +125,8 @@ public:
 
 class MockBufferReader : public ISrsReader
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     std::string str;
 
 public:

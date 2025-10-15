@@ -727,7 +727,7 @@ public:
     std::string transcode_ffmpeg_bin_;
     std::vector<SrsConfDirective *> transcode_engines_;
     bool engine_enabled_;
-    std::string target_scope_;  // The scope for which to return transcode_directive_
+    std::string target_scope_; // The scope for which to return transcode_directive_
 
 public:
     MockAppConfigForEncoder();

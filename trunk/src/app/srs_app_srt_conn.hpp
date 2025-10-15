@@ -59,7 +59,8 @@ public:
     virtual srs_error_t write(void *buf, size_t size, ssize_t *nwrite);
     virtual srs_error_t writev(const iovec *iov, int iov_size, ssize_t *nwrite);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // The underlayer srt fd handler.
     srs_srt_t srt_fd_;
     // The underlayer srt socket.
@@ -86,14 +87,16 @@ public:
 public:
     virtual srs_error_t cycle();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     srs_error_t do_cycle();
 
 public:
     srs_error_t start();
     srs_error_t get_recv_err();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsProtocolReadWriter *srt_conn_;
     ISrsCoroutine *trd_;
     srs_error_t recv_err_;
@@ -115,7 +118,8 @@ public:
 // The SRT connection, for client to publish or play stream.
 class SrsMpegtsSrtConn : public ISrsMpegtsSrtConnection
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsStatistic *stat_;
     ISrsAppConfig *config_;
     ISrsStreamPublishTokenManager *stream_publish_tokens_;
@@ -147,10 +151,12 @@ public:
 public:
     virtual srs_error_t cycle();
 
-SRS_DECLARE_PROTECTED:
+// clang-format off
+SRS_DECLARE_PROTECTED: // clang-format on
     virtual srs_error_t do_cycle();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     srs_error_t publishing();
     srs_error_t playing();
     srs_error_t acquire_publish();
@@ -158,10 +164,12 @@ SRS_DECLARE_PRIVATE:
     srs_error_t do_publishing();
     srs_error_t do_playing();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     srs_error_t on_srt_packet(char *buf, int nb_buf);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     srs_error_t http_hooks_on_connect();
     void http_hooks_on_close();
     srs_error_t http_hooks_on_publish();
@@ -169,7 +177,8 @@ SRS_DECLARE_PRIVATE:
     srs_error_t http_hooks_on_play();
     void http_hooks_on_stop();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsResourceManager *resource_manager_;
     srs_srt_t srt_fd_;
     ISrsProtocolReadWriter *srt_conn_;

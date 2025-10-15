@@ -94,7 +94,8 @@ public:
 #define SrsContextRestore(cid) impl_SrsContextRestore _context_restore_instance(cid)
 class impl_SrsContextRestore
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     SrsContextId cid_;
 
 public:

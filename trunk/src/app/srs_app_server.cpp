@@ -81,7 +81,7 @@ extern SrsDtlsCertificate *_srs_rtc_dtls_certificate;
 bool _srs_global_initialized = false;
 srs_error_t srs_global_initialize()
 {
-    srs_error_t err = srs_success; 
+    srs_error_t err = srs_success;
 
     // Initialize the global kbps statistics variables
     if ((err = srs_global_kbps_initialize()) != srs_success) {

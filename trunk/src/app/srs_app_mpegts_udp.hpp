@@ -44,10 +44,12 @@ class ISrsAppFactory;
 // A UDP listener, for udp stream caster server.
 class SrsUdpCasterListener : public ISrsListener
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppConfig *config_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsIpListener *listener_;
     ISrsMpegtsOverUdp *caster_;
 
@@ -78,9 +80,11 @@ public:
 // we must recalc the timestamp.
 class SrsMpegtsQueue : public ISrsMpegtsQueue
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // The key: dts, value: msg.
-    std::map<int64_t, SrsMediaPacket *> msgs_;
+    std::map<int64_t, SrsMediaPacket *>
+        msgs_;
     int nb_audios_;
     int nb_videos_;
 
@@ -107,19 +111,23 @@ public:
 // The mpegts over udp stream caster.
 class SrsMpegtsOverUdp : public ISrsMpegtsOverUdp
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppConfig *config_;
     ISrsAppFactory *app_factory_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsTsContext *context_;
     SrsSimpleStream *buffer_;
     std::string output_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsBasicRtmpClient *sdk_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsRawH264Stream *avc_;
     std::string h264_sps_;
     bool h264_sps_changed_;
@@ -127,11 +135,13 @@ SRS_DECLARE_PRIVATE:
     bool h264_pps_changed_;
     bool h264_sps_pps_sent_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsRawAacStream *aac_;
     std::string aac_specific_config_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsMpegtsQueue *queue_;
     ISrsPithyPrint *pprint_;
 
@@ -145,25 +155,30 @@ public:
 public:
     virtual srs_error_t on_udp_packet(const sockaddr *from, const int fromlen, char *buf, int nb_buf);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     virtual srs_error_t on_udp_bytes(std::string host, int port, char *buf, int nb_buf);
     // Interface ISrsTsHandler
 public:
     virtual srs_error_t on_ts_message(SrsTsMessage *msg);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     virtual srs_error_t on_ts_video(SrsTsMessage *msg, SrsBuffer *avs);
     virtual srs_error_t write_h264_sps_pps(uint32_t dts, uint32_t pts);
     virtual srs_error_t write_h264_ipb_frame(char *frame, int frame_size, uint32_t dts, uint32_t pts);
     virtual srs_error_t on_ts_audio(SrsTsMessage *msg, SrsBuffer *avs);
     virtual srs_error_t write_audio_raw_frame(char *frame, int frame_size, SrsRawAacStreamCodec *codec, uint32_t dts);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     virtual srs_error_t rtmp_write_packet(char type, uint32_t timestamp, char *data, int size);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Connect to RTMP server.
-    virtual srs_error_t connect();
+    virtual srs_error_t
+    connect();
     // Close the connection to RTMP server.
     virtual void close();
 };

@@ -71,7 +71,8 @@ extern srs_error_t srs_srt_get_remote_ip_port(srs_srt_t srt_fd, std::string &ip,
 // Get SRT stats.
 class SrsSrtStat
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     void *stat_;
 
 public:
@@ -178,12 +179,14 @@ public:
     // Unsubscribed OUT event to srt poller.
     srs_error_t disable_write();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     srs_error_t enable_event(int event);
     srs_error_t disable_event(int event);
     srs_error_t check_error();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     srs_srt_t srt_fd_;
     // Mark if some error occured in srt socket.
     bool has_error_;

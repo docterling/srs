@@ -230,7 +230,8 @@ public:
         return cp;
     }
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     MockSrsContextId *bind_;
 };
 

@@ -87,17 +87,20 @@ public:
 // The RTMP upstream of edge.
 class SrsEdgeRtmpUpstream : public ISrsEdgeUpstream
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppConfig *config_;
     ISrsAppFactory *app_factory_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // For RTMP 302, if not empty,
     // use this <ip[:port]> as upstream.
     std::string redirect_;
     ISrsBasicRtmpClient *sdk_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Current selected server, the ip:port.
     std::string selected_ip_;
     int selected_port_;
@@ -122,20 +125,24 @@ public:
 // The HTTP FLV upstream of edge.
 class SrsEdgeFlvUpstream : public ISrsEdgeUpstream
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppConfig *config_;
     ISrsAppFactory *app_factory_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     std::string schema_;
     ISrsHttpClient *sdk_;
     ISrsHttpMessage *hr_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsFileReader *reader_;
     ISrsFlvDecoder *decoder_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // We might modify the request by HTTP redirect.
     ISrsRequest *req_;
     // Current selected server, the ip:port.
@@ -149,7 +156,8 @@ public:
 public:
     virtual srs_error_t connect(ISrsRequest *r, ISrsLbRoundRobin *lb);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     virtual srs_error_t do_connect(ISrsRequest *r, ISrsLbRoundRobin *lb, int redirect_depth);
 
 public:
@@ -182,14 +190,17 @@ public:
 // The edge used to ingest stream from origin.
 class SrsEdgeIngester : public ISrsCoroutineHandler, public ISrsEdgeIngester
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppConfig *config_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Because source references to this object, so we should directly use the source ptr.
     ISrsLiveSource *source_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsPlayEdge *edge_;
     ISrsRequest *req_;
     ISrsCoroutine *trd_;
@@ -209,10 +220,12 @@ public:
 public:
     virtual srs_error_t cycle();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     virtual srs_error_t do_cycle();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     virtual srs_error_t ingest(std::string &redirect);
     virtual srs_error_t process_publish_message(SrsRtmpCommonMessage *msg, std::string &redirect);
 };
@@ -240,14 +253,17 @@ public:
 // The edge used to forward stream to origin.
 class SrsEdgeForwarder : public ISrsCoroutineHandler, public ISrsEdgeForwarder
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppConfig *config_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Because source references to this object, so we should directly use the source ptr.
     ISrsLiveSource *source_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsPublishEdge *edge_;
     ISrsRequest *req_;
     ISrsCoroutine *trd_;
@@ -276,7 +292,8 @@ public:
 public:
     virtual srs_error_t cycle();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     virtual srs_error_t do_cycle();
 
 public:
@@ -298,7 +315,8 @@ public:
 // The play edge control service.
 class SrsPlayEdge : public ISrsPlayEdge
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     SrsEdgeState state_;
     ISrsEdgeIngester *ingester_;
 
@@ -334,7 +352,8 @@ public:
 // The publish edge control service.
 class SrsPublishEdge : public ISrsPublishEdge
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     SrsEdgeState state_;
     ISrsEdgeForwarder *forwarder_;
 

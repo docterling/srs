@@ -60,10 +60,12 @@ public:
 // The segmenter for DVR, to write a segment file in flv/mp4.
 class SrsDvrSegmenter : public ISrsReloadHandler, public ISrsDvrSegmenter
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppConfig *config_;
 
-SRS_DECLARE_PROTECTED:
+// clang-format off
+SRS_DECLARE_PROTECTED: // clang-format on
     // The underlayer file object.
     ISrsFileWriter *fs_;
     // Whether wait keyframe to reap segment.
@@ -71,11 +73,13 @@ SRS_DECLARE_PROTECTED:
     // The FLV/MP4 fragment file.
     SrsFragment *fragment_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsRequest *req_;
     ISrsDvrPlan *plan_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     SrsRtmpJitter *jitter_;
     SrsRtmpJitterAlgorithm jitter_algorithm_;
 
@@ -109,16 +113,19 @@ public:
     // @remark ignore when already closed.
     virtual srs_error_t close();
 
-SRS_DECLARE_PROTECTED:
+// clang-format off
+SRS_DECLARE_PROTECTED: // clang-format on
     virtual srs_error_t open_encoder() = 0;
     virtual srs_error_t encode_metadata(SrsMediaPacket *metadata) = 0;
     virtual srs_error_t encode_audio(SrsMediaPacket *audio, SrsFormat *format) = 0;
     virtual srs_error_t encode_video(SrsMediaPacket *video, SrsFormat *format) = 0;
     virtual srs_error_t close_encoder() = 0;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Generate the flv segment path.
-    virtual std::string generate_path();
+    virtual std::string
+    generate_path();
     // When update the duration of segment by rtmp msg.
     virtual srs_error_t on_update_duration(SrsMediaPacket *msg);
 };
@@ -126,14 +133,17 @@ SRS_DECLARE_PRIVATE:
 // The FLV segmenter to use FLV encoder to write file.
 class SrsDvrFlvSegmenter : public SrsDvrSegmenter
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppFactory *app_factory_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // The FLV encoder, for FLV target.
     ISrsFlvTransmuxer *enc_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // The offset of file for duration value.
     // The next 8 bytes is the double value.
     int64_t duration_offset_;
@@ -150,7 +160,8 @@ public:
 public:
     virtual srs_error_t refresh_metadata();
 
-SRS_DECLARE_PROTECTED:
+// clang-format off
+SRS_DECLARE_PROTECTED: // clang-format on
     virtual srs_error_t open_encoder();
     virtual srs_error_t encode_metadata(SrsMediaPacket *metadata);
     virtual srs_error_t encode_audio(SrsMediaPacket *audio, SrsFormat *format);
@@ -161,10 +172,12 @@ SRS_DECLARE_PROTECTED:
 // The MP4 segmenter to use MP4 encoder to write file.
 class SrsDvrMp4Segmenter : public SrsDvrSegmenter
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppFactory *app_factory_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // The MP4 encoder, for MP4 target.
     ISrsMp4Encoder *enc_;
 
@@ -175,7 +188,8 @@ public:
 public:
     virtual srs_error_t refresh_metadata();
 
-SRS_DECLARE_PROTECTED:
+// clang-format off
+SRS_DECLARE_PROTECTED: // clang-format on
     virtual srs_error_t open_encoder();
     virtual srs_error_t encode_metadata(SrsMediaPacket *metadata);
     virtual srs_error_t encode_audio(SrsMediaPacket *audio, SrsFormat *format);
@@ -186,11 +200,13 @@ SRS_DECLARE_PROTECTED:
 // the dvr async call.
 class SrsDvrAsyncCallOnDvr : public ISrsAsyncCallTask
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsHttpHooks *hooks_;
     ISrsAppConfig *config_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     SrsContextId cid_;
     std::string path_;
     ISrsRequest *req_;
@@ -224,14 +240,16 @@ public:
 // The DVR plan, when and how to reap segment.
 class SrsDvrPlan : public ISrsReloadHandler, public ISrsDvrPlan
 {
-SRS_DECLARE_PROTECTED:
+// clang-format off
+SRS_DECLARE_PROTECTED: // clang-format on
     ISrsAsyncCallWorker *async_;
     ISrsAppConfig *config_;
 
 public:
     ISrsRequest *req_;
 
-SRS_DECLARE_PROTECTED:
+// clang-format off
+SRS_DECLARE_PROTECTED: // clang-format on
     ISrsOriginHub *hub_;
     ISrsDvrSegmenter *segment_;
     bool dvr_enabled_;
@@ -271,7 +289,8 @@ public:
 // The DVR segment plan: reap flv when duration exceed.
 class SrsDvrSegmentPlan : public SrsDvrPlan
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // in config, in srs_utime_t
     srs_utime_t cduration_;
     bool wait_keyframe_;
@@ -289,7 +308,8 @@ public:
     virtual srs_error_t on_audio(SrsMediaPacket *shared_audio, SrsFormat *format);
     virtual srs_error_t on_video(SrsMediaPacket *shared_video, SrsFormat *format);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     virtual srs_error_t update_duration(SrsMediaPacket *msg);
 };
 
@@ -313,16 +333,19 @@ public:
 // DVR(Digital Video Recorder) to record RTMP stream to flv/mp4 file.
 class SrsDvr : public ISrsReloadHandler, public ISrsDvr
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppConfig *config_;
     ISrsAppFactory *app_factory_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsOriginHub *hub_;
     ISrsDvrPlan *plan_;
     ISrsRequest *req_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // whether the dvr is actived by filter, which is specified by dvr_apply.
     // we always initialize the dvr, which crote plan and segment object,
     // but they never create actual piece of file util the apply active it.

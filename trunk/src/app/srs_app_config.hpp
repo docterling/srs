@@ -65,7 +65,8 @@ namespace srs_internal
 // The buffer of config content.
 class SrsConfigBuffer
 {
-SRS_DECLARE_PROTECTED:
+// clang-format off
+SRS_DECLARE_PROTECTED: // clang-format on
     // The last available position.
     char *last_;
     // The end of buffer.
@@ -228,7 +229,8 @@ public:
     virtual SrsJsonAny *dumps_arg0_to_number();
     virtual SrsJsonAny *dumps_arg0_to_boolean();
     // private parse.
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // The directive parsing context.
     enum SrsDirectiveContext {
         // The root directives, parsing file.
@@ -606,7 +608,8 @@ class SrsConfig : public ISrsAppConfig
 {
     friend class SrsConfDirective;
     // user command
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Whether show help and exit.
     bool show_help_;
     // Whether test config file and exit.
@@ -619,29 +622,35 @@ SRS_DECLARE_PRIVATE:
     // Set it by argv "-e" or env "SRS_ENV_ONLY=on".
     bool env_only_;
     // global env variables.
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // The user parameters, the argc and argv.
     // The argv is " ".join(argv), where argv is from main(argc, argv).
     std::string argv_;
     // current working directory.
     std::string cwd_;
     // Config section
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // The last parsed config file.
     // If  reload, reload the config file.
     std::string config_file_;
 
-SRS_DECLARE_PROTECTED:
+// clang-format off
+SRS_DECLARE_PROTECTED: // clang-format on
     // The directive root.
     SrsConfDirective *root_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // The cache for parsing the config from environment variables.
     SrsConfDirective *env_cache_;
     // Reload  section
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // The reload subscribers, when reload, callback all handlers.
-    std::vector<ISrsReloadHandler *> subscribes_;
+    std::vector<ISrsReloadHandler *>
+        subscribes_;
 
 public:
     SrsConfig();
@@ -657,37 +666,46 @@ public:
     // @remark, user can test the config before reload it.
     virtual srs_error_t reload(SrsReloadState *pstate);
 
-SRS_DECLARE_PROTECTED:
+// clang-format off
+SRS_DECLARE_PROTECTED: // clang-format on
     // Reload  from the config.
     // @remark, use protected for the utest to override with mock.
-    virtual srs_error_t reload_conf(SrsConfig *conf);
+    virtual srs_error_t
+    reload_conf(SrsConfig *conf);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Parse options and file
 public:
     // Parse the cli, the main(argc,argv) function.
-    virtual srs_error_t parse_options(int argc, char **argv);
+    virtual srs_error_t
+    parse_options(int argc, char **argv);
     // initialize the cwd for server,
     // because we may change the workdir.
     virtual srs_error_t initialize_cwd();
     // Marshal current config to file.
     virtual srs_error_t persistence();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     virtual srs_error_t do_persistence(SrsFileWriter *fw);
 
 public:
     // Dumps the http_api sections to json for raw api info.
     virtual srs_error_t raw_to_json(SrsJsonObject *obj);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
 public:
     // Get the config file path.
-    virtual std::string config();
+    virtual std::string
+    config();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Parse each argv.
-    virtual srs_error_t parse_argv(int &i, char **argv);
+    virtual srs_error_t
+    parse_argv(int &i, char **argv);
     // Print help and exit.
     virtual void print_help(char **argv);
 
@@ -695,23 +713,28 @@ public:
     // Parse the config file, which is specified by cli.
     virtual srs_error_t parse_file(const char *filename);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Build a buffer from a src, which is string content or filename.
-    virtual srs_error_t build_buffer(std::string src, srs_internal::SrsConfigBuffer **pbuffer);
+    virtual srs_error_t
+    build_buffer(std::string src, srs_internal::SrsConfigBuffer **pbuffer);
 
 public:
     // Check the parsed config.
     virtual srs_error_t check_config();
 
-SRS_DECLARE_PROTECTED:
+// clang-format off
+SRS_DECLARE_PROTECTED: // clang-format on
     virtual srs_error_t check_normal_config();
     virtual srs_error_t check_number_connections();
 
-SRS_DECLARE_PROTECTED:
+// clang-format off
+SRS_DECLARE_PROTECTED: // clang-format on
     // Parse config from the buffer.
     // @param buffer, the config buffer, user must delete it.
     // @remark, use protected for the utest to override with mock.
-    virtual srs_error_t parse_buffer(srs_internal::SrsConfigBuffer *buffer);
+    virtual srs_error_t
+    parse_buffer(srs_internal::SrsConfigBuffer *buffer);
     // global env
 public:
     // Get the current work directory.
@@ -731,9 +754,11 @@ public:
     // Whether srs in docker.
     virtual bool get_in_docker();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Whether user use full.conf
-    virtual bool is_full_config();
+    virtual bool
+    is_full_config();
 
 public:
     // Get the server id, generated a random one if not configured.
@@ -845,7 +870,8 @@ public:
     virtual bool get_rtc_server_black_hole();
     virtual std::string get_rtc_server_black_hole_addr();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     virtual int get_rtc_server_reuseport2();
 
 public:
@@ -975,9 +1001,11 @@ public:
     virtual srs_utime_t get_publish_kickoff_for_idle(std::string vhost);
     virtual srs_utime_t get_publish_kickoff_for_idle(SrsConfDirective *vhost);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Get the global chunk size.
-    virtual int get_global_chunk_size();
+    virtual int
+    get_global_chunk_size();
     // forward section
 public:
     // Whether the forwarder enabled.
@@ -1028,7 +1056,8 @@ public:
     // Get the default streamid when client doesn't provide one.
     virtual std::string get_srt_default_streamid();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     SrsConfDirective *get_srt(std::string vhost);
 
 public:
@@ -1037,9 +1066,11 @@ public:
     bool get_srt_to_rtmp(std::string vhost);
 
     // http_hooks section
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Get the http_hooks directive of vhost.
-    virtual SrsConfDirective *get_vhost_http_hooks(std::string vhost);
+    virtual SrsConfDirective *
+    get_vhost_http_hooks(std::string vhost);
 
 public:
     // Whether vhost http-hooks enabled.
@@ -1185,9 +1216,11 @@ public:
     // @remark, we will use some variable, for instance, [vhost] to substitude with vhost.
     virtual std::string get_engine_output(SrsConfDirective *conf);
     // vhost exec secion
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Get the exec directive of vhost.
-    virtual SrsConfDirective *get_exec(std::string vhost);
+    virtual SrsConfDirective *
+    get_exec(std::string vhost);
 
 public:
     // Whether the exec is enabled of vhost.
@@ -1226,7 +1259,8 @@ public:
     // The ffmpeg log level.
     virtual std::string get_ff_log_level();
     // The MPEG-DASH section.
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     virtual SrsConfDirective *get_dash(std::string vhost);
 
 public:
@@ -1250,9 +1284,11 @@ public:
     // The timeout in srs_utime_t to dispose the dash.
     virtual srs_utime_t get_dash_dispose(std::string vhost);
     // hls section
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Get the hls directive of vhost.
-    virtual SrsConfDirective *get_hls(std::string vhost);
+    virtual SrsConfDirective *
+    get_hls(std::string vhost);
 
 public:
     // Whether HLS is enabled.
@@ -1319,9 +1355,11 @@ public:
     // Old fragments are kept. Default is on.
     virtual bool get_hls_recover(std::string vhost);
     // hds section
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Get the hds directive of vhost.
-    virtual SrsConfDirective *get_hds(const std::string &vhost);
+    virtual SrsConfDirective *
+    get_hds(const std::string &vhost);
 
 public:
     // Whether HDS is enabled.
@@ -1335,9 +1373,11 @@ public:
     // a window is a set of hds fragments.
     virtual srs_utime_t get_hds_window(const std::string &vhost);
     // dvr section
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Get the dvr directive.
-    virtual SrsConfDirective *get_dvr(std::string vhost);
+    virtual SrsConfDirective *
+    get_dvr(std::string vhost);
 
 public:
     // Whether dvr is enabled.
@@ -1357,9 +1397,11 @@ public:
     // Get the time_jitter algorithm for dvr.
     virtual int get_dvr_time_jitter(std::string vhost);
     // http api section
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Whether http api enabled
-    virtual bool get_http_api_enabled(SrsConfDirective *conf);
+    virtual bool
+    get_http_api_enabled(SrsConfDirective *conf);
 
 public:
     // Whether http api enabled.
@@ -1383,7 +1425,8 @@ public:
     // Get the http api auth password.
     virtual std::string get_http_api_auth_password();
     // https api section
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     SrsConfDirective *get_https_api();
 
 public:
@@ -1392,9 +1435,11 @@ public:
     virtual std::string get_https_api_ssl_key();
     virtual std::string get_https_api_ssl_cert();
     // http stream section
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Whether http stream enabled.
-    virtual bool get_http_stream_enabled(SrsConfDirective *conf);
+    virtual bool
+    get_http_stream_enabled(SrsConfDirective *conf);
 
 public:
     // Whether http stream enabled.
@@ -1406,7 +1451,8 @@ public:
     // Whether enable crossdomain for http static and stream server.
     virtual bool get_http_stream_crossdomain();
     // https api section
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     SrsConfDirective *get_https_stream();
 
 public:
@@ -1416,7 +1462,8 @@ public:
     virtual std::string get_https_stream_ssl_key();
     virtual std::string get_https_stream_ssl_cert();
     // rtmps section
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     SrsConfDirective *get_rtmps();
 
 public:
@@ -1453,9 +1500,11 @@ public:
     // used to generate the flv stream mount path.
     virtual std::string get_vhost_http_remux_mount(std::string vhost);
     // http heartbeat section
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Get the heartbeat directive.
-    virtual SrsConfDirective *get_heartbeat();
+    virtual SrsConfDirective *
+    get_heartbeat();
 
 public:
     // Whether heartbeat enabled.
@@ -1470,9 +1519,11 @@ public:
     virtual bool get_heartbeat_summaries();
     bool get_heartbeat_ports();
     // stats section
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Get the stats directive.
-    virtual SrsConfDirective *get_stats();
+    virtual SrsConfDirective *
+    get_stats();
 
 public:
     // Whether enabled stats.

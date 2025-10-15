@@ -25,7 +25,8 @@ public:
     MockPacket();
     virtual ~MockPacket();
 
-SRS_DECLARE_PROTECTED:
+// clang-format off
+SRS_DECLARE_PROTECTED: // clang-format on
     virtual int get_size();
 };
 

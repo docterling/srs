@@ -86,7 +86,8 @@ public:
 // The factory to create app objects.
 class SrsAppFactory : public ISrsAppFactory
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsKernelFactory *kernel_factory_;
 
 public:

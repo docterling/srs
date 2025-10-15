@@ -17,7 +17,8 @@ class ISrsEncoder;
 // See https://developers.google.com/protocol-buffers/docs/encoding#varints
 class SrsProtobufVarints
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     static int bits_len64(uint64_t x);
 
 public:

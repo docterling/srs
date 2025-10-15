@@ -94,19 +94,23 @@ public:
 // Bind udp port, start thread to recv packet and handler it.
 class SrsUdpListener : public ISrsCoroutineHandler, public ISrsIpListener
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppFactory *factory_;
 
-SRS_DECLARE_PROTECTED:
+// clang-format off
+SRS_DECLARE_PROTECTED: // clang-format on
     std::string label_;
     srs_netfd_t lfd_;
     ISrsCoroutine *trd_;
 
-SRS_DECLARE_PROTECTED:
+// clang-format off
+SRS_DECLARE_PROTECTED: // clang-format on
     char *buf_;
     int nb_buf_;
 
-SRS_DECLARE_PROTECTED:
+// clang-format off
+SRS_DECLARE_PROTECTED: // clang-format on
     ISrsUdpHandler *handler_;
     std::string ip_;
     int port_;
@@ -119,11 +123,13 @@ public:
     ISrsListener *set_label(const std::string &label);
     ISrsListener *set_endpoint(const std::string &i, int p);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     virtual int fd();
     virtual srs_netfd_t stfd();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     void set_socket_buffer();
 
 public:
@@ -133,22 +139,26 @@ public:
 public:
     virtual srs_error_t cycle();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     srs_error_t do_cycle();
 };
 
 // Bind and listen tcp port, use handler to process the client.
 class SrsTcpListener : public ISrsCoroutineHandler, public ISrsIpListener
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppFactory *factory_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     std::string label_;
     srs_netfd_t lfd_;
     ISrsCoroutine *trd_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsTcpHandler *handler_;
     std::string ip_;
     int port_;
@@ -170,17 +180,20 @@ public:
 public:
     virtual srs_error_t cycle();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     srs_error_t do_cycle();
 };
 
 // Bind and listen tcp port, use handler to process the client.
 class SrsMultipleTcpListeners : public ISrsIpListener, public ISrsTcpHandler
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppFactory *factory_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsTcpHandler *handler_;
     std::vector<ISrsIpListener *> listeners_;
 
@@ -223,13 +236,15 @@ public:
 // TODO: FIXME: Rename it. Refine it for performance issue.
 class SrsUdpMuxSocket : public ISrsUdpMuxSocket
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // For sender yield only.
     uint32_t nn_msgs_for_yield_;
     std::map<uint32_t, std::string> cache_;
     SrsBuffer *cache_buffer_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     char *buf_;
     int nb_buf_;
     int nread_;
@@ -237,11 +252,13 @@ SRS_DECLARE_PRIVATE:
     sockaddr_storage from_;
     int fromlen_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     std::string peer_ip_;
     int peer_port_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Cache for peer id.
     std::string peer_id_;
     // If the address changed, we should generate the peer_id.
@@ -271,19 +288,23 @@ public:
 
 class SrsUdpMuxListener : public ISrsCoroutineHandler
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppFactory *factory_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     srs_netfd_t lfd_;
     ISrsCoroutine *trd_;
     SrsContextId cid_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     char *buf_;
     int nb_buf_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsUdpMuxHandler *handler_;
     std::string ip_;
     int port_;
@@ -302,7 +323,8 @@ public:
 public:
     virtual srs_error_t cycle();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     void set_socket_buffer();
 };
 

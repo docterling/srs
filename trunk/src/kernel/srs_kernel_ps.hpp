@@ -78,7 +78,8 @@ class SrsPsContext : public ISrsPsContext
 public:
     SrsPsDecodeHelper helper_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // The last decoding PS(TS) message.
     SrsTsMessage *last_;
     // The current parsing PS packet context.
@@ -112,7 +113,8 @@ public:
     // @remark We will consume all bytes in stream.
     virtual srs_error_t decode(SrsBuffer *stream, ISrsPsMessageHandler *handler);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     srs_error_t do_decode(SrsBuffer *stream, ISrsPsMessageHandler *handler);
 };
 
@@ -274,7 +276,8 @@ public:
 public:
     virtual srs_error_t decode(SrsBuffer *stream);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     virtual srs_error_t decode_pack(SrsBuffer *stream);
     virtual srs_error_t decode_system(SrsBuffer *stream);
 };

@@ -264,9 +264,11 @@ public:
     // Encode message to string.
     virtual srs_error_t encode(std::stringstream &ss);
 
-SRS_DECLARE_PROTECTED:
+// clang-format off
+SRS_DECLARE_PROTECTED: // clang-format on
     // Sub classes override this to encode the headers.
-    virtual srs_error_t encode_header(std::stringstream &ss);
+    virtual srs_error_t
+    encode_header(std::stringstream &ss);
 };
 
 // 10.1 OPTIONS, @see rfc2326-1998-rtsp.pdf, page 59
@@ -283,7 +285,8 @@ public:
     SrsRtspOptionsResponse(int cseq);
     virtual ~SrsRtspOptionsResponse();
 
-SRS_DECLARE_PROTECTED:
+// clang-format off
+SRS_DECLARE_PROTECTED: // clang-format on
     virtual srs_error_t encode_header(std::stringstream &ss);
 };
 
@@ -298,7 +301,8 @@ public:
     SrsRtspDescribeResponse(int cseq);
     virtual ~SrsRtspDescribeResponse();
 
-SRS_DECLARE_PROTECTED:
+// clang-format off
+SRS_DECLARE_PROTECTED: // clang-format on
     virtual srs_error_t encode_header(std::stringstream &ss);
 };
 
@@ -330,7 +334,8 @@ public:
     SrsRtspSetupResponse(int cseq);
     virtual ~SrsRtspSetupResponse();
 
-SRS_DECLARE_PROTECTED:
+// clang-format off
+SRS_DECLARE_PROTECTED: // clang-format on
     virtual srs_error_t encode_header(std::stringstream &ss);
 };
 
@@ -341,7 +346,8 @@ public:
     SrsRtspPlayResponse(int cseq);
     virtual ~SrsRtspPlayResponse();
 
-SRS_DECLARE_PROTECTED:
+// clang-format off
+SRS_DECLARE_PROTECTED: // clang-format on
     virtual srs_error_t encode_header(std::stringstream &ss);
 };
 

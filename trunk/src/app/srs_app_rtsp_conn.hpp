@@ -60,24 +60,28 @@ public:
 // A RTSP play stream, client pull and play stream from SRS.
 class SrsRtspPlayStream : public ISrsRtspPlayStream, public ISrsCoroutineHandler, public ISrsRtcSourceChangeCallback
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppFactory *app_factory_;
     ISrsStatistic *stat_;
     ISrsRtspSourceManager *rtsp_sources_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     SrsContextId cid_;
     ISrsCoroutine *trd_;
     ISrsRtspConnection *session_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsRequest *req_;
     SrsSharedPtr<SrsRtspSource> source_;
     // key: publish_ssrc, value: send track to process rtp/rtcp
     std::map<uint32_t, ISrsRtspSendTrack *> audio_tracks_;
     std::map<uint32_t, ISrsRtspSendTrack *> video_tracks_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Fast cache for tracks.
     uint32_t cache_ssrc0_;
     uint32_t cache_ssrc1_;
@@ -86,7 +90,8 @@ SRS_DECLARE_PRIVATE:
     ISrsRtspSendTrack *cache_track1_;
     ISrsRtspSendTrack *cache_track2_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Whether player started.
     bool is_started;
 
@@ -110,7 +115,8 @@ public:
 public:
     virtual srs_error_t cycle();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     srs_error_t send_packet(SrsRtpPacket *&pkt);
 
 public:
@@ -136,17 +142,20 @@ class SrsRtspConnection : public ISrsResource, // It's a resource.
                           public ISrsStartable,
                           public ISrsRtspConnection
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsRtspSourceManager *rtsp_sources_;
     ISrsResourceManager *rtsp_manager_;
     ISrsStatistic *stat_;
     ISrsAppConfig *config_;
     ISrsHttpHooks *hooks_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     bool disposing_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // TODO: FIXME: Rename it.
     // The timeout of session, keep alive by STUN ping pong.
     srs_utime_t session_timeout;
@@ -191,7 +200,8 @@ public:
 public:
     ISrsKbpsDelta *delta();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     virtual srs_error_t do_describe(SrsRtspRequest *req, std::string &sdp);
     virtual srs_error_t do_setup(SrsRtspRequest *req, uint32_t *ssrc);
     virtual srs_error_t do_play(SrsRtspRequest *req, SrsRtspConnection *conn);
@@ -217,7 +227,8 @@ public:
 public:
     virtual srs_error_t cycle();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     srs_error_t do_cycle();
     srs_error_t on_rtsp_request(SrsRtspRequest *req_raw);
 
@@ -233,14 +244,16 @@ public:
     bool is_alive();
     void alive();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     srs_error_t http_hooks_on_play(ISrsRequest *req);
     srs_error_t get_ssrc_by_stream_id(uint32_t stream_id, uint32_t *ssrc);
 };
 
 class SrsRtspTcpNetwork : public ISrsStreamWriter
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsProtocolReadWriter *skt_;
     int channel_;
 

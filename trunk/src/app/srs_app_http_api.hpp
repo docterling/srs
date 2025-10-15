@@ -38,7 +38,8 @@ extern srs_error_t srs_api_response_code(ISrsHttpResponseWriter *w, ISrsHttpMess
 // For http root.
 class SrsGoApiRoot : public ISrsHttpHandler
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsStatistic *stat_;
 
 public:
@@ -51,7 +52,8 @@ public:
 
 class SrsGoApiApi : public ISrsHttpHandler
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsStatistic *stat_;
 
 public:
@@ -64,7 +66,8 @@ public:
 
 class SrsGoApiV1 : public ISrsHttpHandler
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsStatistic *stat_;
 
 public:
@@ -77,7 +80,8 @@ public:
 
 class SrsGoApiVersion : public ISrsHttpHandler
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsStatistic *stat_;
 
 public:
@@ -90,7 +94,8 @@ public:
 
 class SrsGoApiSummaries : public ISrsHttpHandler
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsStatistic *stat_;
 
 public:
@@ -103,7 +108,8 @@ public:
 
 class SrsGoApiRusages : public ISrsHttpHandler
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsStatistic *stat_;
 
 public:
@@ -116,7 +122,8 @@ public:
 
 class SrsGoApiSelfProcStats : public ISrsHttpHandler
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsStatistic *stat_;
 
 public:
@@ -129,7 +136,8 @@ public:
 
 class SrsGoApiSystemProcStats : public ISrsHttpHandler
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsStatistic *stat_;
 
 public:
@@ -142,7 +150,8 @@ public:
 
 class SrsGoApiMemInfos : public ISrsHttpHandler
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsStatistic *stat_;
 
 public:
@@ -155,7 +164,8 @@ public:
 
 class SrsGoApiAuthors : public ISrsHttpHandler
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsStatistic *stat_;
 
 public:
@@ -168,7 +178,8 @@ public:
 
 class SrsGoApiFeatures : public ISrsHttpHandler
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsStatistic *stat_;
 
 public:
@@ -181,7 +192,8 @@ public:
 
 class SrsGoApiRequests : public ISrsHttpHandler
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsStatistic *stat_;
 
 public:
@@ -194,7 +206,8 @@ public:
 
 class SrsGoApiVhosts : public ISrsHttpHandler
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsStatistic *stat_;
 
 public:
@@ -207,7 +220,8 @@ public:
 
 class SrsGoApiStreams : public ISrsHttpHandler
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsStatistic *stat_;
 
 public:
@@ -220,7 +234,8 @@ public:
 
 class SrsGoApiClients : public ISrsHttpHandler
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsStatistic *stat_;
 
 public:
@@ -233,14 +248,17 @@ public:
 
 class SrsGoApiRaw : public ISrsHttpHandler, public ISrsReloadHandler
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsStatistic *stat_;
     ISrsAppConfig *config_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsSignalHandler *handler_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     bool raw_api_;
     bool allow_reload_;
     bool allow_query_;
@@ -257,7 +275,8 @@ public:
 
 class SrsGoApiClusters : public ISrsHttpHandler
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsStatistic *stat_;
 
 public:
@@ -270,7 +289,8 @@ public:
 
 class SrsGoApiError : public ISrsHttpHandler
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsStatistic *stat_;
 
 public:
@@ -284,7 +304,8 @@ public:
 #ifdef SRS_GPERF
 class SrsGoApiTcmalloc : public ISrsHttpHandler
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsStatistic *stat_;
 
 public:
@@ -299,10 +320,12 @@ public:
 #ifdef SRS_VALGRIND
 class SrsGoApiValgrind : public ISrsHttpHandler, public ISrsCoroutineHandler
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsStatistic *stat_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsCoroutine *trd_;
     std::string task_;
 
@@ -321,7 +344,8 @@ public:
 #ifdef SRS_SIGNAL_API
 class SrsGoApiSignal : public ISrsHttpHandler
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsStatistic *stat_;
 
 public:
@@ -335,11 +359,13 @@ public:
 
 class SrsGoApiMetrics : public ISrsHttpHandler
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsStatistic *stat_;
     ISrsAppConfig *config_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     bool enabled_;
     std::string label_;
     std::string tag_;

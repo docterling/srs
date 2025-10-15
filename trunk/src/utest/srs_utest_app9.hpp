@@ -170,7 +170,8 @@ public:
 // Mock ISrsLiveSource for testing SrsOriginHub::on_audio
 class MockLiveSourceForOriginHub : public ISrsLiveSource
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     SrsRtmpFormat *format_;
     SrsMetaCache *meta_;
 

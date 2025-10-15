@@ -35,7 +35,8 @@ public:
 
 class MockTcpHandler : public ISrsTcpHandler
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     srs_netfd_t fd;
 
 public:

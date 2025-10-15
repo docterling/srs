@@ -51,14 +51,17 @@ public:
 // A cache for HTTP Live Streaming encoder, to make android(weixin) happy.
 class SrsBufferCache : public ISrsCoroutineHandler, public ISrsBufferCache
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppConfig *config_;
     ISrsLiveSourceManager *live_sources_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     srs_utime_t fast_cache_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsMessageQueue *queue_;
     ISrsRequest *req_;
     ISrsCoroutine *trd_;
@@ -107,7 +110,8 @@ public:
 // Transmux RTMP to HTTP Live Streaming.
 class SrsFlvStreamEncoder : public ISrsBufferEncoder
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsFlvTransmuxer *enc_;
     bool header_written_;
     bool has_audio_;
@@ -138,14 +142,16 @@ public:
     // Write the tags in a time.
     virtual srs_error_t write_tags(SrsMediaPacket **msgs, int count);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     virtual srs_error_t write_header(bool has_video, bool has_audio);
 };
 
 // Transmux RTMP to HTTP TS Streaming.
 class SrsTsStreamEncoder : public ISrsBufferEncoder
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsTsTransmuxer *enc_;
 
 public:
@@ -171,7 +177,8 @@ public:
 // Transmux RTMP with AAC stream to HTTP AAC Streaming.
 class SrsAacStreamEncoder : public ISrsBufferEncoder
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAacTransmuxer *enc_;
     ISrsBufferCache *cache_;
 
@@ -193,7 +200,8 @@ public:
 // Transmux RTMP with MP3 stream to HTTP MP3 Streaming.
 class SrsMp3StreamEncoder : public ISrsBufferEncoder
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsMp3Transmuxer *enc_;
     ISrsBufferCache *cache_;
 
@@ -215,7 +223,8 @@ public:
 // Write stream to http response direclty.
 class SrsBufferWriter : public SrsFileWriter
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsHttpResponseWriter *writer_;
 
 public:
@@ -251,13 +260,15 @@ public:
 // TODO: FIXME: Rename to SrsHttpLive
 class SrsLiveStream : public ISrsLiveStream
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppConfig *config_;
     ISrsLiveSourceManager *live_sources_;
     ISrsStatistic *stat_;
     ISrsHttpHooks *hooks_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsRequest *req_;
     ISrsBufferCache *cache_;
     ISrsSecurity *security_;
@@ -274,7 +285,8 @@ public:
 public:
     virtual srs_error_t serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     srs_error_t serve_http_impl(ISrsHttpResponseWriter *w, ISrsHttpMessage *r);
 
 public:
@@ -283,7 +295,8 @@ public:
 public:
     virtual void expire();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     virtual srs_error_t do_serve_http(SrsLiveSource *source, ISrsLiveConsumer *consumer, ISrsHttpResponseWriter *w, ISrsHttpMessage *r);
     virtual srs_error_t http_hooks_on_play(ISrsHttpMessage *r);
     virtual void http_hooks_on_stop(ISrsHttpMessage *r);
@@ -292,7 +305,8 @@ SRS_DECLARE_PRIVATE:
 
 // The Live Entry, to handle HTTP Live Streaming.
 struct SrsLiveEntry {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     bool is_flv_;
     bool is_ts_;
     bool is_aac_;
@@ -342,11 +356,13 @@ public:
 // TODO: Support multiple stream.
 class SrsHttpStreamServer : public ISrsHttpStreamServer
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppConfig *config_;
     ISrsHttpServeMux *mux_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAsyncCallWorker *async_;
 
 public:
@@ -373,14 +389,16 @@ public:
 public:
     virtual srs_error_t dynamic_match(ISrsHttpMessage *request, ISrsHttpHandler **ph);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     virtual srs_error_t initialize_flv_streaming();
     virtual srs_error_t initialize_flv_entry(std::string vhost);
 };
 
 class SrsHttpStreamDestroy : public ISrsAsyncCallTask
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     std::string sid_;
     std::map<std::string, SrsLiveEntry *> *streamHandlers_;
     ISrsHttpServeMux *mux_;

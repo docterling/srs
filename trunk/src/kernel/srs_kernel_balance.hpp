@@ -50,7 +50,8 @@ public:
 //
 class SrsLbRoundRobin : public ISrsLbRoundRobin
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     int index_;
     uint32_t count_;
     std::string elem_;

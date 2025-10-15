@@ -38,7 +38,8 @@ public:
 // file writer, to write to file.
 class SrsFileWriter : public ISrsFileWriter
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     std::string path_;
     FILE *fp_;
     char *buf_;
@@ -107,7 +108,8 @@ public:
  */
 class SrsFileReader : public ISrsFileReader
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     std::string path_;
     int fd_;
 

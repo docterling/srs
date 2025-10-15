@@ -85,13 +85,15 @@ enum SrsHttpParseState {
 // A Header represents the key-value pairs in an HTTP header.
 class SrsHttpHeader
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // The order in which header fields with differing field names are
     // received is not significant. However, it is "good practice" to send
     // general-header fields first, followed by request-header or response-
     // header fields, and ending with the entity-header fields.
     // @doc https://tools.ietf.org/html/rfc2616#section-4.2
-    std::map<std::string, std::string> headers;
+    std::map<std::string, std::string>
+        headers;
     // Store keys to keep fields in order.
     std::vector<std::string> keys_;
 
@@ -304,7 +306,8 @@ public:
 // Redirect to a fixed URL
 class SrsHttpRedirectHandler : public ISrsHttpHandler
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     std::string url;
     int code;
 
@@ -341,10 +344,12 @@ extern std::string srs_http_fs_fullpath(std::string dir, std::string pattern, st
 //     http.Handle("/", SrsHttpFileServer("static-dir"))
 class SrsHttpFileServer : public ISrsHttpHandler
 {
-SRS_DECLARE_PROTECTED:
+// clang-format off
+SRS_DECLARE_PROTECTED: // clang-format on
     std::string dir;
 
-SRS_DECLARE_PROTECTED:
+// clang-format off
+SRS_DECLARE_PROTECTED: // clang-format on
     ISrsFileReaderFactory *fs_factory;
     SrsPath *path_;
 
@@ -352,24 +357,30 @@ public:
     SrsHttpFileServer(std::string root_dir);
     virtual ~SrsHttpFileServer();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // For utest to mock the fs.
-    virtual void set_fs_factory(ISrsFileReaderFactory *v);
+    virtual void
+    set_fs_factory(ISrsFileReaderFactory *v);
     // For utest to mock the path utility.
     virtual void set_path(SrsPath *v);
 
 public:
     virtual srs_error_t serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Serve the file by specified path
-    virtual srs_error_t serve_file(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, std::string fullpath);
+    virtual srs_error_t
+    serve_file(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, std::string fullpath);
     virtual srs_error_t serve_flv_file(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, std::string fullpath);
     virtual srs_error_t serve_mp4_file(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, std::string fullpath);
 
-SRS_DECLARE_PROTECTED:
+// clang-format off
+SRS_DECLARE_PROTECTED: // clang-format on
     // When access flv file with x.flv?start=xxx
-    virtual srs_error_t serve_flv_stream(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, std::string fullpath, int64_t offset);
+    virtual srs_error_t
+    serve_flv_stream(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, std::string fullpath, int64_t offset);
     // When access mp4 file with x.mp4?range=start-end
     // @param start the start offset in bytes.
     // @param end the end offset in bytes. -1 to end of file.
@@ -388,9 +399,11 @@ SRS_DECLARE_PROTECTED:
     // the ts file including: .ts .m4s init.mp4
     virtual srs_error_t serve_ts_ctx(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, std::string fullpath);
 
-SRS_DECLARE_PROTECTED:
+// clang-format off
+SRS_DECLARE_PROTECTED: // clang-format on
     // Copy the fs to response writer in size bytes.
-    virtual srs_error_t copy(ISrsHttpResponseWriter *w, SrsFileReader *fs, ISrsHttpMessage *r, int64_t size);
+    virtual srs_error_t
+    copy(ISrsHttpResponseWriter *w, SrsFileReader *fs, ISrsHttpMessage *r, int64_t size);
 };
 
 // The mux entry for server mux.
@@ -476,9 +489,11 @@ public:
 // equivalent .- and ..-free URL.
 class SrsHttpServeMux : public ISrsHttpServeMux
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // The pattern handler, to handle the http request.
-    std::map<std::string, SrsHttpMuxEntry *> static_matchers_;
+    std::map<std::string, SrsHttpMuxEntry *>
+        static_matchers_;
     // The vhost handler.
     // When find the handler to process the request,
     // append the matched vhost when pattern not starts with /,
@@ -486,11 +501,13 @@ SRS_DECLARE_PRIVATE:
     // The path will rewrite to ossrs.net/live/livestream.flv
     std::map<std::string, ISrsHttpHandler *> vhosts_;
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // all dynamic matcher for http match.
     // For example, the hstrs(http stream trigger rtmp source)
     // can dynamic match and install handler when request incoming and no handler.
-    std::vector<ISrsHttpDynamicMatcher *> dynamic_matchers_;
+    std::vector<ISrsHttpDynamicMatcher *>
+        dynamic_matchers_;
 
 public:
     SrsHttpServeMux();
@@ -518,7 +535,8 @@ public:
 public:
     virtual srs_error_t find_handler(ISrsHttpMessage *r, ISrsHttpHandler **ph);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     virtual srs_error_t match(ISrsHttpMessage *r, ISrsHttpHandler **ph);
     virtual bool path_match(std::string pattern, std::string path);
 };
@@ -537,7 +555,8 @@ public:
 // The filter http mux, directly serve the http CORS requests
 class SrsHttpCorsMux : public ISrsHttpCorsMux
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     bool required;
     bool enabled;
     ISrsHttpHandler *next_;
@@ -570,7 +589,8 @@ public:
 // @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/WWW-Authenticate
 class SrsHttpAuthMux : public ISrsHttpAuthMux
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     bool enabled_;
     std::string username_;
     std::string password_;
@@ -586,7 +606,8 @@ public:
 public:
     virtual srs_error_t serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r);
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     virtual srs_error_t do_auth(ISrsHttpResponseWriter *w, ISrsHttpMessage *r);
 };
 
@@ -668,7 +689,8 @@ public:
 // Used to resolve the http uri.
 class SrsHttpUri
 {
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     std::string url_;
     std::string schema_;
     std::string host_;
@@ -702,11 +724,13 @@ public:
     virtual std::string username();
     virtual std::string password();
 
-SRS_DECLARE_PRIVATE:
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // Simple URL parser to replace http-parser URL parsing
-    virtual srs_error_t parse_url_simple(const std::string &url, std::string &schema, std::string &host, int &port,
-                                         std::string &path, std::string &query, std::string &fragment,
-                                         std::string &username, std::string &password);
+    virtual srs_error_t
+    parse_url_simple(const std::string &url, std::string &schema, std::string &host, int &port,
+                     std::string &path, std::string &query, std::string &fragment,
+                     std::string &username, std::string &password);
     srs_error_t parse_query();
 
 public:
