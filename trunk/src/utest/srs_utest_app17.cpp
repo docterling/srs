@@ -12,7 +12,9 @@ using namespace std;
 #include <srs_app_encoder.hpp>
 #include <srs_app_ffmpeg.hpp>
 #include <srs_app_http_conn.hpp>
+#include <srs_app_latest_version.hpp>
 #include <srs_app_mpegts_udp.hpp>
+#include <srs_app_ng_exec.hpp>
 #include <srs_app_process.hpp>
 #include <srs_app_recv_thread.hpp>
 #include <srs_kernel_error.hpp>
@@ -3530,4 +3532,429 @@ VOID TEST(ProcessTest, InitializeWithRedirection)
 
     // Verify cli_ contains full original command with redirection
     EXPECT_STREQ("/usr/bin/ffmpeg -i input.flv -c copy output.flv 1>/dev/null 2>/dev/null", process->cli_.c_str());
+}
+
+VOID TEST(LatestVersionTest, BuildFeatures_MajorScenario)
+{
+    // Call srs_build_features with the current config
+    // This test verifies the function runs without errors and produces valid output
+    stringstream ss;
+    srs_build_features(ss);
+    string result = ss.str();
+
+    // Verify OS is included (either mac or linux)
+    EXPECT_TRUE(result.find("&os=") != string::npos);
+
+    // Verify architecture is included (x86, arm, riscv, mips, or loong)
+    bool has_arch = (result.find("&x86=1") != string::npos) ||
+                    (result.find("&arm=1") != string::npos) ||
+                    (result.find("&riscv=1") != string::npos) ||
+                    (result.find("&mips=1") != string::npos) ||
+                    (result.find("&loong=1") != string::npos);
+    EXPECT_TRUE(has_arch);
+
+    // Verify the result is not empty and starts with &
+    EXPECT_FALSE(result.empty());
+    EXPECT_EQ('&', result[0]);
+}
+
+// Mock ISrsHttpResponseReader implementation for SrsLatestVersion
+MockHttpResponseReaderForLatestVersion::MockHttpResponseReaderForLatestVersion()
+{
+    content_ = "";
+    read_pos_ = 0;
+    eof_ = false;
+}
+
+MockHttpResponseReaderForLatestVersion::~MockHttpResponseReaderForLatestVersion()
+{
+}
+
+srs_error_t MockHttpResponseReaderForLatestVersion::read(void *buf, size_t size, ssize_t *nread)
+{
+    if (read_pos_ >= content_.length()) {
+        eof_ = true;
+        *nread = 0;
+        return srs_success;
+    }
+
+    size_t to_read = srs_min(size, content_.length() - read_pos_);
+    memcpy(buf, content_.data() + read_pos_, to_read);
+    read_pos_ += to_read;
+    *nread = to_read;
+
+    if (read_pos_ >= content_.length()) {
+        eof_ = true;
+    }
+
+    return srs_success;
+}
+
+bool MockHttpResponseReaderForLatestVersion::eof()
+{
+    return eof_;
+}
+
+void MockHttpResponseReaderForLatestVersion::reset()
+{
+    content_ = "";
+    read_pos_ = 0;
+    eof_ = false;
+}
+
+// Mock ISrsHttpMessage implementation for SrsLatestVersion
+MockHttpMessageForLatestVersion::MockHttpMessageForLatestVersion()
+{
+    status_code_ = 200;
+    body_content_ = "";
+    body_reader_ = new MockHttpResponseReaderForLatestVersion();
+}
+
+MockHttpMessageForLatestVersion::~MockHttpMessageForLatestVersion()
+{
+    srs_freep(body_reader_);
+}
+
+uint8_t MockHttpMessageForLatestVersion::message_type()
+{
+    return 0;
+}
+
+uint8_t MockHttpMessageForLatestVersion::method()
+{
+    return 0;
+}
+
+uint16_t MockHttpMessageForLatestVersion::status_code()
+{
+    return status_code_;
+}
+
+std::string MockHttpMessageForLatestVersion::method_str()
+{
+    return "GET";
+}
+
+bool MockHttpMessageForLatestVersion::is_http_get()
+{
+    return true;
+}
+
+bool MockHttpMessageForLatestVersion::is_http_put()
+{
+    return false;
+}
+
+bool MockHttpMessageForLatestVersion::is_http_post()
+{
+    return false;
+}
+
+bool MockHttpMessageForLatestVersion::is_http_delete()
+{
+    return false;
+}
+
+bool MockHttpMessageForLatestVersion::is_http_options()
+{
+    return false;
+}
+
+std::string MockHttpMessageForLatestVersion::uri()
+{
+    return "";
+}
+
+std::string MockHttpMessageForLatestVersion::url()
+{
+    return "";
+}
+
+std::string MockHttpMessageForLatestVersion::host()
+{
+    return "";
+}
+
+std::string MockHttpMessageForLatestVersion::path()
+{
+    return "";
+}
+
+std::string MockHttpMessageForLatestVersion::query()
+{
+    return "";
+}
+
+std::string MockHttpMessageForLatestVersion::ext()
+{
+    return "";
+}
+
+srs_error_t MockHttpMessageForLatestVersion::body_read_all(std::string &body)
+{
+    body = body_content_;
+    return srs_success;
+}
+
+ISrsHttpResponseReader *MockHttpMessageForLatestVersion::body_reader()
+{
+    return body_reader_;
+}
+
+int64_t MockHttpMessageForLatestVersion::content_length()
+{
+    return body_content_.length();
+}
+
+std::string MockHttpMessageForLatestVersion::query_get(std::string key)
+{
+    return "";
+}
+
+SrsHttpHeader *MockHttpMessageForLatestVersion::header()
+{
+    return NULL;
+}
+
+bool MockHttpMessageForLatestVersion::is_jsonp()
+{
+    return false;
+}
+
+bool MockHttpMessageForLatestVersion::is_keep_alive()
+{
+    return false;
+}
+
+ISrsRequest *MockHttpMessageForLatestVersion::to_request(std::string vhost)
+{
+    return NULL;
+}
+
+std::string MockHttpMessageForLatestVersion::parse_rest_id(std::string pattern)
+{
+    return "";
+}
+
+void MockHttpMessageForLatestVersion::reset()
+{
+    status_code_ = 200;
+    body_content_ = "";
+    body_reader_->reset();
+}
+
+// Mock ISrsHttpClient implementation for SrsLatestVersion
+MockHttpClientForLatestVersion::MockHttpClientForLatestVersion()
+{
+    initialize_called_ = false;
+    get_called_ = false;
+    port_ = 0;
+    mock_response_ = NULL;
+    initialize_error_ = srs_success;
+    get_error_ = srs_success;
+}
+
+MockHttpClientForLatestVersion::~MockHttpClientForLatestVersion()
+{
+    srs_freep(initialize_error_);
+    srs_freep(get_error_);
+}
+
+srs_error_t MockHttpClientForLatestVersion::initialize(std::string schema, std::string h, int p, srs_utime_t tm)
+{
+    initialize_called_ = true;
+    schema_ = schema;
+    host_ = h;
+    port_ = p;
+    return srs_error_copy(initialize_error_);
+}
+
+srs_error_t MockHttpClientForLatestVersion::get(std::string path, std::string req, ISrsHttpMessage **ppmsg)
+{
+    get_called_ = true;
+    path_ = path;
+    if (ppmsg && mock_response_) {
+        *ppmsg = mock_response_;
+    }
+    return srs_error_copy(get_error_);
+}
+
+srs_error_t MockHttpClientForLatestVersion::post(std::string path, std::string req, ISrsHttpMessage **ppmsg)
+{
+    return srs_success;
+}
+
+void MockHttpClientForLatestVersion::set_recv_timeout(srs_utime_t tm)
+{
+}
+
+void MockHttpClientForLatestVersion::kbps_sample(const char *label, srs_utime_t age)
+{
+}
+
+void MockHttpClientForLatestVersion::reset()
+{
+    initialize_called_ = false;
+    get_called_ = false;
+    port_ = 0;
+    schema_ = "";
+    host_ = "";
+    path_ = "";
+    srs_freep(initialize_error_);
+    srs_freep(get_error_);
+}
+
+// Mock ISrsAppFactory implementation for SrsLatestVersion
+MockAppFactoryForLatestVersion::MockAppFactoryForLatestVersion()
+{
+    mock_http_client_ = NULL;
+    create_http_client_called_ = false;
+}
+
+MockAppFactoryForLatestVersion::~MockAppFactoryForLatestVersion()
+{
+    // Don't free mock_http_client_ - it's managed by the test
+}
+
+ISrsHttpClient *MockAppFactoryForLatestVersion::create_http_client()
+{
+    create_http_client_called_ = true;
+    return mock_http_client_;
+}
+
+void MockAppFactoryForLatestVersion::reset()
+{
+    create_http_client_called_ = false;
+}
+
+// Test SrsLatestVersion::query_latest_version - covers the major use scenario:
+// 1. Create SrsLatestVersion instance
+// 2. Mock app_factory_ to return mock HTTP client
+// 3. Mock HTTP client to return successful response with JSON data
+// 4. Call query_latest_version()
+// 5. Verify HTTP client was initialized with correct schema, host, port
+// 6. Verify HTTP GET request was made with correct path and query parameters
+// 7. Verify response JSON was parsed correctly (match_version and stable_version)
+// 8. Verify URL was generated with correct parameters (version, id, session, role, etc.)
+VOID TEST(LatestVersionTest, QueryLatestVersionSuccess)
+{
+    srs_error_t err;
+
+    // Create SrsLatestVersion instance
+    SrsUniquePtr<SrsLatestVersion> version_checker(new SrsLatestVersion());
+
+    // Create mock dependencies
+    MockHttpClientForLatestVersion *mock_http_client = new MockHttpClientForLatestVersion();
+    SrsUniquePtr<MockAppFactoryForLatestVersion> mock_factory(new MockAppFactoryForLatestVersion());
+
+    // Configure mock factory to return our mock HTTP client
+    mock_factory->mock_http_client_ = mock_http_client;
+
+    // Create mock HTTP response with valid JSON
+    MockHttpMessageForLatestVersion *mock_response = new MockHttpMessageForLatestVersion();
+    mock_response->status_code_ = 200;
+    mock_response->body_content_ = "{\"match_version\":\"v7.0.0\",\"stable_version\":\"v6.0.120\"}";
+
+    // Configure mock HTTP client to return our mock response
+    mock_http_client->mock_response_ = mock_response;
+
+    // Inject mock factory into version_checker
+    version_checker->app_factory_ = mock_factory.get();
+
+    // Set server_id and session_id for testing
+    version_checker->server_id_ = "test-server-id";
+    version_checker->session_id_ = "test-session-id";
+
+    // Test query_latest_version()
+    std::string url;
+    HELPER_EXPECT_SUCCESS(version_checker->query_latest_version(url));
+
+    // Verify app_factory_->create_http_client() was called
+    EXPECT_TRUE(mock_factory->create_http_client_called_);
+
+    // Note: We cannot verify mock_http_client fields after query_latest_version() because
+    // the HTTP client is freed by SrsUniquePtr inside query_latest_version().
+    // The test already verifies the main functionality: successful query and JSON parsing.
+
+    // Verify URL contains expected parameters
+    EXPECT_TRUE(url.find("http://api.ossrs.net/service/v1/releases?") != std::string::npos);
+    EXPECT_TRUE(url.find("version=v") != std::string::npos);
+    EXPECT_TRUE(url.find("id=test-server-id") != std::string::npos);
+    EXPECT_TRUE(url.find("session=test-session-id") != std::string::npos);
+    EXPECT_TRUE(url.find("role=srs") != std::string::npos);
+
+    // Verify response was parsed correctly
+    EXPECT_EQ("v7.0.0", version_checker->match_version_);
+    EXPECT_EQ("v6.0.120", version_checker->stable_version_);
+
+    // Clean up - set to NULL to avoid double-free
+    version_checker->app_factory_ = NULL;
+    // Note: mock_http_client and mock_response are already freed by query_latest_version()
+}
+
+// Mock ISrsAppConfig implementation for SrsNgExec
+MockAppConfigForNgExec::MockAppConfigForNgExec()
+{
+    exec_enabled_ = false;
+}
+
+MockAppConfigForNgExec::~MockAppConfigForNgExec()
+{
+    // Free all exec_publishs_ directives
+    for (int i = 0; i < (int)exec_publishs_.size(); i++) {
+        srs_freep(exec_publishs_[i]);
+    }
+    exec_publishs_.clear();
+}
+
+bool MockAppConfigForNgExec::get_exec_enabled(std::string vhost)
+{
+    return exec_enabled_;
+}
+
+std::vector<SrsConfDirective *> MockAppConfigForNgExec::get_exec_publishs(std::string vhost)
+{
+    return exec_publishs_;
+}
+
+VOID TEST(NgExecTest, ParseExecPublishWithMultipleArgs)
+{
+    srs_error_t err = srs_success;
+
+    // Create mock config
+    SrsUniquePtr<MockAppConfigForNgExec> mock_config(new MockAppConfigForNgExec());
+    mock_config->exec_enabled_ = true;
+
+    // Create exec_publish directive with multiple arguments including redirection
+    // Simulates: publish ffmpeg -i [url] -c copy -f flv output.flv>log.txt
+    SrsConfDirective *ep = new SrsConfDirective();
+    ep->name_ = "publish";
+    ep->args_.push_back("ffmpeg");
+    ep->args_.push_back("-i");
+    ep->args_.push_back("[url]");
+    ep->args_.push_back("-c");
+    ep->args_.push_back("copy");
+    ep->args_.push_back("-f");
+    ep->args_.push_back("flv");
+    ep->args_.push_back("output.flv>log.txt");
+    mock_config->exec_publishs_.push_back(ep);
+
+    // Create mock request
+    SrsUniquePtr<MockSrsRequest> req(new MockSrsRequest("test.vhost", "live", "stream1", "127.0.0.1", 1935));
+
+    // Create SrsNgExec and inject mock config
+    SrsUniquePtr<SrsNgExec> ng_exec(new SrsNgExec());
+    ng_exec->config_ = mock_config.get();
+
+    // Test parse_exec_publish
+    HELPER_EXPECT_SUCCESS(ng_exec->parse_exec_publish(req.get()));
+
+    // Verify input_stream_name_ was set correctly
+    EXPECT_EQ("test.vhost/live/stream1", ng_exec->input_stream_name_);
+
+    // Verify exec_publishs_ was populated
+    EXPECT_EQ(1, (int)ng_exec->exec_publishs_.size());
+
+    // Clean up - set to NULL to avoid double-free
+    ng_exec->config_ = NULL;
 }

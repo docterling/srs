@@ -17,6 +17,7 @@
 class ISrsRequest;
 class SrsPithyPrint;
 class SrsProcess;
+class ISrsAppConfig;
 
 // The ng-exec interface.
 class ISrsNgExec
@@ -36,6 +37,10 @@ public:
 // @see https://github.com/ossrs/srs/issues/367
 class SrsNgExec : public ISrsCoroutineHandler, public ISrsNgExec
 {
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
+    ISrsAppConfig *config_;
+
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     ISrsCoroutine *trd_;

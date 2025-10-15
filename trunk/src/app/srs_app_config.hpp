@@ -557,6 +557,11 @@ public:
     virtual srs_utime_t get_dvr_duration(std::string vhost) = 0;
 
 public:
+    // Exec config
+    virtual bool get_exec_enabled(std::string vhost) = 0;
+    virtual std::vector<SrsConfDirective *> get_exec_publishs(std::string vhost) = 0;
+
+public:
     // Ingest config
     virtual std::vector<SrsConfDirective *> get_ingesters(std::string vhost) = 0;
     virtual SrsConfDirective *get_ingest_by_id(std::string vhost, std::string ingest_id) = 0;

@@ -21,6 +21,7 @@
 #include <srs_kernel_pithy_print.hpp>
 #include <srs_protocol_raw_avc.hpp>
 #include <srs_protocol_rtmp_conn.hpp>
+#include <srs_protocol_http_client.hpp>
 #include <srs_utest_app10.hpp>
 #include <srs_utest_app11.hpp>
 #include <srs_utest_app6.hpp>
@@ -79,6 +80,22 @@ public:
     virtual srs_error_t on_ts_message(SrsTsMessage *msg);
     virtual srs_error_t on_udp_packet(const sockaddr *from, const int fromlen, char *buf, int nb_buf);
     void reset();
+};
+
+// Mock ISrsAppConfig for testing SrsNgExec
+class MockAppConfigForNgExec : public MockAppConfig
+{
+public:
+    bool exec_enabled_;
+    std::vector<SrsConfDirective *> exec_publishs_;
+
+public:
+    MockAppConfigForNgExec();
+    virtual ~MockAppConfigForNgExec();
+
+public:
+    virtual bool get_exec_enabled(std::string vhost);
+    virtual std::vector<SrsConfDirective *> get_exec_publishs(std::string vhost);
 };
 
 // Mock ISrsRawH264Stream for testing SrsMpegtsOverUdp::on_ts_video
@@ -756,6 +773,107 @@ public:
 
 public:
     virtual ISrsFFMPEG *create_ffmpeg(std::string ffmpeg_bin);
+    void reset();
+};
+
+// Mock ISrsHttpResponseReader for testing SrsLatestVersion
+class MockHttpResponseReaderForLatestVersion : public ISrsHttpResponseReader
+{
+public:
+    std::string content_;
+    size_t read_pos_;
+    bool eof_;
+
+public:
+    MockHttpResponseReaderForLatestVersion();
+    virtual ~MockHttpResponseReaderForLatestVersion();
+
+public:
+    virtual srs_error_t read(void *buf, size_t size, ssize_t *nread);
+    virtual bool eof();
+    void reset();
+};
+
+// Mock ISrsHttpMessage for testing SrsLatestVersion
+class MockHttpMessageForLatestVersion : public ISrsHttpMessage
+{
+public:
+    int status_code_;
+    std::string body_content_;
+    MockHttpResponseReaderForLatestVersion *body_reader_;
+
+public:
+    MockHttpMessageForLatestVersion();
+    virtual ~MockHttpMessageForLatestVersion();
+
+public:
+    virtual uint8_t message_type();
+    virtual uint8_t method();
+    virtual uint16_t status_code();
+    virtual std::string method_str();
+    virtual bool is_http_get();
+    virtual bool is_http_put();
+    virtual bool is_http_post();
+    virtual bool is_http_delete();
+    virtual bool is_http_options();
+    virtual std::string uri();
+    virtual std::string url();
+    virtual std::string host();
+    virtual std::string path();
+    virtual std::string query();
+    virtual std::string ext();
+    virtual srs_error_t body_read_all(std::string &body);
+    virtual ISrsHttpResponseReader *body_reader();
+    virtual int64_t content_length();
+    virtual std::string query_get(std::string key);
+    virtual SrsHttpHeader *header();
+    virtual bool is_jsonp();
+    virtual bool is_keep_alive();
+    virtual ISrsRequest *to_request(std::string vhost);
+    virtual std::string parse_rest_id(std::string pattern);
+    void reset();
+};
+
+// Mock ISrsHttpClient for testing SrsLatestVersion
+class MockHttpClientForLatestVersion : public ISrsHttpClient
+{
+public:
+    bool initialize_called_;
+    bool get_called_;
+    std::string schema_;
+    std::string host_;
+    int port_;
+    std::string path_;
+    MockHttpMessageForLatestVersion *mock_response_;
+    srs_error_t initialize_error_;
+    srs_error_t get_error_;
+
+public:
+    MockHttpClientForLatestVersion();
+    virtual ~MockHttpClientForLatestVersion();
+
+public:
+    virtual srs_error_t initialize(std::string schema, std::string h, int p, srs_utime_t tm = SRS_HTTP_CLIENT_TIMEOUT);
+    virtual srs_error_t get(std::string path, std::string req, ISrsHttpMessage **ppmsg);
+    virtual srs_error_t post(std::string path, std::string req, ISrsHttpMessage **ppmsg);
+    virtual void set_recv_timeout(srs_utime_t tm);
+    virtual void kbps_sample(const char *label, srs_utime_t age);
+    void reset();
+};
+
+// Mock ISrsAppFactory for testing SrsLatestVersion
+class MockAppFactoryForLatestVersion : public SrsAppFactory
+{
+public:
+    MockHttpClientForLatestVersion *mock_http_client_;
+    bool create_http_client_called_;
+
+public:
+    MockAppFactoryForLatestVersion();
+    virtual ~MockAppFactoryForLatestVersion();
+
+public:
+    virtual ISrsHttpClient *create_http_client();
     void reset();
 };
 

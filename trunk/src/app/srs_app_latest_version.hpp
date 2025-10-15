@@ -15,10 +15,20 @@
 
 #include <srs_app_st.hpp>
 
+#include <sstream>
 #include <string>
+
+class ISrsAppFactory;
+
+// Build features string for version query
+extern void srs_build_features(std::stringstream &ss);
 
 class SrsLatestVersion : public ISrsCoroutineHandler
 {
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
+    ISrsAppFactory *app_factory_;
+
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     ISrsCoroutine *trd_;

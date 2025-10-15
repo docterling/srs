@@ -531,6 +531,9 @@ public:
     virtual int get_dash_window_size(std::string vhost) { return 10; }
     virtual bool get_dash_cleanup(std::string vhost) { return true; }
     virtual srs_utime_t get_dash_dispose(std::string vhost) { return dash_dispose_; }
+    // Exec config
+    virtual bool get_exec_enabled(std::string vhost) { return false; }
+    virtual std::vector<SrsConfDirective *> get_exec_publishs(std::string vhost) { return std::vector<SrsConfDirective *>(); }
     // Ingest config
     virtual void get_vhosts(std::vector<SrsConfDirective *> &vhosts) {}
     virtual std::vector<SrsConfDirective *> get_ingesters(std::string vhost) { return std::vector<SrsConfDirective *>(); }
