@@ -17,6 +17,7 @@ MockRtcTrackDescriptionFactory::MockRtcTrackDescriptionFactory()
 {
     audio_ssrc_ = 12345;
     video_ssrc_ = 67890;
+    screen_ssrc_ = 98765;
 }
 
 MockRtcTrackDescriptionFactory::~MockRtcTrackDescriptionFactory()
@@ -28,17 +29,21 @@ std::map<uint32_t, SrsRtcTrackDescription *> MockRtcTrackDescriptionFactory::cre
     std::map<uint32_t, SrsRtcTrackDescription *> sub_relations;
 
     // Create audio track
-    SrsRtcTrackDescription *audio_desc = create_audio_track(audio_ssrc_, "audio-track-1");
+    SrsRtcTrackDescription *audio_desc = create_audio_track(audio_ssrc_, "audio-track-1", "0");
     sub_relations[audio_desc->ssrc_] = audio_desc;
 
     // Create video track
-    SrsRtcTrackDescription *video_desc = create_video_track(video_ssrc_, "video-track-1");
+    SrsRtcTrackDescription *video_desc = create_video_track(video_ssrc_, "video-track-1", "1");
     sub_relations[video_desc->ssrc_] = video_desc;
+
+    // Create screen share track
+    SrsRtcTrackDescription *screen_desc = create_video_track(screen_ssrc_, "screen-track-1", "2");
+    sub_relations[screen_desc->ssrc_] = screen_desc;
 
     return sub_relations;
 }
 
-SrsRtcTrackDescription *MockRtcTrackDescriptionFactory::create_audio_track(uint32_t ssrc, std::string id)
+SrsRtcTrackDescription *MockRtcTrackDescriptionFactory::create_audio_track(uint32_t ssrc, std::string id, std::string mid)
 {
     SrsRtcTrackDescription *audio_desc = new SrsRtcTrackDescription();
     audio_desc->type_ = "audio";
@@ -46,12 +51,12 @@ SrsRtcTrackDescription *MockRtcTrackDescriptionFactory::create_audio_track(uint3
     audio_desc->id_ = id;
     audio_desc->is_active_ = true;
     audio_desc->direction_ = "sendrecv";
-    audio_desc->mid_ = "0";
+    audio_desc->mid_ = mid;
     audio_desc->media_ = new SrsAudioPayload(111, "opus", 48000, 2);
     return audio_desc;
 }
 
-SrsRtcTrackDescription *MockRtcTrackDescriptionFactory::create_video_track(uint32_t ssrc, std::string id)
+SrsRtcTrackDescription *MockRtcTrackDescriptionFactory::create_video_track(uint32_t ssrc, std::string id, std::string mid)
 {
     SrsRtcTrackDescription *video_desc = new SrsRtcTrackDescription();
     video_desc->type_ = "video";
@@ -59,7 +64,7 @@ SrsRtcTrackDescription *MockRtcTrackDescriptionFactory::create_video_track(uint3
     video_desc->id_ = id;
     video_desc->is_active_ = true;
     video_desc->direction_ = "sendrecv";
-    video_desc->mid_ = "1";
+    video_desc->mid_ = mid;
     video_desc->media_ = new SrsVideoPayload(96, "H264", 90000);
     return video_desc;
 }
@@ -102,6 +107,11 @@ VOID TEST(RtcPlayStreamTest, ManuallyVerifyBasicWorkflow)
         // Initialize the play stream (it will take ownership of track descriptions)
         HELPER_EXPECT_SUCCESS(play_stream->initialize(&mock_request, sub_relations));
 
+        // Check the tracks, should be two video tracks.
+        EXPECT_EQ(play_stream->video_tracks_.size(), 2);
+        // Check the tracks, should be a audio track.
+        EXPECT_EQ(play_stream->audio_tracks_.size(), 1);
+
         // Test: First call to start() should succeed
         HELPER_EXPECT_SUCCESS(play_stream->start());
 
@@ -132,8 +142,6 @@ VOID TEST(RtcPlayStreamTest, ManuallyVerifyBasicWorkflow)
 
         // Check sender should have received the packet
         EXPECT_EQ(mock_sender.send_packet_count_, 1);
-        // Check the tracks, should be a video track.
-        EXPECT_EQ(play_stream->video_tracks_.size(), 1);
         // The packet should create a cached track for this ssrc.
         EXPECT_EQ(play_stream->cache_ssrc0_, track_factory.video_ssrc_);
         EXPECT_TRUE(play_stream->cache_track0_ != NULL);
@@ -162,8 +170,6 @@ VOID TEST(RtcPlayStreamTest, ManuallyVerifyBasicWorkflow)
 
         // Check sender should have received the packet
         EXPECT_EQ(mock_sender.send_packet_count_, 2);
-        // Check the tracks, should be a video track.
-        EXPECT_EQ(play_stream->audio_tracks_.size(), 1);
         // The packet should create a cached track for this ssrc.
         EXPECT_EQ(play_stream->cache_ssrc1_, track_factory.audio_ssrc_);
         EXPECT_TRUE(play_stream->cache_track1_ != NULL);
@@ -171,6 +177,34 @@ VOID TEST(RtcPlayStreamTest, ManuallyVerifyBasicWorkflow)
         SrsRtpPacket *pkt = play_stream->cache_track1_->rtp_queue_->at(1000);
         EXPECT_TRUE(pkt != NULL);
         EXPECT_EQ(pkt->header_.get_ssrc(), track_factory.audio_ssrc_);
+    }
+
+    // Push a screen share packet to the source to feed the consumer.
+    if (true) {
+        SrsUniquePtr<SrsRtpPacket> test_pkt(new SrsRtpPacket());
+        test_pkt->frame_type_ = SrsFrameTypeVideo;
+        test_pkt->header_.set_sequence(1000);
+        test_pkt->header_.set_timestamp(5000);
+        test_pkt->header_.set_ssrc(track_factory.screen_ssrc_);
+
+        // Push packet to source - this will feed all consumers including the play stream's consumer
+        HELPER_EXPECT_SUCCESS(play_stream->source_->on_rtp(test_pkt.get()));
+    }
+
+    // Verify the screen share packet is sent out
+    if (true) {
+        // Wait for coroutine to process the packet
+        srs_usleep(1 * SRS_UTIME_MILLISECONDS);
+
+        // Check sender should have received the packet
+        EXPECT_EQ(mock_sender.send_packet_count_, 3);
+        // The packet should create a cached track for this ssrc.
+        EXPECT_EQ(play_stream->cache_ssrc2_, track_factory.screen_ssrc_);
+        EXPECT_TRUE(play_stream->cache_track2_ != NULL);
+        // The packet should be in the nack ring buffer.
+        SrsRtpPacket *pkt = play_stream->cache_track2_->rtp_queue_->at(1000);
+        EXPECT_TRUE(pkt != NULL);
+        EXPECT_EQ(pkt->header_.get_ssrc(), track_factory.screen_ssrc_);
     }
 
     // Stop the play stream

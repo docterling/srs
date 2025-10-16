@@ -23,16 +23,17 @@ public:
     // Default SSRCs for audio and video tracks
     uint32_t audio_ssrc_;
     uint32_t video_ssrc_;
+    uint32_t screen_ssrc_;
 
 public:
     // Create a map of track descriptions with audio and video tracks
     std::map<uint32_t, SrsRtcTrackDescription *> create_audio_video_tracks();
 
     // Create a single audio track description
-    SrsRtcTrackDescription *create_audio_track(uint32_t ssrc, std::string id);
+    SrsRtcTrackDescription *create_audio_track(uint32_t ssrc, std::string id, std::string mid);
 
     // Create a single video track description
-    SrsRtcTrackDescription *create_video_track(uint32_t ssrc, std::string id);
+    SrsRtcTrackDescription *create_video_track(uint32_t ssrc, std::string id, std::string mid);
 };
 
 #endif
