@@ -17,6 +17,8 @@ using namespace std;
 
 #include <srt/srt.h>
 
+// LCOV_EXCL_START
+
 // TODO: FIXME: protocol could no include app's header file, so define TAG_SRT in this file.
 #define TAG_SRT "SRT"
 
@@ -1029,3 +1031,5 @@ srs_error_t SrsSrtSocket::check_error()
 
     return err;
 }
+
+// LCOV_EXCL_STOP

@@ -32,6 +32,9 @@ using namespace std;
 #include <srs_app_listener.hpp>
 #include <srs_protocol_conn.hpp>
 
+// Include headers for all the mocks.
+#include <srs_utest_mock.hpp>
+
 // we add an empty macro for upp to show the smart tips.
 #define VOID
 

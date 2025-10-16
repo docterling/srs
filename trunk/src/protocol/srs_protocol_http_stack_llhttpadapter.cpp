@@ -6,6 +6,8 @@
 
 #include <srs_protocol_http_stack_llhttpadapter.hpp>
 
+// LCOV_EXCL_START
+
 // To avoid type mismatch, these functions are used to bridge the APIs.
 // Bridge functions for internal callbacks that call the public API implementations
 // These bridge the internal callback signature to the public API signature
@@ -199,3 +201,5 @@ int llhttp__after_message_complete(llhttp__internal_t *s, const unsigned char *p
 {
     return 0;
 }
+
+// LCOV_EXCL_STOP

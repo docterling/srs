@@ -77,19 +77,6 @@ const SrsContextId &MockConnection::get_id()
     return id;
 }
 
-MockExpire::MockExpire() : expired_(false)
-{
-}
-
-MockExpire::~MockExpire()
-{
-}
-
-void MockExpire::expire()
-{
-    expired_ = true;
-}
-
 VOID TEST(ProtocolConnTest, ISrsConnectionInterface)
 {
     MockConnection conn("192.168.1.100");

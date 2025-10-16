@@ -30,17 +30,4 @@ public:
     virtual const SrsContextId &get_id();
 };
 
-class MockExpire : public ISrsExpire
-{
-public:
-    bool expired_;
-
-public:
-    MockExpire();
-    virtual ~MockExpire();
-
-public:
-    virtual void expire();
-};
-
 #endif
