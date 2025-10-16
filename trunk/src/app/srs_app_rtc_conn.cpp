@@ -454,7 +454,6 @@ SrsRtcPlayStream::SrsRtcPlayStream(ISrsExecRtcAsyncTask *exec, ISrsExpire *expir
     nack_enabled_ = false;
     nack_no_copy_ = false;
 
-    _srs_config->subscribe(this);
     nack_epp_ = new SrsErrorPithyPrint();
     pli_worker_ = new SrsRtcPliWorker(this);
 
@@ -472,8 +471,6 @@ SrsRtcPlayStream::~SrsRtcPlayStream()
     if (req_ && exec_) {
         exec_->exec_rtc_async_work(new SrsRtcAsyncCallOnStop(cid_, req_));
     }
-
-    _srs_config->unsubscribe(this);
 
     srs_freep(nack_epp_);
     srs_freep(pli_worker_);
@@ -496,7 +493,9 @@ SrsRtcPlayStream::~SrsRtcPlayStream()
 
     // update the statistic when client coveried.
     // TODO: FIXME: Should finger out the err.
-    stat_->on_disconnect(cid_.c_str(), srs_success);
+    if (stat_) {
+        stat_->on_disconnect(cid_.c_str(), srs_success);
+    }
 
     config_ = NULL;
     rtc_sources_ = NULL;

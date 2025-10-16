@@ -2381,6 +2381,7 @@ MockAppConfig::MockAppConfig()
     api_as_candidates_ = true;
     resolve_api_domain_ = true;
     keep_api_domain_ = false;
+    mw_msgs_ = 8;
 }
 
 MockAppConfig::~MockAppConfig()
@@ -2446,7 +2447,7 @@ bool MockAppConfig::get_realtime_enabled(std::string vhost, bool is_rtc)
 
 int MockAppConfig::get_mw_msgs(std::string vhost, bool is_realtime, bool is_rtc)
 {
-    return 8;
+    return mw_msgs_;
 }
 
 int MockAppConfig::get_rtc_drop_for_pt(std::string vhost)

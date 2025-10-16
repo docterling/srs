@@ -1874,7 +1874,7 @@ VOID TEST(SrsUtilityTest, UpdateDiskStat)
         SrsDiskStat first_sample = *srs_get_disk_stat();
 
         // Wait a bit to ensure time difference
-        srs_usleep(100 * SRS_UTIME_MILLISECONDS);
+        srs_usleep(1 * SRS_UTIME_MILLISECONDS);
 
         // Call srs_update_disk_stat() again to calculate deltas
         srs_update_disk_stat();

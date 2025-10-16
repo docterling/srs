@@ -7,354 +7,177 @@
 #include <srs_utest_rtc_playstream.hpp>
 
 #include <srs_app_rtc_conn.hpp>
+#include <srs_app_rtc_source.hpp>
 #include <srs_kernel_error.hpp>
 #include <srs_utest_app.hpp>
 #include <srs_utest_app6.hpp>
 
-// Mock ISrsCoroutine implementation
-MockCoroutineForPlayStream::MockCoroutineForPlayStream()
+// MockRtcTrackDescriptionFactory implementation
+MockRtcTrackDescriptionFactory::MockRtcTrackDescriptionFactory()
 {
-    start_error_ = srs_success;
-    start_count_ = 0;
-    stop_count_ = 0;
-    interrupt_count_ = 0;
+    audio_ssrc_ = 12345;
+    video_ssrc_ = 67890;
 }
 
-MockCoroutineForPlayStream::~MockCoroutineForPlayStream()
+MockRtcTrackDescriptionFactory::~MockRtcTrackDescriptionFactory()
 {
-    srs_freep(start_error_);
 }
 
-srs_error_t MockCoroutineForPlayStream::start()
+std::map<uint32_t, SrsRtcTrackDescription *> MockRtcTrackDescriptionFactory::create_audio_video_tracks()
 {
-    start_count_++;
-    if (start_error_ != srs_success) {
-        return srs_error_copy(start_error_);
-    }
-    return srs_success;
+    std::map<uint32_t, SrsRtcTrackDescription *> sub_relations;
+
+    // Create audio track
+    SrsRtcTrackDescription *audio_desc = create_audio_track(audio_ssrc_, "audio-track-1");
+    sub_relations[audio_desc->ssrc_] = audio_desc;
+
+    // Create video track
+    SrsRtcTrackDescription *video_desc = create_video_track(video_ssrc_, "video-track-1");
+    sub_relations[video_desc->ssrc_] = video_desc;
+
+    return sub_relations;
 }
 
-void MockCoroutineForPlayStream::stop()
+SrsRtcTrackDescription *MockRtcTrackDescriptionFactory::create_audio_track(uint32_t ssrc, std::string id)
 {
-    stop_count_++;
+    SrsRtcTrackDescription *audio_desc = new SrsRtcTrackDescription();
+    audio_desc->type_ = "audio";
+    audio_desc->ssrc_ = ssrc;
+    audio_desc->id_ = id;
+    audio_desc->is_active_ = true;
+    audio_desc->direction_ = "sendrecv";
+    audio_desc->mid_ = "0";
+    audio_desc->media_ = new SrsAudioPayload(111, "opus", 48000, 2);
+    return audio_desc;
 }
 
-void MockCoroutineForPlayStream::interrupt()
+SrsRtcTrackDescription *MockRtcTrackDescriptionFactory::create_video_track(uint32_t ssrc, std::string id)
 {
-    interrupt_count_++;
-}
-
-srs_error_t MockCoroutineForPlayStream::pull()
-{
-    return srs_success;
-}
-
-const SrsContextId &MockCoroutineForPlayStream::cid()
-{
-    return cid_;
-}
-
-void MockCoroutineForPlayStream::set_cid(const SrsContextId &cid)
-{
-    cid_ = cid;
-}
-
-void MockCoroutineForPlayStream::reset()
-{
-    srs_freep(start_error_);
-    start_count_ = 0;
-    stop_count_ = 0;
-    interrupt_count_ = 0;
-}
-
-void MockCoroutineForPlayStream::set_start_error(srs_error_t err)
-{
-    srs_freep(start_error_);
-    start_error_ = srs_error_copy(err);
-}
-
-// Mock ISrsAppFactory implementation
-MockAppFactoryForPlayStream::MockAppFactoryForPlayStream()
-{
-    mock_coroutine_ = new MockCoroutineForPlayStream();
-    create_coroutine_error_ = srs_success;
-    create_coroutine_count_ = 0;
-    last_coroutine_handler_ = NULL;
-}
-
-MockAppFactoryForPlayStream::~MockAppFactoryForPlayStream()
-{
-    srs_freep(mock_coroutine_);
-    srs_freep(create_coroutine_error_);
-}
-
-ISrsFileWriter *MockAppFactoryForPlayStream::create_file_writer()
-{
-    return NULL;
-}
-
-ISrsFileWriter *MockAppFactoryForPlayStream::create_enc_file_writer()
-{
-    return NULL;
-}
-
-ISrsFileReader *MockAppFactoryForPlayStream::create_file_reader()
-{
-    return NULL;
-}
-
-SrsPath *MockAppFactoryForPlayStream::create_path()
-{
-    return NULL;
-}
-
-SrsLiveSource *MockAppFactoryForPlayStream::create_live_source()
-{
-    return NULL;
-}
-
-ISrsOriginHub *MockAppFactoryForPlayStream::create_origin_hub()
-{
-    return NULL;
-}
-
-ISrsHourGlass *MockAppFactoryForPlayStream::create_hourglass(const std::string &name, ISrsHourGlassHandler *handler, srs_utime_t interval)
-{
-    return NULL;
-}
-
-ISrsBasicRtmpClient *MockAppFactoryForPlayStream::create_rtmp_client(std::string url, srs_utime_t cto, srs_utime_t sto)
-{
-    return NULL;
-}
-
-ISrsHttpClient *MockAppFactoryForPlayStream::create_http_client()
-{
-    return NULL;
-}
-
-ISrsFileReader *MockAppFactoryForPlayStream::create_http_file_reader(ISrsHttpResponseReader *r)
-{
-    return NULL;
-}
-
-ISrsFlvDecoder *MockAppFactoryForPlayStream::create_flv_decoder()
-{
-    return NULL;
-}
-
-#ifdef SRS_RTSP
-ISrsRtspSendTrack *MockAppFactoryForPlayStream::create_rtsp_audio_send_track(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc)
-{
-    return NULL;
-}
-
-ISrsRtspSendTrack *MockAppFactoryForPlayStream::create_rtsp_video_send_track(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc)
-{
-    return NULL;
-}
-#endif
-
-ISrsFlvTransmuxer *MockAppFactoryForPlayStream::create_flv_transmuxer()
-{
-    return NULL;
-}
-
-ISrsMp4Encoder *MockAppFactoryForPlayStream::create_mp4_encoder()
-{
-    return NULL;
-}
-
-ISrsDvrSegmenter *MockAppFactoryForPlayStream::create_dvr_flv_segmenter()
-{
-    return NULL;
-}
-
-ISrsDvrSegmenter *MockAppFactoryForPlayStream::create_dvr_mp4_segmenter()
-{
-    return NULL;
-}
-
-#ifdef SRS_GB28181
-ISrsGbMediaTcpConn *MockAppFactoryForPlayStream::create_gb_media_tcp_conn()
-{
-    return NULL;
-}
-
-ISrsGbSession *MockAppFactoryForPlayStream::create_gb_session()
-{
-    return NULL;
-}
-#endif
-
-ISrsInitMp4 *MockAppFactoryForPlayStream::create_init_mp4()
-{
-    return NULL;
-}
-
-ISrsFragmentWindow *MockAppFactoryForPlayStream::create_fragment_window()
-{
-    return NULL;
-}
-
-ISrsFragmentedMp4 *MockAppFactoryForPlayStream::create_fragmented_mp4()
-{
-    return NULL;
-}
-
-ISrsIpListener *MockAppFactoryForPlayStream::create_tcp_listener(ISrsTcpHandler *handler)
-{
-    return NULL;
-}
-
-ISrsRtcConnection *MockAppFactoryForPlayStream::create_rtc_connection(ISrsExecRtcAsyncTask *exec, const SrsContextId &cid)
-{
-    return NULL;
-}
-
-ISrsFFMPEG *MockAppFactoryForPlayStream::create_ffmpeg(std::string ffmpeg_bin)
-{
-    return NULL;
-}
-
-ISrsIngesterFFMPEG *MockAppFactoryForPlayStream::create_ingester_ffmpeg()
-{
-    return NULL;
-}
-
-ISrsCoroutine *MockAppFactoryForPlayStream::create_coroutine(const std::string &name, ISrsCoroutineHandler *handler, SrsContextId cid)
-{
-    create_coroutine_count_++;
-    last_coroutine_name_ = name;
-    last_coroutine_handler_ = handler;
-    last_coroutine_cid_ = cid;
-
-    if (create_coroutine_error_ != srs_success) {
-        return NULL;
-    }
-
-    return mock_coroutine_;
-}
-
-ISrsTime *MockAppFactoryForPlayStream::create_time()
-{
-    return NULL;
-}
-
-ISrsConfig *MockAppFactoryForPlayStream::create_config()
-{
-    return NULL;
-}
-
-ISrsCond *MockAppFactoryForPlayStream::create_cond()
-{
-    return NULL;
-}
-
-void MockAppFactoryForPlayStream::reset()
-{
-    mock_coroutine_->reset();
-    srs_freep(create_coroutine_error_);
-    create_coroutine_count_ = 0;
-    last_coroutine_name_ = "";
-    last_coroutine_handler_ = NULL;
-}
-
-void MockAppFactoryForPlayStream::set_create_coroutine_error(srs_error_t err)
-{
-    srs_freep(create_coroutine_error_);
-    create_coroutine_error_ = srs_error_copy(err);
-}
-
-// Mock ISrsRtcPliWorker implementation
-MockRtcPliWorkerForPlayStream::MockRtcPliWorkerForPlayStream()
-{
-    start_error_ = srs_success;
-    start_count_ = 0;
-    request_keyframe_count_ = 0;
-}
-
-MockRtcPliWorkerForPlayStream::~MockRtcPliWorkerForPlayStream()
-{
-    srs_freep(start_error_);
-}
-
-srs_error_t MockRtcPliWorkerForPlayStream::start()
-{
-    start_count_++;
-    if (start_error_ != srs_success) {
-        return srs_error_copy(start_error_);
-    }
-    return srs_success;
-}
-
-void MockRtcPliWorkerForPlayStream::request_keyframe(uint32_t ssrc, SrsContextId cid)
-{
-    request_keyframe_count_++;
-}
-
-srs_error_t MockRtcPliWorkerForPlayStream::cycle()
-{
-    return srs_success;
-}
-
-void MockRtcPliWorkerForPlayStream::reset()
-{
-    srs_freep(start_error_);
-    start_count_ = 0;
-    request_keyframe_count_ = 0;
-}
-
-void MockRtcPliWorkerForPlayStream::set_start_error(srs_error_t err)
-{
-    srs_freep(start_error_);
-    start_error_ = srs_error_copy(err);
+    SrsRtcTrackDescription *video_desc = new SrsRtcTrackDescription();
+    video_desc->type_ = "video";
+    video_desc->ssrc_ = ssrc;
+    video_desc->id_ = id;
+    video_desc->is_active_ = true;
+    video_desc->direction_ = "sendrecv";
+    video_desc->mid_ = "1";
+    video_desc->media_ = new SrsVideoPayload(96, "H264", 90000);
+    return video_desc;
 }
 
 // Test SrsRtcPlayStream::start() - Basic success scenario
-VOID TEST(RtcPlayStreamStartTest, StartSuccess)
+VOID TEST(RtcPlayStreamTest, ManuallyVerifyBasicWorkflow)
 {
     srs_error_t err;
 
-    // Create mock objects
+    // Create mock objects for dependencies
+    MockAppConfig mock_config;
+    MockRtcSourceManager mock_rtc_sources;
+    MockRtcStatistic mock_stat;
+    MockRtcAsyncCallRequest mock_request("test.vhost", "live", "stream1");
     MockRtcAsyncTaskExecutor mock_exec;
     MockExpire mock_expire;
     MockRtcPacketSender mock_sender;
+    MockRtcTrackDescriptionFactory track_factory;
     SrsContextId cid;
     cid.set_value("test-play-stream-start-cid");
 
-    // Create RTC play stream
+    // Create RTC play stream - uses real app_factory_ and real pli_worker_
     SrsUniquePtr<SrsRtcPlayStream> play_stream(new SrsRtcPlayStream(&mock_exec, &mock_expire, &mock_sender, cid));
 
-    // Create and inject mock app factory
-    MockAppFactoryForPlayStream mock_factory;
-    play_stream->app_factory_ = &mock_factory;
+    // Mock the play stream object.
+    if (true) {
+        // Inject mock dependencies
+        play_stream->config_ = &mock_config;
+        play_stream->rtc_sources_ = &mock_rtc_sources;
+        play_stream->stat_ = &mock_stat;
 
-    // Create and inject mock PLI worker
-    MockRtcPliWorkerForPlayStream *mock_pli_worker = new MockRtcPliWorkerForPlayStream();
-    play_stream->pli_worker_ = mock_pli_worker;
+        // Set mw_msgs to 0 to make the consumer block until we push a packet
+        mock_config.mw_msgs_ = 0;
+    }
 
-    // Test: First call to start() should succeed
-    HELPER_EXPECT_SUCCESS(play_stream->start());
+    // Create track descriptions using factory
+    if (true) {
+        std::map<uint32_t, SrsRtcTrackDescription *> sub_relations = track_factory.create_audio_video_tracks();
 
-    // Verify coroutine was created with correct parameters
-    EXPECT_EQ(1, mock_factory.create_coroutine_count_);
-    EXPECT_STREQ("rtc_sender", mock_factory.last_coroutine_name_.c_str());
-    EXPECT_TRUE(mock_factory.last_coroutine_handler_ == play_stream.get());
-    EXPECT_EQ(0, cid.compare(mock_factory.last_coroutine_cid_));
+        // Initialize the play stream (it will take ownership of track descriptions)
+        HELPER_EXPECT_SUCCESS(play_stream->initialize(&mock_request, sub_relations));
 
-    // Verify coroutine start was called
-    EXPECT_EQ(1, mock_factory.mock_coroutine_->start_count_);
+        // Test: First call to start() should succeed
+        HELPER_EXPECT_SUCCESS(play_stream->start());
 
-    // Verify PLI worker start was called
-    EXPECT_EQ(1, mock_pli_worker->start_count_);
+        // Verify is_started_ flag is set
+        EXPECT_TRUE(play_stream->is_started_);
 
-    // Verify is_started_ flag is set
-    EXPECT_TRUE(play_stream->is_started_);
+        // Wait for coroutine to start and create consumer. Normally it should be ready 
+        // and stopped at wait for RTP packets from consumer.
+        srs_usleep(1 * SRS_UTIME_MILLISECONDS);
+    }
+
+    // Push a video packet to the source to feed the consumer.
+    if (true) {
+        SrsUniquePtr<SrsRtpPacket> test_pkt(new SrsRtpPacket());
+        test_pkt->frame_type_ = SrsFrameTypeVideo;
+        test_pkt->header_.set_sequence(1000);
+        test_pkt->header_.set_timestamp(5000);
+        test_pkt->header_.set_ssrc(track_factory.video_ssrc_);
+
+        // Push packet to source - this will feed all consumers including the play stream's consumer
+        HELPER_EXPECT_SUCCESS(play_stream->source_->on_rtp(test_pkt.get()));
+    }
+
+    // Verify the video packet is sent out
+    if (true) {
+        // Wait for coroutine to process the packet
+        srs_usleep(1 * SRS_UTIME_MILLISECONDS);
+
+        // Check sender should have received the packet
+        EXPECT_EQ(mock_sender.send_packet_count_, 1);
+        // Check the tracks, should be a video track.
+        EXPECT_EQ(play_stream->video_tracks_.size(), 1);
+        // The packet should create a cached track for this ssrc.
+        EXPECT_EQ(play_stream->cache_ssrc0_, track_factory.video_ssrc_);
+        EXPECT_TRUE(play_stream->cache_track0_ != NULL);
+        // The packet should be in the nack ring buffer.
+        SrsRtpPacket *pkt = play_stream->cache_track0_->rtp_queue_->at(1000);
+        EXPECT_TRUE(pkt != NULL);
+        EXPECT_EQ(pkt->header_.get_ssrc(), track_factory.video_ssrc_);
+    }
+
+    // Push a audio packet to the source to feed the consumer.
+    if (true) {
+        SrsUniquePtr<SrsRtpPacket> test_pkt(new SrsRtpPacket());
+        test_pkt->frame_type_ = SrsFrameTypeAudio;
+        test_pkt->header_.set_sequence(1000);
+        test_pkt->header_.set_timestamp(5000);
+        test_pkt->header_.set_ssrc(track_factory.audio_ssrc_);
+
+        // Push packet to source - this will feed all consumers including the play stream's consumer
+        HELPER_EXPECT_SUCCESS(play_stream->source_->on_rtp(test_pkt.get()));
+    }
+
+    // Verify the audio packet is sent out
+    if (true) {
+        // Wait for coroutine to process the packet
+        srs_usleep(1 * SRS_UTIME_MILLISECONDS);
+
+        // Check sender should have received the packet
+        EXPECT_EQ(mock_sender.send_packet_count_, 2);
+        // Check the tracks, should be a video track.
+        EXPECT_EQ(play_stream->audio_tracks_.size(), 1);
+        // The packet should create a cached track for this ssrc.
+        EXPECT_EQ(play_stream->cache_ssrc1_, track_factory.audio_ssrc_);
+        EXPECT_TRUE(play_stream->cache_track1_ != NULL);
+        // The packet should be in the nack ring buffer.
+        SrsRtpPacket *pkt = play_stream->cache_track1_->rtp_queue_->at(1000);
+        EXPECT_TRUE(pkt != NULL);
+        EXPECT_EQ(pkt->header_.get_ssrc(), track_factory.audio_ssrc_);
+    }
+
+    // Stop the play stream
+    play_stream->stop();
 
     // Clean up - set to NULL to avoid double-free
-    play_stream->trd_ = NULL; // Set to NULL before mock_factory is destroyed
-    play_stream->app_factory_ = NULL;
-    play_stream->pli_worker_ = NULL;
-    srs_freep(mock_pli_worker);
+    play_stream->config_ = NULL;
+    play_stream->rtc_sources_ = NULL;
+    play_stream->stat_ = NULL;
 }

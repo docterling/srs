@@ -200,7 +200,7 @@ VOID TEST(UdpListenerTest, ListenAndReceivePacket)
     }
 
     // Wait a bit for the listener to receive and process the packet
-    srs_usleep(50 * SRS_UTIME_MILLISECONDS);
+    srs_usleep(30 * SRS_UTIME_MILLISECONDS);
 
     // Verify that the mock handler received the packet
     EXPECT_TRUE(mock_handler->on_udp_packet_called_);

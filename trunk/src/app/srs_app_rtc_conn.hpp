@@ -254,7 +254,7 @@ public:
 };
 
 // A RTC play stream, client pull and play stream from SRS.
-class SrsRtcPlayStream : public ISrsCoroutineHandler, public ISrsReloadHandler, public ISrsRtcPliWorkerHandler, public ISrsRtcSourceChangeCallback
+class SrsRtcPlayStream : public ISrsCoroutineHandler, public ISrsRtcPliWorkerHandler, public ISrsRtcSourceChangeCallback
 {
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on

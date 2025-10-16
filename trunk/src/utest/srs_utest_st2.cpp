@@ -26,7 +26,7 @@ VOID TEST(StTest, AnonymouseSingleCoroutine)
 
     // Wait for coroutine to terminate. Otherwise, it will be stopped
     // and terminated, which cause some of the code not executed.
-    srs_usleep(50 * SRS_UTIME_MILLISECONDS);
+    srs_usleep(1 * SRS_UTIME_MILLISECONDS);
 }
 
 VOID TEST(StTest, AnonymouseMultipleCoroutines)
@@ -42,7 +42,7 @@ VOID TEST(StTest, AnonymouseMultipleCoroutines)
 
     // Wait for coroutine to terminate. Otherwise, it will be stopped
     // and terminated, which cause some of the code not executed.
-    srs_usleep(50 * SRS_UTIME_MILLISECONDS);
+    srs_usleep(1 * SRS_UTIME_MILLISECONDS);
 }
 
 VOID TEST(StTest, AnonymouseCoroutinePull)
@@ -67,7 +67,7 @@ VOID TEST(StTest, AnonymouseCoroutinePull)
 
         // Wait for coroutine to run and terminated, or it will crash
         // because the ctx.pop is called after coroutine terminated.
-        srs_usleep(50 * SRS_UTIME_MILLISECONDS);
+        srs_usleep(1 * SRS_UTIME_MILLISECONDS);
     }
 
     EXPECT_TRUE(counter == 1);
@@ -90,12 +90,12 @@ VOID TEST(StTest, AnonymouseCoroutineWithContext)
 
     // Wait for coroutine to run and terminated, or it will crash
     // because the ctx.pop is called after coroutine terminated.
-    srs_usleep(50 * SRS_UTIME_MILLISECONDS);
+    srs_usleep(1 * SRS_UTIME_MILLISECONDS);
     EXPECT_TRUE(counter == 1);
 
     // Wait for coroutine to terminate. Otherwise, it will be stopped
     // and terminated, which cause some of the code not executed.
-    srs_usleep(50 * SRS_UTIME_MILLISECONDS);
+    srs_usleep(1 * SRS_UTIME_MILLISECONDS);
 }
 
 VOID TEST(StTest, AnonymouseCoroutineWithSync)
@@ -272,7 +272,7 @@ VOID TEST(StTest, AnonymouseBadcase2)
 
         // Wait for coroutine to terminate. Otherwise, it will crash, for the
         // coroutine is terminated while ctx.pop(), the lock is invalid.
-        srs_usleep(100 * SRS_UTIME_MILLISECONDS);
+        srs_usleep(1 * SRS_UTIME_MILLISECONDS);
     }
 
     // Coroutine terminated, so the counter is increased.

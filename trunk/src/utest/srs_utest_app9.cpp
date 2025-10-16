@@ -2335,7 +2335,7 @@ VOID TEST(AppOriginHubTest, CreateForwardersTypicalScenario)
         }
 
         // Give coroutines time to stop
-        srs_usleep(10 * 1000); // 10ms
+        srs_usleep(1 * SRS_UTIME_MILLISECONDS);
     }
     // Hub is destroyed here, before mock_config
 
@@ -2881,7 +2881,7 @@ VOID TEST(AppOriginHubTest, CreateBackendForwardersTypicalScenario)
         }
 
         // Give coroutines time to stop
-        srs_usleep(10 * 1000); // 10ms
+        srs_usleep(1 * SRS_UTIME_MILLISECONDS);
     }
     // Hub is destroyed here, before mock objects
 

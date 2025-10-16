@@ -326,6 +326,7 @@ public:
     bool api_as_candidates_;
     bool resolve_api_domain_;
     bool keep_api_domain_;
+    int mw_msgs_;
 
 public:
     MockAppConfig();

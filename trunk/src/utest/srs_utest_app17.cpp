@@ -1412,7 +1412,7 @@ VOID TEST(AppCasterFlvTest, ResourceManagerDelegation)
     // Verify subscription by checking that handler is notified when a resource is removed
     caster->remove(resource2);
     // Give time for async disposal (manager runs in coroutine)
-    srs_usleep(10 * SRS_UTIME_MILLISECONDS);
+    srs_usleep(1 * SRS_UTIME_MILLISECONDS);
     // Handler should have been called (but we can't easily verify this without more complex setup)
 
     // Test 14: unsubscribe() - should delegate to manager_->unsubscribe()
@@ -1424,7 +1424,7 @@ VOID TEST(AppCasterFlvTest, ResourceManagerDelegation)
     caster->remove(resource4);
 
     // Give time for async disposal
-    srs_usleep(10 * SRS_UTIME_MILLISECONDS);
+    srs_usleep(1 * SRS_UTIME_MILLISECONDS);
 
     // Clean up - set to NULL to avoid double-free
     caster->config_ = NULL;

@@ -414,7 +414,7 @@ VOID TEST(StreamTokenTest, RaceConditionPrevention)
     }
 
     // Wait a bit for completion
-    srs_usleep(10 * SRS_UTIME_MILLISECONDS);
+    srs_usleep(1 * SRS_UTIME_MILLISECONDS);
 
     // Wait for all coroutines to complete
     for (size_t i = 0; i < threads.size(); i++) {
@@ -423,7 +423,7 @@ VOID TEST(StreamTokenTest, RaceConditionPrevention)
     }
 
     // Wait a bit for completion
-    srs_usleep(10 * SRS_UTIME_MILLISECONDS);
+    srs_usleep(1 * SRS_UTIME_MILLISECONDS);
 
     // Check results - exactly one should succeed, others should fail
     int success_count = 0;

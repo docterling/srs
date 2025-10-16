@@ -104,7 +104,7 @@ VOID TEST(TCPServerTest, PingPong)
         SrsTcpClient c(_srs_tmp_host, _srs_tmp_port, _srs_tmp_timeout);
         HELPER_EXPECT_SUCCESS(c.connect());
 
-        srs_usleep(30 * SRS_UTIME_MILLISECONDS);
+        srs_usleep(1 * SRS_UTIME_MILLISECONDS);
         EXPECT_TRUE(h.fd != NULL);
     }
 
@@ -117,7 +117,7 @@ VOID TEST(TCPServerTest, PingPong)
         SrsTcpClient c(_srs_tmp_host, _srs_tmp_port, _srs_tmp_timeout);
         HELPER_EXPECT_SUCCESS(c.connect());
 
-        srs_usleep(30 * SRS_UTIME_MILLISECONDS);
+        srs_usleep(1 * SRS_UTIME_MILLISECONDS);
 #ifdef SRS_OSX
         ASSERT_TRUE(h.fd != NULL);
 #endif
@@ -139,7 +139,7 @@ VOID TEST(TCPServerTest, PingPong)
         SrsTcpClient c(_srs_tmp_host, _srs_tmp_port, _srs_tmp_timeout);
         HELPER_EXPECT_SUCCESS(c.connect());
 
-        srs_usleep(30 * SRS_UTIME_MILLISECONDS);
+        srs_usleep(1 * SRS_UTIME_MILLISECONDS);
 #ifdef SRS_OSX
         ASSERT_TRUE(h.fd != NULL);
 #endif
@@ -163,7 +163,7 @@ VOID TEST(TCPServerTest, PingPong)
         SrsTcpClient c(_srs_tmp_host, _srs_tmp_port, _srs_tmp_timeout);
         HELPER_EXPECT_SUCCESS(c.connect());
 
-        srs_usleep(30 * SRS_UTIME_MILLISECONDS);
+        srs_usleep(1 * SRS_UTIME_MILLISECONDS);
 #ifdef SRS_OSX
         ASSERT_TRUE(h.fd != NULL);
 #endif
@@ -198,7 +198,7 @@ VOID TEST(TCPServerTest, PingPongWithTimeout)
         SrsTcpClient c(_srs_tmp_host, _srs_tmp_port, _srs_tmp_timeout);
         HELPER_EXPECT_SUCCESS(c.connect());
 
-        srs_usleep(30 * SRS_UTIME_MILLISECONDS);
+        srs_usleep(1 * SRS_UTIME_MILLISECONDS);
 #ifdef SRS_OSX
         ASSERT_TRUE(h.fd != NULL);
 #endif
@@ -220,7 +220,7 @@ VOID TEST(TCPServerTest, PingPongWithTimeout)
         SrsTcpClient c(_srs_tmp_host, _srs_tmp_port, _srs_tmp_timeout);
         HELPER_EXPECT_SUCCESS(c.connect());
 
-        srs_usleep(30 * SRS_UTIME_MILLISECONDS);
+        srs_usleep(1 * SRS_UTIME_MILLISECONDS);
 #ifdef SRS_OSX
         ASSERT_TRUE(h.fd != NULL);
 #endif
@@ -242,7 +242,7 @@ VOID TEST(TCPServerTest, PingPongWithTimeout)
         SrsTcpClient c(_srs_tmp_host, _srs_tmp_port, _srs_tmp_timeout);
         HELPER_EXPECT_SUCCESS(c.connect());
 
-        srs_usleep(30 * SRS_UTIME_MILLISECONDS);
+        srs_usleep(1 * SRS_UTIME_MILLISECONDS);
 #ifdef SRS_OSX
         ASSERT_TRUE(h.fd != NULL);
 #endif
@@ -437,7 +437,7 @@ VOID TEST(TCPServerTest, WritevIOVC)
         SrsTcpClient c(_srs_tmp_host, _srs_tmp_port, _srs_tmp_timeout);
         HELPER_EXPECT_SUCCESS(c.connect());
 
-        srs_usleep(30 * SRS_UTIME_MILLISECONDS);
+        srs_usleep(1 * SRS_UTIME_MILLISECONDS);
 #ifdef SRS_OSX
         ASSERT_TRUE(h.fd != NULL);
 #endif
@@ -467,7 +467,7 @@ VOID TEST(TCPServerTest, WritevIOVC)
         SrsTcpClient c(_srs_tmp_host, _srs_tmp_port, _srs_tmp_timeout);
         HELPER_EXPECT_SUCCESS(c.connect());
 
-        srs_usleep(30 * SRS_UTIME_MILLISECONDS);
+        srs_usleep(1 * SRS_UTIME_MILLISECONDS);
 #ifdef SRS_OSX
         ASSERT_TRUE(h.fd != NULL);
 #endif
@@ -1000,7 +1000,7 @@ srs_error_t MockOnCycleThread::cycle()
     srs_error_t err = srs_success;
 
     for (;;) {
-        srs_usleep(10 * SRS_UTIME_MILLISECONDS);
+        srs_usleep(1 * SRS_UTIME_MILLISECONDS);
         srs_cond_signal(cond);
         // If no one waiting on the cond, directly return event signal more than one time.
         // If someone waiting, signal them more than one time.
@@ -1029,7 +1029,7 @@ VOID TEST(TCPServerTest, ThreadCondWait)
     MockOnCycleThread trd;
     trd.trd.start();
 
-    srs_usleep(20 * SRS_UTIME_MILLISECONDS);
+    srs_usleep(1 * SRS_UTIME_MILLISECONDS);
     srs_cond_wait(trd.cond);
     trd.trd.stop();
 }
@@ -1050,7 +1050,7 @@ srs_error_t MockOnCycleThread2::cycle()
 
     for (;;) {
         srs_mutex_lock(lock);
-        srs_usleep(10 * SRS_UTIME_MILLISECONDS);
+        srs_usleep(1 * SRS_UTIME_MILLISECONDS);
         srs_mutex_unlock(lock);
 
         srs_error_t err = trd.pull();
@@ -1077,7 +1077,7 @@ VOID TEST(TCPServerTest, ThreadMutexWait)
     MockOnCycleThread2 trd;
     trd.trd.start();
 
-    srs_usleep(20 * SRS_UTIME_MILLISECONDS);
+    srs_usleep(1 * SRS_UTIME_MILLISECONDS);
 
     srs_mutex_lock(trd.lock);
     trd.trd.stop();
@@ -1579,7 +1579,7 @@ VOID TEST(ThreadCriticalTest, FailIfCloseActiveFD)
     SrsTcpClient c0(_srs_tmp_host, _srs_tmp_port, _srs_tmp_timeout);
     HELPER_EXPECT_SUCCESS(c0.connect());
 
-    srs_usleep(30 * SRS_UTIME_MILLISECONDS);
+    srs_usleep(1 * SRS_UTIME_MILLISECONDS);
     EXPECT_TRUE(h.fd != NULL);
 
     MockAsyncReaderThread trd0(h.fd);
@@ -1589,7 +1589,7 @@ VOID TEST(ThreadCriticalTest, FailIfCloseActiveFD)
     HELPER_EXPECT_SUCCESS(trd1.start());
 
     // Wait for all threads to run.
-    srs_usleep(10 * SRS_UTIME_MILLISECONDS);
+    srs_usleep(1 * SRS_UTIME_MILLISECONDS);
 
     // Should fail when close, because there is 2 threads reading fd.
     int r0 = st_netfd_close((st_netfd_t)h.fd);
