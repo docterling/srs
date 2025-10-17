@@ -346,6 +346,15 @@ void SrsRtcPliWorker::request_keyframe(uint32_t ssrc, SrsContextId cid)
     wait_->signal();
 }
 
+void SrsRtcPliWorker::stop()
+{
+    wait_->signal();
+    
+    if (trd_) {
+        trd_->stop();
+    }
+}
+
 srs_error_t SrsRtcPliWorker::cycle()
 {
     srs_error_t err = srs_success;
@@ -963,19 +972,37 @@ ISrsRtcRtcpSender::~ISrsRtcRtcpSender()
 {
 }
 
+ISrsRtcPublishRtcpTimer::ISrsRtcPublishRtcpTimer()
+{
+}
+
+ISrsRtcPublishRtcpTimer::~ISrsRtcPublishRtcpTimer()
+{
+}
+
 SrsRtcPublishRtcpTimer::SrsRtcPublishRtcpTimer(ISrsRtcRtcpSender *sender) : sender_(sender)
 {
     lock_ = srs_mutex_new();
-    _srs_shared_timer->timer1s()->subscribe(this);
+
+    shared_timer_ = _srs_shared_timer;
 }
 
 SrsRtcPublishRtcpTimer::~SrsRtcPublishRtcpTimer()
 {
-    if (true) {
+    if (shared_timer_) {
         SrsLocker(&lock_);
-        _srs_shared_timer->timer1s()->unsubscribe(this);
+        shared_timer_->timer1s()->unsubscribe(this);
     }
     srs_mutex_destroy(lock_);
+
+    shared_timer_ = NULL;
+}
+
+srs_error_t SrsRtcPublishRtcpTimer::initialize()
+{
+    shared_timer_->timer1s()->subscribe(this);
+
+    return srs_success;
 }
 
 srs_error_t SrsRtcPublishRtcpTimer::on_timer(srs_utime_t interval)
@@ -1010,23 +1037,39 @@ srs_error_t SrsRtcPublishRtcpTimer::on_timer(srs_utime_t interval)
     return err;
 }
 
+ISrsRtcPublishTwccTimer::ISrsRtcPublishTwccTimer()
+{
+}
+
+ISrsRtcPublishTwccTimer::~ISrsRtcPublishTwccTimer()
+{
+}
+
 SrsRtcPublishTwccTimer::SrsRtcPublishTwccTimer(ISrsRtcRtcpSender *sender) : sender_(sender)
 {
     lock_ = srs_mutex_new();
-    _srs_shared_timer->timer100ms()->subscribe(this);
 
     circuit_breaker_ = _srs_circuit_breaker;
+    shared_timer_ = _srs_shared_timer;
 }
 
 SrsRtcPublishTwccTimer::~SrsRtcPublishTwccTimer()
 {
-    if (true) {
+    if (shared_timer_) {
         SrsLocker(&lock_);
-        _srs_shared_timer->timer100ms()->unsubscribe(this);
+        shared_timer_->timer100ms()->unsubscribe(this);
     }
     srs_mutex_destroy(lock_);
 
     circuit_breaker_ = NULL;
+    shared_timer_ = NULL;
+}
+
+srs_error_t SrsRtcPublishTwccTimer::initialize()
+{
+    shared_timer_->timer100ms()->subscribe(this);
+
+    return srs_success;
 }
 
 srs_error_t SrsRtcPublishTwccTimer::on_timer(srs_utime_t interval)
@@ -1152,6 +1195,7 @@ SrsRtcPublishStream::SrsRtcPublishStream(ISrsExecRtcAsyncTask *exec, ISrsExpire 
 
     timer_rtcp_ = new SrsRtcPublishRtcpTimer(this);
     timer_twcc_ = new SrsRtcPublishTwccTimer(this);
+    rtcp_twcc_ = new SrsRtcpTWCC();
 
     stat_ = _srs_stat;
     config_ = _srs_config;
@@ -1169,6 +1213,7 @@ SrsRtcPublishStream::~SrsRtcPublishStream()
 
     srs_freep(timer_rtcp_);
     srs_freep(timer_twcc_);
+    srs_freep(rtcp_twcc_);
 
     source_->set_publish_stream(NULL);
     source_->on_unpublish();
@@ -1192,7 +1237,9 @@ SrsRtcPublishStream::~SrsRtcPublishStream()
 
     // update the statistic when client coveried.
     // TODO: FIXME: Should finger out the err.
-    stat_->on_disconnect(cid_.c_str(), srs_success);
+    if (stat_) {
+        stat_->on_disconnect(cid_.c_str(), srs_success);
+    }
 
     // Optional but just to make it clear.
     stat_ = NULL;
@@ -1208,6 +1255,14 @@ srs_error_t SrsRtcPublishStream::initialize(ISrsRequest *r, SrsRtcSourceDescript
     srs_error_t err = srs_success;
 
     req_ = r->copy();
+
+    if ((err = timer_rtcp_->initialize()) != srs_success) {
+        return srs_error_wrap(err, "initialize timer rtcp");
+    }
+
+    if ((err = timer_twcc_->initialize()) != srs_success) {
+        return srs_error_wrap(err, "initialize timer twcc");
+    }
 
     // We must do stat the client before hooks, because hooks depends on it.
     if ((err = stat_->on_client(cid_.c_str(), req_, expire_, SrsRtcConnPublish)) != srs_success) {
@@ -1236,7 +1291,7 @@ srs_error_t SrsRtcPublishStream::initialize(ISrsRequest *r, SrsRtcSourceDescript
     if (twcc_id > 0) {
         twcc_id_ = twcc_id;
         extension_types_.register_by_uri(twcc_id_, kTWCCExt);
-        rtcp_twcc_.set_media_ssrc(media_ssrc);
+        rtcp_twcc_->set_media_ssrc(media_ssrc);
     }
 
     nack_enabled_ = config_->get_rtc_nack_enabled(req_->vhost_);
@@ -1346,6 +1401,11 @@ srs_error_t SrsRtcPublishStream::start()
     return err;
 }
 
+void SrsRtcPublishStream::stop()
+{
+    pli_worker_->stop();
+}
+
 void SrsRtcPublishStream::set_all_tracks_status(bool status)
 {
     std::ostringstream merged_log;
@@ -1437,7 +1497,7 @@ srs_error_t SrsRtcPublishStream::on_twcc(uint16_t sn)
     srs_error_t err = srs_success;
 
     srs_utime_t now = srs_time_now_cached();
-    err = rtcp_twcc_.recv_packet(sn, now);
+    err = rtcp_twcc_->recv_packet(sn, now);
 
     return err;
 }
@@ -1621,21 +1681,21 @@ srs_error_t SrsRtcPublishStream::send_periodic_twcc()
     }
     last_time_send_twcc_ = srs_time_now_cached();
 
-    if (!rtcp_twcc_.need_feedback()) {
+    if (!rtcp_twcc_->need_feedback()) {
         return err;
     }
 
     ++_srs_pps_srtcps->sugar_;
 
     // limit the max count=1024 to avoid dead loop.
-    for (int i = 0; i < 1024 && rtcp_twcc_.need_feedback(); ++i) {
+    for (int i = 0; i < 1024 && rtcp_twcc_->need_feedback(); ++i) {
         char pkt[kMaxUDPDataSize];
         SrsUniquePtr<SrsBuffer> buffer(new SrsBuffer(pkt, sizeof(pkt)));
 
-        rtcp_twcc_.set_feedback_count(twcc_fb_count_);
+        rtcp_twcc_->set_feedback_count(twcc_fb_count_);
         twcc_fb_count_++;
 
-        if ((err = rtcp_twcc_.encode(buffer.get())) != srs_success) {
+        if ((err = rtcp_twcc_->encode(buffer.get())) != srs_success) {
             return srs_error_wrap(err, "encode, count=%u", twcc_fb_count_);
         }
 

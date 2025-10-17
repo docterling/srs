@@ -38,8 +38,11 @@ public:
     uint32_t screen_ssrc_;
 
 public:
-    // Create a map of track descriptions with audio and video tracks
+    // Create a map of track descriptions with audio and video tracks (for play stream)
     std::map<uint32_t, SrsRtcTrackDescription *> create_audio_video_tracks();
+
+    // Create a stream description with audio and video tracks (for publish stream)
+    SrsRtcSourceDescription *create_stream_description();
 
     // Create a single audio track description
     SrsRtcTrackDescription *create_audio_track(uint32_t ssrc, std::string id, std::string mid);
@@ -465,6 +468,39 @@ public:
     void set_api_as_candidates(bool enabled);
     void set_resolve_api_domain(bool enabled);
     void set_keep_api_domain(bool enabled);
+};
+
+// Mock RTC packet receiver for testing SrsRtcPublishStream
+class MockRtcPacketReceiver : public ISrsRtcPacketReceiver
+{
+public:
+    srs_error_t send_rtcp_rr_error_;
+    srs_error_t send_rtcp_xr_rrtr_error_;
+    srs_error_t send_rtcp_error_;
+    srs_error_t send_rtcp_fb_pli_error_;
+    int send_rtcp_rr_count_;
+    int send_rtcp_xr_rrtr_count_;
+    int send_rtcp_count_;
+    int send_rtcp_fb_pli_count_;
+    int check_send_nacks_count_;
+
+public:
+    MockRtcPacketReceiver();
+    virtual ~MockRtcPacketReceiver();
+
+public:
+    virtual srs_error_t send_rtcp_rr(uint32_t ssrc, SrsRtpRingBuffer *rtp_queue, const uint64_t &last_send_systime, const SrsNtp &last_send_ntp);
+    virtual srs_error_t send_rtcp_xr_rrtr(uint32_t ssrc);
+    virtual void check_send_nacks(SrsRtpNackForReceiver *nack, uint32_t ssrc, uint32_t &sent_nacks, uint32_t &timeout_nacks);
+    virtual srs_error_t send_rtcp(char *data, int nb_data);
+    virtual srs_error_t send_rtcp_fb_pli(uint32_t ssrc, const SrsContextId &cid_of_subscriber);
+
+public:
+    void set_send_rtcp_rr_error(srs_error_t err);
+    void set_send_rtcp_xr_rrtr_error(srs_error_t err);
+    void set_send_rtcp_error(srs_error_t err);
+    void set_send_rtcp_fb_pli_error(srs_error_t err);
+    void reset();
 };
 
 #endif

@@ -204,6 +204,7 @@ public:
 public:
     virtual srs_error_t start() = 0;
     virtual void request_keyframe(uint32_t ssrc, SrsContextId cid) = 0;
+    virtual void stop() = 0;
 };
 
 // A worker coroutine to request the PLI.
@@ -228,6 +229,7 @@ public:
 public:
     virtual srs_error_t start();
     virtual void request_keyframe(uint32_t ssrc, SrsContextId cid);
+    virtual void stop();
     // interface ISrsCoroutineHandler
 public:
     virtual srs_error_t cycle();
@@ -369,9 +371,24 @@ public:
     virtual srs_error_t send_periodic_twcc() = 0;
 };
 
-// A fast timer for publish stream, for RTCP feedback.
-class SrsRtcPublishRtcpTimer : public ISrsFastTimerHandler
+// The RTC publish RTCP timer interface.
+class ISrsRtcPublishRtcpTimer: public ISrsFastTimerHandler
 {
+public:
+    ISrsRtcPublishRtcpTimer();
+    virtual ~ISrsRtcPublishRtcpTimer();
+
+public:
+    virtual srs_error_t initialize() = 0;
+};
+
+// A fast timer for publish stream, for RTCP feedback.
+class SrsRtcPublishRtcpTimer : public ISrsRtcPublishRtcpTimer
+{
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
+    ISrsSharedTimer *shared_timer_;
+
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     ISrsRtcRtcpSender *sender_;
@@ -380,17 +397,33 @@ SRS_DECLARE_PRIVATE: // clang-format on
 public:
     SrsRtcPublishRtcpTimer(ISrsRtcRtcpSender *sender);
     virtual ~SrsRtcPublishRtcpTimer();
+
+public:
+    virtual srs_error_t initialize();
+
     // interface ISrsFastTimerHandler
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     srs_error_t on_timer(srs_utime_t interval);
 };
 
+// The RTC publish TWCC timer interface.
+class ISrsRtcPublishTwccTimer: public ISrsFastTimerHandler
+{
+public:
+    ISrsRtcPublishTwccTimer();
+    virtual ~ISrsRtcPublishTwccTimer();
+
+public:
+    virtual srs_error_t initialize() = 0;
+};
+
 // A fast timer for publish stream, for TWCC feedback.
-class SrsRtcPublishTwccTimer : public ISrsFastTimerHandler
+class SrsRtcPublishTwccTimer : public ISrsRtcPublishTwccTimer
 {
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
+    ISrsSharedTimer *shared_timer_;
     ISrsCircuitBreaker *circuit_breaker_;
 
 // clang-format off
@@ -401,6 +434,10 @@ SRS_DECLARE_PRIVATE: // clang-format on
 public:
     SrsRtcPublishTwccTimer(ISrsRtcRtcpSender *sender);
     virtual ~SrsRtcPublishTwccTimer();
+
+public:
+    virtual srs_error_t initialize();
+
     // interface ISrsFastTimerHandler
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
@@ -451,14 +488,14 @@ SRS_DECLARE_PRIVATE: // clang-format on
 SRS_DECLARE_PRIVATE: // clang-format on
     friend class SrsRtcPublishRtcpTimer;
     friend class SrsRtcPublishTwccTimer;
-    SrsRtcPublishRtcpTimer *timer_rtcp_;
-    SrsRtcPublishTwccTimer *timer_twcc_;
+    ISrsRtcPublishRtcpTimer *timer_rtcp_;
+    ISrsRtcPublishTwccTimer *timer_twcc_;
 
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     SrsContextId cid_;
     uint64_t nn_audio_frames_;
-    SrsRtcPliWorker *pli_worker_;
+    ISrsRtcPliWorker *pli_worker_;
     SrsErrorPithyPrint *twcc_epp_;
 
 // clang-format off
@@ -492,7 +529,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
 SRS_DECLARE_PRIVATE: // clang-format on
     int twcc_id_;
     uint8_t twcc_fb_count_;
-    SrsRtcpTWCC rtcp_twcc_;
+    SrsRtcpTWCC *rtcp_twcc_;
     SrsRtpExtensionTypes extension_types_;
     bool is_sender_started_;
     srs_utime_t last_time_send_twcc_;
@@ -504,6 +541,7 @@ public:
 public:
     srs_error_t initialize(ISrsRequest *req, SrsRtcSourceDescription *stream_desc);
     srs_error_t start();
+    void stop();
     // Directly set the status of track, generally for init to set the default value.
     void set_all_tracks_status(bool status);
     virtual const SrsContextId &context_id();

@@ -42,6 +42,19 @@ std::map<uint32_t, SrsRtcTrackDescription *> MockRtcTrackDescriptionFactory::cre
     return sub_relations;
 }
 
+SrsRtcSourceDescription *MockRtcTrackDescriptionFactory::create_stream_description()
+{
+    SrsRtcSourceDescription *stream_desc = new SrsRtcSourceDescription();
+
+    // Create audio track
+    stream_desc->audio_track_desc_ = create_audio_track(audio_ssrc_, "audio-track-1", "0");
+
+    // Create video track
+    stream_desc->video_track_descs_.push_back(create_video_track(video_ssrc_, "video-track-1", "1"));
+
+    return stream_desc;
+}
+
 SrsRtcTrackDescription *MockRtcTrackDescriptionFactory::create_audio_track(uint32_t ssrc, std::string id, std::string mid)
 {
     SrsRtcTrackDescription *audio_desc = new SrsRtcTrackDescription();
@@ -147,7 +160,8 @@ srs_error_t MockRtcSourceManager::fetch_or_create(ISrsRequest *r, SrsSharedPtr<S
         return srs_error_copy(fetch_or_create_error_);
     }
     pps = mock_source_;
-    return srs_success;
+
+    return mock_source_->initialize(r);
 }
 
 SrsSharedPtr<SrsRtcSource> MockRtcSourceManager::fetch(ISrsRequest *r)
@@ -804,4 +818,86 @@ void MockAppConfig::set_resolve_api_domain(bool enabled)
 void MockAppConfig::set_keep_api_domain(bool enabled)
 {
     keep_api_domain_ = enabled;
+}
+
+// Mock RTC packet receiver implementation
+MockRtcPacketReceiver::MockRtcPacketReceiver()
+{
+    send_rtcp_rr_error_ = srs_success;
+    send_rtcp_xr_rrtr_error_ = srs_success;
+    send_rtcp_error_ = srs_success;
+    send_rtcp_fb_pli_error_ = srs_success;
+    send_rtcp_rr_count_ = 0;
+    send_rtcp_xr_rrtr_count_ = 0;
+    send_rtcp_count_ = 0;
+    send_rtcp_fb_pli_count_ = 0;
+    check_send_nacks_count_ = 0;
+}
+
+MockRtcPacketReceiver::~MockRtcPacketReceiver()
+{
+}
+
+srs_error_t MockRtcPacketReceiver::send_rtcp_rr(uint32_t ssrc, SrsRtpRingBuffer *rtp_queue, const uint64_t &last_send_systime, const SrsNtp &last_send_ntp)
+{
+    send_rtcp_rr_count_++;
+    return send_rtcp_rr_error_;
+}
+
+srs_error_t MockRtcPacketReceiver::send_rtcp_xr_rrtr(uint32_t ssrc)
+{
+    send_rtcp_xr_rrtr_count_++;
+    return send_rtcp_xr_rrtr_error_;
+}
+
+void MockRtcPacketReceiver::check_send_nacks(SrsRtpNackForReceiver *nack, uint32_t ssrc, uint32_t &sent_nacks, uint32_t &timeout_nacks)
+{
+    check_send_nacks_count_++;
+    sent_nacks = 0;
+    timeout_nacks = 0;
+}
+
+srs_error_t MockRtcPacketReceiver::send_rtcp(char *data, int nb_data)
+{
+    send_rtcp_count_++;
+    return send_rtcp_error_;
+}
+
+srs_error_t MockRtcPacketReceiver::send_rtcp_fb_pli(uint32_t ssrc, const SrsContextId &cid_of_subscriber)
+{
+    send_rtcp_fb_pli_count_++;
+    return send_rtcp_fb_pli_error_;
+}
+
+void MockRtcPacketReceiver::set_send_rtcp_rr_error(srs_error_t err)
+{
+    send_rtcp_rr_error_ = err;
+}
+
+void MockRtcPacketReceiver::set_send_rtcp_xr_rrtr_error(srs_error_t err)
+{
+    send_rtcp_xr_rrtr_error_ = err;
+}
+
+void MockRtcPacketReceiver::set_send_rtcp_error(srs_error_t err)
+{
+    send_rtcp_error_ = err;
+}
+
+void MockRtcPacketReceiver::set_send_rtcp_fb_pli_error(srs_error_t err)
+{
+    send_rtcp_fb_pli_error_ = err;
+}
+
+void MockRtcPacketReceiver::reset()
+{
+    send_rtcp_rr_error_ = srs_success;
+    send_rtcp_xr_rrtr_error_ = srs_success;
+    send_rtcp_error_ = srs_success;
+    send_rtcp_fb_pli_error_ = srs_success;
+    send_rtcp_rr_count_ = 0;
+    send_rtcp_xr_rrtr_count_ = 0;
+    send_rtcp_count_ = 0;
+    send_rtcp_fb_pli_count_ = 0;
+    check_send_nacks_count_ = 0;
 }
