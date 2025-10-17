@@ -36,6 +36,7 @@ class ISrsRtcSourceManager;
 class ISrsDtlsCertificate;
 class ISrsAppConfig;
 class ISrsAppFactory;
+class ISrsProtocolUtility;
 
 // The UDP black hole, for developer to use wireshark to catch plaintext packets.
 // For example, server receive UDP packets at udp://8000, and forward the plaintext packet to black hole,
@@ -93,7 +94,7 @@ public:
 };
 
 // Discover the candidates for RTC server.
-extern std::set<std::string> discover_candidates(SrsProtocolUtility *utility, ISrsAppConfig *config, SrsRtcUserConfig *ruc);
+extern std::set<std::string> discover_candidates(ISrsProtocolUtility *utility, ISrsAppConfig *config, SrsRtcUserConfig *ruc);
 
 // The dns resolve utility, return the resolved ip address.
 extern std::string srs_dns_resolve(std::string host, int &family);

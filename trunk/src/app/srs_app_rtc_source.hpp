@@ -43,6 +43,7 @@ class SrsLiveSource;
 class SrsRtpVideoBuilder;
 class ISrsRtcConsumer;
 class ISrsCircuitBreaker;
+class ISrsRtcPublishStream;
 
 // Firefox defaults as 109, Chrome is 111.
 const int kAudioPayloadType = 111;
@@ -206,20 +207,6 @@ public:
 
 // Global singleton instance.
 extern SrsRtcSourceManager *_srs_rtc_sources;
-
-// A publish stream interface, for source to callback with.
-class ISrsRtcPublishStream
-{
-public:
-    ISrsRtcPublishStream();
-    virtual ~ISrsRtcPublishStream();
-
-public:
-    // Request keyframe(PLI) from publisher, for fresh consumer.
-    virtual void request_keyframe(uint32_t ssrc, SrsContextId cid) = 0;
-    // Get context id.
-    virtual const SrsContextId &context_id() = 0;
-};
 
 // The event handler for RTC source.
 class ISrsRtcSourceEventHandler

@@ -90,7 +90,7 @@ public:
 };
 
 // Mock implementation of ISrsRtcPublishStream for testing
-class MockRtcPublishStream : public ISrsRtcPublishStream
+class MockRtcPublishStream : public SrsRtcPublishStream
 {
 public:
     int request_keyframe_count_;

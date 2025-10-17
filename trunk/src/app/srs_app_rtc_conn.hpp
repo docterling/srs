@@ -50,12 +50,15 @@ class SrsStatistic;
 class SrsRtcUserConfig;
 class SrsRtcSendTrack;
 class SrsRtcPublishStream;
+class ISrsRtcPublishStream;
 class SrsEphemeralDelta;
 class SrsRtcNetworks;
+class ISrsRtcNetworks;
 class SrsRtcUdpNetwork;
 class ISrsRtcNetwork;
 class SrsRtcTcpNetwork;
 class SrsStreamPublishToken;
+class ISrsStreamPublishToken;
 class ISrsHttpHooks;
 class ISrsAppConfig;
 class ISrsStatistic;
@@ -63,9 +66,14 @@ class ISrsExecRtcAsyncTask;
 class ISrsSrtSourceManager;
 class ISrsLiveSourceManager;
 class SrsRtcPublisherNegotiator;
+class ISrsRtcPublisherNegotiator;
 class SrsRtcPlayerNegotiator;
+class ISrsRtcPlayerNegotiator;
 class ISrsAppFactory;
 class ISrsCoroutine;
+class ISrsDtlsCertificate;
+class SrsRtcRecvTrack;
+class ISrsRtcPlayStream;
 
 const uint8_t kSR = 200;
 const uint8_t kRR = 201;
@@ -255,8 +263,24 @@ public:
     virtual std::string to_string();
 };
 
+// The interface for RTC play stream.
+class ISrsRtcPlayStream : public ISrsCoroutineHandler, public ISrsRtcPliWorkerHandler, public ISrsRtcSourceChangeCallback
+{
+public:
+    ISrsRtcPlayStream();
+    virtual ~ISrsRtcPlayStream();
+
+public:
+    virtual srs_error_t initialize(ISrsRequest *request, std::map<uint32_t, SrsRtcTrackDescription *> sub_relations) = 0;
+    virtual srs_error_t start() = 0;
+    virtual void stop() = 0;
+    // Directly set the status of track, generally for init to set the default value.
+    virtual void set_all_tracks_status(bool status) = 0;
+    virtual srs_error_t on_rtcp(SrsRtcpCommon *rtcp) = 0;
+};
+
 // A RTC play stream, client pull and play stream from SRS.
-class SrsRtcPlayStream : public ISrsCoroutineHandler, public ISrsRtcPliWorkerHandler, public ISrsRtcSourceChangeCallback
+class SrsRtcPlayStream : public ISrsRtcPlayStream
 {
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
@@ -372,7 +396,7 @@ public:
 };
 
 // The RTC publish RTCP timer interface.
-class ISrsRtcPublishRtcpTimer: public ISrsFastTimerHandler
+class ISrsRtcPublishRtcpTimer : public ISrsFastTimerHandler
 {
 public:
     ISrsRtcPublishRtcpTimer();
@@ -408,7 +432,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
 };
 
 // The RTC publish TWCC timer interface.
-class ISrsRtcPublishTwccTimer: public ISrsFastTimerHandler
+class ISrsRtcPublishTwccTimer : public ISrsFastTimerHandler
 {
 public:
     ISrsRtcPublishTwccTimer();
@@ -466,8 +490,30 @@ public:
     virtual std::string to_string();
 };
 
+// A publish stream interface, for source to callback with.
+class ISrsRtcPublishStream : public ISrsRtpPacketDecodeHandler, public ISrsRtcPliWorkerHandler, public ISrsRtcRtcpSender
+{
+public:
+    ISrsRtcPublishStream();
+    virtual ~ISrsRtcPublishStream();
+
+public:
+    // Request keyframe(PLI) from publisher, for fresh consumer.
+    virtual void request_keyframe(uint32_t ssrc, SrsContextId cid) = 0;
+    // Get context id.
+    virtual const SrsContextId &context_id() = 0;
+    virtual srs_error_t initialize(ISrsRequest *req, SrsRtcSourceDescription *stream_desc) = 0;
+    virtual srs_error_t on_rtcp(SrsRtcpCommon *rtcp) = 0;
+    virtual srs_error_t on_rtp_cipher(char *buf, int nb_buf) = 0;
+    virtual srs_error_t on_rtp_plaintext(char *buf, int nb_buf) = 0;
+    virtual srs_error_t start() = 0;
+    virtual srs_error_t check_send_nacks() = 0;
+    virtual void simulate_nack_drop(int nn) = 0;
+    virtual void set_all_tracks_status(bool status) = 0;
+};
+
 // A RTC publish stream, client push and publish stream to SRS.
-class SrsRtcPublishStream : public ISrsRtpPacketDecodeHandler, public ISrsRtcPublishStream, public ISrsRtcPliWorkerHandler, public ISrsRtcRtcpSender
+class SrsRtcPublishStream : public ISrsRtcPublishStream
 {
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
@@ -521,9 +567,21 @@ SRS_DECLARE_PRIVATE: // clang-format on
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     // track vector
-    std::vector<SrsRtcAudioRecvTrack *>
-        audio_tracks_;
+    std::vector<SrsRtcAudioRecvTrack *> audio_tracks_;
     std::vector<SrsRtcVideoRecvTrack *> video_tracks_;
+
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
+    // Fast cache for tracks.
+    uint32_t cache_ssrc0_;
+    bool cache_is_audio0_;
+    uint32_t cache_ssrc1_;
+    bool cache_is_audio1_;
+    uint32_t cache_ssrc2_;
+    bool cache_is_audio2_;
+    SrsRtcRecvTrack *cache_track0_;
+    SrsRtcRecvTrack *cache_track1_;
+    SrsRtcRecvTrack *cache_track2_;
 
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
@@ -610,8 +668,19 @@ public:
     virtual srs_error_t do_check_send_nacks() = 0;
 };
 
+// The RTC connection nack timer interface.
+class ISrsRtcConnectionNackTimer : public ISrsFastTimerHandler
+{
+public:
+    ISrsRtcConnectionNackTimer();
+    virtual ~ISrsRtcConnectionNackTimer();
+
+public:
+    virtual srs_error_t initialize() = 0;
+};
+
 // A fast timer for conntion, for NACK feedback.
-class SrsRtcConnectionNackTimer : public ISrsFastTimerHandler
+class SrsRtcConnectionNackTimer : public ISrsRtcConnectionNackTimer
 {
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
@@ -682,6 +751,7 @@ public:
     virtual srs_error_t add_publisher(SrsRtcUserConfig *ruc, SrsSdp &local_sdp) = 0;
     virtual srs_error_t add_player(SrsRtcUserConfig *ruc, SrsSdp &local_sdp) = 0;
     virtual void set_all_tracks_status(std::string stream_uri, bool is_publish, bool status) = 0;
+    virtual srs_error_t generate_local_sdp(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, std::string &username) = 0;
     // SDP management.
     virtual void set_remote_sdp(const SrsSdp &sdp) = 0;
     virtual void set_local_sdp(const SrsSdp &sdp) = 0;
@@ -691,7 +761,7 @@ public:
     // Username and token access.
     virtual std::string username() = 0;
     virtual std::string token() = 0;
-    virtual void set_publish_token(SrsSharedPtr<SrsStreamPublishToken> publish_token) = 0;
+    virtual void set_publish_token(SrsSharedPtr<ISrsStreamPublishToken> publish_token) = 0;
     // Simulation for testing.
     virtual void simulate_nack_drop(int nn) = 0;
 };
@@ -710,13 +780,15 @@ SRS_DECLARE_PRIVATE: // clang-format on
     ISrsResourceManager *conn_manager_;
     ISrsRtcSourceManager *rtc_sources_;
     ISrsAppConfig *config_;
+    ISrsDtlsCertificate *dtls_certificate_;
+    ISrsAppFactory *app_factory_;
 
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
-    SrsRtcConnectionNackTimer *timer_nack_;
+    ISrsRtcConnectionNackTimer *timer_nack_;
     ISrsExecRtcAsyncTask *exec_;
-    SrsRtcPublisherNegotiator *publisher_negotiator_;
-    SrsRtcPlayerNegotiator *player_negotiator_;
+    ISrsRtcPublisherNegotiator *publisher_negotiator_;
+    ISrsRtcPlayerNegotiator *player_negotiator_;
 
 public:
     bool disposing_;
@@ -729,14 +801,13 @@ SRS_DECLARE_PRIVATE: // clang-format on
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     // key: stream id
-    std::map<std::string, SrsRtcPlayStream *>
-        players_;
+    std::map<std::string, ISrsRtcPlayStream *> players_;
     // key: player track's ssrc
-    std::map<uint32_t, SrsRtcPlayStream *> players_ssrc_map_;
+    std::map<uint32_t, ISrsRtcPlayStream *> players_ssrc_map_;
     // key: stream id
-    std::map<std::string, SrsRtcPublishStream *> publishers_;
+    std::map<std::string, ISrsRtcPublishStream *> publishers_;
     // key: publisher track's ssrc
-    std::map<uint32_t, SrsRtcPublishStream *> publishers_ssrc_map_;
+    std::map<uint32_t, ISrsRtcPublishStream *> publishers_ssrc_map_;
 
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
@@ -745,7 +816,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
     // The random token to verify the WHIP DELETE request etc.
     std::string token_;
     // A group of networks, each has its own DTLS and SRTP context.
-    SrsRtcNetworks *networks_;
+    ISrsRtcNetworks *networks_;
 
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
@@ -762,7 +833,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
     ISrsRequest *req_;
     SrsSdp remote_sdp_;
     SrsSdp local_sdp_;
-    SrsSharedPtr<SrsStreamPublishToken> publish_token_;
+    SrsSharedPtr<ISrsStreamPublishToken> publish_token_;
 
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
@@ -800,7 +871,7 @@ public:
     // Get the token for verify this session, for example, when delete session by WHIP API.
     std::string token();
     // Set the publish token for this session if publisher.
-    void set_publish_token(SrsSharedPtr<SrsStreamPublishToken> publish_token);
+    void set_publish_token(SrsSharedPtr<ISrsStreamPublishToken> publish_token);
 
 public:
     virtual ISrsKbpsDelta *delta();
@@ -819,6 +890,7 @@ public:
 public:
     srs_error_t add_publisher(SrsRtcUserConfig *ruc, SrsSdp &local_sdp);
     srs_error_t add_player(SrsRtcUserConfig *ruc, SrsSdp &local_sdp);
+    srs_error_t generate_local_sdp(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, std::string &username);
 
 public:
     // Before initialize, user must set the local SDP, which is used to inititlize DTLS.
@@ -829,8 +901,7 @@ public:
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     // Decode the RTP header from buf, find the publisher by SSRC.
-    srs_error_t
-    find_publisher(char *buf, int size, SrsRtcPublishStream **ppublisher);
+    srs_error_t find_publisher(char *buf, int size, ISrsRtcPublishStream **ppublisher);
 
 public:
     srs_error_t on_rtcp(char *data, int nb_data);
@@ -884,12 +955,23 @@ SRS_DECLARE_PRIVATE: // clang-format on
     srs_error_t create_publisher(ISrsRequest *request, SrsRtcSourceDescription *stream_desc);
 };
 
+// Publisher negotiator interface.
+class ISrsRtcPublisherNegotiator
+{
+public:
+    ISrsRtcPublisherNegotiator();
+    virtual ~ISrsRtcPublisherNegotiator();
+
+public:
+    virtual srs_error_t negotiate_publish_capability(SrsRtcUserConfig *ruc, SrsRtcSourceDescription *stream_desc) = 0;
+    virtual srs_error_t generate_publish_local_sdp(ISrsRequest *req, SrsSdp &local_sdp, SrsRtcSourceDescription *stream_desc, bool unified_plan, bool audio_before_video) = 0;
+};
+
 // Negotiate via SDP exchange for WebRTC publisher.
-class SrsRtcPublisherNegotiator
+class SrsRtcPublisherNegotiator : public ISrsRtcPublisherNegotiator
 {
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
-    ISrsRequest *req_;
     ISrsAppConfig *config_;
 
 public:
@@ -897,20 +979,33 @@ public:
     virtual ~SrsRtcPublisherNegotiator();
 
 public:
-    virtual srs_error_t initialize(ISrsRequest *r);
     // publish media capabilitiy negotiate
     srs_error_t negotiate_publish_capability(SrsRtcUserConfig *ruc, SrsRtcSourceDescription *stream_desc);
     srs_error_t generate_publish_local_sdp(ISrsRequest *req, SrsSdp &local_sdp, SrsRtcSourceDescription *stream_desc, bool unified_plan, bool audio_before_video);
+
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     srs_error_t generate_publish_local_sdp_for_audio(SrsSdp &local_sdp, SrsRtcSourceDescription *stream_desc);
     srs_error_t generate_publish_local_sdp_for_video(SrsSdp &local_sdp, SrsRtcSourceDescription *stream_desc, bool unified_plan);
 };
 
+// Player negotiator interface.
+class ISrsRtcPlayerNegotiator
+{
+public:
+    ISrsRtcPlayerNegotiator();
+    virtual ~ISrsRtcPlayerNegotiator();
+
+public:
+    virtual srs_error_t negotiate_play_capability(SrsRtcUserConfig *ruc, std::map<uint32_t, SrsRtcTrackDescription *> &sub_relations) = 0;
+    virtual srs_error_t generate_play_local_sdp(ISrsRequest *req, SrsSdp &local_sdp, SrsRtcSourceDescription *stream_desc, bool unified_plan, bool audio_before_video) = 0;
+};
+
 // Negotiate via SDP exchange for WebRTC player.
-class SrsRtcPlayerNegotiator
+class SrsRtcPlayerNegotiator : public ISrsRtcPlayerNegotiator
 {
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
-    ISrsRequest *req_;
     ISrsAppConfig *config_;
     ISrsRtcSourceManager *rtc_sources_;
 
@@ -919,7 +1014,6 @@ public:
     virtual ~SrsRtcPlayerNegotiator();
 
 public:
-    virtual srs_error_t initialize(ISrsRequest *r);
     // play media capabilitiy negotiate
     // TODO: Use StreamDescription to negotiate and remove first negotiate_play_capability function
     srs_error_t negotiate_play_capability(SrsRtcUserConfig *ruc, std::map<uint32_t, SrsRtcTrackDescription *> &sub_relations);

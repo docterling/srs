@@ -349,7 +349,7 @@ void SrsRtcPliWorker::request_keyframe(uint32_t ssrc, SrsContextId cid)
 void SrsRtcPliWorker::stop()
 {
     wait_->signal();
-    
+
     if (trd_) {
         trd_->stop();
     }
@@ -442,6 +442,14 @@ srs_error_t SrsRtcAsyncCallOnStop::call()
 std::string SrsRtcAsyncCallOnStop::to_string()
 {
     return std::string("");
+}
+
+ISrsRtcPlayStream::ISrsRtcPlayStream()
+{
+}
+
+ISrsRtcPlayStream::~ISrsRtcPlayStream()
+{
 }
 
 SrsRtcPlayStream::SrsRtcPlayStream(ISrsExecRtcAsyncTask *exec, ISrsExpire *expire, ISrsRtcPacketSender *sender, const SrsContextId &cid) : source_(new SrsRtcSource())
@@ -1167,6 +1175,14 @@ std::string SrsRtcAsyncCallOnUnpublish::to_string()
     return std::string("");
 }
 
+ISrsRtcPublishStream::ISrsRtcPublishStream()
+{
+}
+
+ISrsRtcPublishStream::~ISrsRtcPublishStream()
+{
+}
+
 SrsRtcPublishStream::SrsRtcPublishStream(ISrsExecRtcAsyncTask *exec, ISrsExpire *expire, ISrsRtcPacketReceiver *receiver, const SrsContextId &cid) : source_(new SrsRtcSource())
 {
     exec_ = exec;
@@ -1196,6 +1212,10 @@ SrsRtcPublishStream::SrsRtcPublishStream(ISrsExecRtcAsyncTask *exec, ISrsExpire 
     timer_rtcp_ = new SrsRtcPublishRtcpTimer(this);
     timer_twcc_ = new SrsRtcPublishTwccTimer(this);
     rtcp_twcc_ = new SrsRtcpTWCC();
+
+    cache_ssrc0_ = cache_ssrc1_ = cache_ssrc2_ = 0;
+    cache_is_audio0_ = cache_is_audio1_ = cache_is_audio2_ = false;
+    cache_track0_ = cache_track1_ = cache_track2_ = NULL;
 
     stat_ = _srs_stat;
     config_ = _srs_config;
@@ -1585,20 +1605,59 @@ srs_error_t SrsRtcPublishStream::do_on_rtp_plaintext(SrsRtpPacket *&pkt, SrsBuff
 
     // For source to consume packet.
     uint32_t ssrc = pkt->header_.get_ssrc();
-    SrsRtcAudioRecvTrack *audio_track = get_audio_track(ssrc);
-    SrsRtcVideoRecvTrack *video_track = get_video_track(ssrc);
-    if (audio_track) {
-        pkt->frame_type_ = SrsFrameTypeAudio;
-        if ((err = audio_track->on_rtp(source_, pkt)) != srs_success) {
-            return srs_error_wrap(err, "on audio");
+
+    // Try to find track from cache.
+    SrsRtcRecvTrack *track = NULL;
+    bool is_audio = true;
+    if (cache_ssrc0_ == ssrc) {
+        track = cache_track0_;
+        is_audio = cache_is_audio0_;
+    } else if (cache_ssrc1_ == ssrc) {
+        track = cache_track1_;
+        is_audio = cache_is_audio1_;
+    } else if (cache_ssrc2_ == ssrc) {
+        track = cache_track2_;
+        is_audio = cache_is_audio2_;
+    }
+
+    // Find by original tracks and build fast cache.
+    if (!track) {
+        track = get_audio_track(ssrc);
+        if (track) {
+            is_audio = true;
+        } else {
+            is_audio = false;
+            track = get_video_track(ssrc);
         }
-    } else if (video_track) {
-        pkt->frame_type_ = SrsFrameTypeVideo;
-        if ((err = video_track->on_rtp(source_, pkt)) != srs_success) {
-            return srs_error_wrap(err, "on video");
+
+        if (track && !cache_ssrc2_) {
+            if (!cache_ssrc0_) {
+                cache_ssrc0_ = ssrc;
+                cache_is_audio0_ = is_audio;
+                cache_track0_ = track;
+            } else if (!cache_ssrc1_) {
+                cache_ssrc1_ = ssrc;
+                cache_is_audio1_ = is_audio;
+                cache_track1_ = track;
+            } else if (!cache_ssrc2_) {
+                cache_ssrc2_ = ssrc;
+                cache_is_audio2_ = is_audio;
+                cache_track2_ = track;
+            }
         }
-    } else {
+    }
+
+    // Set the frame type.
+    pkt->frame_type_ = is_audio ? SrsFrameTypeAudio : SrsFrameTypeVideo;
+
+    // Ignore if no track found.
+    if (!track) {
         return srs_error_new(ERROR_RTC_RTP, "unknown ssrc=%u", ssrc);
+    }
+
+    // Consume packet by track.
+    if ((err = track->on_rtp(source_, pkt)) != srs_success) {
+        return srs_error_wrap(err, "audio track, SSRC=%u, SEQ=%u", ssrc, pkt->header_.get_sequence());
     }
 
     // If circuit-breaker is enabled, disable nack.
@@ -1609,16 +1668,8 @@ srs_error_t SrsRtcPublishStream::do_on_rtp_plaintext(SrsRtpPacket *&pkt, SrsBuff
 
     // For NACK to handle packet.
     // @remark Note that the pkt might be set to NULL.
-    if (nack_enabled_) {
-        if (audio_track) {
-            if ((err = audio_track->on_nack(&pkt)) != srs_success) {
-                return srs_error_wrap(err, "on nack");
-            }
-        } else if (video_track) {
-            if ((err = video_track->on_nack(&pkt)) != srs_success) {
-                return srs_error_wrap(err, "on nack");
-            }
-        }
+    if (nack_enabled_ && (err = track->on_nack(&pkt)) != srs_success) {
+        return srs_error_wrap(err, "on nack");
     }
 
     return err;
@@ -1902,6 +1953,14 @@ ISrsRtcConnectionNackTimerHandler::~ISrsRtcConnectionNackTimerHandler()
 {
 }
 
+ISrsRtcConnectionNackTimer::ISrsRtcConnectionNackTimer()
+{
+}
+
+ISrsRtcConnectionNackTimer::~ISrsRtcConnectionNackTimer()
+{
+}
+
 SrsRtcConnectionNackTimer::SrsRtcConnectionNackTimer(ISrsRtcConnectionNackTimerHandler *handler) : handler_(handler)
 {
     lock_ = srs_mutex_new();
@@ -1977,6 +2036,8 @@ SrsRtcConnection::SrsRtcConnection(ISrsExecRtcAsyncTask *exec, const SrsContextI
     conn_manager_ = _srs_conn_manager;
     rtc_sources_ = _srs_rtc_sources;
     config_ = _srs_config;
+    dtls_certificate_ = _srs_rtc_dtls_certificate;
+    app_factory_ = _srs_app_factory;
 }
 
 void SrsRtcConnection::assemble()
@@ -1991,16 +2052,16 @@ SrsRtcConnection::~SrsRtcConnection()
     srs_freep(timer_nack_);
 
     // Cleanup publishers.
-    for (map<string, SrsRtcPublishStream *>::iterator it = publishers_.begin(); it != publishers_.end(); ++it) {
-        SrsRtcPublishStream *publisher = it->second;
+    for (map<string, ISrsRtcPublishStream *>::iterator it = publishers_.begin(); it != publishers_.end(); ++it) {
+        ISrsRtcPublishStream *publisher = it->second;
         srs_freep(publisher);
     }
     publishers_.clear();
     publishers_ssrc_map_.clear();
 
     // Cleanup players.
-    for (map<string, SrsRtcPlayStream *>::iterator it = players_.begin(); it != players_.end(); ++it) {
-        SrsRtcPlayStream *player = it->second;
+    for (map<string, ISrsRtcPlayStream *>::iterator it = players_.begin(); it != players_.end(); ++it) {
+        ISrsRtcPlayStream *player = it->second;
         srs_freep(player);
     }
     players_.clear();
@@ -2027,6 +2088,8 @@ SrsRtcConnection::~SrsRtcConnection()
     conn_manager_ = NULL;
     rtc_sources_ = NULL;
     config_ = NULL;
+    dtls_certificate_ = NULL;
+    app_factory_ = NULL;
 }
 
 void SrsRtcConnection::on_before_dispose(ISrsResource *c)
@@ -2089,7 +2152,7 @@ string SrsRtcConnection::token()
     return token_;
 }
 
-void SrsRtcConnection::set_publish_token(SrsSharedPtr<SrsStreamPublishToken> publish_token)
+void SrsRtcConnection::set_publish_token(SrsSharedPtr<ISrsStreamPublishToken> publish_token)
 {
     publish_token_ = publish_token;
 }
@@ -2208,6 +2271,95 @@ srs_error_t SrsRtcConnection::add_player(SrsRtcUserConfig *ruc, SrsSdp &local_sd
     return err;
 }
 
+srs_error_t SrsRtcConnection::generate_local_sdp(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, std::string &username)
+{
+    srs_error_t err = srs_success;
+
+    SrsRand rand;
+    std::string local_pwd = ruc->req_->ice_pwd_.empty() ? rand.gen_str(32) : ruc->req_->ice_pwd_;
+    std::string local_ufrag = ruc->req_->ice_ufrag_.empty() ? rand.gen_str(8) : ruc->req_->ice_ufrag_;
+
+    // TODO: FIXME: Rename for a better name, it's not an username.
+    username = "";
+    while (true) {
+        username = local_ufrag + ":" + ruc->remote_sdp_.get_ice_ufrag();
+        if (!conn_manager_->find_by_name(username)) {
+            break;
+        }
+
+        // Username conflict, regenerate a new one.
+        local_ufrag = rand.gen_str(8);
+    }
+
+    local_sdp.set_ice_ufrag(local_ufrag);
+    local_sdp.set_ice_pwd(local_pwd);
+    local_sdp.set_fingerprint_algo("sha-256");
+    local_sdp.set_fingerprint(dtls_certificate_->get_fingerprint());
+
+    // We allows to mock the eip of server.
+    if (true) {
+        // TODO: Support multiple listen ports.
+        int udp_port = 0;
+        if (true) {
+            string udp_host;
+            string udp_hostport = config_->get_rtc_server_listens().at(0);
+            srs_net_split_for_listener(udp_hostport, udp_host, udp_port);
+        }
+
+        int tcp_port = 0;
+        if (true) {
+            string tcp_host;
+            string tcp_hostport = config_->get_rtc_server_tcp_listens().at(0);
+            srs_net_split_for_listener(tcp_hostport, tcp_host, tcp_port);
+        }
+
+        string protocol = config_->get_rtc_server_protocol();
+
+        SrsUniquePtr<ISrsProtocolUtility> utility(app_factory_->create_protocol_utility());
+        set<string> candidates = discover_candidates(utility.get(), config_, ruc);
+        for (set<string>::iterator it = candidates.begin(); it != candidates.end(); ++it) {
+            string hostname;
+            int uport = udp_port;
+            srs_net_split_hostport(*it, hostname, uport);
+            int tport = tcp_port;
+            srs_net_split_hostport(*it, hostname, tport);
+
+            if (protocol == "udp") {
+                local_sdp.add_candidate("udp", hostname, uport, "host");
+            } else if (protocol == "tcp") {
+                local_sdp.add_candidate("tcp", hostname, tport, "host");
+            } else {
+                local_sdp.add_candidate("udp", hostname, uport, "host");
+                local_sdp.add_candidate("tcp", hostname, tport, "host");
+            }
+        }
+
+        vector<string> v = vector<string>(candidates.begin(), candidates.end());
+        srs_trace("RTC: Use candidates %s, protocol=%s, tcp_port=%d, udp_port=%d",
+                  srs_strings_join(v, ", ").c_str(), protocol.c_str(), tcp_port, udp_port);
+    }
+
+    // Setup the negotiate DTLS by config.
+    local_sdp.session_negotiate_ = local_sdp.session_config_;
+
+    // Setup the negotiate DTLS role.
+    if (ruc->remote_sdp_.get_dtls_role() == "active") {
+        local_sdp.session_negotiate_.dtls_role_ = "passive";
+    } else if (ruc->remote_sdp_.get_dtls_role() == "passive") {
+        local_sdp.session_negotiate_.dtls_role_ = "active";
+    } else if (ruc->remote_sdp_.get_dtls_role() == "actpass") {
+        local_sdp.session_negotiate_.dtls_role_ = local_sdp.session_config_.dtls_role_;
+    } else {
+        // @see: https://tools.ietf.org/html/rfc4145#section-4.1
+        // The default value of the setup attribute in an offer/answer exchange
+        // is 'active' in the offer and 'passive' in the answer.
+        local_sdp.session_negotiate_.dtls_role_ = "passive";
+    }
+    local_sdp.set_dtls_role(local_sdp.session_negotiate_.dtls_role_);
+
+    return err;
+}
+
 srs_error_t SrsRtcConnection::initialize(ISrsRequest *r, bool dtls, bool srtp, string username)
 {
     srs_error_t err = srs_success;
@@ -2230,14 +2382,6 @@ srs_error_t SrsRtcConnection::initialize(ISrsRequest *r, bool dtls, bool srtp, s
 
     if ((err = timer_nack_->initialize()) != srs_success) {
         return srs_error_wrap(err, "initialize timer nack");
-    }
-
-    if ((err = publisher_negotiator_->initialize(r)) != srs_success) {
-        return srs_error_wrap(err, "initialize publisher negotiator");
-    }
-
-    if ((err = player_negotiator_->initialize(r)) != srs_success) {
-        return srs_error_wrap(err, "initialize player negotiator");
     }
 
     srs_trace("RTC init session, user=%s, url=%s, encrypt=%u/%u, DTLS(role=%s, version=%s), timeout=%dms, nack=%d",
@@ -2319,11 +2463,11 @@ srs_error_t SrsRtcConnection::dispatch_rtcp(SrsRtcpCommon *rtcp)
     }
 
     // Find the publisher or player by SSRC, always try to got one.
-    SrsRtcPlayStream *player = NULL;
-    SrsRtcPublishStream *publisher = NULL;
+    ISrsRtcPlayStream *player = NULL;
+    ISrsRtcPublishStream *publisher = NULL;
     if (true) {
         uint32_t ssrc = required_publisher_ssrc ? required_publisher_ssrc : rtcp->get_ssrc();
-        map<uint32_t, SrsRtcPublishStream *>::iterator it = publishers_ssrc_map_.find(ssrc);
+        map<uint32_t, ISrsRtcPublishStream *>::iterator it = publishers_ssrc_map_.find(ssrc);
         if (it != publishers_ssrc_map_.end()) {
             publisher = it->second;
         }
@@ -2331,7 +2475,7 @@ srs_error_t SrsRtcConnection::dispatch_rtcp(SrsRtcpCommon *rtcp)
 
     if (true) {
         uint32_t ssrc = required_player_ssrc ? required_player_ssrc : rtcp->get_ssrc();
-        map<uint32_t, SrsRtcPlayStream *>::iterator it = players_ssrc_map_.find(ssrc);
+        map<uint32_t, ISrsRtcPlayStream *>::iterator it = players_ssrc_map_.find(ssrc);
         if (it != players_ssrc_map_.end()) {
             player = it->second;
         }
@@ -2373,7 +2517,7 @@ srs_error_t SrsRtcConnection::on_rtp_cipher(char *data, int nb_data)
 {
     srs_error_t err = srs_success;
 
-    SrsRtcPublishStream *publisher = NULL;
+    ISrsRtcPublishStream *publisher = NULL;
     if ((err = find_publisher(data, nb_data, &publisher)) != srs_success) {
         return srs_error_wrap(err, "find");
     }
@@ -2386,7 +2530,7 @@ srs_error_t SrsRtcConnection::on_rtp_plaintext(char *data, int nb_data)
 {
     srs_error_t err = srs_success;
 
-    SrsRtcPublishStream *publisher = NULL;
+    ISrsRtcPublishStream *publisher = NULL;
     if ((err = find_publisher(data, nb_data, &publisher)) != srs_success) {
         return srs_error_wrap(err, "find");
     }
@@ -2395,7 +2539,7 @@ srs_error_t SrsRtcConnection::on_rtp_plaintext(char *data, int nb_data)
     return publisher->on_rtp_plaintext(data, nb_data);
 }
 
-srs_error_t SrsRtcConnection::find_publisher(char *buf, int size, SrsRtcPublishStream **ppublisher)
+srs_error_t SrsRtcConnection::find_publisher(char *buf, int size, ISrsRtcPublishStream **ppublisher)
 {
     srs_error_t err = srs_success;
 
@@ -2408,7 +2552,7 @@ srs_error_t SrsRtcConnection::find_publisher(char *buf, int size, SrsRtcPublishS
         return srs_error_new(ERROR_RTC_NO_PUBLISHER, "invalid ssrc");
     }
 
-    map<uint32_t, SrsRtcPublishStream *>::iterator it = publishers_ssrc_map_.find(ssrc);
+    map<uint32_t, ISrsRtcPublishStream *>::iterator it = publishers_ssrc_map_.find(ssrc);
     if (it == publishers_ssrc_map_.end()) {
         return srs_error_new(ERROR_RTC_NO_PUBLISHER, "no publisher for ssrc:%u", ssrc);
     }
@@ -2431,9 +2575,9 @@ srs_error_t SrsRtcConnection::on_dtls_handshake_done()
               srsu2msi(session_timeout_));
 
     // start all publisher
-    for (map<string, SrsRtcPublishStream *>::iterator it = publishers_.begin(); it != publishers_.end(); ++it) {
+    for (map<string, ISrsRtcPublishStream *>::iterator it = publishers_.begin(); it != publishers_.end(); ++it) {
         string url = it->first;
-        SrsRtcPublishStream *publisher = it->second;
+        ISrsRtcPublishStream *publisher = it->second;
 
         srs_trace("RTC: Publisher url=%s established", url.c_str());
 
@@ -2443,9 +2587,9 @@ srs_error_t SrsRtcConnection::on_dtls_handshake_done()
     }
 
     // start all player
-    for (map<string, SrsRtcPlayStream *>::iterator it = players_.begin(); it != players_.end(); ++it) {
+    for (map<string, ISrsRtcPlayStream *>::iterator it = players_.begin(); it != players_.end(); ++it) {
         string url = it->first;
-        SrsRtcPlayStream *player = it->second;
+        ISrsRtcPlayStream *player = it->second;
 
         srs_trace("RTC: Subscriber url=%s established", url.c_str());
 
@@ -2682,9 +2826,9 @@ srs_error_t SrsRtcConnection::do_check_send_nacks()
         return err;
     }
 
-    std::map<std::string, SrsRtcPublishStream *>::iterator it;
+    std::map<std::string, ISrsRtcPublishStream *>::iterator it;
     for (it = publishers_.begin(); it != publishers_.end(); it++) {
-        SrsRtcPublishStream *publisher = it->second;
+        ISrsRtcPublishStream *publisher = it->second;
 
         if ((err = publisher->check_send_nacks()) != srs_success) {
             srs_warn("ignore nack err %s", srs_error_desc(err).c_str());
@@ -2697,8 +2841,8 @@ srs_error_t SrsRtcConnection::do_check_send_nacks()
 
 void SrsRtcConnection::simulate_nack_drop(int nn)
 {
-    for (map<string, SrsRtcPublishStream *>::iterator it = publishers_.begin(); it != publishers_.end(); ++it) {
-        SrsRtcPublishStream *publisher = it->second;
+    for (map<string, ISrsRtcPublishStream *>::iterator it = publishers_.begin(); it != publishers_.end(); ++it) {
+        ISrsRtcPublishStream *publisher = it->second;
         publisher->simulate_nack_drop(nn);
     }
 
@@ -2766,23 +2910,23 @@ void SrsRtcConnection::set_all_tracks_status(std::string stream_uri, bool is_pub
 {
     // For publishers.
     if (is_publish) {
-        map<string, SrsRtcPublishStream *>::iterator it = publishers_.find(stream_uri);
+        map<string, ISrsRtcPublishStream *>::iterator it = publishers_.find(stream_uri);
         if (publishers_.end() == it) {
             return;
         }
 
-        SrsRtcPublishStream *publisher = it->second;
+        ISrsRtcPublishStream *publisher = it->second;
         publisher->set_all_tracks_status(status);
         return;
     }
 
     // For players.
-    map<string, SrsRtcPlayStream *>::iterator it = players_.find(stream_uri);
+    map<string, ISrsRtcPlayStream *>::iterator it = players_.find(stream_uri);
     if (players_.end() == it) {
         return;
     }
 
-    SrsRtcPlayStream *player = it->second;
+    ISrsRtcPlayStream *player = it->second;
     player->set_all_tracks_status(status);
 }
 
@@ -2814,7 +2958,7 @@ srs_error_t SrsRtcConnection::create_player(ISrsRequest *req, std::map<uint32_t,
         return err;
     }
 
-    SrsRtcPlayStream *player = new SrsRtcPlayStream(exec_, this, this, _srs_context->get_id());
+    ISrsRtcPlayStream *player = app_factory_->create_rtc_play_stream(exec_, this, this, _srs_context->get_id());
     if ((err = player->initialize(req, sub_relations)) != srs_success) {
         srs_freep(player);
         return srs_error_wrap(err, "SrsRtcPlayStream init");
@@ -2824,7 +2968,7 @@ srs_error_t SrsRtcConnection::create_player(ISrsRequest *req, std::map<uint32_t,
     // make map between ssrc and player for fastly searching
     for (map<uint32_t, SrsRtcTrackDescription *>::iterator it = sub_relations.begin(); it != sub_relations.end(); ++it) {
         SrsRtcTrackDescription *track_desc = it->second;
-        map<uint32_t, SrsRtcPlayStream *>::iterator it_player = players_ssrc_map_.find(track_desc->ssrc_);
+        map<uint32_t, ISrsRtcPlayStream *>::iterator it_player = players_ssrc_map_.find(track_desc->ssrc_);
         if ((players_ssrc_map_.end() != it_player) && (player != it_player->second)) {
             return srs_error_new(ERROR_RTC_DUPLICATED_SSRC, "duplicate ssrc %d, track id: %s",
                                  track_desc->ssrc_, track_desc->id_.c_str());
@@ -2882,7 +3026,7 @@ srs_error_t SrsRtcConnection::create_publisher(ISrsRequest *req, SrsRtcSourceDes
         return err;
     }
 
-    SrsRtcPublishStream *publisher = new SrsRtcPublishStream(exec_, this, this, _srs_context->get_id());
+    ISrsRtcPublishStream *publisher = app_factory_->create_rtc_publish_stream(exec_, this, this, _srs_context->get_id());
     if ((err = publisher->initialize(req, stream_desc)) != srs_success) {
         srs_freep(publisher);
         return srs_error_wrap(err, "rtc publisher init");
@@ -2945,42 +3089,42 @@ srs_error_t SrsRtcConnection::create_publisher(ISrsRequest *req, SrsRtcSourceDes
     return err;
 }
 
+ISrsRtcPublisherNegotiator::ISrsRtcPublisherNegotiator()
+{
+}
+
+ISrsRtcPublisherNegotiator::~ISrsRtcPublisherNegotiator()
+{
+}
+
 SrsRtcPublisherNegotiator::SrsRtcPublisherNegotiator()
 {
-    req_ = NULL;
     config_ = _srs_config;
 }
 
 SrsRtcPublisherNegotiator::~SrsRtcPublisherNegotiator()
 {
-    srs_freep(req_);
     config_ = NULL;
 }
 
-srs_error_t SrsRtcPublisherNegotiator::initialize(ISrsRequest *r)
+ISrsRtcPlayerNegotiator::ISrsRtcPlayerNegotiator()
 {
-    req_ = r->copy();
-    return srs_success;
+}
+
+ISrsRtcPlayerNegotiator::~ISrsRtcPlayerNegotiator()
+{
 }
 
 SrsRtcPlayerNegotiator::SrsRtcPlayerNegotiator()
 {
-    req_ = NULL;
     config_ = _srs_config;
     rtc_sources_ = _srs_rtc_sources;
 }
 
 SrsRtcPlayerNegotiator::~SrsRtcPlayerNegotiator()
 {
-    srs_freep(req_);
     config_ = NULL;
     rtc_sources_ = NULL;
-}
-
-srs_error_t SrsRtcPlayerNegotiator::initialize(ISrsRequest *r)
-{
-    req_ = r->copy();
-    return srs_success;
 }
 
 bool srs_sdp_has_h264_profile(const SrsMediaPayloadType &payload_type, const string &profile)
@@ -3564,9 +3708,9 @@ srs_error_t SrsRtcPlayerNegotiator::negotiate_play_capability(SrsRtcUserConfig *
             SrsVideoCodecId prefer_codec = srs_video_codec_str2id(ruc->codec_);
             if (prefer_codec == SrsVideoCodecIdReserved) {
                 // Get the source codec if not specified.
-                std::vector<SrsRtcTrackDescription *> track_descs = source->get_track_desc("video", "");
-                if (!track_descs.empty()) {
-                    SrsRtcTrackDescription *first_track = track_descs.at(0);
+                std::vector<SrsRtcTrackDescription *> source_track_descs = source->get_track_desc("video", "");
+                if (!source_track_descs.empty()) {
+                    SrsRtcTrackDescription *first_track = source_track_descs.at(0);
                     prefer_codec = srs_video_codec_str2id(first_track->media_->name_);
                 } else {
                     return srs_error_new(ERROR_RTC_SDP_EXCHANGE, "no video track in source");

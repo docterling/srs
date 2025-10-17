@@ -18,11 +18,24 @@
 
 class ISrsRequest;
 class SrsStreamPublishTokenManager;
+class ISrsStreamPublishTokenManager;
+
+// The interface for stream publish token
+class ISrsStreamPublishToken
+{
+public:
+    ISrsStreamPublishToken();
+    virtual ~ISrsStreamPublishToken();
+
+public:
+    virtual bool is_acquired() = 0;
+    virtual void set_acquired(bool acquired) = 0;
+};
 
 // The stream publish token represents exclusive access to publish a stream.
 // Only one publisher can hold a token for a given stream URL at any time.
 // This prevents race conditions across all protocols (RTMP, RTC, SRT, etc.).
-class SrsStreamPublishToken
+class SrsStreamPublishToken : public ISrsStreamPublishToken
 {
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
@@ -31,12 +44,12 @@ SRS_DECLARE_PRIVATE: // clang-format on
     // Whether this token is currently acquired
     bool acquired_;
     // The token manager that created this token
-    SrsStreamPublishTokenManager *manager_;
+    ISrsStreamPublishTokenManager *manager_;
     // The context ID of the publisher that acquired this token
     SrsContextId publisher_cid_;
 
 public:
-    SrsStreamPublishToken(const std::string &stream_url, SrsStreamPublishTokenManager *manager);
+    SrsStreamPublishToken(const std::string &stream_url, ISrsStreamPublishTokenManager *manager);
     virtual ~SrsStreamPublishToken();
 
 public:

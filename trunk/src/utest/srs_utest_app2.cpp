@@ -153,7 +153,7 @@ void MockRtcSourceEventHandler::on_consumers_finished()
     on_consumers_finished_count_++;
 }
 
-MockRtcPublishStream::MockRtcPublishStream()
+MockRtcPublishStream::MockRtcPublishStream() : SrsRtcPublishStream(NULL, NULL, NULL, SrsContextId())
 {
     request_keyframe_count_ = 0;
     last_keyframe_ssrc_ = 0;

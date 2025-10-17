@@ -35,12 +35,6 @@ public:
 class MockRtc2RtmpRequest : public ISrsRequest
 {
 public:
-    std::string vhost_;
-    std::string app_;
-    std::string stream_;
-    std::string host_;
-
-public:
     MockRtc2RtmpRequest(std::string vhost = "__defaultVhost__", std::string app = "live", std::string stream = "test");
     virtual ~MockRtc2RtmpRequest();
     virtual ISrsRequest *copy();

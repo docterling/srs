@@ -343,6 +343,14 @@ srs_error_t srs_rtmp_create_msg(char type, uint32_t timestamp, char *data, int s
     return err;
 }
 
+ISrsProtocolUtility::ISrsProtocolUtility()
+{
+}
+
+ISrsProtocolUtility::~ISrsProtocolUtility()
+{
+}
+
 SrsProtocolUtility::SrsProtocolUtility()
 {
 }

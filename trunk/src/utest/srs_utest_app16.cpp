@@ -1481,130 +1481,6 @@ MockAppFactoryForIngester::~MockAppFactoryForIngester()
     // Don't free mock_coroutine_ and mock_time_ - they are managed by the test
 }
 
-ISrsFileWriter *MockAppFactoryForIngester::create_file_writer()
-{
-    return NULL;
-}
-
-ISrsFileWriter *MockAppFactoryForIngester::create_enc_file_writer()
-{
-    return NULL;
-}
-
-ISrsFileReader *MockAppFactoryForIngester::create_file_reader()
-{
-    return NULL;
-}
-
-SrsPath *MockAppFactoryForIngester::create_path()
-{
-    return NULL;
-}
-
-SrsLiveSource *MockAppFactoryForIngester::create_live_source()
-{
-    return NULL;
-}
-
-ISrsOriginHub *MockAppFactoryForIngester::create_origin_hub()
-{
-    return NULL;
-}
-
-ISrsHourGlass *MockAppFactoryForIngester::create_hourglass(const std::string &name, ISrsHourGlassHandler *handler, srs_utime_t interval)
-{
-    return NULL;
-}
-
-ISrsBasicRtmpClient *MockAppFactoryForIngester::create_rtmp_client(std::string url, srs_utime_t cto, srs_utime_t sto)
-{
-    return NULL;
-}
-
-ISrsHttpClient *MockAppFactoryForIngester::create_http_client()
-{
-    return NULL;
-}
-
-ISrsFileReader *MockAppFactoryForIngester::create_http_file_reader(ISrsHttpResponseReader *r)
-{
-    return NULL;
-}
-
-ISrsFlvDecoder *MockAppFactoryForIngester::create_flv_decoder()
-{
-    return NULL;
-}
-
-#ifdef SRS_RTSP
-ISrsRtspSendTrack *MockAppFactoryForIngester::create_rtsp_audio_send_track(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc)
-{
-    return NULL;
-}
-
-ISrsRtspSendTrack *MockAppFactoryForIngester::create_rtsp_video_send_track(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc)
-{
-    return NULL;
-}
-#endif
-
-ISrsFlvTransmuxer *MockAppFactoryForIngester::create_flv_transmuxer()
-{
-    return NULL;
-}
-
-ISrsMp4Encoder *MockAppFactoryForIngester::create_mp4_encoder()
-{
-    return NULL;
-}
-
-ISrsDvrSegmenter *MockAppFactoryForIngester::create_dvr_flv_segmenter()
-{
-    return NULL;
-}
-
-ISrsDvrSegmenter *MockAppFactoryForIngester::create_dvr_mp4_segmenter()
-{
-    return NULL;
-}
-
-#ifdef SRS_GB28181
-ISrsGbMediaTcpConn *MockAppFactoryForIngester::create_gb_media_tcp_conn()
-{
-    return NULL;
-}
-
-ISrsGbSession *MockAppFactoryForIngester::create_gb_session()
-{
-    return NULL;
-}
-#endif
-
-ISrsInitMp4 *MockAppFactoryForIngester::create_init_mp4()
-{
-    return NULL;
-}
-
-ISrsFragmentWindow *MockAppFactoryForIngester::create_fragment_window()
-{
-    return NULL;
-}
-
-ISrsFragmentedMp4 *MockAppFactoryForIngester::create_fragmented_mp4()
-{
-    return NULL;
-}
-
-ISrsIpListener *MockAppFactoryForIngester::create_tcp_listener(ISrsTcpHandler *handler)
-{
-    return NULL;
-}
-
-ISrsRtcConnection *MockAppFactoryForIngester::create_rtc_connection(ISrsExecRtcAsyncTask *exec, const SrsContextId &cid)
-{
-    return NULL;
-}
-
 ISrsFFMPEG *MockAppFactoryForIngester::create_ffmpeg(std::string ffmpeg_bin)
 {
     return new MockFFMPEG();
@@ -1625,16 +1501,6 @@ ISrsTime *MockAppFactoryForIngester::create_time()
 {
     create_time_count_++;
     return mock_time_;
-}
-
-ISrsConfig *MockAppFactoryForIngester::create_config()
-{
-    return NULL;
-}
-
-ISrsCond *MockAppFactoryForIngester::create_cond()
-{
-    return NULL;
 }
 
 void MockAppFactoryForIngester::reset()
@@ -2568,7 +2434,7 @@ srs_error_t MockStreamPublishTokenManager::acquire_token(ISrsRequest *req, SrsSt
 
     // Create a new token if not already created
     if (!token_to_return_) {
-        token_to_return_ = new SrsStreamPublishToken(req->get_stream_url(), NULL);
+        token_to_return_ = new SrsStreamPublishToken(req->get_stream_url(), this);
     }
     token = token_to_return_;
     return srs_success;
@@ -2632,7 +2498,7 @@ void MockRtcConnectionForSessionManager::set_all_tracks_status(std::string strea
     set_all_tracks_status_called_ = true;
 }
 
-void MockRtcConnectionForSessionManager::set_publish_token(SrsSharedPtr<SrsStreamPublishToken> publish_token)
+void MockRtcConnectionForSessionManager::set_publish_token(SrsSharedPtr<ISrsStreamPublishToken> publish_token)
 {
     set_publish_token_called_ = true;
     publish_token_ = publish_token;
@@ -2970,7 +2836,7 @@ std::string MockRtcConnectionForUpdateSessions::token()
     return "test-token";
 }
 
-void MockRtcConnectionForUpdateSessions::set_publish_token(SrsSharedPtr<SrsStreamPublishToken> publish_token)
+void MockRtcConnectionForUpdateSessions::set_publish_token(SrsSharedPtr<ISrsStreamPublishToken> publish_token)
 {
 }
 
@@ -2980,6 +2846,11 @@ void MockRtcConnectionForUpdateSessions::simulate_drop_packet(bool v, int nn)
 
 void MockRtcConnectionForUpdateSessions::simulate_nack_drop(int nn)
 {
+}
+
+srs_error_t MockRtcConnectionForUpdateSessions::generate_local_sdp(SrsRtcUserConfig * /*ruc*/, SrsSdp & /*local_sdp*/, std::string & /*username*/)
+{
+    return srs_success;
 }
 
 // Mock ISrsResourceManager implementation for srs_update_rtc_sessions test

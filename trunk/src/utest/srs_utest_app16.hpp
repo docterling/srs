@@ -289,7 +289,7 @@ public:
     srs_error_t add_player_error_;
     std::string username_;
     std::string token_;
-    SrsSharedPtr<SrsStreamPublishToken> publish_token_;
+    SrsSharedPtr<ISrsStreamPublishToken> publish_token_;
 
 public:
     MockRtcConnectionForSessionManager();
@@ -299,7 +299,7 @@ public:
     srs_error_t add_publisher(SrsRtcUserConfig *ruc, SrsSdp &local_sdp);
     srs_error_t add_player(SrsRtcUserConfig *ruc, SrsSdp &local_sdp);
     void set_all_tracks_status(std::string stream_uri, bool is_publish, bool status);
-    void set_publish_token(SrsSharedPtr<SrsStreamPublishToken> publish_token);
+    void set_publish_token(SrsSharedPtr<ISrsStreamPublishToken> publish_token);
 
     void reset();
 };
@@ -391,9 +391,10 @@ public:
     virtual srs_error_t initialize(ISrsRequest *r, bool dtls, bool srtp, std::string username);
     virtual std::string username();
     virtual std::string token();
-    virtual void set_publish_token(SrsSharedPtr<SrsStreamPublishToken> publish_token);
+    virtual void set_publish_token(SrsSharedPtr<ISrsStreamPublishToken> publish_token);
     virtual void simulate_drop_packet(bool v, int nn);
     virtual void simulate_nack_drop(int nn);
+    virtual srs_error_t generate_local_sdp(SrsRtcUserConfig *ruc, SrsSdp &local_sdp, std::string &username);
 };
 
 // Mock ISrsResourceManager for testing SrsRtcSessionManager::srs_update_rtc_sessions
@@ -513,7 +514,7 @@ public:
 };
 
 // Mock ISrsAppFactory for testing SrsIngester
-class MockAppFactoryForIngester : public ISrsAppFactory
+class MockAppFactoryForIngester : public SrsAppFactory
 {
 public:
     MockSrtCoroutine *mock_coroutine_;
@@ -526,40 +527,10 @@ public:
     virtual ~MockAppFactoryForIngester();
 
 public:
-    virtual ISrsFileWriter *create_file_writer();
-    virtual ISrsFileWriter *create_enc_file_writer();
-    virtual ISrsFileReader *create_file_reader();
-    virtual SrsPath *create_path();
-    virtual SrsLiveSource *create_live_source();
-    virtual ISrsOriginHub *create_origin_hub();
-    virtual ISrsHourGlass *create_hourglass(const std::string &name, ISrsHourGlassHandler *handler, srs_utime_t interval);
-    virtual ISrsBasicRtmpClient *create_rtmp_client(std::string url, srs_utime_t cto, srs_utime_t sto);
-    virtual ISrsHttpClient *create_http_client();
-    virtual ISrsFileReader *create_http_file_reader(ISrsHttpResponseReader *r);
-    virtual ISrsFlvDecoder *create_flv_decoder();
-#ifdef SRS_RTSP
-    virtual ISrsRtspSendTrack *create_rtsp_audio_send_track(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc);
-    virtual ISrsRtspSendTrack *create_rtsp_video_send_track(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc);
-#endif
-    virtual ISrsFlvTransmuxer *create_flv_transmuxer();
-    virtual ISrsMp4Encoder *create_mp4_encoder();
-    virtual ISrsDvrSegmenter *create_dvr_flv_segmenter();
-    virtual ISrsDvrSegmenter *create_dvr_mp4_segmenter();
-#ifdef SRS_GB28181
-    virtual ISrsGbMediaTcpConn *create_gb_media_tcp_conn();
-    virtual ISrsGbSession *create_gb_session();
-#endif
-    virtual ISrsInitMp4 *create_init_mp4();
-    virtual ISrsFragmentWindow *create_fragment_window();
-    virtual ISrsFragmentedMp4 *create_fragmented_mp4();
-    virtual ISrsIpListener *create_tcp_listener(ISrsTcpHandler *handler);
-    virtual ISrsRtcConnection *create_rtc_connection(ISrsExecRtcAsyncTask *exec, const SrsContextId &cid);
     virtual ISrsFFMPEG *create_ffmpeg(std::string ffmpeg_bin);
     virtual ISrsIngesterFFMPEG *create_ingester_ffmpeg();
     virtual ISrsCoroutine *create_coroutine(const std::string &name, ISrsCoroutineHandler *handler, SrsContextId cid);
     virtual ISrsTime *create_time();
-    virtual ISrsConfig *create_config();
-    virtual ISrsCond *create_cond();
     void reset();
 };
 

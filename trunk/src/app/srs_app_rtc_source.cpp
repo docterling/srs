@@ -379,14 +379,6 @@ SrsSharedPtr<SrsRtcSource> SrsRtcSourceManager::fetch(ISrsRequest *r)
 
 SrsRtcSourceManager *_srs_rtc_sources = NULL;
 
-ISrsRtcPublishStream::ISrsRtcPublishStream()
-{
-}
-
-ISrsRtcPublishStream::~ISrsRtcPublishStream()
-{
-}
-
 ISrsRtcSourceEventHandler::ISrsRtcSourceEventHandler()
 {
 }
@@ -443,6 +435,7 @@ srs_error_t SrsRtcSource::initialize(ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 
+    srs_freep(req_);
     req_ = r->copy();
 
     // Create default relations to allow play before publishing.

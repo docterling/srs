@@ -15,7 +15,15 @@
 // Global instance
 SrsStreamPublishTokenManager *_srs_stream_publish_tokens = NULL;
 
-SrsStreamPublishToken::SrsStreamPublishToken(const std::string &stream_url, SrsStreamPublishTokenManager *manager)
+ISrsStreamPublishToken::ISrsStreamPublishToken()
+{
+}
+
+ISrsStreamPublishToken::~ISrsStreamPublishToken()
+{
+}
+
+SrsStreamPublishToken::SrsStreamPublishToken(const std::string &stream_url, ISrsStreamPublishTokenManager *manager)
 {
     stream_url_ = stream_url;
     acquired_ = false;

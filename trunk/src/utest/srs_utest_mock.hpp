@@ -13,16 +13,78 @@
 #include <vector>
 
 // Include necessary SRS headers for interfaces
+#include <srs_app_circuit_breaker.hpp>
 #include <srs_app_config.hpp>
+#include <srs_app_factory.hpp>
+#include <srs_app_ffmpeg.hpp>
 #include <srs_app_rtc_conn.hpp>
+#include <srs_app_rtc_dtls.hpp>
 #include <srs_app_rtc_source.hpp>
 #include <srs_app_statistic.hpp>
+#include <srs_kernel_buffer.hpp>
+#include <srs_kernel_file.hpp>
+#include <srs_kernel_mp4.hpp>
+#include <srs_kernel_ps.hpp>
+#include <srs_kernel_resource.hpp>
+#include <srs_kernel_stream.hpp>
+#include <srs_kernel_ts.hpp>
+#include <srs_kernel_utility.hpp>
 #include <srs_protocol_conn.hpp>
 #include <srs_protocol_rtmp_conn.hpp>
+#include <srs_protocol_stream.hpp>
+#ifdef SRS_GB28181
+#include <srs_app_gb28181.hpp>
+#endif
+#include <srs_protocol_utility.hpp>
 
 // Forward declarations
 class SrsRtcTrackDescription;
 class SrsRtpPacket;
+class MockMp4Encoder;
+class MockSrsFileWriter;
+class MockSrsFile;
+class MockSrsFileReader;
+class MockSrtCoroutine;
+class ISrsGbSession;
+class ISrsProtocolUtility;
+
+// Mock SDP factory for creating test SDP offers/answers
+class MockSdpFactory
+{
+public:
+    // Audio track properties
+    uint32_t audio_ssrc_;
+    uint8_t audio_pt_;
+
+    // Video track properties
+    uint32_t video_ssrc_;
+    uint8_t video_pt_;
+
+public:
+    MockSdpFactory();
+    virtual ~MockSdpFactory();
+
+public:
+    // Create a Chrome-like WebRTC publisher offer SDP
+    std::string create_chrome_publisher_offer();
+    // Create a Chrome-like WebRTC player offer SDP
+    std::string create_chrome_player_offer();
+};
+
+// Mock DTLS certificate for testing
+class MockDtlsCertificate : public ISrsDtlsCertificate
+{
+public:
+    std::string fingerprint_;
+
+public:
+    MockDtlsCertificate();
+    virtual ~MockDtlsCertificate();
+
+public:
+    virtual srs_error_t initialize();
+    virtual std::string get_fingerprint();
+};
 
 // Helper class to create mock track descriptions for testing
 class MockRtcTrackDescriptionFactory
@@ -68,11 +130,6 @@ public:
 // Mock request for testing
 class MockRtcAsyncCallRequest : public ISrsRequest
 {
-public:
-    std::string vhost_;
-    std::string app_;
-    std::string stream_;
-
 public:
     MockRtcAsyncCallRequest(std::string vhost = "__defaultVhost__", std::string app = "live", std::string stream = "test");
     virtual ~MockRtcAsyncCallRequest();
@@ -198,6 +255,7 @@ public:
     bool resolve_api_domain_;
     bool keep_api_domain_;
     int mw_msgs_;
+    std::string rtc_dtls_role_;
 
 public:
     MockAppConfig();
@@ -248,9 +306,19 @@ public:
     virtual bool get_http_stream_crossdomain() { return false; }
     virtual bool get_rtc_server_enabled() { return false; }
     virtual bool get_rtc_server_tcp_enabled() { return false; }
-    virtual std::vector<std::string> get_rtc_server_tcp_listens() { return std::vector<std::string>(); }
+    virtual std::vector<std::string> get_rtc_server_tcp_listens()
+    {
+        std::vector<std::string> v;
+        v.push_back("127.0.0.1:8000");
+        return v;
+    }
     virtual std::string get_rtc_server_protocol() { return "udp"; }
-    virtual std::vector<std::string> get_rtc_server_listens() { return std::vector<std::string>(); }
+    virtual std::vector<std::string> get_rtc_server_listens()
+    {
+        std::vector<std::string> v;
+        v.push_back("127.0.0.1:8000");
+        return v;
+    }
     virtual int get_rtc_server_reuseport() { return 1; }
     virtual bool get_rtc_server_encrypt() { return false; }
     virtual bool get_api_as_candidates() { return api_as_candidates_; }

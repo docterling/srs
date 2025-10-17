@@ -57,6 +57,12 @@ public:
     virtual ~ISrsRtcNetworks();
 
 public:
+    virtual srs_error_t initialize(SrsSessionConfig *cfg, bool dtls, bool srtp) = 0;
+    virtual void set_state(SrsRtcNetworkState state) = 0;
+    virtual ISrsRtcNetwork *udp() = 0;
+    virtual ISrsRtcNetwork *tcp() = 0;
+    virtual ISrsRtcNetwork *available() = 0;
+    virtual ISrsKbpsDelta *delta() = 0;
 };
 
 // A group of networks, each has its own DTLS and SRTP context.
@@ -81,6 +87,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
 public:
     SrsRtcNetworks(ISrsRtcConnection *conn);
     virtual ~SrsRtcNetworks();
+
     // DTLS transport functions.
 public:
     srs_error_t initialize(SrsSessionConfig *cfg, bool dtls, bool srtp);

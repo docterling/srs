@@ -1641,12 +1641,17 @@ std::string MockRtcConnectionForTcpConn::token()
     return "";
 }
 
-void MockRtcConnectionForTcpConn::set_publish_token(SrsSharedPtr<SrsStreamPublishToken> /*publish_token*/)
+void MockRtcConnectionForTcpConn::set_publish_token(SrsSharedPtr<ISrsStreamPublishToken> /*publish_token*/)
 {
 }
 
 void MockRtcConnectionForTcpConn::simulate_nack_drop(int /*nn*/)
 {
+}
+
+srs_error_t MockRtcConnectionForTcpConn::generate_local_sdp(SrsRtcUserConfig * /*ruc*/, SrsSdp & /*local_sdp*/, std::string & /*username*/)
+{
+    return srs_success;
 }
 
 // Mock ISrsPsPackHandler implementation
@@ -2267,109 +2272,7 @@ MockAppFactoryForGbPublish::~MockAppFactoryForGbPublish()
     srs_freep(mock_gb_session_);
 }
 
-ISrsFileWriter *MockAppFactoryForGbPublish::create_file_writer()
-{
-    return NULL;
-}
-
-ISrsFileWriter *MockAppFactoryForGbPublish::create_enc_file_writer()
-{
-    return NULL;
-}
-
-ISrsFileReader *MockAppFactoryForGbPublish::create_file_reader()
-{
-    return NULL;
-}
-
-SrsPath *MockAppFactoryForGbPublish::create_path()
-{
-    return NULL;
-}
-
-SrsLiveSource *MockAppFactoryForGbPublish::create_live_source()
-{
-    return NULL;
-}
-
-ISrsOriginHub *MockAppFactoryForGbPublish::create_origin_hub()
-{
-    return NULL;
-}
-
-ISrsHourGlass *MockAppFactoryForGbPublish::create_hourglass(const std::string &name, ISrsHourGlassHandler *handler, srs_utime_t interval)
-{
-    return NULL;
-}
-
-ISrsBasicRtmpClient *MockAppFactoryForGbPublish::create_rtmp_client(std::string url, srs_utime_t cto, srs_utime_t sto)
-{
-    return NULL;
-}
-
-SrsHttpClient *MockAppFactoryForGbPublish::create_http_client()
-{
-    return NULL;
-}
-
-ISrsHttpResponseReader *MockAppFactoryForGbPublish::create_http_response_reader(ISrsHttpResponseReader *r)
-{
-    return NULL;
-}
-
-ISrsFileReader *MockAppFactoryForGbPublish::create_http_file_reader(ISrsHttpResponseReader *r)
-{
-    return NULL;
-}
-
-ISrsFlvDecoder *MockAppFactoryForGbPublish::create_flv_decoder()
-{
-    return NULL;
-}
-
-ISrsBasicRtmpClient *MockAppFactoryForGbPublish::create_basic_rtmp_client(std::string url, srs_utime_t ctm, srs_utime_t stm)
-{
-    return NULL;
-}
-
-#ifdef SRS_RTSP
-ISrsRtspSendTrack *MockAppFactoryForGbPublish::create_rtsp_audio_send_track(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc)
-{
-    return NULL;
-}
-
-ISrsRtspSendTrack *MockAppFactoryForGbPublish::create_rtsp_video_send_track(ISrsRtspConnection *session, SrsRtcTrackDescription *track_desc)
-{
-    return NULL;
-}
-#endif
-
-ISrsFlvTransmuxer *MockAppFactoryForGbPublish::create_flv_transmuxer()
-{
-    return NULL;
-}
-
-ISrsMp4Encoder *MockAppFactoryForGbPublish::create_mp4_encoder()
-{
-    return NULL;
-}
-
-SrsDvrFlvSegmenter *MockAppFactoryForGbPublish::create_dvr_flv_segmenter()
-{
-    return NULL;
-}
-
-SrsDvrMp4Segmenter *MockAppFactoryForGbPublish::create_dvr_mp4_segmenter()
-{
-    return NULL;
-}
-
 #ifdef SRS_GB28181
-ISrsGbMediaTcpConn *MockAppFactoryForGbPublish::create_gb_media_tcp_conn()
-{
-    return NULL;
-}
-
 ISrsGbSession *MockAppFactoryForGbPublish::create_gb_session()
 {
     // Return the mock session (ownership transferred to caller)
@@ -2378,61 +2281,6 @@ ISrsGbSession *MockAppFactoryForGbPublish::create_gb_session()
     return session;
 }
 #endif
-
-ISrsInitMp4 *MockAppFactoryForGbPublish::create_init_mp4()
-{
-    return NULL;
-}
-
-ISrsFragmentWindow *MockAppFactoryForGbPublish::create_fragment_window()
-{
-    return NULL;
-}
-
-ISrsFragmentedMp4 *MockAppFactoryForGbPublish::create_fragmented_mp4()
-{
-    return NULL;
-}
-
-ISrsIpListener *MockAppFactoryForGbPublish::create_tcp_listener(ISrsTcpHandler *handler)
-{
-    return NULL;
-}
-
-ISrsRtcConnection *MockAppFactoryForGbPublish::create_rtc_connection(ISrsExecRtcAsyncTask *exec, const SrsContextId &cid)
-{
-    return NULL;
-}
-
-ISrsFFMPEG *MockAppFactoryForGbPublish::create_ffmpeg(std::string ffmpeg_bin)
-{
-    return NULL;
-}
-
-ISrsIngesterFFMPEG *MockAppFactoryForGbPublish::create_ingester_ffmpeg()
-{
-    return NULL;
-}
-
-ISrsCoroutine *MockAppFactoryForGbPublish::create_coroutine(const std::string &name, ISrsCoroutineHandler *handler, SrsContextId cid)
-{
-    return NULL;
-}
-
-ISrsTime *MockAppFactoryForGbPublish::create_time()
-{
-    return NULL;
-}
-
-ISrsConfig *MockAppFactoryForGbPublish::create_config()
-{
-    return NULL;
-}
-
-ISrsCond *MockAppFactoryForGbPublish::create_cond()
-{
-    return NULL;
-}
 
 void MockAppFactoryForGbPublish::reset()
 {
@@ -2966,12 +2814,17 @@ std::string MockRtcConnectionForUdpNetwork::token()
     return "";
 }
 
-void MockRtcConnectionForUdpNetwork::set_publish_token(SrsSharedPtr<SrsStreamPublishToken> /*publish_token*/)
+void MockRtcConnectionForUdpNetwork::set_publish_token(SrsSharedPtr<ISrsStreamPublishToken> /*publish_token*/)
 {
 }
 
 void MockRtcConnectionForUdpNetwork::simulate_nack_drop(int /*nn*/)
 {
+}
+
+srs_error_t MockRtcConnectionForUdpNetwork::generate_local_sdp(SrsRtcUserConfig * /*ruc*/, SrsSdp & /*local_sdp*/, std::string & /*username*/)
+{
+    return srs_success;
 }
 
 void MockRtcConnectionForUdpNetwork::set_on_dtls_alert_error(srs_error_t err)
@@ -4102,12 +3955,17 @@ std::string MockRtcConnectionForTcpConnHandshake::token()
     return "";
 }
 
-void MockRtcConnectionForTcpConnHandshake::set_publish_token(SrsSharedPtr<SrsStreamPublishToken> /*publish_token*/)
+void MockRtcConnectionForTcpConnHandshake::set_publish_token(SrsSharedPtr<ISrsStreamPublishToken> /*publish_token*/)
 {
 }
 
 void MockRtcConnectionForTcpConnHandshake::simulate_nack_drop(int /*nn*/)
 {
+}
+
+srs_error_t MockRtcConnectionForTcpConnHandshake::generate_local_sdp(SrsRtcUserConfig * /*ruc*/, SrsSdp & /*local_sdp*/, std::string & /*username*/)
+{
+    return srs_success;
 }
 
 void MockRtcConnectionForTcpConnHandshake::reset()

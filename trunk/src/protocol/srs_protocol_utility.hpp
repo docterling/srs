@@ -118,8 +118,19 @@ struct SrsIPAddress {
     bool is_loopback_;
 };
 
+// The interface for protocol utility.
+class ISrsProtocolUtility
+{
+public:
+    ISrsProtocolUtility();
+    virtual ~ISrsProtocolUtility();
+
+public:
+    virtual std::vector<SrsIPAddress *> &local_ips() = 0;
+};
+
 // The utility functions for protocol.
-class SrsProtocolUtility
+class SrsProtocolUtility : public ISrsProtocolUtility
 {
 public:
     SrsProtocolUtility();

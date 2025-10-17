@@ -23,11 +23,11 @@
 
 #include <srs_utest_rtc_publishstream.hpp>
 
-#include <srs_kernel_error.hpp>
 #include <srs_app_rtc_conn.hpp>
 #include <srs_app_rtc_source.hpp>
-#include <srs_utest_mock.hpp>
+#include <srs_kernel_error.hpp>
 #include <srs_utest_app6.hpp>
+#include <srs_utest_mock.hpp>
 
 // This test is used to verify the basic workflow of the RTC publish stream.
 // It's finished with the help of AI, but each step is manually designed
@@ -77,7 +77,7 @@ VOID TEST(RtcPublishStreamTest, ManuallyVerifyBasicWorkflow)
         // Verify is_sender_started_ flag is set
         EXPECT_TRUE(publish_stream->is_sender_started_);
 
-        // Wait for coroutine to start. Normally it should be ready and stopped at wait 
+        // Wait for coroutine to start. Normally it should be ready and stopped at wait
         // for PLI requests.
         srs_usleep(1 * SRS_UTIME_MILLISECONDS);
     }
@@ -102,4 +102,3 @@ VOID TEST(RtcPublishStreamTest, ManuallyVerifyBasicWorkflow)
     publish_stream->rtc_sources_ = NULL;
     publish_stream->stat_ = NULL;
 }
-

@@ -23,6 +23,7 @@
 #ifdef SRS_RTSP
 #include <srs_app_rtsp_source.hpp>
 #endif
+#include <srs_app_rtc_conn.hpp>
 #include <srs_app_st.hpp>
 #include <srs_kernel_file.hpp>
 #include <srs_kernel_flv.hpp>
@@ -32,6 +33,7 @@
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_http_client.hpp>
 #include <srs_protocol_st.hpp>
+#include <srs_protocol_utility.hpp>
 
 ISrsAppFactory::ISrsAppFactory()
 {
@@ -187,6 +189,21 @@ ISrsFFMPEG *SrsAppFactory::create_ffmpeg(std::string ffmpeg_bin)
 ISrsIngesterFFMPEG *SrsAppFactory::create_ingester_ffmpeg()
 {
     return new SrsIngesterFFMPEG();
+}
+
+ISrsProtocolUtility *SrsAppFactory::create_protocol_utility()
+{
+    return new SrsProtocolUtility();
+}
+
+ISrsRtcPublishStream *SrsAppFactory::create_rtc_publish_stream(ISrsExecRtcAsyncTask *exec, ISrsExpire *expire, ISrsRtcPacketReceiver *receiver, const SrsContextId &cid)
+{
+    return new SrsRtcPublishStream(exec, expire, receiver, cid);
+}
+
+ISrsRtcPlayStream *SrsAppFactory::create_rtc_play_stream(ISrsExecRtcAsyncTask *exec, ISrsExpire *expire, ISrsRtcPacketSender *sender, const SrsContextId &cid)
+{
+    return new SrsRtcPlayStream(exec, expire, sender, cid);
 }
 
 ISrsCoroutine *SrsAppFactory::create_coroutine(const std::string &name, ISrsCoroutineHandler *handler, SrsContextId cid)

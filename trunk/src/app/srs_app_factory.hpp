@@ -42,6 +42,12 @@ class ISrsRtcConnection;
 class ISrsExecRtcAsyncTask;
 class ISrsFFMPEG;
 class ISrsIngesterFFMPEG;
+class ISrsProtocolUtility;
+class ISrsRtcPublishStream;
+class ISrsRtcPacketReceiver;
+class ISrsExpire;
+class ISrsRtcPlayStream;
+class ISrsRtcPacketSender;
 
 // The factory to create app objects.
 class ISrsAppFactory : public ISrsKernelFactory
@@ -81,6 +87,9 @@ public:
     virtual ISrsRtcConnection *create_rtc_connection(ISrsExecRtcAsyncTask *exec, const SrsContextId &cid) = 0;
     virtual ISrsFFMPEG *create_ffmpeg(std::string ffmpeg_bin) = 0;
     virtual ISrsIngesterFFMPEG *create_ingester_ffmpeg() = 0;
+    virtual ISrsProtocolUtility *create_protocol_utility() = 0;
+    virtual ISrsRtcPublishStream *create_rtc_publish_stream(ISrsExecRtcAsyncTask *exec, ISrsExpire *expire, ISrsRtcPacketReceiver *receiver, const SrsContextId &cid) = 0;
+    virtual ISrsRtcPlayStream *create_rtc_play_stream(ISrsExecRtcAsyncTask *exec, ISrsExpire *expire, ISrsRtcPacketSender *sender, const SrsContextId &cid) = 0;
 };
 
 // The factory to create app objects.
@@ -125,6 +134,9 @@ public:
     virtual ISrsRtcConnection *create_rtc_connection(ISrsExecRtcAsyncTask *exec, const SrsContextId &cid);
     virtual ISrsFFMPEG *create_ffmpeg(std::string ffmpeg_bin);
     virtual ISrsIngesterFFMPEG *create_ingester_ffmpeg();
+    virtual ISrsProtocolUtility *create_protocol_utility();
+    virtual ISrsRtcPublishStream *create_rtc_publish_stream(ISrsExecRtcAsyncTask *exec, ISrsExpire *expire, ISrsRtcPacketReceiver *receiver, const SrsContextId &cid);
+    virtual ISrsRtcPlayStream *create_rtc_play_stream(ISrsExecRtcAsyncTask *exec, ISrsExpire *expire, ISrsRtcPacketSender *sender, const SrsContextId &cid);
 
 public:
     virtual ISrsCoroutine *create_coroutine(const std::string &name, ISrsCoroutineHandler *handler, SrsContextId cid);

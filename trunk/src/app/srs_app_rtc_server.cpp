@@ -219,7 +219,7 @@ srs_error_t api_server_as_candidates(ISrsAppConfig *config, string api, set<stri
     return err;
 }
 
-set<string> discover_candidates(SrsProtocolUtility *utility, ISrsAppConfig *config, SrsRtcUserConfig *ruc)
+set<string> discover_candidates(ISrsProtocolUtility *utility, ISrsAppConfig *config, SrsRtcUserConfig *ruc)
 {
     srs_error_t err = srs_success;
 
@@ -363,7 +363,7 @@ srs_error_t SrsRtcSessionManager::create_rtc_session(SrsRtcUserConfig *ruc, SrsS
     if (ruc->publish_ && (err = stream_publish_tokens_->acquire_token(req, publish_token_raw)) != srs_success) {
         return srs_error_wrap(err, "acquire stream publish token");
     }
-    SrsSharedPtr<SrsStreamPublishToken> publish_token(publish_token_raw);
+    SrsSharedPtr<ISrsStreamPublishToken> publish_token(publish_token_raw);
     if (publish_token.get()) {
         srs_trace("stream publish token acquired, type=rtc, url=%s", req->get_stream_url().c_str());
     }
@@ -416,86 +416,11 @@ srs_error_t SrsRtcSessionManager::do_create_rtc_session(SrsRtcUserConfig *ruc, S
     // All tracks default as inactive, so we must enable them.
     session->set_all_tracks_status(req->get_stream_url(), ruc->publish_, true);
 
-    SrsRand rand;
-    std::string local_pwd = ruc->req_->ice_pwd_.empty() ? rand.gen_str(32) : ruc->req_->ice_pwd_;
-    std::string local_ufrag = ruc->req_->ice_ufrag_.empty() ? rand.gen_str(8) : ruc->req_->ice_ufrag_;
-    // TODO: FIXME: Rename for a better name, it's not an username.
-    std::string username = "";
-    while (true) {
-        username = local_ufrag + ":" + ruc->remote_sdp_.get_ice_ufrag();
-        if (!conn_manager_->find_by_name(username)) {
-            break;
-        }
-
-        // Username conflict, regenerate a new one.
-        local_ufrag = rand.gen_str(8);
+    // Generate local SDP other fields.
+    string username;
+    if ((err = session->generate_local_sdp(ruc, local_sdp, username)) != srs_success) {
+        return srs_error_wrap(err, "generate local sdp");
     }
-
-    local_sdp.set_ice_ufrag(local_ufrag);
-    local_sdp.set_ice_pwd(local_pwd);
-    local_sdp.set_fingerprint_algo("sha-256");
-    local_sdp.set_fingerprint(dtls_certificate_->get_fingerprint());
-
-    // We allows to mock the eip of server.
-    if (true) {
-        // TODO: Support multiple listen ports.
-        int udp_port = 0;
-        if (true) {
-            string udp_host;
-            string udp_hostport = config_->get_rtc_server_listens().at(0);
-            srs_net_split_for_listener(udp_hostport, udp_host, udp_port);
-        }
-
-        int tcp_port = 0;
-        if (true) {
-            string tcp_host;
-            string tcp_hostport = config_->get_rtc_server_tcp_listens().at(0);
-            srs_net_split_for_listener(tcp_hostport, tcp_host, tcp_port);
-        }
-
-        string protocol = config_->get_rtc_server_protocol();
-
-        SrsProtocolUtility utility;
-        set<string> candidates = discover_candidates(&utility, config_, ruc);
-        for (set<string>::iterator it = candidates.begin(); it != candidates.end(); ++it) {
-            string hostname;
-            int uport = udp_port;
-            srs_net_split_hostport(*it, hostname, uport);
-            int tport = tcp_port;
-            srs_net_split_hostport(*it, hostname, tport);
-
-            if (protocol == "udp") {
-                local_sdp.add_candidate("udp", hostname, uport, "host");
-            } else if (protocol == "tcp") {
-                local_sdp.add_candidate("tcp", hostname, tport, "host");
-            } else {
-                local_sdp.add_candidate("udp", hostname, uport, "host");
-                local_sdp.add_candidate("tcp", hostname, tport, "host");
-            }
-        }
-
-        vector<string> v = vector<string>(candidates.begin(), candidates.end());
-        srs_trace("RTC: Use candidates %s, protocol=%s, tcp_port=%d, udp_port=%d",
-                  srs_strings_join(v, ", ").c_str(), protocol.c_str(), tcp_port, udp_port);
-    }
-
-    // Setup the negotiate DTLS by config.
-    local_sdp.session_negotiate_ = local_sdp.session_config_;
-
-    // Setup the negotiate DTLS role.
-    if (ruc->remote_sdp_.get_dtls_role() == "active") {
-        local_sdp.session_negotiate_.dtls_role_ = "passive";
-    } else if (ruc->remote_sdp_.get_dtls_role() == "passive") {
-        local_sdp.session_negotiate_.dtls_role_ = "active";
-    } else if (ruc->remote_sdp_.get_dtls_role() == "actpass") {
-        local_sdp.session_negotiate_.dtls_role_ = local_sdp.session_config_.dtls_role_;
-    } else {
-        // @see: https://tools.ietf.org/html/rfc4145#section-4.1
-        // The default value of the setup attribute in an offer/answer exchange
-        // is 'active' in the offer and 'passive' in the answer.
-        local_sdp.session_negotiate_.dtls_role_ = "passive";
-    }
-    local_sdp.set_dtls_role(local_sdp.session_negotiate_.dtls_role_);
 
     session->set_remote_sdp(ruc->remote_sdp_);
     // We must setup the local SDP, then initialize the session object.

@@ -6,10 +6,173 @@
 
 #include <srs_utest_mock.hpp>
 
+#include <srs_app_caster_flv.hpp>
+#include <srs_app_config.hpp>
+#include <srs_app_dash.hpp>
+#include <srs_app_dvr.hpp>
+#include <srs_app_ffmpeg.hpp>
+#include <srs_app_fragment.hpp>
 #include <srs_app_rtc_conn.hpp>
 #include <srs_app_rtc_source.hpp>
 #include <srs_app_rtmp_source.hpp>
 #include <srs_kernel_error.hpp>
+#ifdef SRS_GB28181
+#include <srs_app_gb28181.hpp>
+#endif
+#include <srs_app_ingest.hpp>
+#include <srs_app_listener.hpp>
+#include <srs_app_rtc_conn.hpp>
+#include <srs_app_rtmp_conn.hpp>
+#include <srs_app_rtmp_source.hpp>
+#ifdef SRS_RTSP
+#include <srs_app_rtsp_source.hpp>
+#endif
+#include <srs_app_st.hpp>
+#include <srs_kernel_file.hpp>
+#include <srs_kernel_flv.hpp>
+#include <srs_kernel_hourglass.hpp>
+#include <srs_kernel_mp4.hpp>
+#include <srs_kernel_ts.hpp>
+#include <srs_kernel_utility.hpp>
+#include <srs_protocol_http_client.hpp>
+#include <srs_protocol_st.hpp>
+#include <srs_protocol_utility.hpp>
+
+#include <sstream>
+
+#include <srs_utest_app13.hpp>
+
+// MockSdpFactory implementation
+MockSdpFactory::MockSdpFactory()
+{
+    // Initialize default SSRC and payload type values
+    audio_ssrc_ = 1001;
+    audio_pt_ = 111;
+    video_ssrc_ = 2002;
+    video_pt_ = 96;
+}
+
+MockSdpFactory::~MockSdpFactory()
+{
+}
+
+std::string MockSdpFactory::create_chrome_player_offer()
+{
+    // Create a real Chrome-like WebRTC SDP offer for a player (subscriber) with H.264 video and Opus audio
+    // Use member variables for SSRC and payload type values
+    // Key difference from publisher: uses recvonly instead of sendonly
+    std::stringstream ss;
+    ss << "v=0\r\n"
+       << "o=- 4611731400430051337 2 IN IP4 127.0.0.1\r\n"
+       << "s=-\r\n"
+       << "t=0 0\r\n"
+       << "a=group:BUNDLE 0 1\r\n"
+       << "a=msid-semantic: WMS\r\n"
+       // Audio media description (Opus)
+       << "m=audio 9 UDP/TLS/RTP/SAVPF " << (int)audio_pt_ << "\r\n"
+       << "c=IN IP4 0.0.0.0\r\n"
+       << "a=rtcp:9 IN IP4 0.0.0.0\r\n"
+       << "a=ice-ufrag:test1234\r\n"
+       << "a=ice-pwd:testpassword1234567890\r\n"
+       << "a=ice-options:trickle\r\n"
+       << "a=fingerprint:sha-256 AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99\r\n"
+       << "a=setup:actpass\r\n"
+       << "a=mid:0\r\n"
+       << "a=recvonly\r\n"
+       << "a=rtcp-mux\r\n"
+       << "a=rtpmap:" << (int)audio_pt_ << " opus/48000/2\r\n"
+       << "a=fmtp:" << (int)audio_pt_ << " minptime=10;useinbandfec=1\r\n"
+       // Video media description (H.264)
+       << "m=video 9 UDP/TLS/RTP/SAVPF " << (int)video_pt_ << "\r\n"
+       << "c=IN IP4 0.0.0.0\r\n"
+       << "a=rtcp:9 IN IP4 0.0.0.0\r\n"
+       << "a=ice-ufrag:test1234\r\n"
+       << "a=ice-pwd:testpassword1234567890\r\n"
+       << "a=ice-options:trickle\r\n"
+       << "a=fingerprint:sha-256 AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99\r\n"
+       << "a=setup:actpass\r\n"
+       << "a=mid:1\r\n"
+       << "a=recvonly\r\n"
+       << "a=rtcp-mux\r\n"
+       << "a=rtcp-rsize\r\n"
+       << "a=rtpmap:" << (int)video_pt_ << " H264/90000\r\n"
+       << "a=rtcp-fb:" << (int)video_pt_ << " nack\r\n"
+       << "a=rtcp-fb:" << (int)video_pt_ << " nack pli\r\n"
+       << "a=rtcp-fb:" << (int)video_pt_ << " transport-cc\r\n"
+       << "a=fmtp:" << (int)video_pt_ << " level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e01f\r\n";
+
+    return ss.str();
+}
+
+std::string MockSdpFactory::create_chrome_publisher_offer()
+{
+    // Create a real Chrome-like WebRTC SDP offer with H.264 video and Opus audio
+    // Use member variables for SSRC and payload type values
+    std::stringstream ss;
+    ss << "v=0\r\n"
+       << "o=- 4611731400430051336 2 IN IP4 127.0.0.1\r\n"
+       << "s=-\r\n"
+       << "t=0 0\r\n"
+       << "a=group:BUNDLE 0 1\r\n"
+       << "a=msid-semantic: WMS stream\r\n"
+       // Audio media description (Opus)
+       << "m=audio 9 UDP/TLS/RTP/SAVPF " << (int)audio_pt_ << "\r\n"
+       << "c=IN IP4 0.0.0.0\r\n"
+       << "a=rtcp:9 IN IP4 0.0.0.0\r\n"
+       << "a=ice-ufrag:test1234\r\n"
+       << "a=ice-pwd:testpassword1234567890\r\n"
+       << "a=ice-options:trickle\r\n"
+       << "a=fingerprint:sha-256 AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99\r\n"
+       << "a=setup:actpass\r\n"
+       << "a=mid:0\r\n"
+       << "a=sendonly\r\n"
+       << "a=rtcp-mux\r\n"
+       << "a=rtpmap:" << (int)audio_pt_ << " opus/48000/2\r\n"
+       << "a=fmtp:" << (int)audio_pt_ << " minptime=10;useinbandfec=1\r\n"
+       << "a=ssrc:" << audio_ssrc_ << " cname:test-audio-cname\r\n"
+       << "a=ssrc:" << audio_ssrc_ << " msid:stream audio\r\n"
+       // Video media description (H.264)
+       << "m=video 9 UDP/TLS/RTP/SAVPF " << (int)video_pt_ << "\r\n"
+       << "c=IN IP4 0.0.0.0\r\n"
+       << "a=rtcp:9 IN IP4 0.0.0.0\r\n"
+       << "a=ice-ufrag:test1234\r\n"
+       << "a=ice-pwd:testpassword1234567890\r\n"
+       << "a=ice-options:trickle\r\n"
+       << "a=fingerprint:sha-256 AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99\r\n"
+       << "a=setup:actpass\r\n"
+       << "a=mid:1\r\n"
+       << "a=sendonly\r\n"
+       << "a=rtcp-mux\r\n"
+       << "a=rtcp-rsize\r\n"
+       << "a=rtpmap:" << (int)video_pt_ << " H264/90000\r\n"
+       << "a=rtcp-fb:" << (int)video_pt_ << " nack\r\n"
+       << "a=rtcp-fb:" << (int)video_pt_ << " nack pli\r\n"
+       << "a=rtcp-fb:" << (int)video_pt_ << " transport-cc\r\n"
+       << "a=fmtp:" << (int)video_pt_ << " level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e01f\r\n"
+       << "a=ssrc:" << video_ssrc_ << " cname:test-video-cname\r\n"
+       << "a=ssrc:" << video_ssrc_ << " msid:stream video\r\n";
+
+    return ss.str();
+}
+
+MockDtlsCertificate::MockDtlsCertificate()
+{
+    fingerprint_ = "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99";
+}
+
+MockDtlsCertificate::~MockDtlsCertificate()
+{
+}
+
+srs_error_t MockDtlsCertificate::initialize()
+{
+    return srs_success;
+}
+
+std::string MockDtlsCertificate::get_fingerprint()
+{
+    return fingerprint_;
+}
 
 // MockRtcTrackDescriptionFactory implementation
 MockRtcTrackDescriptionFactory::MockRtcTrackDescriptionFactory()
@@ -155,13 +318,20 @@ srs_error_t MockRtcSourceManager::initialize()
 
 srs_error_t MockRtcSourceManager::fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsRtcSource> &pps)
 {
+    srs_error_t err = srs_success;
+
+    if (fetch_or_create_count_ == 0) {
+        err = mock_source_->initialize(r);
+    }
+
     fetch_or_create_count_++;
+
     if (fetch_or_create_error_ != srs_success) {
         return srs_error_copy(fetch_or_create_error_);
     }
     pps = mock_source_;
 
-    return mock_source_->initialize(r);
+    return err;
 }
 
 SrsSharedPtr<SrsRtcSource> MockRtcSourceManager::fetch(ISrsRequest *r)
@@ -407,6 +577,7 @@ MockAppConfig::MockAppConfig()
     resolve_api_domain_ = true;
     keep_api_domain_ = false;
     mw_msgs_ = 8;
+    rtc_dtls_role_ = "passive";
 }
 
 MockAppConfig::~MockAppConfig()
@@ -522,7 +693,7 @@ bool MockAppConfig::get_rtc_stun_strict_check(std::string vhost)
 
 std::string MockAppConfig::get_rtc_dtls_role(std::string vhost)
 {
-    return "passive";
+    return rtc_dtls_role_;
 }
 
 std::string MockAppConfig::get_rtc_dtls_version(std::string vhost)

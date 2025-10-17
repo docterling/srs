@@ -1356,7 +1356,7 @@ VOID TEST(SrsRtcConnectionTest, TestConnectionBasicOperations)
 
     // Test set_publish_token
     SrsStreamPublishTokenManager token_manager;
-    SrsSharedPtr<SrsStreamPublishToken> publish_token(new SrsStreamPublishToken("/live/test", &token_manager));
+    SrsSharedPtr<ISrsStreamPublishToken> publish_token(new SrsStreamPublishToken("/live/test", &token_manager));
     conn->set_publish_token(publish_token);
     // No direct getter for publish_token_, but setting should not crash
 
@@ -1781,7 +1781,7 @@ VOID TEST(SrsRtcConnectionTest, FindPublisherTypicalScenario)
     SrsUniquePtr<SrsRtcPublishStream> publish_stream(new SrsRtcPublishStream(&mock_exec, &mock_expire, &mock_receiver, stream_cid));
 
     // Test scenario 1: No publishers - should return error
-    SrsRtcPublishStream *found_publisher = NULL;
+    ISrsRtcPublishStream *found_publisher = NULL;
     unsigned char rtp_data[] = {
         // RTP header (12 bytes)
         0x80, 0x60, 0x12, 0x34, // V=2, P=0, X=0, CC=0, M=0, PT=96, seq=0x1234
@@ -1949,9 +1949,6 @@ VOID TEST(SrsRtcPublisherNegotiatorTest, TypicalUseScenario)
 
     // Create mock request for initialization
     SrsUniquePtr<MockRtcConnectionRequest> mock_request(new MockRtcConnectionRequest("test.vhost", "live", "stream1"));
-
-    // Test initialize method
-    HELPER_EXPECT_SUCCESS(negotiator->initialize(mock_request.get()));
 
     // Create mock RTC user config with remote SDP
     SrsUniquePtr<SrsRtcUserConfig> ruc(new SrsRtcUserConfig());
@@ -2635,9 +2632,6 @@ VOID TEST(SrsRtcPlayerNegotiatorTest, TypicalUseScenario)
 
     // Create mock request for initialization
     SrsUniquePtr<MockRtcConnectionRequest> mock_request(new MockRtcConnectionRequest("test.vhost", "live", "stream1"));
-
-    // Test initialize method
-    HELPER_EXPECT_SUCCESS(negotiator->initialize(mock_request.get()));
 
     // Create mock RTC user config with remote SDP for play scenario
     SrsUniquePtr<SrsRtcUserConfig> ruc(new SrsRtcUserConfig());
