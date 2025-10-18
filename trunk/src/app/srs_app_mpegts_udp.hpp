@@ -177,8 +177,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     // Connect to RTMP server.
-    virtual srs_error_t
-    connect();
+    virtual srs_error_t connect();
     // Close the connection to RTMP server.
     virtual void close();
 };

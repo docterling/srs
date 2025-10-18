@@ -592,8 +592,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
     // close current segment, open a new segment,
     // then write the key frame to the new segment.
     // so, user must reap_segment then flush_video to hls muxer.
-    virtual srs_error_t
-    reap_segment();
+    virtual srs_error_t reap_segment();
 };
 
 // HLS controller for fMP4 (.m4s) segments with init.mp4.

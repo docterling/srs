@@ -404,21 +404,6 @@ public:
     virtual srs_error_t on_forward_backend(std::string url, ISrsRequest *req, std::vector<std::string> &rtmp_urls);
 };
 
-// Mock ISrsSecurity for testing SrsGoApiRtcPlay::serve_http()
-class MockSecurityForRtcPlay : public ISrsSecurity
-{
-public:
-    srs_error_t check_error_;
-    int check_count_;
-
-public:
-    MockSecurityForRtcPlay();
-    virtual ~MockSecurityForRtcPlay();
-
-public:
-    virtual srs_error_t check(SrsRtmpConnType type, std::string ip, ISrsRequest *req);
-};
-
 // Mock SrsRtcConnection for testing SrsGoApiRtcPlay::serve_http()
 class MockRtcConnectionForPlay
 {

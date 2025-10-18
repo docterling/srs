@@ -263,8 +263,7 @@ public:
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     // Cleanup the stream if stream is not active and for the last client.
-    void
-    cleanup_stream(SrsStatisticStream *stream);
+    void cleanup_stream(SrsStatisticStream *stream);
 
 public:
     // Sample the kbps, add delta bytes of conn.

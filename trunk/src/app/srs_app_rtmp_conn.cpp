@@ -120,6 +120,11 @@ srs_netfd_t SrsRtmpTransport::fd()
     return stfd_;
 }
 
+int SrsRtmpTransport::osfd()
+{
+    return srs_netfd_fileno(stfd_);
+}
+
 ISrsProtocolReadWriter *SrsRtmpTransport::io()
 {
     return skt_;
@@ -292,7 +297,7 @@ srs_error_t SrsRtmpConn::do_cycle()
 {
     srs_error_t err = srs_success;
 
-    srs_trace("RTMP client transport=%s, ip=%s:%d, fd=%d", transport_->transport_type(), ip_.c_str(), port_, srs_netfd_fileno(transport_->fd()));
+    srs_trace("RTMP client transport=%s, ip=%s:%d, fd=%d", transport_->transport_type(), ip_.c_str(), port_, transport_->osfd());
 
     if ((err = transport_->handshake()) != srs_success) {
         return srs_error_wrap(err, "transport handshake");
@@ -395,7 +400,7 @@ srs_error_t SrsRtmpConn::service_cycle()
     }
 
     // get the ip which client connected.
-    std::string local_ip = srs_get_local_ip(srs_netfd_fileno(transport_->fd()));
+    std::string local_ip = srs_get_local_ip(transport_->osfd());
 
     // set chunk size to larger.
     // set the chunk size before any larger response greater than 128,
@@ -782,16 +787,17 @@ srs_error_t SrsRtmpConn::do_playing(SrsSharedPtr<SrsLiveSource> source, SrsLiveC
             }
         }
 
-        // quit when recv thread error.
-        if ((err = rtrd->error_code()) != srs_success) {
-            return srs_error_wrap(err, "rtmp: recv thread");
-        }
-
 #ifdef SRS_PERF_QUEUE_COND_WAIT
         // wait for message to incoming.
         // @see https://github.com/ossrs/srs/issues/257
         consumer->wait(mw_msgs_, mw_sleep_);
 #endif
+
+        // Quit when recv thread error. Check recv thread error when wakeup, in order
+        // to detect the client disconnecting event.
+        if ((err = rtrd->error_code()) != srs_success) {
+            return srs_error_wrap(err, "rtmp: recv thread");
+        }
 
         // get messages from consumer.
         // each msg in msgs.msgs must be free, for the SrsMessageArray never free them.
@@ -892,7 +898,7 @@ srs_error_t SrsRtmpConn::publishing(SrsSharedPtr<SrsLiveSource> source)
     if ((err = acquire_err) == srs_success) {
         // use isolate thread to recv,
         // @see: https://github.com/ossrs/srs/issues/237
-        SrsPublishRecvThread rtrd(rtmp_, req, srs_netfd_fileno(transport_->fd()), 0, this, source, _srs_context->get_id());
+        SrsPublishRecvThread rtrd(rtmp_, req, transport_->osfd(), 0, this, source, _srs_context->get_id());
         rtrd.assemble();
 
         err = do_publishing(source, &rtrd);
@@ -963,7 +969,8 @@ srs_error_t SrsRtmpConn::do_publishing(SrsSharedPtr<SrsLiveSource> source, SrsPu
             rtrd->wait(publish_normal_timeout_);
         }
 
-        // check the thread error code.
+        // Quit when recv thread error. Check recv thread error when wakeup, in order
+        // to detect the client disconnecting event.
         if ((err = rtrd->error_code()) != srs_success) {
             return srs_error_wrap(err, "rtmp: receive thread");
         }
@@ -1551,6 +1558,12 @@ srs_error_t SrsRtmpConn::start()
     }
 
     return err;
+}
+
+void SrsRtmpConn::stop()
+{
+    trd_->interrupt();
+    trd_->stop();
 }
 
 srs_error_t SrsRtmpConn::cycle()

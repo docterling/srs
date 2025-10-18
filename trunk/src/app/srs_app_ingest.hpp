@@ -125,8 +125,7 @@ public:
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     // Notify FFMPEG to fast stop.
-    virtual void
-    fast_stop();
+    virtual void fast_stop();
     // When SRS quit, directly kill FFMPEG after fast stop.
     virtual void fast_kill();
     // Interface ISrsReusableThreadHandler.

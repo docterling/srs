@@ -85,8 +85,7 @@ SRS_DECLARE_PROTECTED: // clang-format on
     // For example, http://server/file.flv?start=10240
     // server will write flv header and sequence header,
     // then seek(10240) and response flv tag data.
-    virtual srs_error_t
-    serve_flv_stream(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, std::string fullpath, int64_t offset);
+    virtual srs_error_t serve_flv_stream(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, std::string fullpath, int64_t offset);
     // Support mp4 with start and offset in query string.
     virtual srs_error_t serve_mp4_stream(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, std::string fullpath, int64_t start, int64_t end);
     // Support HLS streaming with pseudo session id.

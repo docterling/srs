@@ -2559,7 +2559,7 @@ VOID TEST(RtspConnectionTest, DoDescribeWithAudioAndVideo)
 
     // Create mock objects
     MockEdgeConfig mock_config;
-    MockSecurityForLiveStream mock_security;
+    MockSecurity mock_security;
     MockHttpHooks mock_hooks;
     MockRtspSourceManager mock_rtsp_sources;
 

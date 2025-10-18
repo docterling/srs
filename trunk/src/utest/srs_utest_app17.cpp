@@ -2868,155 +2868,6 @@ VOID TEST(HttpxConnTest, OnConnDoneWithNonTimeoutError)
     srs_freep(mock_manager);
 }
 
-// Mock ISrsRtmpServer implementation for SrsQueueRecvThread
-MockRtmpServerForQueueRecvThread::MockRtmpServerForQueueRecvThread()
-{
-    set_auto_response_called_ = false;
-    auto_response_value_ = true;
-}
-
-MockRtmpServerForQueueRecvThread::~MockRtmpServerForQueueRecvThread()
-{
-}
-
-void MockRtmpServerForQueueRecvThread::set_recv_timeout(srs_utime_t tm)
-{
-}
-
-void MockRtmpServerForQueueRecvThread::set_send_timeout(srs_utime_t tm)
-{
-}
-
-srs_error_t MockRtmpServerForQueueRecvThread::handshake()
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForQueueRecvThread::connect_app(ISrsRequest *req)
-{
-    return srs_success;
-}
-
-uint32_t MockRtmpServerForQueueRecvThread::proxy_real_ip()
-{
-    return 0;
-}
-
-srs_error_t MockRtmpServerForQueueRecvThread::set_window_ack_size(int ack_size)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForQueueRecvThread::set_peer_bandwidth(int bandwidth, int type)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForQueueRecvThread::set_chunk_size(int chunk_size)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForQueueRecvThread::response_connect_app(ISrsRequest *req, const char *server_ip)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForQueueRecvThread::on_bw_done()
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForQueueRecvThread::identify_client(int stream_id, SrsRtmpConnType &type, std::string &stream_name, srs_utime_t &duration)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForQueueRecvThread::start_play(int stream_id)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForQueueRecvThread::start_fmle_publish(int stream_id)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForQueueRecvThread::start_haivision_publish(int stream_id)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForQueueRecvThread::fmle_unpublish(int stream_id, double unpublish_tid)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForQueueRecvThread::start_flash_publish(int stream_id)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForQueueRecvThread::start_publishing(int stream_id)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForQueueRecvThread::redirect(ISrsRequest *r, std::string url, bool &accepted)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForQueueRecvThread::send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs, int stream_id)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForQueueRecvThread::decode_message(SrsRtmpCommonMessage *msg, SrsRtmpCommand **ppacket)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForQueueRecvThread::send_and_free_packet(SrsRtmpCommand *packet, int stream_id)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForQueueRecvThread::on_play_client_pause(int stream_id, bool is_pause)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForQueueRecvThread::set_in_window_ack_size(int ack_size)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForQueueRecvThread::recv_message(SrsRtmpCommonMessage **pmsg)
-{
-    return srs_success;
-}
-
-void MockRtmpServerForQueueRecvThread::set_auto_response(bool v)
-{
-    set_auto_response_called_ = true;
-    auto_response_value_ = v;
-}
-
-void MockRtmpServerForQueueRecvThread::set_merge_read(bool v, IMergeReadHandler *handler)
-{
-}
-
-void MockRtmpServerForQueueRecvThread::set_recv_buffer(int buffer_size)
-{
-}
-
-void MockRtmpServerForQueueRecvThread::reset()
-{
-    set_auto_response_called_ = false;
-    auto_response_value_ = true;
-}
-
 // Test SrsQueueRecvThread basic queue operations
 // This test covers the major use scenario: consume messages, check queue state, pump messages, and handle errors
 VOID TEST(QueueRecvThreadTest, BasicQueueOperations)
@@ -3024,7 +2875,7 @@ VOID TEST(QueueRecvThreadTest, BasicQueueOperations)
     srs_error_t err;
 
     // Create mock RTMP server
-    SrsUniquePtr<MockRtmpServerForQueueRecvThread> mock_rtmp(new MockRtmpServerForQueueRecvThread());
+    SrsUniquePtr<MockRtmpServer> mock_rtmp(new MockRtmpServer());
 
     // Create SrsQueueRecvThread (without starting the actual recv thread)
     SrsUniquePtr<SrsQueueRecvThread> queue_thread(new SrsQueueRecvThread(NULL, mock_rtmp.get(), 5 * SRS_UTIME_SECONDS, SrsContextId()));
@@ -3112,7 +2963,7 @@ VOID TEST(PublishRecvThreadTest, BasicOperations)
     srs_error_t err;
 
     // Create mock dependencies
-    SrsUniquePtr<MockRtmpServerForQueueRecvThread> mock_rtmp(new MockRtmpServerForQueueRecvThread());
+    SrsUniquePtr<MockRtmpServer> mock_rtmp(new MockRtmpServer());
     SrsUniquePtr<MockSrsRequest> mock_req(new MockSrsRequest("__defaultVhost__", "live", "test_stream"));
     SrsSharedPtr<SrsLiveSource> mock_source; // NULL is fine for this test
 

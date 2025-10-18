@@ -15,6 +15,7 @@
 #include <srs_protocol_utility.hpp>
 
 class SrsConfDirective;
+class ISrsAppConfig;
 
 // The security interface.
 class ISrsSecurity
@@ -30,6 +31,10 @@ public:
 // The security apply on vhost.
 class SrsSecurity : public ISrsSecurity
 {
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
+    ISrsAppConfig *config_;
+
 public:
     SrsSecurity();
     virtual ~SrsSecurity();

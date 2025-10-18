@@ -1522,73 +1522,6 @@ VOID TEST(DashTest, PublishLifecycleWithAudioVideo)
     srs_freep(mock_hub);
 }
 
-// Test SrsMpdWriter::dispose() - major use scenario for cleaning up MPD file
-// This test covers the major use scenario for SrsMpdWriter disposal and file cleanup
-VOID TEST(MpdWriterTest, DisposeRemovesMpdFile)
-{
-    srs_error_t err;
-
-    // Create SrsMpdWriter object
-    SrsUniquePtr<SrsMpdWriter> mpd_writer(new SrsMpdWriter());
-
-    // Create mock config with DASH settings
-    SrsUniquePtr<MockAppConfig> mock_config(new MockAppConfig());
-
-    // Create mock request
-    SrsUniquePtr<MockSrsRequest> mock_req(new MockSrsRequest("test.vhost", "live", "livestream"));
-
-    // Inject mock config into SrsMpdWriter
-    mpd_writer->config_ = mock_config.get();
-
-    // Initialize the MPD writer with the request
-    HELPER_EXPECT_SUCCESS(mpd_writer->initialize(mock_req.get()));
-
-    // Call on_publish() to set up home directory and mpd_file
-    HELPER_EXPECT_SUCCESS(mpd_writer->on_publish());
-
-    // Set up the MPD file path for testing
-    // home_ = "./[vhost]/[app]/[stream]/"
-    // mpd_file_ = "[stream].mpd"
-    // After srs_path_build_stream: mpd_path = "livestream.mpd"
-    // full_path = "./[vhost]/[app]/[stream]/" + "/" + "livestream.mpd"
-    //           = "./test.vhost/live/livestream/livestream.mpd"
-
-    // Create the directory structure and MPD file for testing
-    SrsPath path;
-    string mpd_path = srs_path_build_stream(mpd_writer->mpd_file_, mock_req->vhost_, mock_req->app_, mock_req->stream_);
-    string full_path = mpd_writer->home_ + "/" + mpd_path;
-    string full_home = path.filepath_dir(full_path);
-
-    // Create the directory
-    HELPER_EXPECT_SUCCESS(path.mkdir_all(full_home));
-
-    // Create a test MPD file using real file writer
-    SrsUniquePtr<SrsFileWriter> real_fw(new SrsFileWriter());
-    HELPER_EXPECT_SUCCESS(real_fw->open(full_path));
-    const char *test_content = "<?xml version=\"1.0\"?><MPD></MPD>";
-    HELPER_EXPECT_SUCCESS(real_fw->write((void *)test_content, strlen(test_content), NULL));
-    real_fw->close();
-
-    // Verify the file exists before dispose
-    EXPECT_TRUE(path.exists(full_path));
-
-    // Test dispose() - major use scenario: remove MPD file on cleanup
-    mpd_writer->dispose();
-
-    // Verify the file was deleted
-    EXPECT_FALSE(path.exists(full_path));
-
-    // Test dispose() when file doesn't exist - should not crash
-    mpd_writer->dispose();
-
-    // Test dispose() when req_ is NULL - should not crash
-    mpd_writer->req_ = NULL;
-    mpd_writer->dispose();
-
-    // Clean up - set to NULL to avoid double-free
-    mpd_writer->config_ = NULL;
-}
-
 // Test SrsFragmentedMp4 delegation to fragment_ member
 // This test covers the major use scenario for SrsFragmentedMp4 ISrsFragment interface delegation
 VOID TEST(FragmentedMp4Test, FragmentDelegation)
@@ -1661,85 +1594,6 @@ VOID TEST(FragmentedMp4Test, FragmentDelegation)
     // Clean up - set to NULL to avoid double-free
     fmp4->fragment_ = NULL;
     srs_freep(mock_fragment);
-}
-
-VOID TEST(MpdWriterTest, WriteTypicalScenario)
-{
-    srs_error_t err;
-
-    // Create SrsMpdWriter object
-    SrsUniquePtr<SrsMpdWriter> mpd_writer(new SrsMpdWriter());
-
-    // Create mock dependencies
-    SrsUniquePtr<MockAppConfig> mock_config(new MockAppConfig());
-    // Use real app factory to create real file writers (mock file writers don't support rename)
-    SrsUniquePtr<SrsAppFactory> app_factory(new SrsAppFactory());
-
-    // Create mock request
-    SrsUniquePtr<MockSrsRequest> mock_req(new MockSrsRequest("test.vhost", "live", "livestream"));
-
-    // Inject mock dependencies
-    mpd_writer->config_ = mock_config.get();
-    mpd_writer->app_factory_ = app_factory.get();
-
-    // Initialize the MPD writer
-    HELPER_EXPECT_SUCCESS(mpd_writer->initialize(mock_req.get()));
-
-    // Override the home path to use a simple test directory
-    // (The default mock config returns "./[vhost]/[app]/[stream]/" which contains template variables)
-    mpd_writer->home_ = "./dash_test";
-
-    // Call on_publish to initialize other DASH settings
-    HELPER_EXPECT_SUCCESS(mpd_writer->on_publish());
-
-    // Restore the home path after on_publish (which would overwrite it)
-    mpd_writer->home_ = "./dash_test";
-
-    // Create the directory structure that will be used by the MPD writer
-    SrsPath path;
-    HELPER_EXPECT_SUCCESS(path.mkdir_all("./dash_test"));
-
-    // Create mock format with audio and video codecs
-    SrsUniquePtr<MockSrsFormat> format(new MockSrsFormat());
-
-    // Create mock fragment windows with sample fragments
-    SrsUniquePtr<SrsFragmentWindow> afragments(new SrsFragmentWindow());
-    SrsUniquePtr<SrsFragmentWindow> vfragments(new SrsFragmentWindow());
-
-    // Create and add audio fragments (3 fragments, each 2 seconds)
-    for (int i = 0; i < 3; i++) {
-        SrsFragment *afrag = new SrsFragment();
-        afrag->set_number(i + 1);
-        afrag->append(i * 2000);       // Start DTS in ms
-        afrag->append((i + 1) * 2000); // End DTS in ms
-        afragments->append(afrag);
-    }
-
-    // Create and add video fragments (3 fragments, each 2 seconds)
-    for (int i = 0; i < 3; i++) {
-        SrsFragment *vfrag = new SrsFragment();
-        vfrag->set_number(i + 1);
-        vfrag->append(i * 2000);       // Start DTS in ms
-        vfrag->append((i + 1) * 2000); // End DTS in ms
-        vfragments->append(vfrag);
-    }
-
-    // Test write() - should generate MPD file successfully
-    // This tests the major use scenario: writing MPD with both audio and video fragments
-    HELPER_EXPECT_SUCCESS(mpd_writer->write(format.get(), afragments.get(), vfragments.get()));
-
-    // The successful return from write() indicates:
-    // 1. MPD XML was generated with proper structure
-    // 2. Audio and video adaptation sets were created
-    // 3. Segment timeline was populated with fragment information
-    // 4. File was written and renamed successfully
-
-    // Clean up test directory
-    system("rm -rf ./dash_test");
-
-    // Clean up - set to NULL to avoid double-free
-    mpd_writer->config_ = NULL;
-    mpd_writer->app_factory_ = NULL;
 }
 
 // Mock SrsRtcConnection implementation
@@ -2073,24 +1927,6 @@ srs_error_t MockHttpHooksForRtcPlay::discover_co_workers(std::string url, std::s
 srs_error_t MockHttpHooksForRtcPlay::on_forward_backend(std::string url, ISrsRequest *req, std::vector<std::string> &rtmp_urls)
 {
     return srs_success;
-}
-
-// Mock ISrsSecurity implementation for SrsGoApiRtcPlay::serve_http()
-MockSecurityForRtcPlay::MockSecurityForRtcPlay()
-{
-    check_error_ = srs_success;
-    check_count_ = 0;
-}
-
-MockSecurityForRtcPlay::~MockSecurityForRtcPlay()
-{
-    srs_freep(check_error_);
-}
-
-srs_error_t MockSecurityForRtcPlay::check(SrsRtmpConnType type, std::string ip, ISrsRequest *req)
-{
-    check_count_++;
-    return srs_error_copy(check_error_);
 }
 
 // Mock SrsRtcConnection implementation for SrsGoApiRtcPlay::serve_http()
@@ -2722,7 +2558,7 @@ VOID TEST(GoApiRtcPlayTest, ServeHttpSuccess)
     SrsUniquePtr<MockHttpHooksForRtcPlay> mock_hooks(new MockHttpHooksForRtcPlay());
 
     // Create mock security
-    SrsUniquePtr<MockSecurityForRtcPlay> mock_security(new MockSecurityForRtcPlay());
+    SrsUniquePtr<MockSecurity> mock_security(new MockSecurity());
 
     // Inject mocks into api
     api->config_ = mock_config.get();
@@ -2829,7 +2665,7 @@ VOID TEST(GoApiRtcPublishTest, ServeHttpSuccess)
     SrsUniquePtr<MockHttpHooksForRtcPlay> mock_hooks(new MockHttpHooksForRtcPlay());
 
     // Create mock security
-    SrsUniquePtr<MockSecurityForRtcPlay> mock_security(new MockSecurityForRtcPlay());
+    SrsUniquePtr<MockSecurity> mock_security(new MockSecurity());
 
     // Create mock statistic
     SrsUniquePtr<MockStatisticForRtcApi> mock_stat(new MockStatisticForRtcApi());

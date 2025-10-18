@@ -268,7 +268,7 @@ srs_error_t SrsMessageQueue::enqueue(SrsMediaPacket *msg, bool *is_overflow)
     // If jitter is off, the timestamp of first sequence header is zero, which wll cause SRS to shrink and drop the
     // keyframes even if there is not overflow packets in queue, so we must ignore the zero timestamps, please
     // @see https://github.com/ossrs/srs/pull/2186#issuecomment-953383063
-    if (msg->is_av() && msg->timestamp_ != 0) {
+    if (msg->is_av() && (msg->timestamp_ != 0 || av_end_time_ == -1)) {
         if (av_start_time_ == -1) {
             av_start_time_ = srs_utime_t(msg->timestamp_ * SRS_UTIME_MILLISECONDS);
         }
@@ -495,7 +495,7 @@ srs_error_t SrsLiveConsumer::enqueue(SrsMediaPacket *shared_msg, bool atc, SrsRt
         }
 
         // when duration ok, signal to flush.
-        if (match_min_msgs && duration > mw_duration_) {
+        if (match_min_msgs && duration >= mw_duration_) {
             srs_cond_signal(mw_wait_);
             mw_waiting_ = false;
             return err;
@@ -2060,7 +2060,6 @@ srs_error_t SrsLiveSource::on_meta_data(SrsRtmpCommonMessage *msg, SrsOnMetaData
 
 srs_error_t SrsLiveSource::on_audio(SrsRtmpCommonMessage *shared_audio)
 {
-
     // Detect where stream is monotonically increasing.
     if (!mix_correct_ && is_monotonically_increase_) {
         if (last_packet_time_ > 0 && shared_audio->header_.timestamp_ < last_packet_time_) {

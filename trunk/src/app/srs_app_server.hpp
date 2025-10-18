@@ -233,8 +233,7 @@ public:
 SRS_DECLARE_PRIVATE: // clang-format on
     // When SIGTERM, SRS should do cleanup, for example,
     // to stop all ingesters, cleanup HLS and dvr.
-    virtual void
-    dispose();
+    virtual void dispose();
     // Close listener to stop accepting new connections,
     // then wait and quit when all connections finished.
     virtual void gracefully_dispose();
@@ -291,8 +290,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
     // The server thread main cycle,
     // update the global static data, for instance, the current time,
     // the cpu/mem/network statistic.
-    virtual srs_error_t
-    do_cycle();
+    virtual srs_error_t do_cycle();
     virtual srs_error_t do2_cycle();
 
     // interface ISrsHourGlassHandler
@@ -304,8 +302,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     // Resample the server kbs.
-    virtual void
-    resample_kbps();
+    virtual void resample_kbps();
 
     // SRT-related methods
     virtual srs_error_t listen_srt_mpegts();
@@ -316,8 +313,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     // WebRTC-related methods
-    virtual srs_error_t
-    listen_rtc_udp();
+    virtual srs_error_t listen_rtc_udp();
 
     // Interface ISrsUdpMuxHandler
 public:
@@ -437,8 +433,7 @@ public:
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     // Close the PID file descriptor.
-    virtual void
-    close();
+    virtual void close();
 };
 
 #endif

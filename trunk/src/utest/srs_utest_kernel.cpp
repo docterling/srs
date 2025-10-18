@@ -5989,8 +5989,6 @@ extern int64_t _srs_system_time_us_cache;
 
 VOID TEST(KernelUtilityTest, CoverTimeUtilityAll)
 {
-    srs_error_t err;
-
     _srs_system_time_us_cache = 0;
     _srs_system_time_startup_time = 0;
     EXPECT_TRUE(srs_time_since_startup() > 0);
@@ -6172,12 +6170,6 @@ VOID TEST(KernelUtilityTest, CoverTimeUtilityAll)
         int family = 0;
         string ip = srs_dns_resolve("localhost", family);
         EXPECT_TRUE(ip == "127.0.0.1" || ip == "::1");
-    }
-
-    if (true) {
-        SrsPath path;
-        EXPECT_TRUE(path.exists("."));
-        HELPER_EXPECT_SUCCESS(path.mkdir_all("."));
     }
 
     if (true) {

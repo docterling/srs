@@ -87,8 +87,7 @@ public:
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     // parse the HTTP message to member field: msg.
-    virtual srs_error_t
-    parse_message_imp(ISrsReader *reader);
+    virtual srs_error_t parse_message_imp(ISrsReader *reader);
 
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on

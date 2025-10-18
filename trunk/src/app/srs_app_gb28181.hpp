@@ -380,8 +380,7 @@ public:
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     // Create session if no one, or bind to an existed session.
-    srs_error_t
-    bind_session(uint32_t ssrc, ISrsGbSession **psession);
+    srs_error_t bind_session(uint32_t ssrc, ISrsGbSession **psession);
 };
 
 // The interface for mpegps queue.
@@ -494,8 +493,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     // Connect to RTMP server.
-    virtual srs_error_t
-    connect();
+    virtual srs_error_t connect();
     // Close the connection to RTMP server.
     virtual void close();
 };
@@ -533,8 +531,7 @@ public:
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     // Decode the RTP payload as PS pack stream.
-    virtual srs_error_t
-    decode(SrsBuffer *stream, ISrsPsMessageHandler *handler);
+    virtual srs_error_t decode(SrsBuffer *stream, ISrsPsMessageHandler *handler);
     // When got error, drop data and enter recover mode.
     srs_error_t enter_recover_mode(SrsBuffer *stream, ISrsPsMessageHandler *handler, int pos, srs_error_t err);
     // Quit Recover mode when got pack header.

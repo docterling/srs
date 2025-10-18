@@ -190,8 +190,7 @@ public:
 SRS_DECLARE_PRIVATE: // clang-format on
     // Remove a gop from the front.
     // if no iframe found, clear it.
-    virtual void
-    shrink();
+    virtual void shrink();
 
 public:
     // clear all messages in queue.

@@ -291,8 +291,7 @@ public:
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     // The stream source changed.
-    virtual srs_error_t
-    on_source_changed();
+    virtual srs_error_t on_source_changed();
 
 public:
     // Get current source id.
@@ -387,8 +386,7 @@ public:
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     // Lazy initialization methods
-    srs_error_t
-    initialize_audio_track(SrsAudioCodecId codec);
+    srs_error_t initialize_audio_track(SrsAudioCodecId codec);
     srs_error_t initialize_video_track(SrsVideoCodecId codec);
 
 public:

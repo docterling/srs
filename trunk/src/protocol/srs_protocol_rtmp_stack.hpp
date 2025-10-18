@@ -349,8 +349,7 @@ public:
 SRS_DECLARE_PRIVATE: // clang-format on
     // Send out the messages, donot free it,
     // The caller must free the param msgs.
-    virtual srs_error_t
-    do_send_messages(SrsMediaPacket **msgs, int nb_msgs);
+    virtual srs_error_t do_send_messages(SrsMediaPacket **msgs, int nb_msgs);
     // Send iovs. send multiple times if exceed limits.
     virtual srs_error_t do_iovs_send(iovec *iovs, int size);
     // The underlayer api for send and free packet.
@@ -379,8 +378,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     // Auto response the ack message.
-    virtual srs_error_t
-    response_acknowledgement_message();
+    virtual srs_error_t response_acknowledgement_message();
     // Auto response the ping message.
     virtual srs_error_t response_ping_message(int32_t timestamp);
 

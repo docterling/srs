@@ -577,13 +577,17 @@ MockAppConfig::MockAppConfig()
     resolve_api_domain_ = true;
     keep_api_domain_ = false;
     mw_msgs_ = 8;
+    mw_sleep_ = 350 * SRS_UTIME_MILLISECONDS;
     rtc_dtls_role_ = "passive";
+    default_vhost_ = NULL;
 }
 
 MockAppConfig::~MockAppConfig()
 {
     clear_on_stop_directive();
     clear_on_unpublish_directive();
+
+    srs_freep(default_vhost_);
 }
 
 srs_utime_t MockAppConfig::get_pithy_print()
@@ -991,6 +995,16 @@ void MockAppConfig::set_keep_api_domain(bool enabled)
     keep_api_domain_ = enabled;
 }
 
+bool MockAppConfig::get_security_enabled(std::string vhost)
+{
+    return false;
+}
+
+SrsConfDirective *MockAppConfig::get_security_rules(std::string vhost)
+{
+    return NULL;
+}
+
 // Mock RTC packet receiver implementation
 MockRtcPacketReceiver::MockRtcPacketReceiver()
 {
@@ -1071,4 +1085,549 @@ void MockRtcPacketReceiver::reset()
     send_rtcp_count_ = 0;
     send_rtcp_fb_pli_count_ = 0;
     check_send_nacks_count_ = 0;
+}
+
+MockSecurity::MockSecurity()
+{
+    check_error_ = srs_success;
+    check_count_ = 0;
+}
+
+MockSecurity::~MockSecurity()
+{
+    srs_freep(check_error_);
+}
+
+srs_error_t MockSecurity::check(SrsRtmpConnType type, std::string ip, ISrsRequest *req)
+{
+    check_count_++;
+    return srs_error_copy(check_error_);
+}
+
+// Mock live source manager implementation
+MockLiveSourceManager::MockLiveSourceManager()
+{
+    fetch_or_create_error_ = srs_success;
+    fetch_or_create_count_ = 0;
+    can_publish_ = true;
+
+    // Create a mock live source
+    mock_source_ = SrsSharedPtr<SrsLiveSource>(new MockLiveSource());
+}
+
+MockLiveSourceManager::~MockLiveSourceManager()
+{
+    srs_freep(fetch_or_create_error_);
+}
+
+srs_error_t MockLiveSourceManager::fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsLiveSource> &pps)
+{
+    srs_error_t err = srs_success;
+
+    if (fetch_or_create_count_ == 0) {
+        err = mock_source_->initialize(mock_source_, r);
+    }
+
+    fetch_or_create_count_++;
+    if (fetch_or_create_error_ != srs_success) {
+        return srs_error_copy(fetch_or_create_error_);
+    }
+    pps = mock_source_;
+    return err;
+}
+
+SrsSharedPtr<SrsLiveSource> MockLiveSourceManager::fetch(ISrsRequest *r)
+{
+    return mock_source_;
+}
+
+void MockLiveSourceManager::dispose()
+{
+    // Mock implementation - no-op for testing
+}
+
+srs_error_t MockLiveSourceManager::initialize()
+{
+    // Mock implementation - always succeeds
+    return srs_success;
+}
+
+void MockLiveSourceManager::set_fetch_or_create_error(srs_error_t err)
+{
+    srs_freep(fetch_or_create_error_);
+    fetch_or_create_error_ = srs_error_copy(err);
+}
+
+void MockLiveSourceManager::set_can_publish(bool can_publish)
+{
+    can_publish_ = can_publish;
+    if (mock_source_.get()) {
+        MockLiveSource *mock_live_source = dynamic_cast<MockLiveSource *>(mock_source_.get());
+        if (mock_live_source) {
+            mock_live_source->set_can_publish(can_publish);
+        }
+    }
+}
+
+void MockLiveSourceManager::reset()
+{
+    srs_freep(fetch_or_create_error_);
+    fetch_or_create_error_ = srs_success;
+    fetch_or_create_count_ = 0;
+    can_publish_ = true;
+}
+
+// Mock live source implementation
+MockLiveSource::MockLiveSource()
+{
+    can_publish_result_ = true;
+    on_audio_count_ = 0;
+    on_video_count_ = 0;
+}
+
+MockLiveSource::~MockLiveSource()
+{
+}
+
+bool MockLiveSource::can_publish(bool is_edge)
+{
+    return can_publish_result_;
+}
+
+void MockLiveSource::set_can_publish(bool can_publish)
+{
+    can_publish_result_ = can_publish;
+}
+
+srs_error_t MockLiveSource::on_publish()
+{
+    // Mock implementation - just return success
+    return srs_success;
+}
+
+srs_error_t MockLiveSource::on_edge_start_publish()
+{
+    // Mock implementation - just return success
+    return srs_success;
+}
+
+srs_error_t MockLiveSource::on_audio(SrsRtmpCommonMessage *audio)
+{
+    on_audio_count_++;
+    return SrsLiveSource::on_audio(audio);
+}
+
+srs_error_t MockLiveSource::on_video(SrsRtmpCommonMessage *video)
+{
+    on_video_count_++;
+    return SrsLiveSource::on_video(video);
+}
+
+// Mock SRT source implementation
+MockSrtSource::MockSrtSource()
+{
+    can_publish_result_ = true;
+}
+
+MockSrtSource::~MockSrtSource()
+{
+}
+
+bool MockSrtSource::can_publish()
+{
+    return can_publish_result_;
+}
+
+void MockSrtSource::set_can_publish(bool can_publish)
+{
+    can_publish_result_ = can_publish;
+}
+
+// Mock SRT source manager implementation
+MockSrtSourceManager::MockSrtSourceManager()
+{
+    initialize_error_ = srs_success;
+    fetch_or_create_error_ = srs_success;
+    initialize_count_ = 0;
+    fetch_or_create_count_ = 0;
+    can_publish_ = true;
+
+    // Create a mock SRT source
+    mock_source_ = SrsSharedPtr<SrsSrtSource>(new MockSrtSource());
+}
+
+MockSrtSourceManager::~MockSrtSourceManager()
+{
+    srs_freep(initialize_error_);
+    srs_freep(fetch_or_create_error_);
+}
+
+srs_error_t MockSrtSourceManager::initialize()
+{
+    initialize_count_++;
+    return srs_error_copy(initialize_error_);
+}
+
+srs_error_t MockSrtSourceManager::fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsSrtSource> &pps)
+{
+    fetch_or_create_count_++;
+    if (fetch_or_create_error_ != srs_success) {
+        return srs_error_copy(fetch_or_create_error_);
+    }
+    pps = mock_source_;
+    return srs_success;
+}
+
+SrsSharedPtr<SrsSrtSource> MockSrtSourceManager::fetch(ISrsRequest *r)
+{
+    return mock_source_;
+}
+
+void MockSrtSourceManager::set_initialize_error(srs_error_t err)
+{
+    srs_freep(initialize_error_);
+    initialize_error_ = srs_error_copy(err);
+}
+
+void MockSrtSourceManager::set_fetch_or_create_error(srs_error_t err)
+{
+    srs_freep(fetch_or_create_error_);
+    fetch_or_create_error_ = srs_error_copy(err);
+}
+
+void MockSrtSourceManager::set_can_publish(bool can_publish)
+{
+    can_publish_ = can_publish;
+    if (mock_source_.get()) {
+        MockSrtSource *mock_srt_source = dynamic_cast<MockSrtSource *>(mock_source_.get());
+        if (mock_srt_source) {
+            mock_srt_source->set_can_publish(can_publish);
+        }
+    }
+}
+
+MockRtmpServer::MockRtmpServer()
+{
+    type_ = SrsRtmpConnFMLEPublish;
+    stream_ = "livestream";
+    duration_ = 0;
+
+    recv_err_ = srs_success;
+    cond_ = new SrsCond();
+
+    nb_sent_messages_ = 0;
+    start_play_error_ = srs_success;
+    start_publish_error_ = srs_success;
+    start_play_count_ = 0;
+    start_fmle_publish_count_ = 0;
+    start_flash_publish_count_ = 0;
+    start_haivision_publish_count_ = 0;
+
+    // Initialize fields for handle_publish_message testing
+    decode_message_error_ = srs_success;
+    decode_message_packet_ = NULL;
+    decode_message_count_ = 0;
+    fmle_unpublish_error_ = srs_success;
+    fmle_unpublish_count_ = 0;
+
+    // Initialize fields for process_play_control_msg testing
+    send_and_free_packet_count_ = 0;
+    on_play_client_pause_count_ = 0;
+    last_pause_state_ = false;
+
+    // Initialize fields for set_auto_response testing
+    set_auto_response_called_ = false;
+    auto_response_value_ = true;
+}
+
+MockRtmpServer::~MockRtmpServer()
+{
+    srs_freep(start_play_error_);
+    srs_freep(start_publish_error_);
+    srs_freep(recv_err_);
+    srs_freep(cond_);
+    srs_freep(decode_message_error_);
+    srs_freep(decode_message_packet_);
+    srs_freep(fmle_unpublish_error_);
+
+    for (vector<SrsRtmpCommonMessage *>::iterator it = recv_msgs_.begin(); it != recv_msgs_.end(); ++it) {
+        SrsRtmpCommonMessage *msg = *it;
+        srs_freep(msg);
+    }
+    recv_msgs_.clear();
+}
+
+void MockRtmpServer::set_recv_timeout(srs_utime_t tm)
+{
+}
+
+void MockRtmpServer::set_send_timeout(srs_utime_t tm)
+{
+}
+
+srs_error_t MockRtmpServer::handshake()
+{
+    return srs_success;
+}
+
+srs_error_t MockRtmpServer::connect_app(ISrsRequest *req)
+{
+    req->ip_ = ip_;
+    req->vhost_ = vhost_;
+    req->app_ = app_;
+    req->tcUrl_ = tcUrl_;
+    req->schema_ = schema_;
+    req->host_ = host_;
+    req->port_ = port_;
+
+    return srs_success;
+}
+
+uint32_t MockRtmpServer::proxy_real_ip()
+{
+    return 0;
+}
+
+srs_error_t MockRtmpServer::set_window_ack_size(int ack_size)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtmpServer::set_in_window_ack_size(int ack_size)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtmpServer::set_peer_bandwidth(int bandwidth, int type)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtmpServer::set_chunk_size(int chunk_size)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtmpServer::response_connect_app(ISrsRequest *req, const char *server_ip)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtmpServer::on_bw_done()
+{
+    return srs_success;
+}
+
+srs_error_t MockRtmpServer::identify_client(int stream_id, SrsRtmpConnType &type, std::string &stream_name, srs_utime_t &duration)
+{
+    type = type_;
+    stream_name = stream_;
+    duration = duration_;
+    return srs_success;
+}
+
+srs_error_t MockRtmpServer::start_play(int stream_id)
+{
+    start_play_count_++;
+    return srs_error_copy(start_play_error_);
+}
+
+srs_error_t MockRtmpServer::start_fmle_publish(int stream_id)
+{
+    start_fmle_publish_count_++;
+    return srs_error_copy(start_publish_error_);
+}
+
+srs_error_t MockRtmpServer::start_haivision_publish(int stream_id)
+{
+    start_haivision_publish_count_++;
+    return srs_success;
+}
+
+srs_error_t MockRtmpServer::fmle_unpublish(int stream_id, double unpublish_tid)
+{
+    fmle_unpublish_count_++;
+    return srs_error_copy(fmle_unpublish_error_);
+}
+
+srs_error_t MockRtmpServer::start_flash_publish(int stream_id)
+{
+    start_flash_publish_count_++;
+    return srs_success;
+}
+
+srs_error_t MockRtmpServer::start_publishing(int stream_id)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtmpServer::redirect(ISrsRequest *r, std::string url, bool &accepted)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtmpServer::send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs, int stream_id)
+{
+    nb_sent_messages_ += nb_msgs;
+    return srs_success;
+}
+
+srs_error_t MockRtmpServer::decode_message(SrsRtmpCommonMessage *msg, SrsRtmpCommand **ppacket)
+{
+    decode_message_count_++;
+    if (decode_message_error_ != srs_success) {
+        return srs_error_copy(decode_message_error_);
+    }
+    *ppacket = decode_message_packet_;
+    decode_message_packet_ = NULL; // Transfer ownership
+    return srs_success;
+}
+
+srs_error_t MockRtmpServer::send_and_free_packet(SrsRtmpCommand *packet, int stream_id)
+{
+    send_and_free_packet_count_++;
+    srs_freep(packet);
+    return srs_success;
+}
+
+srs_error_t MockRtmpServer::on_play_client_pause(int stream_id, bool is_pause)
+{
+    on_play_client_pause_count_++;
+    last_pause_state_ = is_pause;
+    return srs_success;
+}
+
+srs_error_t MockRtmpServer::recv_message(SrsRtmpCommonMessage **pmsg)
+{
+    // No message received during playing util get control event.
+    cond_->wait();
+
+    if (!recv_msgs_.empty()) {
+        *pmsg = recv_msgs_.front();
+        recv_msgs_.erase(recv_msgs_.begin());
+    }
+
+    return srs_error_copy(recv_err_);
+}
+
+void MockRtmpServer::set_merge_read(bool v, IMergeReadHandler *handler)
+{
+}
+
+void MockRtmpServer::set_recv_buffer(int buffer_size)
+{
+}
+
+void MockRtmpServer::set_auto_response(bool v)
+{
+    set_auto_response_called_ = true;
+    auto_response_value_ = v;
+}
+
+void MockRtmpServer::reset()
+{
+    srs_freep(decode_message_error_);
+    srs_freep(decode_message_packet_);
+    srs_freep(fmle_unpublish_error_);
+    decode_message_error_ = srs_success;
+    decode_message_packet_ = NULL;
+    decode_message_count_ = 0;
+    fmle_unpublish_error_ = srs_success;
+    fmle_unpublish_count_ = 0;
+    send_and_free_packet_count_ = 0;
+    on_play_client_pause_count_ = 0;
+    last_pause_state_ = false;
+    set_auto_response_called_ = false;
+    auto_response_value_ = true;
+}
+
+MockRtmpTransport::MockRtmpTransport()
+{
+}
+
+MockRtmpTransport::~MockRtmpTransport()
+{
+}
+
+srs_netfd_t MockRtmpTransport::fd()
+{
+    return NULL;
+}
+
+int MockRtmpTransport::osfd()
+{
+    return -1;
+}
+
+ISrsProtocolReadWriter *MockRtmpTransport::io()
+{
+    return this;
+}
+
+srs_error_t MockRtmpTransport::handshake()
+{
+    return srs_success;
+}
+
+const char *MockRtmpTransport::transport_type()
+{
+    return "mock";
+}
+
+srs_error_t MockRtmpTransport::set_socket_buffer(srs_utime_t buffer_v)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtmpTransport::set_tcp_nodelay(bool v)
+{
+    return srs_success;
+}
+
+int64_t MockRtmpTransport::get_recv_bytes()
+{
+    return 0;
+}
+
+int64_t MockRtmpTransport::get_send_bytes()
+{
+    return 0;
+}
+
+srs_error_t MockRtmpTransport::read(void *buf, size_t size, ssize_t *nread)
+{
+    return srs_success;
+}
+
+srs_error_t MockRtmpTransport::read_fully(void *buf, size_t size, ssize_t *nread)
+{
+    return srs_success;
+}
+
+void MockRtmpTransport::set_recv_timeout(srs_utime_t tm)
+{
+}
+
+srs_utime_t MockRtmpTransport::get_recv_timeout()
+{
+    return 0;
+}
+
+srs_error_t MockRtmpTransport::write(void *buf, size_t size, ssize_t *nwrite)
+{
+    return srs_success;
+}
+
+void MockRtmpTransport::set_send_timeout(srs_utime_t tm)
+{
+}
+
+srs_utime_t MockRtmpTransport::get_send_timeout()
+{
+    return 0;
+}
+
+srs_error_t MockRtmpTransport::writev(const iovec *iov, int iov_size, ssize_t *nwrite)
+{
+    return srs_success;
 }

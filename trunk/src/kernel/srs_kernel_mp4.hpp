@@ -2526,8 +2526,7 @@ public:
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     // Reset the jitter state (useful for new recording sessions)
-    virtual void
-    reset();
+    virtual void reset();
     // Check if both audio and video start times have been captured
     virtual bool is_initialized();
 };
@@ -2581,8 +2580,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
     // @param tses The temporary samples, key is offset, value is sample.
     // @param tt The type of sample, convert to flv tag type.
     // TODO: Support co64 for stco.
-    virtual srs_error_t
-    load_trak(std::map<uint64_t, SrsMp4Sample *> &tses, SrsFrameType tt,
+    virtual srs_error_t load_trak(std::map<uint64_t, SrsMp4Sample *> &tses, SrsFrameType tt,
               SrsMp4MediaHeaderBox *mdhd, SrsMp4ChunkOffsetBox *stco, SrsMp4SampleSizeBox *stsz, SrsMp4Sample2ChunkBox *stsc,
               SrsMp4DecodingTime2SampleBox *stts, SrsMp4CompositionTime2SampleBox *ctts, SrsMp4SyncSampleBox *stss);
 };
@@ -2703,8 +2701,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
 SRS_DECLARE_PRIVATE: // clang-format on
     // Load the next box from reader.
     // @param required_box_type The box type required, 0 for any box.
-    virtual srs_error_t
-    load_next_box(SrsMp4Box **ppbox, uint32_t required_box_type);
+    virtual srs_error_t load_next_box(SrsMp4Box **ppbox, uint32_t required_box_type);
     // @remark Never load the mdat box content, for it's too large.
     virtual srs_error_t do_load_next_box(SrsMp4Box **ppbox, uint32_t required_box_type);
 };
@@ -2886,8 +2883,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
      * |    |    |schi|
      * |    |    |    |tenc|
      */
-    virtual srs_error_t
-    config_sample_description_encryption(SrsMp4SampleEntry *box);
+    virtual srs_error_t config_sample_description_encryption(SrsMp4SampleEntry *box);
 };
 
 // The fMP4 segment encoder interface.

@@ -228,6 +228,11 @@ srs_error_t SrsQueueRecvThread::error_code()
 
 srs_error_t SrsQueueRecvThread::consume(SrsRtmpCommonMessage *msg)
 {
+    // Ignore empty message, which is generated when io closing.
+    if (!msg) {
+        return srs_success;
+    }
+
     // put into queue, the send thread will get and process it,
     // @see SrsRtmpConn::process_play_control_msg
     queue_.push_back(msg);

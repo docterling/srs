@@ -933,7 +933,7 @@ VOID TEST(SrsLiveStreamTest, ServeHttpWithDisabledEntry)
 
     // Create and set mock dependencies
     MockStatisticForLiveStream mock_stat;
-    MockSecurityForLiveStream mock_security;
+    MockSecurity mock_security;
 
     // Replace dependencies with mocks
     live_stream->stat_ = &mock_stat;
@@ -1084,23 +1084,6 @@ srs_error_t MockStatisticForLiveStream::dumps_metrics(int64_t &send_bytes, int64
     total_nclients = 0;
     nerrs = 0;
     return srs_success;
-}
-
-// Mock ISrsSecurity implementation for SrsLiveStream testing
-MockSecurityForLiveStream::MockSecurityForLiveStream()
-{
-    check_error_ = srs_success;
-    check_count_ = 0;
-}
-
-MockSecurityForLiveStream::~MockSecurityForLiveStream()
-{
-}
-
-srs_error_t MockSecurityForLiveStream::check(SrsRtmpConnType type, std::string ip, ISrsRequest *req)
-{
-    check_count_++;
-    return srs_error_copy(check_error_);
 }
 
 // Mock config implementation for SrsLiveStream hooks testing

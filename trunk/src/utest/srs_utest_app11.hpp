@@ -263,21 +263,6 @@ public:
     virtual srs_error_t dumps_metrics(int64_t &send_bytes, int64_t &recv_bytes, int64_t &nstreams, int64_t &nclients, int64_t &total_nclients, int64_t &nerrs);
 };
 
-// Mock ISrsSecurity for testing SrsLiveStream::serve_http_impl
-class MockSecurityForLiveStream : public ISrsSecurity
-{
-public:
-    srs_error_t check_error_;
-    int check_count_;
-
-public:
-    MockSecurityForLiveStream();
-    virtual ~MockSecurityForLiveStream();
-
-public:
-    virtual srs_error_t check(SrsRtmpConnType type, std::string ip, ISrsRequest *req);
-};
-
 // Mock ISrsBufferCache for testing SrsHttpStreamDestroy
 class MockBufferCacheForDestroy : public ISrsBufferCache
 {

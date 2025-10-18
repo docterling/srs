@@ -35,6 +35,11 @@
 #ifdef SRS_GB28181
 #include <srs_app_gb28181.hpp>
 #endif
+#include <srs_app_rtmp_conn.hpp>
+#include <srs_app_rtmp_source.hpp>
+#include <srs_app_security.hpp>
+#include <srs_app_srt_source.hpp>
+#include <srs_protocol_rtmp_stack.hpp>
 #include <srs_protocol_utility.hpp>
 
 // Forward declarations
@@ -47,6 +52,7 @@ class MockSrsFileReader;
 class MockSrtCoroutine;
 class ISrsGbSession;
 class ISrsProtocolUtility;
+class SrsCond;
 
 // Mock SDP factory for creating test SDP offers/answers
 class MockSdpFactory
@@ -255,7 +261,9 @@ public:
     bool resolve_api_domain_;
     bool keep_api_domain_;
     int mw_msgs_;
+    srs_utime_t mw_sleep_;
     std::string rtc_dtls_role_;
+    SrsConfDirective *default_vhost_;
 
 public:
     MockAppConfig();
@@ -356,7 +364,7 @@ public:
     virtual int get_dying_pulse() { return 0; }
     virtual std::string get_rtmps_ssl_cert() { return ""; }
     virtual std::string get_rtmps_ssl_key() { return ""; }
-    virtual SrsConfDirective *get_vhost(std::string vhost, bool try_default_vhost = true) { return NULL; }
+    virtual SrsConfDirective *get_vhost(std::string vhost, bool try_default_vhost = true) { return default_vhost_; }
     virtual bool get_vhost_enabled(std::string vhost) { return true; }
     virtual bool get_debug_srs_upnode(std::string vhost) { return true; }
     virtual int get_out_ack_size(std::string vhost) { return 2500000; }
@@ -365,7 +373,7 @@ public:
     virtual bool get_gop_cache(std::string vhost) { return true; }
     virtual int get_gop_cache_max_frames(std::string vhost) { return 2500; }
     virtual bool get_tcp_nodelay(std::string vhost) { return false; }
-    virtual srs_utime_t get_mw_sleep(std::string vhost, bool is_rtc = false) { return 350 * SRS_UTIME_MILLISECONDS; }
+    virtual srs_utime_t get_mw_sleep(std::string vhost, bool is_rtc = false) { return mw_sleep_; }
     virtual srs_utime_t get_send_min_interval(std::string vhost) { return 0; }
     virtual bool get_mr_enabled(std::string vhost) { return false; }
     virtual srs_utime_t get_mr_sleep(std::string vhost) { return 350 * SRS_UTIME_MILLISECONDS; }
@@ -536,6 +544,8 @@ public:
     void set_api_as_candidates(bool enabled);
     void set_resolve_api_domain(bool enabled);
     void set_keep_api_domain(bool enabled);
+    virtual bool get_security_enabled(std::string vhost);
+    virtual SrsConfDirective *get_security_rules(std::string vhost);
 };
 
 // Mock RTC packet receiver for testing SrsRtcPublishStream
@@ -569,6 +579,211 @@ public:
     void set_send_rtcp_error(srs_error_t err);
     void set_send_rtcp_fb_pli_error(srs_error_t err);
     void reset();
+};
+
+// Mock ISrsSecurity for testing
+class MockSecurity : public ISrsSecurity
+{
+public:
+    srs_error_t check_error_;
+    int check_count_;
+
+public:
+    MockSecurity();
+    virtual ~MockSecurity();
+
+public:
+    virtual srs_error_t check(SrsRtmpConnType type, std::string ip, ISrsRequest *req);
+};
+
+// Mock live source manager for testing SrsRtcPublishStream
+class MockLiveSourceManager : public ISrsLiveSourceManager
+{
+public:
+    srs_error_t fetch_or_create_error_;
+    int fetch_or_create_count_;
+    SrsSharedPtr<SrsLiveSource> mock_source_;
+    bool can_publish_;
+
+public:
+    MockLiveSourceManager();
+    virtual ~MockLiveSourceManager();
+    virtual srs_error_t fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsLiveSource> &pps);
+    virtual SrsSharedPtr<SrsLiveSource> fetch(ISrsRequest *r);
+    virtual void dispose();
+    virtual srs_error_t initialize();
+    void set_fetch_or_create_error(srs_error_t err);
+    void set_can_publish(bool can_publish);
+    void reset();
+};
+
+// Mock live source for testing SrsRtcPublishStream
+class MockLiveSource : public SrsLiveSource
+{
+public:
+    bool can_publish_result_;
+    int on_audio_count_;
+    int on_video_count_;
+
+public:
+    MockLiveSource();
+    virtual ~MockLiveSource();
+    virtual bool can_publish(bool is_edge);
+    void set_can_publish(bool can_publish);
+    virtual srs_error_t on_publish();
+    virtual srs_error_t on_edge_start_publish();
+
+public:
+    virtual srs_error_t on_audio(SrsRtmpCommonMessage *audio);
+    virtual srs_error_t on_video(SrsRtmpCommonMessage *video);
+};
+
+// Mock SRT source for testing SrsRtcPublishStream
+class MockSrtSource : public SrsSrtSource
+{
+public:
+    bool can_publish_result_;
+
+public:
+    MockSrtSource();
+    virtual ~MockSrtSource();
+    virtual bool can_publish();
+    void set_can_publish(bool can_publish);
+};
+
+// Mock SRT source manager for testing SrsRtcPublishStream
+class MockSrtSourceManager : public ISrsSrtSourceManager
+{
+public:
+    srs_error_t initialize_error_;
+    srs_error_t fetch_or_create_error_;
+    int initialize_count_;
+    int fetch_or_create_count_;
+    SrsSharedPtr<SrsSrtSource> mock_source_;
+    bool can_publish_;
+
+public:
+    MockSrtSourceManager();
+    virtual ~MockSrtSourceManager();
+    virtual srs_error_t initialize();
+    virtual srs_error_t fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsSrtSource> &pps);
+    virtual SrsSharedPtr<SrsSrtSource> fetch(ISrsRequest *r);
+    void set_initialize_error(srs_error_t err);
+    void set_fetch_or_create_error(srs_error_t err);
+    void set_can_publish(bool can_publish);
+    void reset();
+};
+
+class MockRtmpServer : public ISrsRtmpServer
+{
+public:
+    SrsRtmpConnType type_;
+    std::string host_;
+    std::string ip_;
+    std::string vhost_;
+    std::string app_;
+    std::string stream_;
+    std::string tcUrl_;
+    std::string schema_;
+    int port_;
+    srs_utime_t duration_;
+
+public:
+    srs_error_t recv_err_;
+    std::vector<SrsRtmpCommonMessage *> recv_msgs_;
+    SrsCond *cond_;
+
+public:
+    int nb_sent_messages_;
+    srs_error_t start_play_error_;
+    int start_play_count_;
+    srs_error_t start_publish_error_;
+    int start_fmle_publish_count_;
+    int start_flash_publish_count_;
+    int start_haivision_publish_count_;
+
+public:
+    // Fields for handle_publish_message testing
+    srs_error_t decode_message_error_;
+    SrsRtmpCommand *decode_message_packet_;
+    int decode_message_count_;
+    srs_error_t fmle_unpublish_error_;
+    int fmle_unpublish_count_;
+
+public:
+    // Fields for process_play_control_msg testing
+    int send_and_free_packet_count_;
+    int on_play_client_pause_count_;
+    bool last_pause_state_;
+
+public:
+    // Fields for set_auto_response testing
+    bool set_auto_response_called_;
+    bool auto_response_value_;
+
+public:
+    MockRtmpServer();
+    virtual ~MockRtmpServer();
+
+public:
+    virtual void set_recv_timeout(srs_utime_t tm);
+    virtual void set_send_timeout(srs_utime_t tm);
+    virtual srs_error_t handshake();
+    virtual srs_error_t connect_app(ISrsRequest *req);
+    virtual uint32_t proxy_real_ip();
+    virtual srs_error_t set_window_ack_size(int ack_size);
+    virtual srs_error_t set_peer_bandwidth(int bandwidth, int type);
+    virtual srs_error_t set_chunk_size(int chunk_size);
+    virtual srs_error_t response_connect_app(ISrsRequest *req, const char *server_ip = NULL);
+    virtual srs_error_t on_bw_done();
+    virtual srs_error_t identify_client(int stream_id, SrsRtmpConnType &type, std::string &stream_name, srs_utime_t &duration);
+    virtual srs_error_t start_play(int stream_id);
+    virtual srs_error_t start_fmle_publish(int stream_id);
+    virtual srs_error_t start_haivision_publish(int stream_id);
+    virtual srs_error_t fmle_unpublish(int stream_id, double unpublish_tid);
+    virtual srs_error_t start_flash_publish(int stream_id);
+    virtual srs_error_t start_publishing(int stream_id);
+    virtual srs_error_t redirect(ISrsRequest *r, std::string url, bool &accepted);
+    virtual srs_error_t send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs, int stream_id);
+    virtual srs_error_t decode_message(SrsRtmpCommonMessage *msg, SrsRtmpCommand **ppacket);
+    virtual srs_error_t send_and_free_packet(SrsRtmpCommand *packet, int stream_id);
+    virtual srs_error_t on_play_client_pause(int stream_id, bool is_pause);
+    virtual srs_error_t set_in_window_ack_size(int ack_size);
+    virtual srs_error_t recv_message(SrsRtmpCommonMessage **pmsg);
+    virtual void set_auto_response(bool v);
+    virtual void set_merge_read(bool v, IMergeReadHandler *handler);
+    virtual void set_recv_buffer(int buffer_size);
+
+public:
+    void reset();
+};
+
+class MockRtmpTransport : public ISrsRtmpTransport, public ISrsProtocolReadWriter
+{
+public:
+    MockRtmpTransport();
+    virtual ~MockRtmpTransport();
+
+public:
+    virtual srs_netfd_t fd();
+    virtual int osfd();
+    virtual ISrsProtocolReadWriter *io();
+    virtual srs_error_t handshake();
+    virtual const char *transport_type();
+    virtual srs_error_t set_socket_buffer(srs_utime_t buffer_v);
+    virtual srs_error_t set_tcp_nodelay(bool v);
+    virtual int64_t get_recv_bytes();
+    virtual int64_t get_send_bytes();
+
+public:
+    virtual srs_error_t read(void *buf, size_t size, ssize_t *nread);
+    virtual srs_error_t read_fully(void *buf, size_t size, ssize_t *nread);
+    virtual void set_recv_timeout(srs_utime_t tm);
+    virtual srs_utime_t get_recv_timeout();
+    virtual srs_error_t write(void *buf, size_t size, ssize_t *nwrite);
+    virtual void set_send_timeout(srs_utime_t tm);
+    virtual srs_utime_t get_send_timeout();
+    virtual srs_error_t writev(const iovec *iov, int iov_size, ssize_t *nwrite);
 };
 
 #endif

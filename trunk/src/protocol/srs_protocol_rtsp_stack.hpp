@@ -267,8 +267,7 @@ public:
 // clang-format off
 SRS_DECLARE_PROTECTED: // clang-format on
     // Sub classes override this to encode the headers.
-    virtual srs_error_t
-    encode_header(std::stringstream &ss);
+    virtual srs_error_t encode_header(std::stringstream &ss);
 };
 
 // 10.1 OPTIONS, @see rfc2326-1998-rtsp.pdf, page 59

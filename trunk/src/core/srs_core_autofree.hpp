@@ -195,8 +195,7 @@ public:
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     // Reset the shared ptr.
-    void
-    reset()
+    void reset()
     {
         if (!ref_count_)
             return;

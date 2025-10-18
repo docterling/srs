@@ -92,8 +92,7 @@ public:
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     // Redirect standard I/O.
-    virtual srs_error_t
-    redirect_io();
+    virtual srs_error_t redirect_io();
 
 public:
     // Start the process, ignore when already started.

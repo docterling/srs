@@ -39,6 +39,7 @@ class ISrsWakable;
 class SrsRtmpCommonMessage;
 class SrsRtmpCommand;
 class SrsNetworkDelta;
+class ISrsNetworkDelta;
 class ISrsAppConfig;
 class SrsSslConnection;
 class ISrsResourceManager;
@@ -96,6 +97,7 @@ public:
 
 public:
     virtual srs_netfd_t fd() = 0;
+    virtual int osfd() = 0;
     virtual ISrsProtocolReadWriter *io() = 0;
     virtual srs_error_t handshake() = 0;
     virtual const char *transport_type() = 0;
@@ -120,6 +122,7 @@ public:
 public:
     // Get the file descriptor for logging and identification
     virtual srs_netfd_t fd();
+    virtual int osfd();
     // Get the appropriate I/O interface (TCP)
     virtual ISrsProtocolReadWriter *io();
     // Perform handshake (no-op for plain RTMP)
@@ -222,7 +225,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
     std::string ip_;
     int port_;
     // The delta for statistic.
-    SrsNetworkDelta *delta_;
+    ISrsNetworkDelta *delta_;
     SrsNetworkKbps *kbps_;
     // The create time in milliseconds.
     // for current connection to log self create time and calculate the living time.
@@ -246,8 +249,7 @@ public:
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     // When valid and connected to vhost/app, service the client.
-    virtual srs_error_t
-    service_cycle();
+    virtual srs_error_t service_cycle();
     // The stream(play/publish) service cycle, identify client first.
     virtual srs_error_t stream_service_cycle();
     virtual srs_error_t check_vhost(bool try_default_vhost);
@@ -271,8 +273,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
 SRS_DECLARE_PRIVATE: // clang-format on
     // When the connection disconnect, call this method.
     // e.g. log msg of connection and report to other system.
-    virtual srs_error_t
-    on_disconnect();
+    virtual srs_error_t on_disconnect();
 
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
@@ -293,6 +294,7 @@ public:
     // when client cycle thread stop, invoke the on_thread_stop(), which will use server
     // To remove the client by server->remove(this).
     virtual srs_error_t start();
+    virtual void stop();
     // Interface ISrsCoroutineHandler
 public:
     // The thread cycle function,

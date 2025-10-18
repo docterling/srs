@@ -360,8 +360,7 @@ public:
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     // For utest to mock the fs.
-    virtual void
-    set_fs_factory(ISrsFileReaderFactory *v);
+    virtual void set_fs_factory(ISrsFileReaderFactory *v);
     // For utest to mock the path utility.
     virtual void set_path(SrsPath *v);
 
@@ -371,16 +370,14 @@ public:
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     // Serve the file by specified path
-    virtual srs_error_t
-    serve_file(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, std::string fullpath);
+    virtual srs_error_t serve_file(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, std::string fullpath);
     virtual srs_error_t serve_flv_file(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, std::string fullpath);
     virtual srs_error_t serve_mp4_file(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, std::string fullpath);
 
 // clang-format off
 SRS_DECLARE_PROTECTED: // clang-format on
     // When access flv file with x.flv?start=xxx
-    virtual srs_error_t
-    serve_flv_stream(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, std::string fullpath, int64_t offset);
+    virtual srs_error_t serve_flv_stream(ISrsHttpResponseWriter *w, ISrsHttpMessage *r, std::string fullpath, int64_t offset);
     // When access mp4 file with x.mp4?range=start-end
     // @param start the start offset in bytes.
     // @param end the end offset in bytes. -1 to end of file.
@@ -402,8 +399,7 @@ SRS_DECLARE_PROTECTED: // clang-format on
 // clang-format off
 SRS_DECLARE_PROTECTED: // clang-format on
     // Copy the fs to response writer in size bytes.
-    virtual srs_error_t
-    copy(ISrsHttpResponseWriter *w, SrsFileReader *fs, ISrsHttpMessage *r, int64_t size);
+    virtual srs_error_t copy(ISrsHttpResponseWriter *w, SrsFileReader *fs, ISrsHttpMessage *r, int64_t size);
 };
 
 // The mux entry for server mux.
@@ -727,8 +723,7 @@ public:
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     // Simple URL parser to replace http-parser URL parsing
-    virtual srs_error_t
-    parse_url_simple(const std::string &url, std::string &schema, std::string &host, int &port,
+    virtual srs_error_t parse_url_simple(const std::string &url, std::string &schema, std::string &host, int &port,
                      std::string &path, std::string &query, std::string &fragment,
                      std::string &username, std::string &password);
     srs_error_t parse_query();

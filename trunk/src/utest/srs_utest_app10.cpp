@@ -1085,159 +1085,6 @@ void MockAppConfigForRtmpConn::reset()
     last_subscribed_handler_ = NULL;
 }
 
-MockRtmpServerForStreamService::MockRtmpServerForStreamService()
-{
-    identify_type_ = SrsRtmpConnPlay;
-    identify_stream_ = "";
-    identify_duration_ = 0;
-    start_play_count_ = 0;
-    start_fmle_publish_count_ = 0;
-    start_flash_publish_count_ = 0;
-    start_haivision_publish_count_ = 0;
-}
-
-MockRtmpServerForStreamService::~MockRtmpServerForStreamService()
-{
-}
-
-void MockRtmpServerForStreamService::set_recv_timeout(srs_utime_t tm)
-{
-}
-
-void MockRtmpServerForStreamService::set_send_timeout(srs_utime_t tm)
-{
-}
-
-srs_error_t MockRtmpServerForStreamService::handshake()
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForStreamService::connect_app(ISrsRequest *req)
-{
-    return srs_success;
-}
-
-uint32_t MockRtmpServerForStreamService::proxy_real_ip()
-{
-    return 0;
-}
-
-srs_error_t MockRtmpServerForStreamService::set_window_ack_size(int ack_size)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForStreamService::set_peer_bandwidth(int bandwidth, int type)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForStreamService::set_chunk_size(int chunk_size)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForStreamService::response_connect_app(ISrsRequest *req, const char *server_ip)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForStreamService::on_bw_done()
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForStreamService::identify_client(int stream_id, SrsRtmpConnType &type, std::string &stream_name, srs_utime_t &duration)
-{
-    type = identify_type_;
-    stream_name = identify_stream_;
-    duration = identify_duration_;
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForStreamService::start_play(int stream_id)
-{
-    start_play_count_++;
-    // Return an error to exit the test cleanly after verifying selection worked
-    return srs_error_new(ERROR_RTMP_STREAM_NOT_FOUND, "mock start play");
-}
-
-srs_error_t MockRtmpServerForStreamService::start_fmle_publish(int stream_id)
-{
-    start_fmle_publish_count_++;
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForStreamService::start_haivision_publish(int stream_id)
-{
-    start_haivision_publish_count_++;
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForStreamService::start_flash_publish(int stream_id)
-{
-    start_flash_publish_count_++;
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForStreamService::fmle_unpublish(int stream_id, double unpublish_tid)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForStreamService::start_publishing(int stream_id)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForStreamService::redirect(ISrsRequest *r, std::string url, bool &accepted)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForStreamService::send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs, int stream_id)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForStreamService::decode_message(SrsRtmpCommonMessage *msg, SrsRtmpCommand **ppacket)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForStreamService::send_and_free_packet(SrsRtmpCommand *packet, int stream_id)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForStreamService::on_play_client_pause(int stream_id, bool is_pause)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForStreamService::set_in_window_ack_size(int ack_size)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForStreamService::recv_message(SrsRtmpCommonMessage **pmsg)
-{
-    return srs_success;
-}
-
-void MockRtmpServerForStreamService::set_auto_response(bool v)
-{
-}
-
-void MockRtmpServerForStreamService::set_merge_read(bool v, IMergeReadHandler *handler)
-{
-}
-
-void MockRtmpServerForStreamService::set_recv_buffer(int buffer_size)
-{
-}
-
 MockCoroutineForRtmpConn::MockCoroutineForRtmpConn()
 {
     pull_error_ = srs_success;
@@ -1311,6 +1158,11 @@ srs_netfd_t MockRtmpTransportForDoCycle::fd()
     }
 
     return dummy_stfd;
+}
+
+int MockRtmpTransportForDoCycle::osfd()
+{
+    return 0;
 }
 
 ISrsProtocolReadWriter *MockRtmpTransportForDoCycle::io()
@@ -1534,185 +1386,6 @@ VOID TEST(SrsUtilityTest, UpdateProcStat)
 #endif
 }
 
-MockSecurityForStreamService::MockSecurityForStreamService()
-{
-}
-
-MockSecurityForStreamService::~MockSecurityForStreamService()
-{
-}
-
-srs_error_t MockSecurityForStreamService::check(SrsRtmpConnType type, std::string ip, ISrsRequest *req)
-{
-    return srs_success;
-}
-
-MockRtmpServerForHandlePublishMessage::MockRtmpServerForHandlePublishMessage()
-{
-    decode_message_error_ = srs_success;
-    decode_message_packet_ = NULL;
-    decode_message_count_ = 0;
-    fmle_unpublish_error_ = srs_success;
-    fmle_unpublish_count_ = 0;
-}
-
-MockRtmpServerForHandlePublishMessage::~MockRtmpServerForHandlePublishMessage()
-{
-    srs_freep(decode_message_error_);
-    srs_freep(decode_message_packet_);
-    srs_freep(fmle_unpublish_error_);
-}
-
-void MockRtmpServerForHandlePublishMessage::set_recv_timeout(srs_utime_t tm)
-{
-}
-
-void MockRtmpServerForHandlePublishMessage::set_send_timeout(srs_utime_t tm)
-{
-}
-
-srs_error_t MockRtmpServerForHandlePublishMessage::handshake()
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForHandlePublishMessage::connect_app(ISrsRequest *req)
-{
-    return srs_success;
-}
-
-uint32_t MockRtmpServerForHandlePublishMessage::proxy_real_ip()
-{
-    return 0;
-}
-
-srs_error_t MockRtmpServerForHandlePublishMessage::set_window_ack_size(int ack_size)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForHandlePublishMessage::set_peer_bandwidth(int bandwidth, int type)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForHandlePublishMessage::set_chunk_size(int chunk_size)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForHandlePublishMessage::response_connect_app(ISrsRequest *req, const char *server_ip)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForHandlePublishMessage::on_bw_done()
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForHandlePublishMessage::identify_client(int stream_id, SrsRtmpConnType &type, std::string &stream_name, srs_utime_t &duration)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForHandlePublishMessage::start_play(int stream_id)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForHandlePublishMessage::start_fmle_publish(int stream_id)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForHandlePublishMessage::start_haivision_publish(int stream_id)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForHandlePublishMessage::fmle_unpublish(int stream_id, double unpublish_tid)
-{
-    fmle_unpublish_count_++;
-    return srs_error_copy(fmle_unpublish_error_);
-}
-
-srs_error_t MockRtmpServerForHandlePublishMessage::start_flash_publish(int stream_id)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForHandlePublishMessage::start_publishing(int stream_id)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForHandlePublishMessage::redirect(ISrsRequest *r, std::string url, bool &accepted)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForHandlePublishMessage::send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs, int stream_id)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForHandlePublishMessage::decode_message(SrsRtmpCommonMessage *msg, SrsRtmpCommand **ppacket)
-{
-    decode_message_count_++;
-    if (decode_message_error_ != srs_success) {
-        return srs_error_copy(decode_message_error_);
-    }
-    // Return the configured packet (can be NULL or a specific packet type)
-    *ppacket = decode_message_packet_;
-    decode_message_packet_ = NULL; // Transfer ownership
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForHandlePublishMessage::send_and_free_packet(SrsRtmpCommand *packet, int stream_id)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForHandlePublishMessage::on_play_client_pause(int stream_id, bool is_pause)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForHandlePublishMessage::set_in_window_ack_size(int ack_size)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForHandlePublishMessage::recv_message(SrsRtmpCommonMessage **pmsg)
-{
-    return srs_success;
-}
-
-void MockRtmpServerForHandlePublishMessage::set_auto_response(bool v)
-{
-}
-
-void MockRtmpServerForHandlePublishMessage::set_merge_read(bool v, IMergeReadHandler *handler)
-{
-}
-
-void MockRtmpServerForHandlePublishMessage::set_recv_buffer(int buffer_size)
-{
-}
-
-void MockRtmpServerForHandlePublishMessage::reset()
-{
-    srs_freep(decode_message_error_);
-    srs_freep(decode_message_packet_);
-    srs_freep(fmle_unpublish_error_);
-    decode_message_error_ = srs_success;
-    decode_message_packet_ = NULL;
-    decode_message_count_ = 0;
-    fmle_unpublish_error_ = srs_success;
-    fmle_unpublish_count_ = 0;
-}
-
 VOID TEST(SrsRtmpConnTest, StreamServiceCycleSelection)
 {
     srs_error_t err = srs_success;
@@ -1724,7 +1397,9 @@ VOID TEST(SrsRtmpConnTest, StreamServiceCycleSelection)
     SrsRtmpConn *conn = new SrsRtmpConn(mock_transport, "192.168.1.100", 1935);
 
     // Create mock rtmp server
-    MockRtmpServerForStreamService *mock_rtmp = new MockRtmpServerForStreamService();
+    MockRtmpServer *mock_rtmp = new MockRtmpServer();
+    // Return an error to exit the test cleanly after verifying selection worked
+    mock_rtmp->start_play_error_ = srs_error_new(ERROR_RTMP_STREAM_NOT_FOUND, "mock start play");
 
     // Create mock coroutine that always returns error in pull()
     MockCoroutineForRtmpConn *mock_trd = new MockCoroutineForRtmpConn();
@@ -1741,8 +1416,8 @@ VOID TEST(SrsRtmpConnTest, StreamServiceCycleSelection)
     // Note: stream_service_cycle() is NOT executed because trd_->pull() returns error
     // in service_cycle() before the while loop calls stream_service_cycle()
     if (true) {
-        mock_rtmp->identify_type_ = SrsRtmpConnPlay;
-        mock_rtmp->identify_stream_ = "livestream";
+        mock_rtmp->type_ = SrsRtmpConnPlay;
+        mock_rtmp->stream_ = "livestream";
         mock_rtmp->start_play_count_ = 0;
         mock_rtmp->start_fmle_publish_count_ = 0;
         mock_rtmp->start_flash_publish_count_ = 0;
@@ -1972,8 +1647,9 @@ VOID TEST(SrsRtmpConnTest, StreamServiceCycleThreadQuitCheck)
     // check for thread quit (trd_->pull()) and return immediately if the thread is quitting.
 
     MockRtmpTransportForDoCycle *mock_transport = new MockRtmpTransportForDoCycle();
-    MockRtmpServerForStreamService *mock_rtmp = new MockRtmpServerForStreamService();
-    MockSecurityForStreamService *mock_security = new MockSecurityForStreamService();
+    MockRtmpServer *mock_rtmp = new MockRtmpServer();
+    mock_rtmp->start_play_error_ = srs_error_new(ERROR_THREAD_INTERRUPED, "thread interrupted");
+    MockSecurity *mock_security = new MockSecurity();
     MockCoroutineForRtmpConn *mock_trd = new MockCoroutineForRtmpConn();
     MockAppConfigForRtmpConn *mock_config = new MockAppConfigForRtmpConn();
 
@@ -1997,8 +1673,8 @@ VOID TEST(SrsRtmpConnTest, StreamServiceCycleThreadQuitCheck)
     mock_trd->pull_error_ = srs_error_new(ERROR_THREAD_INTERRUPED, "thread interrupted");
 
     // Set connection type to Play
-    mock_rtmp->identify_type_ = SrsRtmpConnPlay;
-    mock_rtmp->identify_stream_ = "livestream";
+    mock_rtmp->type_ = SrsRtmpConnPlay;
+    mock_rtmp->stream_ = "livestream";
     conn->info_->type_ = SrsRtmpConnPlay;
 
     // Set up request with valid tcUrl to pass tcUrl parsing
@@ -2194,7 +1870,7 @@ VOID TEST(SrsRtmpConnTest, HandlePublishMessageFlashRepublish)
         conn->assemble();
 
         // Create mock rtmp server
-        MockRtmpServerForHandlePublishMessage *mock_rtmp = new MockRtmpServerForHandlePublishMessage();
+        MockRtmpServer *mock_rtmp = new MockRtmpServer();
 
         // Inject mock into connection
         srs_freep(conn->rtmp_);
@@ -2252,7 +1928,7 @@ VOID TEST(SrsRtmpConnTest, HandlePublishMessageFMLERepublish)
         conn->assemble();
 
         // Create mock rtmp server
-        MockRtmpServerForHandlePublishMessage *mock_rtmp = new MockRtmpServerForHandlePublishMessage();
+        MockRtmpServer *mock_rtmp = new MockRtmpServer();
 
         // Inject mock into connection
         srs_freep(conn->rtmp_);
@@ -2315,7 +1991,7 @@ VOID TEST(SrsRtmpConnTest, HandlePublishMessageFMLEIgnoreCommand)
         conn->assemble();
 
         // Create mock rtmp server
-        MockRtmpServerForHandlePublishMessage *mock_rtmp = new MockRtmpServerForHandlePublishMessage();
+        MockRtmpServer *mock_rtmp = new MockRtmpServer();
 
         // Inject mock into connection
         srs_freep(conn->rtmp_);
@@ -2371,10 +2047,11 @@ VOID TEST(SrsRtmpConnTest, AcquirePublishStreamBusyCheck)
         conn->assemble();
 
         // Create mock rtmp server
-        MockRtmpServerForStreamService *mock_rtmp = new MockRtmpServerForStreamService();
+        MockRtmpServer *mock_rtmp = new MockRtmpServer();
+        mock_rtmp->start_play_error_ = srs_error_new(ERROR_RTMP_STREAM_NOT_FOUND, "mock start play");
 
         // Create mock security
-        MockSecurityForStreamService *mock_security = new MockSecurityForStreamService();
+        MockSecurity *mock_security = new MockSecurity();
 
         // Inject mocks into connection
         srs_freep(conn->rtmp_);
@@ -2431,7 +2108,7 @@ VOID TEST(SrsRtmpConnTest, HandlePublishMessageVideoSuccess)
         conn->assemble();
 
         // Create mock rtmp server
-        MockRtmpServerForHandlePublishMessage *mock_rtmp = new MockRtmpServerForHandlePublishMessage();
+        MockRtmpServer *mock_rtmp = new MockRtmpServer();
 
         // Inject mock into connection
         srs_freep(conn->rtmp_);
@@ -2466,77 +2143,6 @@ VOID TEST(SrsRtmpConnTest, HandlePublishMessageVideoSuccess)
 
     // Now safe to delete mock_config
     srs_freep(mock_config);
-}
-
-MockRtmpServerForPlayControl::MockRtmpServerForPlayControl()
-{
-    decode_message_packet_ = NULL;
-    decode_message_count_ = 0;
-    send_and_free_packet_count_ = 0;
-    on_play_client_pause_count_ = 0;
-    last_pause_state_ = false;
-}
-
-MockRtmpServerForPlayControl::~MockRtmpServerForPlayControl()
-{
-    srs_freep(decode_message_packet_);
-}
-
-void MockRtmpServerForPlayControl::set_recv_timeout(srs_utime_t tm) {}
-void MockRtmpServerForPlayControl::set_send_timeout(srs_utime_t tm) {}
-srs_error_t MockRtmpServerForPlayControl::handshake() { return srs_success; }
-srs_error_t MockRtmpServerForPlayControl::connect_app(ISrsRequest *req) { return srs_success; }
-uint32_t MockRtmpServerForPlayControl::proxy_real_ip() { return 0; }
-srs_error_t MockRtmpServerForPlayControl::set_window_ack_size(int ack_size) { return srs_success; }
-srs_error_t MockRtmpServerForPlayControl::set_peer_bandwidth(int bandwidth, int type) { return srs_success; }
-srs_error_t MockRtmpServerForPlayControl::set_chunk_size(int chunk_size) { return srs_success; }
-srs_error_t MockRtmpServerForPlayControl::response_connect_app(ISrsRequest *req, const char *server_ip) { return srs_success; }
-srs_error_t MockRtmpServerForPlayControl::on_bw_done() { return srs_success; }
-srs_error_t MockRtmpServerForPlayControl::identify_client(int stream_id, SrsRtmpConnType &type, std::string &stream_name, srs_utime_t &duration) { return srs_success; }
-srs_error_t MockRtmpServerForPlayControl::start_play(int stream_id) { return srs_success; }
-srs_error_t MockRtmpServerForPlayControl::start_fmle_publish(int stream_id) { return srs_success; }
-srs_error_t MockRtmpServerForPlayControl::start_haivision_publish(int stream_id) { return srs_success; }
-srs_error_t MockRtmpServerForPlayControl::fmle_unpublish(int stream_id, double unpublish_tid) { return srs_success; }
-srs_error_t MockRtmpServerForPlayControl::start_flash_publish(int stream_id) { return srs_success; }
-srs_error_t MockRtmpServerForPlayControl::start_publishing(int stream_id) { return srs_success; }
-srs_error_t MockRtmpServerForPlayControl::redirect(ISrsRequest *r, std::string url, bool &accepted) { return srs_success; }
-srs_error_t MockRtmpServerForPlayControl::send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs, int stream_id) { return srs_success; }
-
-srs_error_t MockRtmpServerForPlayControl::decode_message(SrsRtmpCommonMessage *msg, SrsRtmpCommand **ppacket)
-{
-    decode_message_count_++;
-    *ppacket = decode_message_packet_;
-    decode_message_packet_ = NULL;
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForPlayControl::send_and_free_packet(SrsRtmpCommand *packet, int stream_id)
-{
-    send_and_free_packet_count_++;
-    srs_freep(packet);
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForPlayControl::on_play_client_pause(int stream_id, bool is_pause)
-{
-    on_play_client_pause_count_++;
-    last_pause_state_ = is_pause;
-    return srs_success;
-}
-
-srs_error_t MockRtmpServerForPlayControl::set_in_window_ack_size(int ack_size) { return srs_success; }
-srs_error_t MockRtmpServerForPlayControl::recv_message(SrsRtmpCommonMessage **pmsg) { return srs_success; }
-void MockRtmpServerForPlayControl::set_auto_response(bool v) {}
-void MockRtmpServerForPlayControl::set_merge_read(bool v, IMergeReadHandler *handler) {}
-void MockRtmpServerForPlayControl::set_recv_buffer(int buffer_size) {}
-
-void MockRtmpServerForPlayControl::reset()
-{
-    srs_freep(decode_message_packet_);
-    decode_message_count_ = 0;
-    send_and_free_packet_count_ = 0;
-    on_play_client_pause_count_ = 0;
-    last_pause_state_ = false;
 }
 
 MockLiveConsumerForPlayControl::MockLiveConsumerForPlayControl(ISrsLiveSource *source)
@@ -2827,7 +2433,7 @@ VOID TEST(SrsRtmpConnTest, ProcessPlayControlMsgPauseSuccess)
         conn->assemble();
 
         // Create mock rtmp server
-        MockRtmpServerForPlayControl *mock_rtmp = new MockRtmpServerForPlayControl();
+        MockRtmpServer *mock_rtmp = new MockRtmpServer();
 
         // Create pause packet to be returned by decode_message
         SrsPausePacket *pause_pkt = new SrsPausePacket();

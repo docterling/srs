@@ -616,6 +616,8 @@ public:
     virtual std::vector<std::string> get_engine_aparams(SrsConfDirective *conf) = 0;
     virtual std::string get_engine_oformat(SrsConfDirective *conf) = 0;
     virtual std::string get_engine_output(SrsConfDirective *conf) = 0;
+    virtual bool get_security_enabled(std::string vhost) = 0;
+    virtual SrsConfDirective *get_security_rules(std::string vhost) = 0;
 };
 
 // The config service provider.
@@ -689,16 +691,14 @@ public:
 SRS_DECLARE_PROTECTED: // clang-format on
     // Reload  from the config.
     // @remark, use protected for the utest to override with mock.
-    virtual srs_error_t
-    reload_conf(SrsConfig *conf);
+    virtual srs_error_t reload_conf(SrsConfig *conf);
 
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     // Parse options and file
 public:
     // Parse the cli, the main(argc,argv) function.
-    virtual srs_error_t
-    parse_options(int argc, char **argv);
+    virtual srs_error_t parse_options(int argc, char **argv);
     // initialize the cwd for server,
     // because we may change the workdir.
     virtual srs_error_t initialize_cwd();
@@ -723,8 +723,7 @@ public:
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     // Parse each argv.
-    virtual srs_error_t
-    parse_argv(int &i, char **argv);
+    virtual srs_error_t parse_argv(int &i, char **argv);
     // Print help and exit.
     virtual void print_help(char **argv);
 
@@ -735,8 +734,7 @@ public:
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     // Build a buffer from a src, which is string content or filename.
-    virtual srs_error_t
-    build_buffer(std::string src, srs_internal::SrsConfigBuffer **pbuffer);
+    virtual srs_error_t build_buffer(std::string src, srs_internal::SrsConfigBuffer **pbuffer);
 
 public:
     // Check the parsed config.
@@ -752,8 +750,7 @@ SRS_DECLARE_PROTECTED: // clang-format on
     // Parse config from the buffer.
     // @param buffer, the config buffer, user must delete it.
     // @remark, use protected for the utest to override with mock.
-    virtual srs_error_t
-    parse_buffer(srs_internal::SrsConfigBuffer *buffer);
+    virtual srs_error_t parse_buffer(srs_internal::SrsConfigBuffer *buffer);
     // global env
 public:
     // Get the current work directory.

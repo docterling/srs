@@ -162,8 +162,7 @@ public:
 SRS_DECLARE_PRIVATE: // clang-format on
     // Cycle the hourglass, which will sleep resolution every time.
     // and call handler when ticked.
-    virtual srs_error_t
-    cycle();
+    virtual srs_error_t cycle();
 };
 
 // To monitor the system wall clock timer deviation.

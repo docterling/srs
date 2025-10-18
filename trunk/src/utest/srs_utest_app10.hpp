@@ -340,52 +340,6 @@ public:
     void reset();
 };
 
-// Mock ISrsRtmpServer for testing SrsRtmpConn::stream_service_cycle()
-class MockRtmpServerForStreamService : public ISrsRtmpServer
-{
-public:
-    SrsRtmpConnType identify_type_;
-    std::string identify_stream_;
-    srs_utime_t identify_duration_;
-    int start_play_count_;
-    int start_fmle_publish_count_;
-    int start_flash_publish_count_;
-    int start_haivision_publish_count_;
-
-public:
-    MockRtmpServerForStreamService();
-    virtual ~MockRtmpServerForStreamService();
-
-public:
-    virtual void set_recv_timeout(srs_utime_t tm);
-    virtual void set_send_timeout(srs_utime_t tm);
-    virtual srs_error_t handshake();
-    virtual srs_error_t connect_app(ISrsRequest *req);
-    virtual uint32_t proxy_real_ip();
-    virtual srs_error_t set_window_ack_size(int ack_size);
-    virtual srs_error_t set_peer_bandwidth(int bandwidth, int type);
-    virtual srs_error_t set_chunk_size(int chunk_size);
-    virtual srs_error_t response_connect_app(ISrsRequest *req, const char *server_ip);
-    virtual srs_error_t on_bw_done();
-    virtual srs_error_t identify_client(int stream_id, SrsRtmpConnType &type, std::string &stream_name, srs_utime_t &duration);
-    virtual srs_error_t start_play(int stream_id);
-    virtual srs_error_t start_fmle_publish(int stream_id);
-    virtual srs_error_t start_haivision_publish(int stream_id);
-    virtual srs_error_t fmle_unpublish(int stream_id, double unpublish_tid);
-    virtual srs_error_t start_flash_publish(int stream_id);
-    virtual srs_error_t start_publishing(int stream_id);
-    virtual srs_error_t redirect(ISrsRequest *r, std::string url, bool &accepted);
-    virtual srs_error_t send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs, int stream_id);
-    virtual srs_error_t decode_message(SrsRtmpCommonMessage *msg, SrsRtmpCommand **ppacket);
-    virtual srs_error_t send_and_free_packet(SrsRtmpCommand *packet, int stream_id);
-    virtual srs_error_t on_play_client_pause(int stream_id, bool is_pause);
-    virtual srs_error_t set_in_window_ack_size(int ack_size);
-    virtual srs_error_t recv_message(SrsRtmpCommonMessage **pmsg);
-    virtual void set_auto_response(bool v);
-    virtual void set_merge_read(bool v, IMergeReadHandler *handler);
-    virtual void set_recv_buffer(int buffer_size);
-};
-
 // Mock ISrsCoroutine for testing SrsRtmpConn::service_cycle()
 class MockCoroutineForRtmpConn : public ISrsCoroutine
 {
@@ -415,6 +369,7 @@ public:
 
 public:
     virtual srs_netfd_t fd();
+    virtual int osfd();
     virtual ISrsProtocolReadWriter *io();
     virtual srs_error_t handshake();
     virtual const char *transport_type();
@@ -422,109 +377,6 @@ public:
     virtual srs_error_t set_tcp_nodelay(bool v);
     virtual int64_t get_recv_bytes();
     virtual int64_t get_send_bytes();
-};
-
-// Mock ISrsSecurity for testing SrsRtmpConn::stream_service_cycle()
-class MockSecurityForStreamService : public ISrsSecurity
-{
-public:
-    MockSecurityForStreamService();
-    virtual ~MockSecurityForStreamService();
-
-public:
-    virtual srs_error_t check(SrsRtmpConnType type, std::string ip, ISrsRequest *req);
-};
-
-// Mock ISrsRtmpServer for testing SrsRtmpConn::handle_publish_message()
-class MockRtmpServerForHandlePublishMessage : public ISrsRtmpServer
-{
-public:
-    srs_error_t decode_message_error_;
-    SrsRtmpCommand *decode_message_packet_;
-    int decode_message_count_;
-    srs_error_t fmle_unpublish_error_;
-    int fmle_unpublish_count_;
-
-public:
-    MockRtmpServerForHandlePublishMessage();
-    virtual ~MockRtmpServerForHandlePublishMessage();
-
-public:
-    virtual void set_recv_timeout(srs_utime_t tm);
-    virtual void set_send_timeout(srs_utime_t tm);
-    virtual srs_error_t handshake();
-    virtual srs_error_t connect_app(ISrsRequest *req);
-    virtual uint32_t proxy_real_ip();
-    virtual srs_error_t set_window_ack_size(int ack_size);
-    virtual srs_error_t set_peer_bandwidth(int bandwidth, int type);
-    virtual srs_error_t set_chunk_size(int chunk_size);
-    virtual srs_error_t response_connect_app(ISrsRequest *req, const char *server_ip);
-    virtual srs_error_t on_bw_done();
-    virtual srs_error_t identify_client(int stream_id, SrsRtmpConnType &type, std::string &stream_name, srs_utime_t &duration);
-    virtual srs_error_t start_play(int stream_id);
-    virtual srs_error_t start_fmle_publish(int stream_id);
-    virtual srs_error_t start_haivision_publish(int stream_id);
-    virtual srs_error_t fmle_unpublish(int stream_id, double unpublish_tid);
-    virtual srs_error_t start_flash_publish(int stream_id);
-    virtual srs_error_t start_publishing(int stream_id);
-    virtual srs_error_t redirect(ISrsRequest *r, std::string url, bool &accepted);
-    virtual srs_error_t send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs, int stream_id);
-    virtual srs_error_t decode_message(SrsRtmpCommonMessage *msg, SrsRtmpCommand **ppacket);
-    virtual srs_error_t send_and_free_packet(SrsRtmpCommand *packet, int stream_id);
-    virtual srs_error_t on_play_client_pause(int stream_id, bool is_pause);
-    virtual srs_error_t set_in_window_ack_size(int ack_size);
-    virtual srs_error_t recv_message(SrsRtmpCommonMessage **pmsg);
-    virtual void set_auto_response(bool v);
-    virtual void set_merge_read(bool v, IMergeReadHandler *handler);
-    virtual void set_recv_buffer(int buffer_size);
-
-    void reset();
-};
-
-// Mock ISrsRtmpServer for testing SrsRtmpConn::process_play_control_msg()
-class MockRtmpServerForPlayControl : public ISrsRtmpServer
-{
-public:
-    SrsRtmpCommand *decode_message_packet_;
-    int decode_message_count_;
-    int send_and_free_packet_count_;
-    int on_play_client_pause_count_;
-    bool last_pause_state_;
-
-public:
-    MockRtmpServerForPlayControl();
-    virtual ~MockRtmpServerForPlayControl();
-
-public:
-    virtual void set_recv_timeout(srs_utime_t tm);
-    virtual void set_send_timeout(srs_utime_t tm);
-    virtual srs_error_t handshake();
-    virtual srs_error_t connect_app(ISrsRequest *req);
-    virtual uint32_t proxy_real_ip();
-    virtual srs_error_t set_window_ack_size(int ack_size);
-    virtual srs_error_t set_peer_bandwidth(int bandwidth, int type);
-    virtual srs_error_t set_chunk_size(int chunk_size);
-    virtual srs_error_t response_connect_app(ISrsRequest *req, const char *server_ip);
-    virtual srs_error_t on_bw_done();
-    virtual srs_error_t identify_client(int stream_id, SrsRtmpConnType &type, std::string &stream_name, srs_utime_t &duration);
-    virtual srs_error_t start_play(int stream_id);
-    virtual srs_error_t start_fmle_publish(int stream_id);
-    virtual srs_error_t start_haivision_publish(int stream_id);
-    virtual srs_error_t fmle_unpublish(int stream_id, double unpublish_tid);
-    virtual srs_error_t start_flash_publish(int stream_id);
-    virtual srs_error_t start_publishing(int stream_id);
-    virtual srs_error_t redirect(ISrsRequest *r, std::string url, bool &accepted);
-    virtual srs_error_t send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs, int stream_id);
-    virtual srs_error_t decode_message(SrsRtmpCommonMessage *msg, SrsRtmpCommand **ppacket);
-    virtual srs_error_t send_and_free_packet(SrsRtmpCommand *packet, int stream_id);
-    virtual srs_error_t on_play_client_pause(int stream_id, bool is_pause);
-    virtual srs_error_t set_in_window_ack_size(int ack_size);
-    virtual srs_error_t recv_message(SrsRtmpCommonMessage **pmsg);
-    virtual void set_auto_response(bool v);
-    virtual void set_merge_read(bool v, IMergeReadHandler *handler);
-    virtual void set_recv_buffer(int buffer_size);
-
-    void reset();
 };
 
 // Mock SrsLiveConsumer for testing SrsRtmpConn::process_play_control_msg()
