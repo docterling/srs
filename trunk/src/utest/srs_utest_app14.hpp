@@ -23,8 +23,8 @@
 #include <srs_protocol_http_stack.hpp>
 #include <srs_protocol_raw_avc.hpp>
 #include <srs_protocol_rtmp_conn.hpp>
-#include <srs_utest_ai16.hpp>
 #include <srs_utest_ai11.hpp>
+#include <srs_utest_ai16.hpp>
 
 #ifdef SRS_RTSP
 #include <srs_app_rtsp_conn.hpp>

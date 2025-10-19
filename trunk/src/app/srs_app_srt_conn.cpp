@@ -25,6 +25,14 @@ using namespace std;
 #include <srs_protocol_rtmp_stack.hpp>
 #include <srs_protocol_srt.hpp>
 
+ISrsSrtConnection::ISrsSrtConnection()
+{
+}
+
+ISrsSrtConnection::~ISrsSrtConnection()
+{
+}
+
 SrsSrtConnection::SrsSrtConnection(srs_srt_t srt_fd)
 {
     srt_fd_ = srt_fd;
@@ -40,6 +48,21 @@ srs_error_t SrsSrtConnection::initialize()
 {
     srs_error_t err = srs_success;
     return err;
+}
+
+srs_srt_t SrsSrtConnection::srtfd()
+{
+    return srt_fd_;
+}
+
+srs_error_t SrsSrtConnection::get_streamid(std::string &streamid)
+{
+    return srs_srt_get_streamid(srt_fd_, streamid);
+}
+
+srs_error_t SrsSrtConnection::get_stats(SrsSrtStat &stat)
+{
+    return stat.fetch(srt_fd_, true);
 }
 
 void SrsSrtConnection::set_recv_timeout(srs_utime_t tm)
@@ -176,8 +199,7 @@ SrsMpegtsSrtConn::SrsMpegtsSrtConn(ISrsResourceManager *resource_manager, srs_sr
 
     resource_manager_ = resource_manager;
 
-    srt_fd_ = srt_fd;
-    srt_conn_ = new SrsSrtConnection(srt_fd_);
+    srt_conn_ = new SrsSrtConnection(srt_fd);
     ip_ = ip;
     port_ = port;
 
@@ -247,6 +269,12 @@ srs_error_t SrsMpegtsSrtConn::start()
     return err;
 }
 
+void SrsMpegtsSrtConn::stop()
+{
+    trd_->interrupt();
+    trd_->stop();
+}
+
 std::string SrsMpegtsSrtConn::remote_ip()
 {
     return ip_;
@@ -275,7 +303,23 @@ srs_error_t SrsMpegtsSrtConn::cycle()
         return err;
     }
 
-    srs_error("srt serve error %s", srs_error_desc(err).c_str());
+    // It maybe success with message.
+    if (srs_error_code(err) == ERROR_SUCCESS) {
+        srs_trace("srt client finished%s.", srs_error_summary(err).c_str());
+        srs_freep(err);
+        return err;
+    }
+
+    // client close peer.
+    // TODO: FIXME: Only reset the error when client closed it.
+    if (srs_is_client_gracefully_close(err)) {
+        srs_warn("srt client disconnect peer. ret=%d", srs_error_code(err));
+    } else if (srs_is_server_gracefully_close(err)) {
+        srs_warn("srt server disconnect. ret=%d", srs_error_code(err));
+    } else {
+        srs_error("srt serve error %s", srs_error_desc(err).c_str());
+    }
+
     srs_freep(err);
     return srs_success;
 }
@@ -284,10 +328,10 @@ srs_error_t SrsMpegtsSrtConn::do_cycle()
 {
     srs_error_t err = srs_success;
 
-    srs_trace("SRT client ip=%s:%d, fd=%d", ip_.c_str(), port_, srt_fd_);
+    srs_trace("SRT client ip=%s:%d, fd=%d", ip_.c_str(), port_, (int)srt_conn_->srtfd());
 
     string streamid = "";
-    if ((err = srs_srt_get_streamid(srt_fd_, streamid)) != srs_success) {
+    if ((err = srt_conn_->get_streamid(streamid)) != srs_success) {
         return srs_error_wrap(err, "get srt streamid");
     }
 
@@ -520,7 +564,7 @@ srs_error_t SrsMpegtsSrtConn::do_publishing()
         pprint->elapse();
         if (pprint->can_print()) {
             SrsSrtStat s;
-            if ((err = s.fetch(srt_fd_, true)) != srs_success) {
+            if ((err = srt_conn_->get_stats(s)) != srs_success) {
                 srs_freep(err);
             } else {
                 srs_trace("<- " SRS_CONSTS_LOG_SRT_PUBLISH " Transport Stats # pktRecv=%" PRId64 ", pktRcvLoss=%d, pktRcvRetrans=%d, pktRcvDrop=%d",
@@ -601,7 +645,7 @@ srs_error_t SrsMpegtsSrtConn::do_playing()
         pprint->elapse();
         if (pprint->can_print()) {
             SrsSrtStat s;
-            if ((err = s.fetch(srt_fd_, true)) != srs_success) {
+            if ((err = srt_conn_->get_stats(s)) != srs_success) {
                 srs_freep(err);
             } else {
                 srs_trace("-> " SRS_CONSTS_LOG_SRT_PLAY " Transport Stats # pktSent=%" PRId64 ", pktSndLoss=%d, pktRetrans=%d, pktSndDrop=%d",

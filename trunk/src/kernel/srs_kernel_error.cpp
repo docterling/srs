@@ -203,7 +203,9 @@ bool srs_is_system_control_error(srs_error_t err)
 bool srs_is_client_gracefully_close(srs_error_t err)
 {
     int error_code = srs_error_code(err);
-    return error_code == ERROR_SOCKET_READ || error_code == ERROR_SOCKET_READ_FULLY || error_code == ERROR_SOCKET_WRITE;
+    return error_code == ERROR_SOCKET_READ || error_code == ERROR_SOCKET_READ_FULLY || error_code == ERROR_SOCKET_WRITE // For RTMP
+           || error_code == ERROR_SRT_IO                                                                                // For SRT
+        ;
 }
 
 bool srs_is_server_gracefully_close(srs_error_t err)

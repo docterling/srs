@@ -34,11 +34,25 @@ class ISrsSrtSourceManager;
 class ISrsLiveSourceManager;
 class ISrsRtcSourceManager;
 class ISrsHttpHooks;
+class SrsSrtStat;
+
+// The SRT connection interface.
+class ISrsSrtConnection : public ISrsProtocolReadWriter
+{
+public:
+    ISrsSrtConnection();
+    virtual ~ISrsSrtConnection();
+
+public:
+    virtual srs_srt_t srtfd() = 0;
+    virtual srs_error_t get_streamid(std::string &streamid) = 0;
+    virtual srs_error_t get_stats(SrsSrtStat &stat) = 0;
+};
 
 // The basic connection of SRS, for SRT based protocols,
 // all srt connections accept from srt listener must extends from this base class,
 // srt server will add the connection to manager, and delete it when remove.
-class SrsSrtConnection : public ISrsProtocolReadWriter
+class SrsSrtConnection : public ISrsSrtConnection
 {
 public:
     SrsSrtConnection(srs_srt_t srt_fd);
@@ -46,6 +60,13 @@ public:
 
 public:
     virtual srs_error_t initialize();
+
+    // Interface ISrsSrtConnection
+public:
+    virtual srs_srt_t srtfd();
+    virtual srs_error_t get_streamid(std::string &streamid);
+    virtual srs_error_t get_stats(SrsSrtStat &stat);
+
     // Interface ISrsProtocolReadWriter
 public:
     virtual void set_recv_timeout(srs_utime_t tm);
@@ -143,6 +164,7 @@ public:
 
 public:
     virtual srs_error_t start();
+    virtual void stop();
     // Interface ISrsConnection.
 public:
     virtual std::string remote_ip();
@@ -180,8 +202,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     ISrsResourceManager *resource_manager_;
-    srs_srt_t srt_fd_;
-    ISrsProtocolReadWriter *srt_conn_;
+    ISrsSrtConnection *srt_conn_;
     ISrsNetworkDelta *delta_;
     SrsNetworkKbps *kbps_;
     std::string ip_;

@@ -580,6 +580,8 @@ MockAppConfig::MockAppConfig()
     mw_sleep_ = 350 * SRS_UTIME_MILLISECONDS;
     rtc_dtls_role_ = "passive";
     default_vhost_ = NULL;
+    srt_to_rtmp_ = true;
+    rtc_from_rtmp_ = false;
 }
 
 MockAppConfig::~MockAppConfig()
@@ -677,7 +679,7 @@ std::string MockAppConfig::get_srt_default_streamid()
 
 bool MockAppConfig::get_srt_to_rtmp(std::string vhost)
 {
-    return true;
+    return srt_to_rtmp_;
 }
 
 bool MockAppConfig::get_rtc_to_rtmp(std::string vhost)
@@ -1227,6 +1229,8 @@ srs_error_t MockLiveSource::on_video(SrsRtmpCommonMessage *video)
 MockSrtSource::MockSrtSource()
 {
     can_publish_result_ = true;
+    on_publish_count_ = 0;
+    on_packet_count_ = 0;
 }
 
 MockSrtSource::~MockSrtSource()
@@ -1236,6 +1240,18 @@ MockSrtSource::~MockSrtSource()
 bool MockSrtSource::can_publish()
 {
     return can_publish_result_;
+}
+
+srs_error_t MockSrtSource::on_publish()
+{
+    on_publish_count_++;
+    return SrsSrtSource::on_publish();
+}
+
+srs_error_t MockSrtSource::on_packet(SrsSrtPacket *packet)
+{
+    on_packet_count_++;
+    return SrsSrtSource::on_packet(packet);
 }
 
 void MockSrtSource::set_can_publish(bool can_publish)
@@ -1270,12 +1286,18 @@ srs_error_t MockSrtSourceManager::initialize()
 
 srs_error_t MockSrtSourceManager::fetch_or_create(ISrsRequest *r, SrsSharedPtr<SrsSrtSource> &pps)
 {
+    srs_error_t err = srs_success;
+    if (fetch_or_create_count_ == 0) {
+        err = mock_source_->initialize(r);
+    }
+
     fetch_or_create_count_++;
     if (fetch_or_create_error_ != srs_success) {
         return srs_error_copy(fetch_or_create_error_);
     }
     pps = mock_source_;
-    return srs_success;
+
+    return err;
 }
 
 SrsSharedPtr<SrsSrtSource> MockSrtSourceManager::fetch(ISrsRequest *r)
@@ -1500,7 +1522,9 @@ srs_error_t MockRtmpServer::on_play_client_pause(int stream_id, bool is_pause)
 srs_error_t MockRtmpServer::recv_message(SrsRtmpCommonMessage **pmsg)
 {
     // No message received during playing util get control event.
-    cond_->wait();
+    if (recv_msgs_.empty()) {
+        cond_->wait();
+    }
 
     if (!recv_msgs_.empty()) {
         *pmsg = recv_msgs_.front();
@@ -1628,6 +1652,120 @@ srs_utime_t MockRtmpTransport::get_send_timeout()
 }
 
 srs_error_t MockRtmpTransport::writev(const iovec *iov, int iov_size, ssize_t *nwrite)
+{
+    return srs_success;
+}
+
+// Mock ISrsProtocolReadWriter implementation for SrsSrtRecvThread
+MockSrtConnection::MockSrtConnection()
+{
+    read_count_ = 0;
+    simulate_timeout_ = false;
+    recv_timeout_ = 1 * SRS_UTIME_SECONDS;
+    send_timeout_ = 1 * SRS_UTIME_SECONDS;
+    recv_bytes_ = 0;
+    send_bytes_ = 0;
+    streamid_ = "test_streamid";
+    srt_fd_ = 1;
+
+    read_error_ = srs_success;
+    cond_ = new SrsCond();
+}
+
+MockSrtConnection::~MockSrtConnection()
+{
+    srs_freep(read_error_);
+    srs_freep(cond_);
+    recv_msgs_.clear();
+}
+
+srs_error_t MockSrtConnection::read(void *buf, size_t size, ssize_t *nread)
+{
+    // Simulate timeout error
+    if (simulate_timeout_) {
+        return srs_error_new(ERROR_SRT_TIMEOUT, "srt timeout");
+    }
+
+    // No message received during playing util get control event.
+    if (recv_msgs_.empty()) {
+        cond_->wait();
+    }
+
+    read_count_++;
+
+    if (!recv_msgs_.empty()) {
+        string test_data_ = recv_msgs_.front();
+        recv_msgs_.erase(recv_msgs_.begin());
+
+        // Simulate reading data
+        size_t copy_size = srs_min(size, test_data_.size());
+        memcpy(buf, test_data_.c_str(), copy_size);
+        *nread = copy_size;
+        recv_bytes_ += copy_size;
+    }
+
+    return srs_error_copy(read_error_);
+}
+
+srs_error_t MockSrtConnection::read_fully(void *buf, size_t size, ssize_t *nread)
+{
+    return srs_error_new(ERROR_NOT_SUPPORTED, "not supported");
+}
+
+srs_error_t MockSrtConnection::write(void *buf, size_t size, ssize_t *nwrite)
+{
+    *nwrite = size;
+    send_bytes_ += size;
+    return srs_success;
+}
+
+srs_error_t MockSrtConnection::writev(const iovec *iov, int iov_size, ssize_t *nwrite)
+{
+    return srs_error_new(ERROR_NOT_SUPPORTED, "not supported");
+}
+
+void MockSrtConnection::set_recv_timeout(srs_utime_t tm)
+{
+    recv_timeout_ = tm;
+}
+
+srs_utime_t MockSrtConnection::get_recv_timeout()
+{
+    return recv_timeout_;
+}
+
+int64_t MockSrtConnection::get_recv_bytes()
+{
+    return recv_bytes_;
+}
+
+void MockSrtConnection::set_send_timeout(srs_utime_t tm)
+{
+    send_timeout_ = tm;
+}
+
+srs_utime_t MockSrtConnection::get_send_timeout()
+{
+    return send_timeout_;
+}
+
+int64_t MockSrtConnection::get_send_bytes()
+{
+    return send_bytes_;
+}
+
+srs_srt_t MockSrtConnection::srtfd()
+{
+    return srt_fd_;
+}
+
+srs_error_t MockSrtConnection::get_streamid(std::string &streamid)
+{
+    streamid = streamid_;
+    return srs_success;
+}
+
+srs_error_t MockSrtConnection::get_stats(SrsSrtStat &stat)
 {
     return srs_success;
 }

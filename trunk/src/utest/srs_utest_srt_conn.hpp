@@ -21,11 +21,11 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef SRS_UTEST_RTMP_CONN_HPP
-#define SRS_UTEST_RTMP_CONN_HPP
+#ifndef SRS_UTEST_SRT_CONN_HPP
+#define SRS_UTEST_SRT_CONN_HPP
 
 /*
-#include <srs_utest_rtmp_conn.hpp>
+#include <srs_utest_srt_conn.hpp>
 */
 #include <srs_utest.hpp>
 

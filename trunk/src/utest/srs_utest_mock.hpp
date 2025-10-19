@@ -38,6 +38,7 @@
 #include <srs_app_rtmp_conn.hpp>
 #include <srs_app_rtmp_source.hpp>
 #include <srs_app_security.hpp>
+#include <srs_app_srt_conn.hpp>
 #include <srs_app_srt_source.hpp>
 #include <srs_protocol_rtmp_stack.hpp>
 #include <srs_protocol_utility.hpp>
@@ -264,6 +265,8 @@ public:
     srs_utime_t mw_sleep_;
     std::string rtc_dtls_role_;
     SrsConfDirective *default_vhost_;
+    bool srt_to_rtmp_;
+    bool rtc_from_rtmp_;
 
 public:
     MockAppConfig();
@@ -394,7 +397,7 @@ public:
     virtual SrsConfDirective *get_vhost_on_play(std::string vhost) { return NULL; }
     virtual bool get_rtc_enabled(std::string vhost) { return false; }
     virtual bool get_rtsp_enabled(std::string vhost) { return false; }
-    virtual bool get_rtc_from_rtmp(std::string vhost) { return false; }
+    virtual bool get_rtc_from_rtmp(std::string vhost) { return rtc_from_rtmp_; }
     virtual bool get_rtsp_from_rtmp(std::string vhost) { return false; }
     // ISrsAppConfig methods
     virtual bool get_vhost_http_hooks_enabled(std::string vhost);
@@ -643,12 +646,20 @@ class MockSrtSource : public SrsSrtSource
 {
 public:
     bool can_publish_result_;
+    int on_publish_count_;
+    int on_packet_count_;
 
 public:
     MockSrtSource();
     virtual ~MockSrtSource();
+
+public:
     virtual bool can_publish();
-    void set_can_publish(bool can_publish);
+    virtual srs_error_t on_publish();
+    virtual srs_error_t on_packet(SrsSrtPacket *packet);
+
+public:
+    virtual void set_can_publish(bool can_publish);
 };
 
 // Mock SRT source manager for testing SrsRtcPublishStream
@@ -784,6 +795,46 @@ public:
     virtual void set_send_timeout(srs_utime_t tm);
     virtual srs_utime_t get_send_timeout();
     virtual srs_error_t writev(const iovec *iov, int iov_size, ssize_t *nwrite);
+};
+
+// Mock ISrsProtocolReadWriter for testing SrsSrtRecvThread
+class MockSrtConnection : public ISrsSrtConnection
+{
+public:
+    int read_count_;
+    bool simulate_timeout_;
+    srs_utime_t recv_timeout_;
+    srs_utime_t send_timeout_;
+    int64_t recv_bytes_;
+    int64_t send_bytes_;
+    std::string streamid_;
+    srs_srt_t srt_fd_;
+
+public:
+    srs_error_t read_error_;
+    std::vector<std::string> recv_msgs_;
+    SrsCond *cond_;
+
+public:
+    MockSrtConnection();
+    virtual ~MockSrtConnection();
+
+public:
+    virtual srs_error_t read(void *buf, size_t size, ssize_t *nread);
+    virtual srs_error_t read_fully(void *buf, size_t size, ssize_t *nread);
+    virtual srs_error_t write(void *buf, size_t size, ssize_t *nwrite);
+    virtual srs_error_t writev(const iovec *iov, int iov_size, ssize_t *nwrite);
+    virtual void set_recv_timeout(srs_utime_t tm);
+    virtual srs_utime_t get_recv_timeout();
+    virtual int64_t get_recv_bytes();
+    virtual void set_send_timeout(srs_utime_t tm);
+    virtual srs_utime_t get_send_timeout();
+    virtual int64_t get_send_bytes();
+
+public:
+    virtual srs_srt_t srtfd();
+    virtual srs_error_t get_streamid(std::string &streamid);
+    virtual srs_error_t get_stats(SrsSrtStat &stat);
 };
 
 #endif

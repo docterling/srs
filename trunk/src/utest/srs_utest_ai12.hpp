@@ -15,9 +15,9 @@
 #include <srs_app_rtc_conn.hpp>
 #include <srs_app_rtc_source.hpp>
 #include <srs_kernel_rtc_queue.hpp>
+#include <srs_utest_ai05.hpp>
 #include <srs_utest_ai07.hpp>
 #include <srs_utest_ai11.hpp>
-#include <srs_utest_ai05.hpp>
 #include <srs_utest_service.hpp>
 
 // Mock video recv track for testing check_send_nacks

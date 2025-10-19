@@ -18,9 +18,9 @@
 #include <srs_app_rtc_conn.hpp>
 #include <srs_app_stream_token.hpp>
 #include <srs_protocol_srt.hpp>
+#include <srs_utest_ai11.hpp>
 #include <srs_utest_ai15.hpp>
 #include <srs_utest_ai16.hpp>
-#include <srs_utest_ai11.hpp>
 
 // Mock ISrsSrtSocket for testing SrsSrtConnection
 class MockSrtSocket : public ISrsSrtSocket
@@ -86,36 +86,6 @@ public:
 
 public:
     virtual srs_error_t on_udp_packet(ISrsUdpMuxSocket *skt);
-};
-
-// Mock ISrsProtocolReadWriter for testing SrsSrtRecvThread
-class MockSrtProtocolReadWriter : public ISrsProtocolReadWriter
-{
-public:
-    srs_error_t read_error_;
-    int read_count_;
-    bool simulate_timeout_;
-    std::string test_data_;
-    srs_utime_t recv_timeout_;
-    srs_utime_t send_timeout_;
-    int64_t recv_bytes_;
-    int64_t send_bytes_;
-
-public:
-    MockSrtProtocolReadWriter();
-    virtual ~MockSrtProtocolReadWriter();
-
-public:
-    virtual srs_error_t read(void *buf, size_t size, ssize_t *nread);
-    virtual srs_error_t read_fully(void *buf, size_t size, ssize_t *nread);
-    virtual srs_error_t write(void *buf, size_t size, ssize_t *nwrite);
-    virtual srs_error_t writev(const iovec *iov, int iov_size, ssize_t *nwrite);
-    virtual void set_recv_timeout(srs_utime_t tm);
-    virtual srs_utime_t get_recv_timeout();
-    virtual int64_t get_recv_bytes();
-    virtual void set_send_timeout(srs_utime_t tm);
-    virtual srs_utime_t get_send_timeout();
-    virtual int64_t get_send_bytes();
 };
 
 // Mock ISrsCoroutine for testing SrsSrtRecvThread

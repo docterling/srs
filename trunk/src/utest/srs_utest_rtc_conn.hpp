@@ -24,6 +24,9 @@
 #ifndef SRS_UTEST_RTC_CONN_HPP
 #define SRS_UTEST_RTC_CONN_HPP
 
+/*
+#include <srs_utest_rtc_conn.hpp>
+*/
 #include <srs_utest.hpp>
 
 #include <srs_app_factory.hpp>

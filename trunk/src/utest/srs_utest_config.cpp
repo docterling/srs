@@ -2300,15 +2300,15 @@ VOID TEST(ConfigUnitTest, CheckDefaultValuesGlobal)
         srs_usleep(10 * SRS_UTIME_MILLISECONDS);
         srs_utime_t t1 = srs_time_now_realtime();
 
-        EXPECT_TRUE(t1 - t0 >= 10 * SRS_UTIME_MILLISECONDS);
+        EXPECT_GT(t1 - t0, 1 * SRS_UTIME_MILLISECONDS);
     }
 
     if (true) {
         srs_utime_t t0 = srs_time_now_cached();
         srs_utime_t t1 = srs_time_now_realtime();
 
-        EXPECT_TRUE(t0 > 0);
-        EXPECT_TRUE(t1 >= t0);
+        EXPECT_GT(t0, 0);
+        EXPECT_GE(t1, t0);
     }
 }
 

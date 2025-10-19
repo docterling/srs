@@ -382,7 +382,7 @@ if [[ $SRS_UTEST == YES ]]; then
         "srs_utest_source_lock" "srs_utest_stream_token" "srs_utest_rtc_recv_track" "srs_utest_st2" 
         "srs_utest_hevc_structs" "srs_utest_coworkers" "srs_utest_pithy_print" "srs_utest_protocol3" 
         "srs_utest_app" "srs_utest_mock" "srs_utest_rtc_playstream" "srs_utest_rtc_publishstream" 
-        "srs_utest_rtc_conn" "srs_utest_rtmp_conn")
+        "srs_utest_rtc_conn" "srs_utest_rtmp_conn" "srs_utest_srt_conn")
     MODULE_FILES+=("srs_utest_ai01" "srs_utest_ai02" "srs_utest_ai03" "srs_utest_ai04" "srs_utest_ai05" 
         "srs_utest_ai06" "srs_utest_ai07" "srs_utest_ai08" "srs_utest_ai09" "srs_utest_ai10" "srs_utest_ai11" 
         "srs_utest_ai12" "srs_utest_ai13" "srs_utest_ai14" "srs_utest_ai15" "srs_utest_ai16" "srs_utest_ai17" 

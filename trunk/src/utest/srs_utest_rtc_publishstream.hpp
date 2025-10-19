@@ -24,6 +24,9 @@
 #ifndef SRS_UTEST_RTC_PUBLISHSTREAM_HPP
 #define SRS_UTEST_RTC_PUBLISHSTREAM_HPP
 
+/*
+#include <srs_utest_rtc_publishstream.hpp>
+*/
 #include <srs_utest.hpp>
 
 #endif

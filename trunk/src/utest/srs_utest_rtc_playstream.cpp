@@ -9,8 +9,8 @@
 #include <srs_app_rtc_conn.hpp>
 #include <srs_app_rtc_source.hpp>
 #include <srs_kernel_error.hpp>
-#include <srs_utest_app.hpp>
 #include <srs_utest_ai11.hpp>
+#include <srs_utest_app.hpp>
 #include <srs_utest_mock.hpp>
 
 // This test is used to verify the basic workflow of the RTC play stream.
