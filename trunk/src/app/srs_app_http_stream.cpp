@@ -681,24 +681,28 @@ srs_error_t SrsLiveStream::serve_http_impl(ISrsHttpResponseWriter *w, ISrsHttpMe
 
     // Note that we should enable stat for HTTP streaming client, because each HTTP streaming connection is a real
     // session that should have statistics for itself.
+    srs_assert(hxc);
     hxc->set_enable_stat(true);
+
+    // Create a distinct request for this request.
+    SrsUniquePtr<ISrsRequest> req(req_->copy()->as_http());
 
     // Correct the app and stream by path, which is created from template.
     // @remark Be careful that the stream has extension now, might cause identify fail.
     SrsPath path;
-    req_->stream_ = path.filepath_base(r->path());
+    req->stream_ = path.filepath_base(r->path());
     // remove the extension of stream if have. for instance, test.flv -> test
-    req_->stream_ = path.filepath_filename(req_->stream_);
+    req->stream_ = path.filepath_filename(req->stream_);
 
     // update client ip
-    req_->ip_ = hc->remote_ip();
+    req->ip_ = hc->remote_ip();
 
     // We must do stat the client before hooks, because hooks depends on it.
-    if ((err = stat_->on_client(_srs_context->get_id().c_str(), req_, hc, SrsFlvPlay)) != srs_success) {
+    if ((err = stat_->on_client(_srs_context->get_id().c_str(), req.get(), hc, SrsFlvPlay)) != srs_success) {
         return srs_error_wrap(err, "stat on client");
     }
 
-    if ((err = security_->check(SrsFlvPlay, req_->ip_, req_)) != srs_success) {
+    if ((err = security_->check(SrsFlvPlay, req->ip_, req.get())) != srs_success) {
         return srs_error_wrap(err, "flv: security check");
     }
 
@@ -714,13 +718,13 @@ srs_error_t SrsLiveStream::serve_http_impl(ISrsHttpResponseWriter *w, ISrsHttpMe
 
     // Always try to create the source, because http handler won't create it.
     SrsSharedPtr<SrsLiveSource> live_source;
-    if ((err = live_sources_->fetch_or_create(req_, live_source)) != srs_success) {
+    if ((err = live_sources_->fetch_or_create(req.get(), live_source)) != srs_success) {
         return srs_error_wrap(err, "source create");
     }
     srs_assert(live_source.get() != NULL);
 
-    bool enabled_cache = config_->get_gop_cache(req_->vhost_);
-    int gcmf = config_->get_gop_cache_max_frames(req_->vhost_);
+    bool enabled_cache = config_->get_gop_cache(req->vhost_);
+    int gcmf = config_->get_gop_cache_max_frames(req->vhost_);
     live_source->set_cache(enabled_cache);
     live_source->set_gop_cache_max_frames(gcmf);
 

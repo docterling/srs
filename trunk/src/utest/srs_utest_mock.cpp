@@ -361,8 +361,8 @@ void MockRtcSourceManager::reset()
     fetch_or_create_count_ = 0;
 }
 
-// MockRtcStatistic implementation
-MockRtcStatistic::MockRtcStatistic()
+// MockAppStatistic implementation
+MockAppStatistic::MockAppStatistic()
 {
     on_client_error_ = srs_success;
     on_client_count_ = 0;
@@ -373,17 +373,17 @@ MockRtcStatistic::MockRtcStatistic()
     last_client_type_ = SrsRtmpConnUnknown;
 }
 
-MockRtcStatistic::~MockRtcStatistic()
+MockAppStatistic::~MockAppStatistic()
 {
     srs_freep(on_client_error_);
 }
 
-void MockRtcStatistic::on_disconnect(std::string id, srs_error_t err)
+void MockAppStatistic::on_disconnect(std::string id, srs_error_t err)
 {
     on_disconnect_count_++;
 }
 
-srs_error_t MockRtcStatistic::on_client(std::string id, ISrsRequest *req, ISrsExpire *conn, SrsRtmpConnType type)
+srs_error_t MockAppStatistic::on_client(std::string id, ISrsRequest *req, ISrsExpire *conn, SrsRtmpConnType type)
 {
     on_client_count_++;
     last_client_id_ = id;
@@ -393,99 +393,99 @@ srs_error_t MockRtcStatistic::on_client(std::string id, ISrsRequest *req, ISrsEx
     return srs_error_copy(on_client_error_);
 }
 
-srs_error_t MockRtcStatistic::on_video_info(ISrsRequest *req, SrsVideoCodecId vcodec, int avc_profile, int avc_level, int width, int height)
+srs_error_t MockAppStatistic::on_video_info(ISrsRequest *req, SrsVideoCodecId vcodec, int avc_profile, int avc_level, int width, int height)
 {
     return srs_success;
 }
 
-srs_error_t MockRtcStatistic::on_audio_info(ISrsRequest *req, SrsAudioCodecId acodec, SrsAudioSampleRate asample_rate, SrsAudioChannels asound_type, SrsAacObjectType aac_object)
+srs_error_t MockAppStatistic::on_audio_info(ISrsRequest *req, SrsAudioCodecId acodec, SrsAudioSampleRate asample_rate, SrsAudioChannels asound_type, SrsAacObjectType aac_object)
 {
     return srs_success;
 }
 
-void MockRtcStatistic::on_stream_publish(ISrsRequest *req, std::string publisher_id)
+void MockAppStatistic::on_stream_publish(ISrsRequest *req, std::string publisher_id)
 {
 }
 
-void MockRtcStatistic::on_stream_close(ISrsRequest *req)
+void MockAppStatistic::on_stream_close(ISrsRequest *req)
 {
 }
 
-void MockRtcStatistic::kbps_add_delta(std::string id, ISrsKbpsDelta *delta)
+void MockAppStatistic::kbps_add_delta(std::string id, ISrsKbpsDelta *delta)
 {
 }
 
-void MockRtcStatistic::kbps_sample()
+void MockAppStatistic::kbps_sample()
 {
 }
 
-srs_error_t MockRtcStatistic::on_video_frames(ISrsRequest *req, int nb_frames)
+srs_error_t MockAppStatistic::on_video_frames(ISrsRequest *req, int nb_frames)
 {
     return srs_success;
 }
 
-std::string MockRtcStatistic::server_id()
+std::string MockAppStatistic::server_id()
 {
     return "";
 }
 
-std::string MockRtcStatistic::service_id()
+std::string MockAppStatistic::service_id()
 {
     return "";
 }
 
-std::string MockRtcStatistic::service_pid()
+std::string MockAppStatistic::service_pid()
 {
     return "";
 }
 
-SrsStatisticVhost *MockRtcStatistic::find_vhost_by_id(std::string vid)
+SrsStatisticVhost *MockAppStatistic::find_vhost_by_id(std::string vid)
 {
     return NULL;
 }
 
-SrsStatisticStream *MockRtcStatistic::find_stream(std::string sid)
+SrsStatisticStream *MockAppStatistic::find_stream(std::string sid)
 {
     return NULL;
 }
 
-SrsStatisticStream *MockRtcStatistic::find_stream_by_url(std::string url)
+SrsStatisticStream *MockAppStatistic::find_stream_by_url(std::string url)
 {
     return NULL;
 }
 
-SrsStatisticClient *MockRtcStatistic::find_client(std::string client_id)
+SrsStatisticClient *MockAppStatistic::find_client(std::string client_id)
 {
     return NULL;
 }
 
-srs_error_t MockRtcStatistic::dumps_vhosts(SrsJsonArray *arr)
+srs_error_t MockAppStatistic::dumps_vhosts(SrsJsonArray *arr)
 {
     return srs_success;
 }
 
-srs_error_t MockRtcStatistic::dumps_streams(SrsJsonArray *arr, int start, int count)
+srs_error_t MockAppStatistic::dumps_streams(SrsJsonArray *arr, int start, int count)
 {
     return srs_success;
 }
 
-srs_error_t MockRtcStatistic::dumps_clients(SrsJsonArray *arr, int start, int count)
+srs_error_t MockAppStatistic::dumps_clients(SrsJsonArray *arr, int start, int count)
 {
     return srs_success;
 }
 
-srs_error_t MockRtcStatistic::dumps_metrics(int64_t &send_bytes, int64_t &recv_bytes, int64_t &nstreams, int64_t &nclients, int64_t &total_nclients, int64_t &nerrs)
+srs_error_t MockAppStatistic::dumps_metrics(int64_t &send_bytes, int64_t &recv_bytes, int64_t &nstreams, int64_t &nclients, int64_t &total_nclients, int64_t &nerrs)
 {
     return srs_success;
 }
 
-void MockRtcStatistic::set_on_client_error(srs_error_t err)
+void MockAppStatistic::set_on_client_error(srs_error_t err)
 {
     srs_freep(on_client_error_);
     on_client_error_ = srs_error_copy(err);
 }
 
-void MockRtcStatistic::reset()
+void MockAppStatistic::reset()
 {
     srs_freep(on_client_error_);
     on_client_error_ = srs_success;
@@ -1185,6 +1185,7 @@ MockLiveSource::MockLiveSource()
     can_publish_result_ = true;
     on_audio_count_ = 0;
     on_video_count_ = 0;
+    on_dump_packets_count_ = 0;
 }
 
 MockLiveSource::~MockLiveSource()
@@ -1211,6 +1212,12 @@ srs_error_t MockLiveSource::on_edge_start_publish()
 {
     // Mock implementation - just return success
     return srs_success;
+}
+
+srs_error_t MockLiveSource::consumer_dumps(ISrsLiveConsumer *consumer, bool ds, bool dm, bool dg)
+{
+    on_dump_packets_count_++;
+    return SrsLiveSource::consumer_dumps(consumer, ds, dm, dg);
 }
 
 srs_error_t MockLiveSource::on_audio(SrsRtmpCommonMessage *audio)
@@ -1526,12 +1533,24 @@ srs_error_t MockRtmpServer::recv_message(SrsRtmpCommonMessage **pmsg)
         cond_->wait();
     }
 
-    if (!recv_msgs_.empty()) {
-        *pmsg = recv_msgs_.front();
-        recv_msgs_.erase(recv_msgs_.begin());
+    if (recv_err_ != srs_success) {
+        return srs_error_copy(recv_err_);
     }
 
-    return srs_error_copy(recv_err_);
+    if (recv_msgs_.empty()) {
+        return srs_error_new(ERROR_SOCKET_READ, "mock rtmp server no message");
+    }
+
+    SrsRtmpCommonMessage *msg = recv_msgs_.front();
+    recv_msgs_.erase(recv_msgs_.begin());
+
+    if (pmsg) {
+        *pmsg = msg;
+    } else {
+        srs_freep(msg);
+    }
+
+    return srs_success;
 }
 
 void MockRtmpServer::set_merge_read(bool v, IMergeReadHandler *handler)
@@ -1570,10 +1589,18 @@ MockProtocolReadWriter::MockProtocolReadWriter()
 {
     recv_timeout_ = SRS_UTIME_NO_TIMEOUT;
     send_timeout_ = SRS_UTIME_NO_TIMEOUT;
+    read_count_ = 0;
+    recv_bytes_ = 0;
+
+    read_error_ = srs_success;
+    cond_ = new SrsCond();
 }
 
 MockProtocolReadWriter::~MockProtocolReadWriter()
 {
+    srs_freep(read_error_);
+    srs_freep(cond_);
+    recv_msgs_.clear();
 }
 
 srs_error_t MockProtocolReadWriter::read_fully(void *buf, size_t size, ssize_t *nread)
@@ -1583,6 +1610,32 @@ srs_error_t MockProtocolReadWriter::read_fully(void *buf, size_t size, ssize_t *
 
 srs_error_t MockProtocolReadWriter::read(void *buf, size_t size, ssize_t *nread)
 {
+    // No message received during playing util get control event.
+    if (recv_msgs_.empty()) {
+        cond_->wait();
+    }
+
+    read_count_++;
+
+    if (read_error_ != srs_success) {
+        return srs_error_copy(read_error_);
+    }
+
+    if (recv_msgs_.empty()) {
+        return srs_error_new(ERROR_SOCKET_READ, "mock rtmp server no message");
+    }
+
+    string test_data_ = recv_msgs_.front();
+    recv_msgs_.erase(recv_msgs_.begin());
+
+    // Simulate reading data
+    size_t copy_size = srs_min(size, test_data_.size());
+    memcpy(buf, test_data_.c_str(), copy_size);
+    if (nread) {
+        *nread = copy_size;
+    }
+    recv_bytes_ += copy_size;
+
     return srs_success;
 }
 
@@ -1726,11 +1779,19 @@ MockSslConnection::MockSslConnection()
     send_timeout_ = SRS_UTIME_NO_TIMEOUT;
     recv_bytes_ = 0;
     send_bytes_ = 0;
+    read_count_ = 0;
+
+    read_error_ = srs_success;
+    cond_ = new SrsCond();
 }
 
 MockSslConnection::~MockSslConnection()
 {
     srs_freep(handshake_error_);
+
+    srs_freep(read_error_);
+    srs_freep(cond_);
+    recv_msgs_.clear();
 }
 
 srs_error_t MockSslConnection::handshake(std::string key_file, std::string crt_file)
@@ -1766,7 +1827,33 @@ int64_t MockSslConnection::get_send_bytes()
 
 srs_error_t MockSslConnection::read(void *buf, size_t size, ssize_t *nread)
 {
-    return srs_error_new(ERROR_NOT_SUPPORTED, "mock ssl read");
+    // No message received during playing util get control event.
+    if (recv_msgs_.empty()) {
+        cond_->wait();
+    }
+
+    read_count_++;
+
+    if (read_error_ != srs_success) {
+        return srs_error_copy(read_error_);
+    }
+
+    if (recv_msgs_.empty()) {
+        return srs_error_new(ERROR_SOCKET_READ, "mock rtmp server no message");
+    }
+
+    string test_data_ = recv_msgs_.front();
+    recv_msgs_.erase(recv_msgs_.begin());
+
+    // Simulate reading data
+    size_t copy_size = srs_min(size, test_data_.size());
+    memcpy(buf, test_data_.c_str(), copy_size);
+    if (nread) {
+        *nread = copy_size;
+    }
+    recv_bytes_ += copy_size;
+
+    return srs_success;
 }
 
 void MockSslConnection::set_send_timeout(srs_utime_t tm)
@@ -1838,18 +1925,26 @@ srs_error_t MockSrtConnection::read(void *buf, size_t size, ssize_t *nread)
 
     read_count_++;
 
-    if (!recv_msgs_.empty()) {
-        string test_data_ = recv_msgs_.front();
-        recv_msgs_.erase(recv_msgs_.begin());
-
-        // Simulate reading data
-        size_t copy_size = srs_min(size, test_data_.size());
-        memcpy(buf, test_data_.c_str(), copy_size);
-        *nread = copy_size;
-        recv_bytes_ += copy_size;
+    if (read_error_ != srs_success) {
+        return srs_error_copy(read_error_);
     }
 
-    return srs_error_copy(read_error_);
+    if (recv_msgs_.empty()) {
+        return srs_error_new(ERROR_SOCKET_READ, "mock rtmp server no message");
+    }
+
+    string test_data_ = recv_msgs_.front();
+    recv_msgs_.erase(recv_msgs_.begin());
+
+    // Simulate reading data
+    size_t copy_size = srs_min(size, test_data_.size());
+    memcpy(buf, test_data_.c_str(), copy_size);
+    if (nread) {
+        *nread = copy_size;
+    }
+    recv_bytes_ += copy_size;
+
+    return srs_success;
 }
 
 srs_error_t MockSrtConnection::read_fully(void *buf, size_t size, ssize_t *nread)
@@ -1962,7 +2057,12 @@ srs_error_t MockHttpParser::parse_message(ISrsReader *reader, ISrsHttpMessage **
 
     ISrsHttpMessage *msg = messages_.front();
     messages_.erase(messages_.begin());
-    *ppmsg = msg;
+    if (ppmsg) {
+        *ppmsg = msg;
+    } else {
+        srs_freep(msg);
+    }
+
     return srs_success;
 }
 
@@ -2131,4 +2231,192 @@ srs_error_t MockHttpServeMux::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMess
 {
     serve_http_count_++;
     return srs_success;
+}
+
+// Mock request implementation for SrsBufferCache testing
+MockRequest::MockRequest(std::string vhost, std::string app, std::string stream)
+{
+    vhost_ = vhost;
+    app_ = app;
+    stream_ = stream;
+    host_ = "127.0.0.1";
+    port_ = 1935;
+    tcUrl_ = "rtmp://127.0.0.1/" + app;
+    schema_ = "rtmp";
+    param_ = "";
+    duration_ = 0;
+    args_ = NULL;
+    protocol_ = "rtmp";
+    objectEncoding_ = 0;
+}
+
+MockRequest::~MockRequest()
+{
+}
+
+ISrsRequest *MockRequest::copy()
+{
+    MockRequest *req = new MockRequest(vhost_, app_, stream_);
+    req->host_ = host_;
+    req->port_ = port_;
+    req->tcUrl_ = tcUrl_;
+    req->pageUrl_ = pageUrl_;
+    req->swfUrl_ = swfUrl_;
+    req->schema_ = schema_;
+    req->param_ = param_;
+    req->duration_ = duration_;
+    req->protocol_ = protocol_;
+    req->objectEncoding_ = objectEncoding_;
+    req->ip_ = ip_;
+    return req;
+}
+
+std::string MockRequest::get_stream_url()
+{
+    if (vhost_ == "__defaultVhost__" || vhost_.empty()) {
+        return "/" + app_ + "/" + stream_;
+    } else {
+        return vhost_ + "/" + app_ + "/" + stream_;
+    }
+}
+
+void MockRequest::update_auth(ISrsRequest *req)
+{
+    if (req) {
+        pageUrl_ = req->pageUrl_;
+        swfUrl_ = req->swfUrl_;
+        tcUrl_ = req->tcUrl_;
+    }
+}
+
+void MockRequest::strip()
+{
+    // Mock implementation - basic string cleanup
+    host_ = srs_strings_remove(host_, "/ \n\r\t");
+    vhost_ = srs_strings_remove(vhost_, "/ \n\r\t");
+    app_ = srs_strings_remove(app_, " \n\r\t");
+    stream_ = srs_strings_remove(stream_, " \n\r\t");
+
+    app_ = srs_strings_trim_end(app_, "/");
+    stream_ = srs_strings_trim_end(stream_, "/");
+}
+
+ISrsRequest *MockRequest::as_http()
+{
+    return copy();
+}
+
+MockBufferCache::MockBufferCache()
+{
+    dump_cache_count_ = 0;
+    last_consumer_ = NULL;
+    last_jitter_ = SrsRtmpJitterAlgorithmOFF;
+}
+
+MockBufferCache::~MockBufferCache()
+{
+}
+
+srs_error_t MockBufferCache::start()
+{
+    return srs_success;
+}
+
+void MockBufferCache::stop()
+{
+}
+
+bool MockBufferCache::alive()
+{
+    return true;
+}
+
+srs_error_t MockBufferCache::dump_cache(ISrsLiveConsumer *consumer, SrsRtmpJitterAlgorithm jitter)
+{
+    dump_cache_count_++;
+    last_consumer_ = consumer;
+    last_jitter_ = jitter;
+    return srs_success;
+}
+
+srs_error_t MockBufferCache::update_auth(ISrsRequest *r)
+{
+    return srs_success;
+}
+
+// Mock HTTP hooks implementation
+MockHttpHooks::MockHttpHooks()
+{
+    on_stop_count_ = 0;
+    on_unpublish_count_ = 0;
+}
+
+MockHttpHooks::~MockHttpHooks()
+{
+    clear_calls();
+}
+
+srs_error_t MockHttpHooks::on_connect(std::string url, ISrsRequest *req)
+{
+    return srs_success;
+}
+
+void MockHttpHooks::on_close(std::string url, ISrsRequest *req, int64_t send_bytes, int64_t recv_bytes)
+{
+}
+
+srs_error_t MockHttpHooks::on_publish(std::string url, ISrsRequest *req)
+{
+    return srs_success;
+}
+
+void MockHttpHooks::on_unpublish(std::string url, ISrsRequest *req)
+{
+    on_unpublish_count_++;
+    on_unpublish_calls_.push_back(std::make_pair(url, req));
+}
+
+srs_error_t MockHttpHooks::on_play(std::string url, ISrsRequest *req)
+{
+    return srs_success;
+}
+
+void MockHttpHooks::on_stop(std::string url, ISrsRequest *req)
+{
+    on_stop_count_++;
+    on_stop_calls_.push_back(std::make_pair(url, req));
+}
+
+srs_error_t MockHttpHooks::on_dvr(SrsContextId cid, std::string url, ISrsRequest *req, std::string file)
+{
+    return srs_success;
+}
+
+srs_error_t MockHttpHooks::on_hls(SrsContextId cid, std::string url, ISrsRequest *req, std::string file, std::string ts_url,
+                                  std::string m3u8, std::string m3u8_url, int sn, srs_utime_t duration)
+{
+    return srs_success;
+}
+
+srs_error_t MockHttpHooks::on_hls_notify(SrsContextId cid, std::string url, ISrsRequest *req, std::string ts_url, int nb_notify)
+{
+    return srs_success;
+}
+
+srs_error_t MockHttpHooks::discover_co_workers(std::string url, std::string &host, int &port)
+{
+    return srs_success;
+}
+
+srs_error_t MockHttpHooks::on_forward_backend(std::string url, ISrsRequest *req, std::vector<std::string> &rtmp_urls)
+{
+    return srs_success;
+}
+
+void MockHttpHooks::clear_calls()
+{
+    on_stop_calls_.clear();
+    on_stop_count_ = 0;
+    on_unpublish_calls_.clear();
+    on_unpublish_count_ = 0;
 }

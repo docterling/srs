@@ -34,44 +34,6 @@ extern srs_error_t _srs_reload_err;
 extern SrsReloadState _srs_reload_state;
 extern std::string _srs_reload_id;
 
-MockBufferCacheForAac::MockBufferCacheForAac()
-{
-    dump_cache_count_ = 0;
-    last_consumer_ = NULL;
-    last_jitter_ = SrsRtmpJitterAlgorithmOFF;
-}
-
-MockBufferCacheForAac::~MockBufferCacheForAac()
-{
-}
-
-srs_error_t MockBufferCacheForAac::start()
-{
-    return srs_success;
-}
-
-void MockBufferCacheForAac::stop()
-{
-}
-
-bool MockBufferCacheForAac::alive()
-{
-    return true;
-}
-
-srs_error_t MockBufferCacheForAac::dump_cache(ISrsLiveConsumer *consumer, SrsRtmpJitterAlgorithm jitter)
-{
-    dump_cache_count_++;
-    last_consumer_ = consumer;
-    last_jitter_ = jitter;
-    return srs_success;
-}
-
-srs_error_t MockBufferCacheForAac::update_auth(ISrsRequest *r)
-{
-    return srs_success;
-}
-
 VOID TEST(KernelBalanceTest, RoundRobinBasicSelection)
 {
     // Test the major use scenario: round-robin selection across multiple servers
@@ -117,79 +79,6 @@ VOID TEST(KernelBalanceTest, RoundRobinBasicSelection)
     EXPECT_EQ(2, (int)lb->current());
 }
 
-// Mock request implementation for SrsBufferCache testing
-MockBufferCacheRequest::MockBufferCacheRequest(std::string vhost, std::string app, std::string stream)
-{
-    vhost_ = vhost;
-    app_ = app;
-    stream_ = stream;
-    host_ = "127.0.0.1";
-    port_ = 1935;
-    tcUrl_ = "rtmp://127.0.0.1/" + app;
-    schema_ = "rtmp";
-    param_ = "";
-    duration_ = 0;
-    args_ = NULL;
-    protocol_ = "rtmp";
-    objectEncoding_ = 0;
-}
-
-MockBufferCacheRequest::~MockBufferCacheRequest()
-{
-}
-
-ISrsRequest *MockBufferCacheRequest::copy()
-{
-    MockBufferCacheRequest *req = new MockBufferCacheRequest(vhost_, app_, stream_);
-    req->host_ = host_;
-    req->port_ = port_;
-    req->tcUrl_ = tcUrl_;
-    req->pageUrl_ = pageUrl_;
-    req->swfUrl_ = swfUrl_;
-    req->schema_ = schema_;
-    req->param_ = param_;
-    req->duration_ = duration_;
-    req->protocol_ = protocol_;
-    req->objectEncoding_ = objectEncoding_;
-    req->ip_ = ip_;
-    return req;
-}
-
-std::string MockBufferCacheRequest::get_stream_url()
-{
-    if (vhost_ == "__defaultVhost__" || vhost_.empty()) {
-        return "/" + app_ + "/" + stream_;
-    } else {
-        return vhost_ + "/" + app_ + "/" + stream_;
-    }
-}
-
-void MockBufferCacheRequest::update_auth(ISrsRequest *req)
-{
-    if (req) {
-        pageUrl_ = req->pageUrl_;
-        swfUrl_ = req->swfUrl_;
-        tcUrl_ = req->tcUrl_;
-    }
-}
-
-void MockBufferCacheRequest::strip()
-{
-    // Mock implementation - basic string cleanup
-    host_ = srs_strings_remove(host_, "/ \n\r\t");
-    vhost_ = srs_strings_remove(vhost_, "/ \n\r\t");
-    app_ = srs_strings_remove(app_, " \n\r\t");
-    stream_ = srs_strings_remove(stream_, " \n\r\t");
-
-    app_ = srs_strings_trim_end(app_, "/");
-    stream_ = srs_strings_trim_end(stream_, "/");
-}
-
-ISrsRequest *MockBufferCacheRequest::as_http()
-{
-    return copy();
-}
-
 VOID TEST(SrsBufferCacheTest, ConstructorAndUpdateAuth)
 {
     srs_error_t err;
@@ -198,7 +87,7 @@ VOID TEST(SrsBufferCacheTest, ConstructorAndUpdateAuth)
     // This covers the typical HTTP streaming cache initialization use case
 
     // Create mock request
-    SrsUniquePtr<MockBufferCacheRequest> mock_request(new MockBufferCacheRequest("test.vhost", "live", "stream1"));
+    SrsUniquePtr<MockRequest> mock_request(new MockRequest("test.vhost", "live", "stream1"));
     mock_request->pageUrl_ = "http://example.com/page";
     mock_request->swfUrl_ = "http://example.com/player.swf";
     mock_request->tcUrl_ = "rtmp://127.0.0.1/live";
@@ -224,7 +113,7 @@ VOID TEST(SrsBufferCacheTest, ConstructorAndUpdateAuth)
     EXPECT_TRUE(cache->live_sources_ != NULL);
 
     // Test update_auth - should update the request with new auth info
-    SrsUniquePtr<MockBufferCacheRequest> new_request(new MockBufferCacheRequest("test.vhost", "live", "stream1"));
+    SrsUniquePtr<MockRequest> new_request(new MockRequest("test.vhost", "live", "stream1"));
     new_request->pageUrl_ = "http://example.com/new_page";
     new_request->swfUrl_ = "http://example.com/new_player.swf";
     new_request->tcUrl_ = "rtmp://127.0.0.1/live_new";
@@ -248,7 +137,7 @@ VOID TEST(SrsBufferCacheTest, DumpCacheWithMessages)
     // This covers the typical HTTP streaming cache dump use case
 
     // Create mock request
-    SrsUniquePtr<MockBufferCacheRequest> mock_request(new MockBufferCacheRequest("test.vhost", "live", "stream1"));
+    SrsUniquePtr<MockRequest> mock_request(new MockRequest("test.vhost", "live", "stream1"));
 
     // Create buffer cache
     SrsUniquePtr<SrsBufferCache> cache(new SrsBufferCache(mock_request.get()));
@@ -658,7 +547,7 @@ VOID TEST(AppHttpStreamTest, AacStreamEncoderMajorScenario)
     SrsUniquePtr<MockSrsFileWriter> writer(new MockSrsFileWriter());
     HELPER_EXPECT_SUCCESS(writer->open("test.aac"));
 
-    MockBufferCacheForAac mock_cache;
+    MockBufferCache mock_cache;
 
     // Create AAC stream encoder
     SrsUniquePtr<SrsAacStreamEncoder> encoder(new SrsAacStreamEncoder());
@@ -836,10 +725,10 @@ VOID TEST(SrsLiveStreamTest, ServeHttpWithDisabledEntry)
     // security check and HTTP hooks
 
     // Create mock request
-    SrsUniquePtr<MockBufferCacheRequest> mock_request(new MockBufferCacheRequest("test.vhost", "live", "stream1"));
+    SrsUniquePtr<MockRequest> mock_request(new MockRequest("test.vhost", "live", "stream1"));
 
     // Create mock buffer cache
-    SrsUniquePtr<MockBufferCacheForAac> mock_cache(new MockBufferCacheForAac());
+    SrsUniquePtr<MockBufferCache> mock_cache(new MockBufferCache());
 
     // Create SrsLiveStream
     SrsUniquePtr<SrsLiveStream> live_stream(new SrsLiveStream(mock_request.get(), mock_cache.get()));
@@ -1116,10 +1005,10 @@ VOID TEST(SrsLiveStreamTest, HttpHooksOnPlayAndStop)
     // This covers the typical HTTP-FLV/HLS streaming hook notification use case
 
     // Create mock request
-    SrsUniquePtr<MockBufferCacheRequest> mock_request(new MockBufferCacheRequest("test.vhost", "live", "stream1"));
+    SrsUniquePtr<MockRequest> mock_request(new MockRequest("test.vhost", "live", "stream1"));
 
     // Create mock buffer cache
-    SrsUniquePtr<MockBufferCacheForAac> mock_cache(new MockBufferCacheForAac());
+    SrsUniquePtr<MockBufferCache> mock_cache(new MockBufferCache());
 
     // Create SrsLiveStream
     SrsUniquePtr<SrsLiveStream> live_stream(new SrsLiveStream(mock_request.get(), mock_cache.get()));
@@ -1392,7 +1281,7 @@ VOID TEST(SrsHttpStreamServerTest, HttpMountAndUnmount)
         server->templateHandlers_[vhost] = tmpl;
 
         // Create mock request for stream
-        SrsUniquePtr<MockBufferCacheRequest> mock_request(new MockBufferCacheRequest(vhost, "live", "stream1"));
+        SrsUniquePtr<MockRequest> mock_request(new MockRequest(vhost, "live", "stream1"));
 
         // Test http_mount - should create stream entry from template
         HELPER_EXPECT_SUCCESS(server->http_mount(mock_request.get()));
@@ -1947,8 +1836,8 @@ VOID TEST(SrsLiveStreamTest, StreamingSendMessagesWithMixedPackets)
     // This covers the typical HTTP streaming workflow where encoder writes different packet types
 
     // Create mock request and buffer cache
-    SrsUniquePtr<MockBufferCacheRequest> mock_request(new MockBufferCacheRequest("test.vhost", "live", "stream1"));
-    SrsUniquePtr<MockBufferCacheForAac> mock_cache(new MockBufferCacheForAac());
+    SrsUniquePtr<MockRequest> mock_request(new MockRequest("test.vhost", "live", "stream1"));
+    SrsUniquePtr<MockBufferCache> mock_cache(new MockBufferCache());
 
     // Create SrsLiveStream
     SrsUniquePtr<SrsLiveStream> live_stream(new SrsLiveStream(mock_request.get(), mock_cache.get()));
@@ -2034,10 +1923,10 @@ VOID TEST(SrsLiveStreamTest, DoServeHttpFlvWithDisabledEntry)
     // This covers the typical HTTP-FLV streaming initialization and immediate exit scenario
 
     // Create mock request
-    SrsUniquePtr<MockBufferCacheRequest> mock_request(new MockBufferCacheRequest("test.vhost", "live", "stream1"));
+    SrsUniquePtr<MockRequest> mock_request(new MockRequest("test.vhost", "live", "stream1"));
 
     // Create mock buffer cache
-    SrsUniquePtr<MockBufferCacheForAac> mock_cache(new MockBufferCacheForAac());
+    SrsUniquePtr<MockBufferCache> mock_cache(new MockBufferCache());
 
     // Create SrsLiveStream
     SrsUniquePtr<SrsLiveStream> live_stream(new SrsLiveStream(mock_request.get(), mock_cache.get()));
@@ -2080,10 +1969,10 @@ VOID TEST(SrsLiveStreamTest, AliveAndExpireWithViewers)
     // where multiple viewers are watching the same stream and need to be expired
 
     // Create mock request
-    SrsUniquePtr<MockBufferCacheRequest> mock_request(new MockBufferCacheRequest("test.vhost", "live", "stream1"));
+    SrsUniquePtr<MockRequest> mock_request(new MockRequest("test.vhost", "live", "stream1"));
 
     // Create mock buffer cache
-    SrsUniquePtr<MockBufferCacheForAac> mock_cache(new MockBufferCacheForAac());
+    SrsUniquePtr<MockBufferCache> mock_cache(new MockBufferCache());
 
     // Create SrsLiveStream
     SrsUniquePtr<SrsLiveStream> live_stream(new SrsLiveStream(mock_request.get(), mock_cache.get()));
@@ -2143,7 +2032,7 @@ VOID TEST(HttpStreamDestroyTest, DestroyStreamSuccess)
     MockBufferCacheForDestroy *mock_cache = new MockBufferCacheForDestroy();
 
     // Create mock request
-    MockBufferCacheRequest *mock_req = new MockBufferCacheRequest();
+    MockRequest *mock_req = new MockRequest();
 
     entry->stream_ = mock_stream;
     entry->cache_ = mock_cache;
@@ -2180,7 +2069,7 @@ VOID TEST(SrsBufferCacheTest, StopAndAlive)
     // This covers the typical HTTP streaming cache lifecycle management use case
 
     // Create mock request
-    SrsUniquePtr<MockBufferCacheRequest> mock_request(new MockBufferCacheRequest("test.vhost", "live", "stream1"));
+    SrsUniquePtr<MockRequest> mock_request(new MockRequest("test.vhost", "live", "stream1"));
 
     // Create buffer cache
     SrsUniquePtr<SrsBufferCache> cache(new SrsBufferCache(mock_request.get()));
@@ -2225,7 +2114,7 @@ VOID TEST(SrsBufferCacheTest, CycleWithThreadPullError)
     // is interrupted or encounters an error, causing the cycle to exit
 
     // Create mock request
-    SrsUniquePtr<MockBufferCacheRequest> mock_request(new MockBufferCacheRequest("test.vhost", "live", "stream1"));
+    SrsUniquePtr<MockRequest> mock_request(new MockRequest("test.vhost", "live", "stream1"));
 
     // Create buffer cache
     SrsUniquePtr<SrsBufferCache> cache(new SrsBufferCache(mock_request.get()));
@@ -2266,7 +2155,7 @@ VOID TEST(AppHttpStreamTest, Mp3StreamEncoderMajorScenario)
     SrsUniquePtr<MockSrsFileWriter> writer(new MockSrsFileWriter());
     HELPER_EXPECT_SUCCESS(writer->open("test.mp3"));
 
-    MockBufferCacheForAac mock_cache;
+    MockBufferCache mock_cache;
 
     // Create MP3 stream encoder
     SrsUniquePtr<SrsMp3StreamEncoder> encoder(new SrsMp3StreamEncoder());
@@ -3234,7 +3123,7 @@ VOID TEST(HTTPApiTest, ClientsApiGetSpecificClient)
     test_client->type_ = SrsRtmpConnPlay;
 
     // Create mock request for the client - SrsStatisticClient destructor will free this
-    MockBufferCacheRequest *mock_req = new MockBufferCacheRequest("__defaultVhost__", "live", "livestream");
+    MockRequest *mock_req = new MockRequest("__defaultVhost__", "live", "livestream");
     test_client->req_ = mock_req;
 
     // Create mock vhost and stream for the client

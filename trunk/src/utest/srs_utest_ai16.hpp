@@ -21,37 +21,6 @@
 #include <srs_protocol_rtmp_stack.hpp>
 #include <srs_utest_ai11.hpp>
 
-// Mock request class for testing SrsBufferCache
-class MockBufferCacheRequest : public ISrsRequest
-{
-public:
-    MockBufferCacheRequest(std::string vhost = "__defaultVhost__", std::string app = "live", std::string stream = "test");
-    virtual ~MockBufferCacheRequest();
-    virtual ISrsRequest *copy();
-    virtual std::string get_stream_url();
-    virtual void update_auth(ISrsRequest *req);
-    virtual void strip();
-    virtual ISrsRequest *as_http();
-};
-
-// Mock buffer cache for testing AAC stream encoder
-class MockBufferCacheForAac : public ISrsBufferCache
-{
-public:
-    int dump_cache_count_;
-    ISrsLiveConsumer *last_consumer_;
-    SrsRtmpJitterAlgorithm last_jitter_;
-
-public:
-    MockBufferCacheForAac();
-    virtual ~MockBufferCacheForAac();
-    virtual srs_error_t start();
-    virtual void stop();
-    virtual bool alive();
-    virtual srs_error_t dump_cache(ISrsLiveConsumer *consumer, SrsRtmpJitterAlgorithm jitter);
-    virtual srs_error_t update_auth(ISrsRequest *r);
-};
-
 // Mock SrsHttpxConn for testing SrsLiveStream - inherits from real SrsHttpxConn
 class MockHttpxConnForLiveStream : public SrsHttpxConn
 {

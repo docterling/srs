@@ -2253,83 +2253,6 @@ VOID TEST(RtcPliWorkerTest, ErrorHandling)
     EXPECT_TRUE(mock_handler.has_keyframe_request(ssrc2, cid2));
 }
 
-// Mock HTTP hooks implementation
-MockHttpHooks::MockHttpHooks()
-{
-    on_stop_count_ = 0;
-    on_unpublish_count_ = 0;
-}
-
-MockHttpHooks::~MockHttpHooks()
-{
-    clear_calls();
-}
-
-srs_error_t MockHttpHooks::on_connect(std::string url, ISrsRequest *req)
-{
-    return srs_success;
-}
-
-void MockHttpHooks::on_close(std::string url, ISrsRequest *req, int64_t send_bytes, int64_t recv_bytes)
-{
-}
-
-srs_error_t MockHttpHooks::on_publish(std::string url, ISrsRequest *req)
-{
-    return srs_success;
-}
-
-void MockHttpHooks::on_unpublish(std::string url, ISrsRequest *req)
-{
-    on_unpublish_count_++;
-    on_unpublish_calls_.push_back(std::make_pair(url, req));
-}
-
-srs_error_t MockHttpHooks::on_play(std::string url, ISrsRequest *req)
-{
-    return srs_success;
-}
-
-void MockHttpHooks::on_stop(std::string url, ISrsRequest *req)
-{
-    on_stop_count_++;
-    on_stop_calls_.push_back(std::make_pair(url, req));
-}
-
-srs_error_t MockHttpHooks::on_dvr(SrsContextId cid, std::string url, ISrsRequest *req, std::string file)
-{
-    return srs_success;
-}
-
-srs_error_t MockHttpHooks::on_hls(SrsContextId cid, std::string url, ISrsRequest *req, std::string file, std::string ts_url,
-                                  std::string m3u8, std::string m3u8_url, int sn, srs_utime_t duration)
-{
-    return srs_success;
-}
-
-srs_error_t MockHttpHooks::on_hls_notify(SrsContextId cid, std::string url, ISrsRequest *req, std::string ts_url, int nb_notify)
-{
-    return srs_success;
-}
-
-srs_error_t MockHttpHooks::discover_co_workers(std::string url, std::string &host, int &port)
-{
-    return srs_success;
-}
-
-srs_error_t MockHttpHooks::on_forward_backend(std::string url, ISrsRequest *req, std::vector<std::string> &rtmp_urls)
-{
-    return srs_success;
-}
-
-void MockHttpHooks::clear_calls()
-{
-    on_stop_calls_.clear();
-    on_stop_count_ = 0;
-    on_unpublish_calls_.clear();
-    on_unpublish_count_ = 0;
-}
-
 // Mock context implementation
 MockContext::MockContext()
 {
@@ -2565,7 +2488,7 @@ VOID TEST(RtcPlayStreamTest, InitializeSuccess)
     // Create mock objects
     MockAppConfig mock_config;
     MockRtcSourceManager mock_rtc_sources;
-    MockRtcStatistic mock_stat;
+    MockAppStatistic mock_stat;
     MockRtcAsyncCallRequest mock_request("test.vhost", "live", "stream1");
     MockRtcAsyncTaskExecutor mock_async_executor;
     MockExpire mock_expire;
@@ -2639,7 +2562,7 @@ VOID TEST(RtcPlayStreamTest, OnStreamChangeSuccess)
     // Create mock objects
     MockAppConfig mock_config;
     MockRtcSourceManager mock_rtc_sources;
-    MockRtcStatistic mock_stat;
+    MockAppStatistic mock_stat;
     MockRtcAsyncCallRequest mock_request("test.vhost", "live", "stream1");
     MockRtcAsyncTaskExecutor mock_async_executor;
     MockExpire mock_expire;
@@ -2818,7 +2741,7 @@ VOID TEST(RtcPlayStreamTest, SendPacketBasic)
     // Create mock objects
     MockAppConfig mock_config;
     MockRtcSourceManager mock_rtc_sources;
-    MockRtcStatistic mock_stat;
+    MockAppStatistic mock_stat;
     MockRtcAsyncCallRequest mock_request("test.vhost", "live", "stream1");
     MockRtcAsyncTaskExecutor mock_async_executor;
     MockExpire mock_expire;
@@ -3045,7 +2968,7 @@ VOID TEST(RtcPlayStreamTest, OnRtcpDispatch)
     // Create mock objects
     MockAppConfig mock_config;
     MockRtcSourceManager mock_source_manager;
-    MockRtcStatistic mock_stat;
+    MockAppStatistic mock_stat;
     MockRtcAsyncTaskExecutor mock_executor;
     MockRtcPacketSender mock_sender;
     MockExpire mock_expire;
@@ -3103,7 +3026,7 @@ VOID TEST(RtcPlayStreamTest, OnRtcpNack)
     // Create mock objects
     MockAppConfig mock_config;
     MockRtcSourceManager mock_source_manager;
-    MockRtcStatistic mock_stat;
+    MockAppStatistic mock_stat;
     MockRtcAsyncTaskExecutor mock_executor;
     MockRtcPacketSender mock_sender;
     MockExpire mock_expire;
@@ -3290,7 +3213,7 @@ VOID TEST(RtcPlayStreamTest, DoRequestKeyframe)
     // Create mock objects
     MockAppConfig mock_config;
     MockRtcSourceManager mock_rtc_sources;
-    MockRtcStatistic mock_stat;
+    MockAppStatistic mock_stat;
     MockRtcAsyncCallRequest mock_request("test.vhost", "live", "stream1");
     MockRtcAsyncTaskExecutor mock_async_executor;
     MockExpire mock_expire;
@@ -3818,7 +3741,7 @@ VOID TEST(RtcPublishStreamTest, Initialize)
     srs_error_t err;
 
     // Create mock objects
-    MockRtcStatistic mock_stat;
+    MockAppStatistic mock_stat;
     MockAppConfig mock_config;
     MockRtcSourceManager mock_rtc_sources;
     MockLiveSourceManager mock_live_sources;

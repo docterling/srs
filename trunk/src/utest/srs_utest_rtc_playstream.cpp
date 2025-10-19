@@ -23,7 +23,7 @@ VOID TEST(RtcPlayStreamTest, ManuallyVerifyBasicWorkflow)
     // Create mock objects for dependencies
     MockAppConfig mock_config;
     MockRtcSourceManager mock_rtc_sources;
-    MockRtcStatistic mock_stat;
+    MockAppStatistic mock_stat;
     MockRtcAsyncCallRequest mock_request("test.vhost", "live", "stream1");
     MockRtcAsyncTaskExecutor mock_exec;
     MockExpire mock_expire;

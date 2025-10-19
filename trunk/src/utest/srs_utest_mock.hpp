@@ -35,15 +35,17 @@
 #ifdef SRS_GB28181
 #include <srs_app_gb28181.hpp>
 #endif
+#include <srs_app_http_conn.hpp>
+#include <srs_app_http_hooks.hpp>
+#include <srs_app_http_stream.hpp>
 #include <srs_app_rtmp_conn.hpp>
 #include <srs_app_rtmp_source.hpp>
 #include <srs_app_security.hpp>
 #include <srs_app_srt_conn.hpp>
 #include <srs_app_srt_source.hpp>
+#include <srs_protocol_http_conn.hpp>
 #include <srs_protocol_rtmp_stack.hpp>
 #include <srs_protocol_utility.hpp>
-#include <srs_protocol_http_conn.hpp>
-#include <srs_app_http_conn.hpp>
 
 // Forward declarations
 class SrsRtcTrackDescription;
@@ -171,7 +173,7 @@ public:
 };
 
 // Mock statistic for testing
-class MockRtcStatistic : public ISrsStatistic
+class MockAppStatistic : public ISrsStatistic
 {
 public:
     srs_error_t on_client_error_;
@@ -183,8 +185,8 @@ public:
     SrsRtmpConnType last_client_type_;
 
 public:
-    MockRtcStatistic();
-    virtual ~MockRtcStatistic();
+    MockAppStatistic();
+    virtual ~MockAppStatistic();
     virtual void on_disconnect(std::string id, srs_error_t err);
     virtual srs_error_t on_client(std::string id, ISrsRequest *req, ISrsExpire *conn, SrsRtmpConnType type);
     virtual srs_error_t on_video_info(ISrsRequest *req, SrsVideoCodecId vcodec, int avc_profile, int avc_level, int width, int height);
@@ -629,6 +631,7 @@ public:
     bool can_publish_result_;
     int on_audio_count_;
     int on_video_count_;
+    int on_dump_packets_count_;
 
 public:
     MockLiveSource();
@@ -637,6 +640,7 @@ public:
     void set_can_publish(bool can_publish);
     virtual srs_error_t on_publish();
     virtual srs_error_t on_edge_start_publish();
+    virtual srs_error_t consumer_dumps(ISrsLiveConsumer *consumer, bool ds, bool dm, bool dg);
 
 public:
     virtual srs_error_t on_audio(SrsRtmpCommonMessage *audio);
@@ -777,6 +781,13 @@ class MockProtocolReadWriter : public ISrsProtocolReadWriter
 public:
     srs_utime_t recv_timeout_;
     srs_utime_t send_timeout_;
+    int64_t recv_bytes_;
+    int read_count_;
+
+public:
+    srs_error_t read_error_;
+    std::vector<std::string> recv_msgs_;
+    SrsCond *cond_;
 
 public:
     MockProtocolReadWriter();
@@ -836,6 +847,12 @@ public:
     srs_utime_t send_timeout_;
     int64_t recv_bytes_;
     int64_t send_bytes_;
+    int read_count_;
+
+public:
+    srs_error_t read_error_;
+    std::vector<std::string> recv_msgs_;
+    SrsCond *cond_;
 
 public:
     MockSslConnection();
@@ -997,6 +1014,64 @@ public:
 public:
     virtual srs_error_t handle(std::string pattern, ISrsHttpHandler *handler);
     virtual srs_error_t serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r);
+};
+
+// Mock request class for testing SrsBufferCache
+class MockRequest : public ISrsRequest
+{
+public:
+    MockRequest(std::string vhost = "__defaultVhost__", std::string app = "live", std::string stream = "test");
+    virtual ~MockRequest();
+    virtual ISrsRequest *copy();
+    virtual std::string get_stream_url();
+    virtual void update_auth(ISrsRequest *req);
+    virtual void strip();
+    virtual ISrsRequest *as_http();
+};
+
+// Mock buffer cache for testing AAC stream encoder
+class MockBufferCache : public ISrsBufferCache
+{
+public:
+    int dump_cache_count_;
+    ISrsLiveConsumer *last_consumer_;
+    SrsRtmpJitterAlgorithm last_jitter_;
+
+public:
+    MockBufferCache();
+    virtual ~MockBufferCache();
+    virtual srs_error_t start();
+    virtual void stop();
+    virtual bool alive();
+    virtual srs_error_t dump_cache(ISrsLiveConsumer *consumer, SrsRtmpJitterAlgorithm jitter);
+    virtual srs_error_t update_auth(ISrsRequest *r);
+};
+
+// Mock HTTP hooks for testing SrsRtcAsyncCallOnStop
+class MockHttpHooks : public ISrsHttpHooks
+{
+public:
+    std::vector<std::pair<std::string, ISrsRequest *> > on_stop_calls_;
+    int on_stop_count_;
+    std::vector<std::pair<std::string, ISrsRequest *> > on_unpublish_calls_;
+    int on_unpublish_count_;
+
+public:
+    MockHttpHooks();
+    virtual ~MockHttpHooks();
+    virtual srs_error_t on_connect(std::string url, ISrsRequest *req);
+    virtual void on_close(std::string url, ISrsRequest *req, int64_t send_bytes, int64_t recv_bytes);
+    virtual srs_error_t on_publish(std::string url, ISrsRequest *req);
+    virtual void on_unpublish(std::string url, ISrsRequest *req);
+    virtual srs_error_t on_play(std::string url, ISrsRequest *req);
+    virtual void on_stop(std::string url, ISrsRequest *req);
+    virtual srs_error_t on_dvr(SrsContextId cid, std::string url, ISrsRequest *req, std::string file);
+    virtual srs_error_t on_hls(SrsContextId cid, std::string url, ISrsRequest *req, std::string file, std::string ts_url,
+                               std::string m3u8, std::string m3u8_url, int sn, srs_utime_t duration);
+    virtual srs_error_t on_hls_notify(SrsContextId cid, std::string url, ISrsRequest *req, std::string ts_url, int nb_notify);
+    virtual srs_error_t discover_co_workers(std::string url, std::string &host, int &port);
+    virtual srs_error_t on_forward_backend(std::string url, ISrsRequest *req, std::vector<std::string> &rtmp_urls);
+    void clear_calls();
 };
 
 #endif

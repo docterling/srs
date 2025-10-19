@@ -260,7 +260,7 @@ public:
 // For example:
 //        SrsCoroutineChan ctx;
 //        ctx.push(1);
-//        SRS_COROUTINE_GO_CTX(ctx, {
+//        SRS_COROUTINE_GO_CTX(&ctx, {
 //            int v = (int)ctx.pop();
 //            srs_usleep(v * SRS_UTIME_MILLISECONDS);
 //        });
@@ -272,11 +272,11 @@ public:
 // For example:
 //        SrsCoroutineChan ctx;
 //        ctx.push(1);
-//        SRS_COROUTINE_GO_CTX2(ctx, coroutine1, {
+//        SRS_COROUTINE_GO_CTX2(&ctx, coroutine1, {
 //            int v = (int)ctx.pop();
 //            srs_usleep(v * SRS_UTIME_MILLISECONDS);
 //        });
-//        SRS_COROUTINE_GO_CTX2(ctx, coroutine2, {
+//        SRS_COROUTINE_GO_CTX2(&ctx, coroutine2, {
 //            int v = (int)ctx.pop();
 //            srs_usleep(v * SRS_UTIME_MILLISECONDS);
 //        });

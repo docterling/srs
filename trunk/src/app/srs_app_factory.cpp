@@ -32,9 +32,9 @@
 #include <srs_kernel_ts.hpp>
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_http_client.hpp>
+#include <srs_protocol_http_conn.hpp>
 #include <srs_protocol_st.hpp>
 #include <srs_protocol_utility.hpp>
-#include <srs_protocol_http_conn.hpp>
 
 ISrsAppFactory::ISrsAppFactory()
 {

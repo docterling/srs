@@ -50,7 +50,7 @@ VOID TEST(RtmpConnTest, ManuallyVerifyBasicWorkflowForPublisher)
     SrsUniquePtr<MockConnectionManager> mock_manager(new MockConnectionManager());
     SrsUniquePtr<MockLiveSourceManager> mock_sources(new MockLiveSourceManager());
     SrsUniquePtr<MockStreamPublishTokenManager> mock_tokens(new MockStreamPublishTokenManager());
-    SrsUniquePtr<MockRtcStatistic> mock_stat(new MockRtcStatistic());
+    SrsUniquePtr<MockAppStatistic> mock_stat(new MockAppStatistic());
     SrsUniquePtr<MockHttpHooks> mock_hooks(new MockHttpHooks());
     SrsUniquePtr<MockRtcSourceManager> mock_rtc_sources(new MockRtcSourceManager());
     SrsUniquePtr<MockSrtSourceManager> mock_srt_sources(new MockSrtSourceManager());
@@ -222,7 +222,7 @@ VOID TEST(RtmpConnTest, ManuallyVerifyBasicWorkflowForPlayer)
     SrsUniquePtr<MockConnectionManager> mock_manager(new MockConnectionManager());
     SrsUniquePtr<MockLiveSourceManager> mock_sources(new MockLiveSourceManager());
     SrsUniquePtr<MockStreamPublishTokenManager> mock_tokens(new MockStreamPublishTokenManager());
-    SrsUniquePtr<MockRtcStatistic> mock_stat(new MockRtcStatistic());
+    SrsUniquePtr<MockAppStatistic> mock_stat(new MockAppStatistic());
     SrsUniquePtr<MockHttpHooks> mock_hooks(new MockHttpHooks());
     SrsUniquePtr<MockRtcSourceManager> mock_rtc_sources(new MockRtcSourceManager());
     SrsUniquePtr<MockSrtSourceManager> mock_srt_sources(new MockSrtSourceManager());

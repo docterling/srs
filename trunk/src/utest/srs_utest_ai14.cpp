@@ -1777,7 +1777,7 @@ VOID TEST(AppOriginHubTest, OnAudioTypicalScenario)
     MockHlsRequest mock_req;
 
     // Create mock statistic
-    MockRtcStatistic mock_stat;
+    MockAppStatistic mock_stat;
 
     // Create origin hub
     SrsUniquePtr<SrsOriginHub> hub(new SrsOriginHub());

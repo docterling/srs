@@ -15,6 +15,7 @@
 using namespace std;
 
 #include <srs_app_config.hpp>
+#include <srs_app_factory.hpp>
 #include <srs_app_http_api.hpp>
 #include <srs_app_http_hooks.hpp>
 #include <srs_app_http_static.hpp>
@@ -40,7 +41,6 @@ using namespace std;
 #include <srs_protocol_rtmp_stack.hpp>
 #include <srs_protocol_stream.hpp>
 #include <srs_protocol_utility.hpp>
-#include <srs_app_factory.hpp>
 
 ISrsHttpConnOwner::ISrsHttpConnOwner()
 {
