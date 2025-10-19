@@ -35,7 +35,7 @@
 #include <srs_protocol_rtsp_stack.hpp>
 #endif
 #include <srs_utest_app12.hpp>
-#include <srs_utest_app6.hpp>
+#include <srs_utest_ai11.hpp>
 
 // Mock request class for testing edge upstream
 class MockEdgeRequest : public ISrsRequest

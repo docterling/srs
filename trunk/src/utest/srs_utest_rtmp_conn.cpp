@@ -28,10 +28,10 @@
 #include <srs_protocol_io.hpp>
 #include <srs_protocol_rtmp_stack.hpp>
 #include <srs_protocol_st.hpp>
-#include <srs_utest_app10.hpp>
+#include <srs_utest_ai15.hpp>
 #include <srs_utest_app13.hpp>
-#include <srs_utest_app16.hpp>
-#include <srs_utest_app6.hpp>
+#include <srs_utest_ai18.hpp>
+#include <srs_utest_ai11.hpp>
 #include <srs_utest_mock.hpp>
 #include <srs_utest_service.hpp>
 

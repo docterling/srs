@@ -17,7 +17,7 @@
 #endif
 #include <srs_app_stream_bridge.hpp>
 #include <srs_protocol_rtmp_stack.hpp>
-#include <srs_utest_app6.hpp>
+#include <srs_utest_ai11.hpp>
 
 // Mock frame target for testing SrsSrtFrameBuilder
 class MockSrtFrameTarget : public ISrsFrameTarget

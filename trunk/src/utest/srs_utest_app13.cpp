@@ -20,8 +20,8 @@ using namespace std;
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_amf0.hpp>
 #include <srs_protocol_utility.hpp>
-#include <srs_utest_app10.hpp>
-#include <srs_utest_app11.hpp>
+#include <srs_utest_ai15.hpp>
+#include <srs_utest_ai16.hpp>
 #include <srs_utest_config.hpp>
 #include <srs_utest_fmp4.hpp>
 #include <srs_utest_kernel.hpp>

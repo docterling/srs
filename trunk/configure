@@ -375,20 +375,18 @@ fi
 #
 # utest, the unit-test cases of srs, base on gtest1.6
 if [[ $SRS_UTEST == YES ]]; then
-    MODULE_FILES=("srs_utest" "srs_utest_amf0" "srs_utest_kernel" "srs_utest_core"
+    MODULE_FILES=("srs_utest" "srs_utest_amf0" "srs_utest_kernel" "srs_utest_core" "srs_utest_srt"
         "srs_utest_config" "srs_utest_rtmp" "srs_utest_http" "srs_utest_avc" "srs_utest_reload"
         "srs_utest_mp4" "srs_utest_service" "srs_utest_app_rtc2rtmp" "srs_utest_rtc" "srs_utest_config2"
-        "srs_utest_config3" "srs_utest_config4" "srs_utest_protocol" "srs_utest_protocol2" "srs_utest_kernel2"
-        "srs_utest_st" "srs_utest_rtc2" "srs_utest_rtc3" "srs_utest_fmp4" "srs_utest_source_lock"
-        "srs_utest_stream_token" "srs_utest_rtc_recv_track" "srs_utest_st2" "srs_utest_hevc_structs"
-        "srs_utest_coworkers" "srs_utest_pithy_print" "srs_utest_kernel3" "srs_utest_protocol4"
-        "srs_utest_protocol3" "srs_utest_app" "srs_utest_app2" "srs_utest_app3" "srs_utest_app4"
-        "srs_utest_app5" "srs_utest_app6" "srs_utest_app7" "srs_utest_app8" "srs_utest_app9"
-        "srs_utest_app10" "srs_utest_app11" "srs_utest_app15" "srs_utest_app16" "srs_utest_app17" 
-        "srs_utest_mock" "srs_utest_rtc_playstream" "srs_utest_rtc_publishstream" "srs_utest_rtc_conn" 
-        "srs_utest_rtmp_conn")
-    # Always include SRT utest
-    MODULE_FILES+=("srs_utest_srt")
+        "srs_utest_protocol" "srs_utest_protocol2" "srs_utest_kernel2" "srs_utest_st" "srs_utest_fmp4" 
+        "srs_utest_source_lock" "srs_utest_stream_token" "srs_utest_rtc_recv_track" "srs_utest_st2" 
+        "srs_utest_hevc_structs" "srs_utest_coworkers" "srs_utest_pithy_print" "srs_utest_protocol3" 
+        "srs_utest_app" "srs_utest_mock" "srs_utest_rtc_playstream" "srs_utest_rtc_publishstream" 
+        "srs_utest_rtc_conn" "srs_utest_rtmp_conn")
+    MODULE_FILES+=("srs_utest_ai01" "srs_utest_ai02" "srs_utest_ai03" "srs_utest_ai04" "srs_utest_ai05" 
+        "srs_utest_ai06" "srs_utest_ai07" "srs_utest_ai08" "srs_utest_ai09" "srs_utest_ai10" "srs_utest_ai11" 
+        "srs_utest_ai12" "srs_utest_ai13" "srs_utest_ai14" "srs_utest_ai15" "srs_utest_ai16" "srs_utest_ai17" 
+        "srs_utest_ai18" "srs_utest_ai19")
     if [[ $SRS_GB28181 == YES ]]; then
         MODULE_FILES+=("srs_utest_gb28181" "srs_utest_app14")
     fi

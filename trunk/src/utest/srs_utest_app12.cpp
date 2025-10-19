@@ -18,10 +18,10 @@ using namespace std;
 #include <srs_kernel_packet.hpp>
 #include <srs_kernel_ts.hpp>
 #include <srs_kernel_utility.hpp>
-#include <srs_utest_app2.hpp>
-#include <srs_utest_app3.hpp>
-#include <srs_utest_app5.hpp>
-#include <srs_utest_app6.hpp>
+#include <srs_utest_ai07.hpp>
+#include <srs_utest_ai08.hpp>
+#include <srs_utest_ai10.hpp>
+#include <srs_utest_ai11.hpp>
 #include <srs_utest_config.hpp>
 #include <srs_utest_coworkers.hpp>
 

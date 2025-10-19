@@ -30,7 +30,7 @@
 #include <srs_app_stream_token.hpp>
 #include <srs_kernel_error.hpp>
 #include <srs_protocol_rtmp_stack.hpp>
-#include <srs_utest_app6.hpp>
+#include <srs_utest_ai11.hpp>
 #include <srs_utest_mock.hpp>
 #include <srs_utest_service.hpp>
 

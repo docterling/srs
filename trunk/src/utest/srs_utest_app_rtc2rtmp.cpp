@@ -15,7 +15,7 @@
 #include <srs_kernel_rtc_rtp.hpp>
 #include <srs_protocol_rtmp_stack.hpp>
 
-#include <srs_utest_app4.hpp>
+#include <srs_utest_ai09.hpp>
 #include <srs_utest_service.hpp>
 
 #include <vector>
