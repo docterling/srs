@@ -49,6 +49,7 @@ class ISrsSslConnection;
 class ISrsHttpConn;
 class ISrsAppConfig;
 class ISrsStatistic;
+class ISrsAppFactory;
 
 // The owner of HTTP connection.
 class ISrsHttpConnOwner
@@ -98,6 +99,7 @@ class SrsHttpConn : public ISrsHttpConn
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
     ISrsAppConfig *config_;
+    ISrsAppFactory *app_factory_;
 
 // clang-format off
 SRS_DECLARE_PROTECTED: // clang-format on

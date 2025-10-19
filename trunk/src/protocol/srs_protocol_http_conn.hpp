@@ -100,13 +100,25 @@ SRS_DECLARE_PRIVATE: // clang-format on
     static int on_body(llhttp_t *parser, const char *at, size_t length);
 };
 
+// The interface for setting the connection owner.
+class ISrsHttpMessageOwnerSetter : public ISrsHttpMessage
+{
+public:
+    ISrsHttpMessageOwnerSetter();
+    virtual ~ISrsHttpMessageOwnerSetter();
+
+public:
+    virtual void set_connection(ISrsConnection *conn) = 0;
+    virtual ISrsRequest *to_request(std::string vhost) = 0;
+};
+
 // A Request represents an HTTP request received by a server
 // or to be sent by a client.
 //
 // The field semantics differ slightly between client and server
 // usage. In addition to the notes on the fields below, see the
 // documentation for Request.Write and RoundTripper.
-class SrsHttpMessage : public ISrsHttpMessage
+class SrsHttpMessage : public ISrsHttpMessageOwnerSetter
 {
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on

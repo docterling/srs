@@ -42,6 +42,8 @@
 #include <srs_app_srt_source.hpp>
 #include <srs_protocol_rtmp_stack.hpp>
 #include <srs_protocol_utility.hpp>
+#include <srs_protocol_http_conn.hpp>
+#include <srs_app_http_conn.hpp>
 
 // Forward declarations
 class SrsRtcTrackDescription;
@@ -769,8 +771,35 @@ public:
     void reset();
 };
 
-class MockRtmpTransport : public ISrsRtmpTransport, public ISrsProtocolReadWriter
+// Mock ISrsProtocolReadWriter for testing SrsHttpConn::cycle()
+class MockProtocolReadWriter : public ISrsProtocolReadWriter
 {
+public:
+    srs_utime_t recv_timeout_;
+    srs_utime_t send_timeout_;
+
+public:
+    MockProtocolReadWriter();
+    virtual ~MockProtocolReadWriter();
+
+public:
+    virtual srs_error_t read_fully(void *buf, size_t size, ssize_t *nread);
+    virtual srs_error_t read(void *buf, size_t size, ssize_t *nread);
+    virtual void set_recv_timeout(srs_utime_t tm);
+    virtual srs_utime_t get_recv_timeout();
+    virtual int64_t get_recv_bytes();
+    virtual srs_error_t write(void *buf, size_t size, ssize_t *nwrite);
+    virtual void set_send_timeout(srs_utime_t tm);
+    virtual srs_utime_t get_send_timeout();
+    virtual int64_t get_send_bytes();
+    virtual srs_error_t writev(const iovec *iov, int iov_size, ssize_t *nwrite);
+};
+
+class MockRtmpTransport : public ISrsRtmpTransport
+{
+public:
+    MockProtocolReadWriter mock_io_;
+
 public:
     MockRtmpTransport();
     virtual ~MockRtmpTransport();
@@ -795,6 +824,36 @@ public:
     virtual void set_send_timeout(srs_utime_t tm);
     virtual srs_utime_t get_send_timeout();
     virtual srs_error_t writev(const iovec *iov, int iov_size, ssize_t *nwrite);
+};
+
+// Mock ISrsSslConnection for testing HTTPS connections
+class MockSslConnection : public ISrsSslConnection
+{
+public:
+    bool handshake_called_;
+    srs_error_t handshake_error_;
+    srs_utime_t recv_timeout_;
+    srs_utime_t send_timeout_;
+    int64_t recv_bytes_;
+    int64_t send_bytes_;
+
+public:
+    MockSslConnection();
+    virtual ~MockSslConnection();
+
+public:
+    virtual srs_error_t handshake(std::string key_file, std::string crt_file);
+    virtual void set_recv_timeout(srs_utime_t tm);
+    virtual srs_utime_t get_recv_timeout();
+    virtual srs_error_t read_fully(void *buf, size_t size, ssize_t *nread);
+    virtual int64_t get_recv_bytes();
+    virtual int64_t get_send_bytes();
+    virtual srs_error_t read(void *buf, size_t size, ssize_t *nread);
+    virtual void set_send_timeout(srs_utime_t tm);
+    virtual srs_utime_t get_send_timeout();
+    virtual srs_error_t write(void *buf, size_t size, ssize_t *nwrite);
+    virtual srs_error_t writev(const iovec *iov, int iov_size, ssize_t *nwrite);
+    void reset();
 };
 
 // Mock ISrsProtocolReadWriter for testing SrsSrtRecvThread
@@ -835,6 +894,109 @@ public:
     virtual srs_srt_t srtfd();
     virtual srs_error_t get_streamid(std::string &streamid);
     virtual srs_error_t get_stats(SrsSrtStat &stat);
+};
+
+// Mock ISrsHttpParser for testing SrsHttpConn::cycle()
+class MockHttpParser : public ISrsHttpParser
+{
+public:
+    bool initialize_called_;
+    bool parse_message_called_;
+    srs_error_t initialize_error_;
+    srs_error_t parse_message_error_;
+
+public:
+    SrsCond *cond_;
+    std::vector<ISrsHttpMessage *> messages_;
+
+public:
+    MockHttpParser();
+    virtual ~MockHttpParser();
+
+public:
+    virtual srs_error_t initialize(enum llhttp_type type);
+    virtual void set_jsonp(bool allow_jsonp);
+    virtual srs_error_t parse_message(ISrsReader *reader, ISrsHttpMessage **ppmsg);
+    void reset();
+};
+
+// Mock SrsHttpxConn for testing SrsLiveStream (old version for backward compatibility)
+class MockHttpxConn : public ISrsHttpConnOwner
+{
+public:
+    bool enable_stat_;
+
+public:
+    bool on_start_called_;
+    bool on_http_message_called_;
+    bool on_message_done_called_;
+    bool on_conn_done_called_;
+    srs_error_t on_start_error_;
+    srs_error_t on_http_message_error_;
+    srs_error_t on_message_done_error_;
+    srs_error_t on_conn_done_error_;
+
+public:
+    MockHttpxConn();
+    virtual ~MockHttpxConn();
+
+public:
+    virtual void set_enable_stat(bool v);
+    virtual srs_error_t on_start();
+    virtual srs_error_t on_http_message(ISrsHttpMessage *r, ISrsHttpResponseWriter *w);
+    virtual srs_error_t on_message_done(ISrsHttpMessage *r, ISrsHttpResponseWriter *w);
+    virtual srs_error_t on_conn_done(srs_error_t r0);
+    void reset();
+};
+
+// Mock SrsHttpConn for testing SrsLiveStream (old version for backward compatibility)
+class MockHttpConn : public ISrsConnection, public ISrsExpire
+{
+public:
+    MockHttpxConn *handler_;
+    std::string remote_ip_;
+
+public:
+    MockHttpConn();
+    virtual ~MockHttpConn();
+
+public:
+    virtual std::string remote_ip();
+    virtual const SrsContextId &get_id();
+    virtual std::string desc();
+    virtual void expire();
+    virtual ISrsHttpConnOwner *handler();
+};
+
+// Mock SrsHttpMessage for testing SrsLiveStream (old version for backward compatibility)
+class MockHttpMessage : public SrsHttpMessage
+{
+public:
+    MockHttpConn *mock_conn_;
+
+public:
+    MockHttpMessage();
+    virtual ~MockHttpMessage();
+
+public:
+    virtual std::string path();
+};
+
+// Mock ISrsCommonHttpHandler for testing SrsServer::http_handle()
+class MockHttpServeMux : public ISrsCommonHttpHandler
+{
+public:
+    int handle_count_;
+    int serve_http_count_;
+    std::vector<std::string> patterns_;
+
+public:
+    MockHttpServeMux();
+    virtual ~MockHttpServeMux();
+
+public:
+    virtual srs_error_t handle(std::string pattern, ISrsHttpHandler *handler);
+    virtual srs_error_t serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r);
 };
 
 #endif

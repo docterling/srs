@@ -52,57 +52,6 @@ public:
     virtual srs_error_t update_auth(ISrsRequest *r);
 };
 
-// Mock SrsHttpxConn for testing SrsLiveStream (old version for backward compatibility)
-class MockHttpxConn : public ISrsHttpConnOwner
-{
-public:
-    bool enable_stat_;
-
-public:
-    MockHttpxConn();
-    virtual ~MockHttpxConn();
-
-public:
-    virtual void set_enable_stat(bool v);
-    virtual srs_error_t on_start();
-    virtual srs_error_t on_http_message(ISrsHttpMessage *r, ISrsHttpResponseWriter *w);
-    virtual srs_error_t on_message_done(ISrsHttpMessage *r, ISrsHttpResponseWriter *w);
-    virtual srs_error_t on_conn_done(srs_error_t r0);
-};
-
-// Mock SrsHttpConn for testing SrsLiveStream (old version for backward compatibility)
-class MockHttpConn : public ISrsConnection, public ISrsExpire
-{
-public:
-    MockHttpxConn *handler_;
-    std::string remote_ip_;
-
-public:
-    MockHttpConn();
-    virtual ~MockHttpConn();
-
-public:
-    virtual std::string remote_ip();
-    virtual const SrsContextId &get_id();
-    virtual std::string desc();
-    virtual void expire();
-    virtual ISrsHttpConnOwner *handler();
-};
-
-// Mock SrsHttpMessage for testing SrsLiveStream (old version for backward compatibility)
-class MockHttpMessage : public SrsHttpMessage
-{
-public:
-    MockHttpConn *mock_conn_;
-
-public:
-    MockHttpMessage();
-    virtual ~MockHttpMessage();
-
-public:
-    virtual std::string path();
-};
-
 // Mock SrsHttpxConn for testing SrsLiveStream - inherits from real SrsHttpxConn
 class MockHttpxConnForLiveStream : public SrsHttpxConn
 {

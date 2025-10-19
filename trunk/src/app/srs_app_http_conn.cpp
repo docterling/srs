@@ -40,6 +40,7 @@ using namespace std;
 #include <srs_protocol_rtmp_stack.hpp>
 #include <srs_protocol_stream.hpp>
 #include <srs_protocol_utility.hpp>
+#include <srs_app_factory.hpp>
 
 ISrsHttpConnOwner::ISrsHttpConnOwner()
 {
@@ -75,6 +76,7 @@ SrsHttpConn::SrsHttpConn(ISrsHttpConnOwner *handler, ISrsProtocolReadWriter *fd,
     trd_ = new SrsSTCoroutine("http", this, _srs_context->get_id());
 
     config_ = _srs_config;
+    app_factory_ = _srs_app_factory;
 }
 
 SrsHttpConn::~SrsHttpConn()
@@ -89,6 +91,7 @@ SrsHttpConn::~SrsHttpConn()
     srs_freep(delta_);
 
     config_ = NULL;
+    app_factory_ = NULL;
 }
 
 std::string SrsHttpConn::desc()
@@ -199,8 +202,11 @@ srs_error_t SrsHttpConn::process_requests(ISrsRequest **preq)
         srs_assert(req_raw);
         SrsUniquePtr<ISrsHttpMessage> req(req_raw);
 
+        // It must be a owner setter interface.
+        ISrsHttpMessageOwnerSetter *hreq = dynamic_cast<ISrsHttpMessageOwnerSetter *>(req.get());
+        srs_assert(hreq);
+
         // Attach owner connection to message.
-        SrsHttpMessage *hreq = (SrsHttpMessage *)req.get();
         hreq->set_connection(this);
 
         // copy request to last request object.
@@ -208,18 +214,18 @@ srs_error_t SrsHttpConn::process_requests(ISrsRequest **preq)
         *preq = hreq->to_request(hreq->host());
 
         // may should discard the body.
-        SrsHttpResponseWriter writer(skt_);
-        if ((err = handler_->on_http_message(req.get(), &writer)) != srs_success) {
+        SrsUniquePtr<ISrsHttpResponseWriter> writer(app_factory_->create_http_response_writer(skt_));
+        if ((err = handler_->on_http_message(req.get(), writer.get())) != srs_success) {
             return srs_error_wrap(err, "on http message");
         }
 
         // ok, handle http request.
-        if ((err = process_request(&writer, req.get(), req_id)) != srs_success) {
+        if ((err = process_request(writer.get(), req.get(), req_id)) != srs_success) {
             return srs_error_wrap(err, "process request=%d", req_id);
         }
 
         // After the request is processed.
-        if ((err = handler_->on_message_done(req.get(), &writer)) != srs_success) {
+        if ((err = handler_->on_message_done(req.get(), writer.get())) != srs_success) {
             return srs_error_wrap(err, "on message done");
         }
 

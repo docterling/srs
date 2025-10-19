@@ -230,29 +230,6 @@ VOID TEST(SrsServerTest, ListenRtmpSuccess)
     EXPECT_TRUE(server.get() != NULL);
 }
 
-MockHttpServeMux::MockHttpServeMux()
-{
-    handle_count_ = 0;
-}
-
-MockHttpServeMux::~MockHttpServeMux()
-{
-}
-
-srs_error_t MockHttpServeMux::handle(std::string pattern, ISrsHttpHandler *handler)
-{
-    handle_count_++;
-    patterns_.push_back(pattern);
-    // Free the handler since we're not actually using it
-    srs_freep(handler);
-    return srs_success;
-}
-
-srs_error_t MockHttpServeMux::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r)
-{
-    return srs_success;
-}
-
 // Test SrsServer::http_handle() method to verify proper HTTP API handler registration.
 // This test covers the major use scenario of registering all HTTP API endpoints including
 // root API, versioning, summaries, rusages, stats, meminfos, authors, features, vhosts,

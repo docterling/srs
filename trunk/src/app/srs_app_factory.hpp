@@ -48,6 +48,8 @@ class ISrsRtcPacketReceiver;
 class ISrsExpire;
 class ISrsRtcPlayStream;
 class ISrsRtcPacketSender;
+class ISrsHttpResponseWriter;
+class ISrsProtocolReadWriter;
 
 // The factory to create app objects.
 class ISrsAppFactory : public ISrsKernelFactory
@@ -90,6 +92,7 @@ public:
     virtual ISrsProtocolUtility *create_protocol_utility() = 0;
     virtual ISrsRtcPublishStream *create_rtc_publish_stream(ISrsExecRtcAsyncTask *exec, ISrsExpire *expire, ISrsRtcPacketReceiver *receiver, const SrsContextId &cid) = 0;
     virtual ISrsRtcPlayStream *create_rtc_play_stream(ISrsExecRtcAsyncTask *exec, ISrsExpire *expire, ISrsRtcPacketSender *sender, const SrsContextId &cid) = 0;
+    virtual ISrsHttpResponseWriter *create_http_response_writer(ISrsProtocolReadWriter *io) = 0;
 };
 
 // The factory to create app objects.
@@ -137,6 +140,7 @@ public:
     virtual ISrsProtocolUtility *create_protocol_utility();
     virtual ISrsRtcPublishStream *create_rtc_publish_stream(ISrsExecRtcAsyncTask *exec, ISrsExpire *expire, ISrsRtcPacketReceiver *receiver, const SrsContextId &cid);
     virtual ISrsRtcPlayStream *create_rtc_play_stream(ISrsExecRtcAsyncTask *exec, ISrsExpire *expire, ISrsRtcPacketSender *sender, const SrsContextId &cid);
+    virtual ISrsHttpResponseWriter *create_http_response_writer(ISrsProtocolReadWriter *io);
 
 public:
     virtual ISrsCoroutine *create_coroutine(const std::string &name, ISrsCoroutineHandler *handler, SrsContextId cid);

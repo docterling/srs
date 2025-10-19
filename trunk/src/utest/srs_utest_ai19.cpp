@@ -1434,185 +1434,6 @@ VOID TEST(AppCasterFlvTest, ResourceManagerDelegation)
     srs_freep(real_manager);
 }
 
-// Mock ISrsHttpConnOwner implementation for testing SrsHttpConn::cycle()
-MockHttpConnOwnerForCycle::MockHttpConnOwnerForCycle()
-{
-    on_start_called_ = false;
-    on_http_message_called_ = false;
-    on_message_done_called_ = false;
-    on_conn_done_called_ = false;
-    on_start_error_ = srs_success;
-    on_http_message_error_ = srs_success;
-    on_message_done_error_ = srs_success;
-    on_conn_done_error_ = srs_success;
-}
-
-MockHttpConnOwnerForCycle::~MockHttpConnOwnerForCycle()
-{
-    srs_freep(on_start_error_);
-    srs_freep(on_http_message_error_);
-    srs_freep(on_message_done_error_);
-    srs_freep(on_conn_done_error_);
-}
-
-srs_error_t MockHttpConnOwnerForCycle::on_start()
-{
-    on_start_called_ = true;
-    if (on_start_error_ != srs_success) {
-        return srs_error_copy(on_start_error_);
-    }
-    return srs_success;
-}
-
-srs_error_t MockHttpConnOwnerForCycle::on_http_message(ISrsHttpMessage *r, ISrsHttpResponseWriter *w)
-{
-    on_http_message_called_ = true;
-    if (on_http_message_error_ != srs_success) {
-        return srs_error_copy(on_http_message_error_);
-    }
-    return srs_success;
-}
-
-srs_error_t MockHttpConnOwnerForCycle::on_message_done(ISrsHttpMessage *r, ISrsHttpResponseWriter *w)
-{
-    on_message_done_called_ = true;
-    if (on_message_done_error_ != srs_success) {
-        return srs_error_copy(on_message_done_error_);
-    }
-    return srs_success;
-}
-
-srs_error_t MockHttpConnOwnerForCycle::on_conn_done(srs_error_t r0)
-{
-    on_conn_done_called_ = true;
-    if (on_conn_done_error_ != srs_success) {
-        srs_freep(r0);
-        return srs_error_copy(on_conn_done_error_);
-    }
-    return r0;
-}
-
-void MockHttpConnOwnerForCycle::reset()
-{
-    on_start_called_ = false;
-    on_http_message_called_ = false;
-    on_message_done_called_ = false;
-    on_conn_done_called_ = false;
-    srs_freep(on_start_error_);
-    srs_freep(on_http_message_error_);
-    srs_freep(on_message_done_error_);
-    srs_freep(on_conn_done_error_);
-}
-
-// Mock ISrsHttpParser implementation for testing SrsHttpConn::cycle()
-MockHttpParserForCycle::MockHttpParserForCycle()
-{
-    initialize_called_ = false;
-    parse_message_called_ = false;
-    initialize_error_ = srs_success;
-    parse_message_error_ = srs_success;
-    mock_message_ = NULL;
-}
-
-MockHttpParserForCycle::~MockHttpParserForCycle()
-{
-    srs_freep(initialize_error_);
-    srs_freep(parse_message_error_);
-}
-
-srs_error_t MockHttpParserForCycle::initialize(enum llhttp_type type)
-{
-    initialize_called_ = true;
-    if (initialize_error_ != srs_success) {
-        return srs_error_copy(initialize_error_);
-    }
-    return srs_success;
-}
-
-void MockHttpParserForCycle::set_jsonp(bool allow_jsonp)
-{
-}
-
-srs_error_t MockHttpParserForCycle::parse_message(ISrsReader *reader, ISrsHttpMessage **ppmsg)
-{
-    parse_message_called_ = true;
-    if (parse_message_error_ != srs_success) {
-        return srs_error_copy(parse_message_error_);
-    }
-    *ppmsg = mock_message_;
-    return srs_success;
-}
-
-void MockHttpParserForCycle::reset()
-{
-    initialize_called_ = false;
-    parse_message_called_ = false;
-    srs_freep(initialize_error_);
-    srs_freep(parse_message_error_);
-    mock_message_ = NULL;
-}
-
-// Mock ISrsProtocolReadWriter implementation for testing SrsHttpConn::cycle()
-MockProtocolReadWriterForCycle::MockProtocolReadWriterForCycle()
-{
-    recv_timeout_ = SRS_UTIME_NO_TIMEOUT;
-    send_timeout_ = SRS_UTIME_NO_TIMEOUT;
-}
-
-MockProtocolReadWriterForCycle::~MockProtocolReadWriterForCycle()
-{
-}
-
-srs_error_t MockProtocolReadWriterForCycle::read_fully(void *buf, size_t size, ssize_t *nread)
-{
-    return srs_success;
-}
-
-srs_error_t MockProtocolReadWriterForCycle::read(void *buf, size_t size, ssize_t *nread)
-{
-    return srs_success;
-}
-
-void MockProtocolReadWriterForCycle::set_recv_timeout(srs_utime_t tm)
-{
-    recv_timeout_ = tm;
-}
-
-srs_utime_t MockProtocolReadWriterForCycle::get_recv_timeout()
-{
-    return recv_timeout_;
-}
-
-int64_t MockProtocolReadWriterForCycle::get_recv_bytes()
-{
-    return 0;
-}
-
-srs_error_t MockProtocolReadWriterForCycle::write(void *buf, size_t size, ssize_t *nwrite)
-{
-    return srs_success;
-}
-
-void MockProtocolReadWriterForCycle::set_send_timeout(srs_utime_t tm)
-{
-    send_timeout_ = tm;
-}
-
-srs_utime_t MockProtocolReadWriterForCycle::get_send_timeout()
-{
-    return send_timeout_;
-}
-
-int64_t MockProtocolReadWriterForCycle::get_send_bytes()
-{
-    return 0;
-}
-
-srs_error_t MockProtocolReadWriterForCycle::writev(const iovec *iov, int iov_size, ssize_t *nwrite)
-{
-    return srs_success;
-}
-
 // Mock ISrsCoroutine implementation for testing SrsHttpConn::cycle()
 MockCoroutineForCycle::MockCoroutineForCycle()
 {
@@ -1699,15 +1520,15 @@ VOID TEST(HttpConnTest, CycleSuccessWithSingleRequest)
     srs_error_t err;
 
     // Create mock dependencies
-    MockHttpConnOwnerForCycle *mock_handler = new MockHttpConnOwnerForCycle();
-    MockProtocolReadWriterForCycle *mock_skt = new MockProtocolReadWriterForCycle();
+    MockHttpxConn *mock_handler = new MockHttpxConn();
+    MockProtocolReadWriter *mock_skt = new MockProtocolReadWriter();
     SrsHttpServeMux *mock_mux = new SrsHttpServeMux();
 
     // Create SrsHttpConn
     SrsUniquePtr<SrsHttpConn> conn(new SrsHttpConn(mock_handler, mock_skt, mock_mux, "127.0.0.1", 8080));
 
     // Create mock parser and coroutine
-    MockHttpParserForCycle *mock_parser = new MockHttpParserForCycle();
+    MockHttpParser *mock_parser = new MockHttpParser();
     MockCoroutineForCycle *mock_trd = new MockCoroutineForCycle();
 
     // Create mock message - will be freed by SrsHttpConn::process_requests()
@@ -1717,7 +1538,8 @@ VOID TEST(HttpConnTest, CycleSuccessWithSingleRequest)
     mock_message->is_keep_alive_ = false;
 
     // Configure mock parser to return our mock message
-    mock_parser->mock_message_ = mock_message;
+    mock_parser->messages_.push_back(mock_message);
+    mock_parser->cond_->signal();
 
     // Inject mock dependencies into SrsHttpConn
     conn->parser_ = mock_parser;

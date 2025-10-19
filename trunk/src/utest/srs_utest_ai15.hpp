@@ -69,22 +69,6 @@ public:
     virtual std::string get_exporter_listen();
 };
 
-// Mock ISrsCommonHttpHandler for testing SrsServer::http_handle()
-class MockHttpServeMux : public ISrsCommonHttpHandler
-{
-public:
-    int handle_count_;
-    std::vector<std::string> patterns_;
-
-public:
-    MockHttpServeMux();
-    virtual ~MockHttpServeMux();
-
-public:
-    virtual srs_error_t handle(std::string pattern, ISrsHttpHandler *handler);
-    virtual srs_error_t serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r);
-};
-
 // Mock ISrsLog for testing SrsServer::on_signal()
 class MockLogForSignal : public ISrsLog
 {

@@ -1565,6 +1565,67 @@ void MockRtmpServer::reset()
     auto_response_value_ = true;
 }
 
+// Mock ISrsProtocolReadWriter implementation for testing SrsHttpConn::cycle()
+MockProtocolReadWriter::MockProtocolReadWriter()
+{
+    recv_timeout_ = SRS_UTIME_NO_TIMEOUT;
+    send_timeout_ = SRS_UTIME_NO_TIMEOUT;
+}
+
+MockProtocolReadWriter::~MockProtocolReadWriter()
+{
+}
+
+srs_error_t MockProtocolReadWriter::read_fully(void *buf, size_t size, ssize_t *nread)
+{
+    return srs_success;
+}
+
+srs_error_t MockProtocolReadWriter::read(void *buf, size_t size, ssize_t *nread)
+{
+    return srs_success;
+}
+
+void MockProtocolReadWriter::set_recv_timeout(srs_utime_t tm)
+{
+    recv_timeout_ = tm;
+}
+
+srs_utime_t MockProtocolReadWriter::get_recv_timeout()
+{
+    return recv_timeout_;
+}
+
+int64_t MockProtocolReadWriter::get_recv_bytes()
+{
+    return 0;
+}
+
+srs_error_t MockProtocolReadWriter::write(void *buf, size_t size, ssize_t *nwrite)
+{
+    return srs_success;
+}
+
+void MockProtocolReadWriter::set_send_timeout(srs_utime_t tm)
+{
+    send_timeout_ = tm;
+}
+
+srs_utime_t MockProtocolReadWriter::get_send_timeout()
+{
+    return send_timeout_;
+}
+
+int64_t MockProtocolReadWriter::get_send_bytes()
+{
+    return 0;
+}
+
+srs_error_t MockProtocolReadWriter::writev(const iovec *iov, int iov_size, ssize_t *nwrite)
+{
+    return srs_success;
+}
+
 MockRtmpTransport::MockRtmpTransport()
 {
 }
@@ -1585,7 +1646,7 @@ int MockRtmpTransport::osfd()
 
 ISrsProtocolReadWriter *MockRtmpTransport::io()
 {
-    return this;
+    return &mock_io_;
 }
 
 srs_error_t MockRtmpTransport::handshake()
@@ -1654,6 +1715,90 @@ srs_utime_t MockRtmpTransport::get_send_timeout()
 srs_error_t MockRtmpTransport::writev(const iovec *iov, int iov_size, ssize_t *nwrite)
 {
     return srs_success;
+}
+
+// Mock ISrsSslConnection implementation for testing HTTPS connections
+MockSslConnection::MockSslConnection()
+{
+    handshake_called_ = false;
+    handshake_error_ = srs_success;
+    recv_timeout_ = SRS_UTIME_NO_TIMEOUT;
+    send_timeout_ = SRS_UTIME_NO_TIMEOUT;
+    recv_bytes_ = 0;
+    send_bytes_ = 0;
+}
+
+MockSslConnection::~MockSslConnection()
+{
+    srs_freep(handshake_error_);
+}
+
+srs_error_t MockSslConnection::handshake(std::string key_file, std::string crt_file)
+{
+    handshake_called_ = true;
+    return srs_error_copy(handshake_error_);
+}
+
+void MockSslConnection::set_recv_timeout(srs_utime_t tm)
+{
+    recv_timeout_ = tm;
+}
+
+srs_utime_t MockSslConnection::get_recv_timeout()
+{
+    return recv_timeout_;
+}
+
+srs_error_t MockSslConnection::read_fully(void *buf, size_t size, ssize_t *nread)
+{
+    return srs_error_new(ERROR_NOT_SUPPORTED, "mock ssl read_fully");
+}
+
+int64_t MockSslConnection::get_recv_bytes()
+{
+    return recv_bytes_;
+}
+
+int64_t MockSslConnection::get_send_bytes()
+{
+    return send_bytes_;
+}
+
+srs_error_t MockSslConnection::read(void *buf, size_t size, ssize_t *nread)
+{
+    return srs_error_new(ERROR_NOT_SUPPORTED, "mock ssl read");
+}
+
+void MockSslConnection::set_send_timeout(srs_utime_t tm)
+{
+    send_timeout_ = tm;
+}
+
+srs_utime_t MockSslConnection::get_send_timeout()
+{
+    return send_timeout_;
+}
+
+srs_error_t MockSslConnection::write(void *buf, size_t size, ssize_t *nwrite)
+{
+    *nwrite = size;
+    send_bytes_ += size;
+    return srs_success;
+}
+
+srs_error_t MockSslConnection::writev(const iovec *iov, int iov_size, ssize_t *nwrite)
+{
+    return srs_error_new(ERROR_NOT_SUPPORTED, "mock ssl writev");
+}
+
+void MockSslConnection::reset()
+{
+    handshake_called_ = false;
+    srs_freep(handshake_error_);
+    recv_timeout_ = SRS_UTIME_NO_TIMEOUT;
+    send_timeout_ = SRS_UTIME_NO_TIMEOUT;
+    recv_bytes_ = 0;
+    send_bytes_ = 0;
 }
 
 // Mock ISrsProtocolReadWriter implementation for SrsSrtRecvThread
@@ -1767,5 +1912,223 @@ srs_error_t MockSrtConnection::get_streamid(std::string &streamid)
 
 srs_error_t MockSrtConnection::get_stats(SrsSrtStat &stat)
 {
+    return srs_success;
+}
+
+// Mock ISrsHttpParser implementation for testing SrsHttpConn::cycle()
+MockHttpParser::MockHttpParser()
+{
+    initialize_called_ = false;
+    parse_message_called_ = false;
+    initialize_error_ = srs_success;
+    parse_message_error_ = srs_success;
+    cond_ = new SrsCond();
+}
+
+MockHttpParser::~MockHttpParser()
+{
+    reset();
+    srs_freep(cond_);
+}
+
+srs_error_t MockHttpParser::initialize(enum llhttp_type type)
+{
+    initialize_called_ = true;
+    if (initialize_error_ != srs_success) {
+        return srs_error_copy(initialize_error_);
+    }
+    return srs_success;
+}
+
+void MockHttpParser::set_jsonp(bool allow_jsonp)
+{
+}
+
+srs_error_t MockHttpParser::parse_message(ISrsReader *reader, ISrsHttpMessage **ppmsg)
+{
+    parse_message_called_ = true;
+
+    if (messages_.empty()) {
+        cond_->wait();
+    }
+
+    if (parse_message_error_ != srs_success) {
+        return srs_error_copy(parse_message_error_);
+    }
+
+    if (messages_.empty()) {
+        return srs_error_new(ERROR_SOCKET_READ, "mock http parser no message");
+    }
+
+    ISrsHttpMessage *msg = messages_.front();
+    messages_.erase(messages_.begin());
+    *ppmsg = msg;
+    return srs_success;
+}
+
+void MockHttpParser::reset()
+{
+    initialize_called_ = false;
+    parse_message_called_ = false;
+    srs_freep(initialize_error_);
+    srs_freep(parse_message_error_);
+
+    for (vector<ISrsHttpMessage *>::iterator it = messages_.begin(); it != messages_.end(); ++it) {
+        ISrsHttpMessage *msg = *it;
+        srs_freep(msg);
+    }
+    messages_.clear();
+}
+
+// Old mock implementations for backward compatibility
+MockHttpxConn::MockHttpxConn()
+{
+    enable_stat_ = false;
+    on_start_called_ = false;
+    on_http_message_called_ = false;
+    on_message_done_called_ = false;
+    on_conn_done_called_ = false;
+    on_start_error_ = srs_success;
+    on_http_message_error_ = srs_success;
+    on_message_done_error_ = srs_success;
+    on_conn_done_error_ = srs_success;
+}
+
+MockHttpxConn::~MockHttpxConn()
+{
+    srs_freep(on_start_error_);
+    srs_freep(on_http_message_error_);
+    srs_freep(on_message_done_error_);
+    srs_freep(on_conn_done_error_);
+}
+
+void MockHttpxConn::set_enable_stat(bool v)
+{
+    enable_stat_ = v;
+}
+
+srs_error_t MockHttpxConn::on_start()
+{
+    on_start_called_ = true;
+    if (on_start_error_ != srs_success) {
+        return srs_error_copy(on_start_error_);
+    }
+    return srs_success;
+}
+
+srs_error_t MockHttpxConn::on_http_message(ISrsHttpMessage *r, ISrsHttpResponseWriter *w)
+{
+    on_http_message_called_ = true;
+    if (on_http_message_error_ != srs_success) {
+        return srs_error_copy(on_http_message_error_);
+    }
+    return srs_success;
+}
+
+srs_error_t MockHttpxConn::on_message_done(ISrsHttpMessage *r, ISrsHttpResponseWriter *w)
+{
+    on_message_done_called_ = true;
+    if (on_message_done_error_ != srs_success) {
+        return srs_error_copy(on_message_done_error_);
+    }
+    return srs_success;
+}
+
+srs_error_t MockHttpxConn::on_conn_done(srs_error_t r0)
+{
+    on_conn_done_called_ = true;
+    if (on_conn_done_error_ != srs_success) {
+        srs_freep(r0);
+        return srs_error_copy(on_conn_done_error_);
+    }
+    return r0;
+}
+
+void MockHttpxConn::reset()
+{
+    on_start_called_ = false;
+    on_http_message_called_ = false;
+    on_message_done_called_ = false;
+    on_conn_done_called_ = false;
+    srs_freep(on_start_error_);
+    srs_freep(on_http_message_error_);
+    srs_freep(on_message_done_error_);
+    srs_freep(on_conn_done_error_);
+}
+
+MockHttpConn::MockHttpConn()
+{
+    handler_ = new MockHttpxConn();
+    remote_ip_ = "127.0.0.1";
+}
+
+MockHttpConn::~MockHttpConn()
+{
+    srs_freep(handler_);
+}
+
+std::string MockHttpConn::remote_ip()
+{
+    return remote_ip_;
+}
+
+const SrsContextId &MockHttpConn::get_id()
+{
+    static SrsContextId id;
+    return id;
+}
+
+std::string MockHttpConn::desc()
+{
+    return "MockHttpConn";
+}
+
+void MockHttpConn::expire()
+{
+}
+
+ISrsHttpConnOwner *MockHttpConn::handler()
+{
+    return handler_;
+}
+
+MockHttpMessage::MockHttpMessage() : SrsHttpMessage()
+{
+    mock_conn_ = new MockHttpConn();
+    set_connection(mock_conn_);
+}
+
+MockHttpMessage::~MockHttpMessage()
+{
+    srs_freep(mock_conn_);
+}
+
+std::string MockHttpMessage::path()
+{
+    return "/live/stream.flv";
+}
+
+MockHttpServeMux::MockHttpServeMux()
+{
+    handle_count_ = 0;
+    serve_http_count_ = 0;
+}
+
+MockHttpServeMux::~MockHttpServeMux()
+{
+}
+
+srs_error_t MockHttpServeMux::handle(std::string pattern, ISrsHttpHandler *handler)
+{
+    handle_count_++;
+    patterns_.push_back(pattern);
+    // Free the handler since we're not actually using it
+    srs_freep(handler);
+    return srs_success;
+}
+
+srs_error_t MockHttpServeMux::serve_http(ISrsHttpResponseWriter *w, ISrsHttpMessage *r)
+{
+    serve_http_count_++;
     return srs_success;
 }

@@ -34,6 +34,7 @@
 #include <srs_protocol_http_client.hpp>
 #include <srs_protocol_st.hpp>
 #include <srs_protocol_utility.hpp>
+#include <srs_protocol_http_conn.hpp>
 
 ISrsAppFactory::ISrsAppFactory()
 {
@@ -204,6 +205,11 @@ ISrsRtcPublishStream *SrsAppFactory::create_rtc_publish_stream(ISrsExecRtcAsyncT
 ISrsRtcPlayStream *SrsAppFactory::create_rtc_play_stream(ISrsExecRtcAsyncTask *exec, ISrsExpire *expire, ISrsRtcPacketSender *sender, const SrsContextId &cid)
 {
     return new SrsRtcPlayStream(exec, expire, sender, cid);
+}
+
+ISrsHttpResponseWriter *SrsAppFactory::create_http_response_writer(ISrsProtocolReadWriter *io)
+{
+    return new SrsHttpResponseWriter(io);
 }
 
 ISrsCoroutine *SrsAppFactory::create_coroutine(const std::string &name, ISrsCoroutineHandler *handler, SrsContextId cid)
