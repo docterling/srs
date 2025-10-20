@@ -20,7 +20,7 @@ using namespace std;
 #include <srs_kernel_st.hpp>
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_utility.hpp>
-#include <srs_utest_app14.hpp>
+#include <srs_utest_ai23.hpp>
 #include <sstream>
 
 // Mock ISrsSrtSocket implementation

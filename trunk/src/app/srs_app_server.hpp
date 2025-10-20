@@ -362,11 +362,11 @@ SRS_DECLARE_PRIVATE: // clang-format on
 
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
-    SrsServer *server_;
+    ISrsSignalHandler *server_;
     ISrsCoroutine *trd_;
 
 public:
-    SrsSignalManager(SrsServer *s);
+    SrsSignalManager(ISrsSignalHandler *s);
     virtual ~SrsSignalManager();
 
 public:

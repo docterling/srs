@@ -4,11 +4,11 @@
 // SPDX-License-Identifier: MIT
 //
 
-#ifndef SRS_UTEST_APP13_HPP
-#define SRS_UTEST_APP13_HPP
+#ifndef SRS_UTEST_AI22_HPP
+#define SRS_UTEST_AI22_HPP
 
 /*
-#include <srs_utest_app13.hpp>
+#include <srs_utest_ai22.hpp>
 */
 #include <srs_utest.hpp>
 
@@ -35,7 +35,7 @@
 #include <srs_protocol_rtsp_stack.hpp>
 #endif
 #include <srs_utest_ai11.hpp>
-#include <srs_utest_app12.hpp>
+#include <srs_utest_ai21.hpp>
 
 // Mock request class for testing edge upstream
 class MockEdgeRequest : public ISrsRequest

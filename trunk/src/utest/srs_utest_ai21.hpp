@@ -4,11 +4,11 @@
 // SPDX-License-Identifier: MIT
 //
 
-#ifndef SRS_UTEST_APP12_HPP
-#define SRS_UTEST_APP12_HPP
+#ifndef SRS_UTEST_AI21_HPP
+#define SRS_UTEST_AI21_HPP
 
 /*
-#include <srs_utest_app12.hpp>
+#include <srs_utest_ai21.hpp>
 */
 #include <srs_utest.hpp>
 

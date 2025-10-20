@@ -31,7 +31,7 @@
 #include <srs_utest_ai11.hpp>
 #include <srs_utest_ai15.hpp>
 #include <srs_utest_ai18.hpp>
-#include <srs_utest_app13.hpp>
+#include <srs_utest_ai22.hpp>
 #include <srs_utest_mock.hpp>
 #include <srs_utest_service.hpp>
 

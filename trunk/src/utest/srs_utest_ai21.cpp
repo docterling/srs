@@ -3,7 +3,7 @@
 //
 // SPDX-License-Identifier: MIT
 //
-#include <srs_utest_app12.hpp>
+#include <srs_utest_ai21.hpp>
 
 using namespace std;
 

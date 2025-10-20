@@ -1649,7 +1649,7 @@ void SrsServer::on_unpublish(ISrsRequest *r)
 
 SrsSignalManager *SrsSignalManager::instance = NULL;
 
-SrsSignalManager::SrsSignalManager(SrsServer *s)
+SrsSignalManager::SrsSignalManager(ISrsSignalHandler *s)
 {
     SrsSignalManager::instance = this;
 
