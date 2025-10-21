@@ -173,7 +173,10 @@ srs_error_t SrsCompositeBridge::initialize(SrsRequest* r)
 {
     srs_error_t err = srs_success;
 
-    for (vector<ISrsStreamBridge*>::iterator it = bridges_.begin(); it != bridges_.end(); ++it) {
+    // Make a copy of bridges to avoid iterator invalidation if bridges_ is modified during iteration.
+    // See https://github.com/ossrs/srs/issues/4535
+    vector<ISrsStreamBridge*> bridges_copy = bridges_;
+    for (vector<ISrsStreamBridge*>::iterator it = bridges_copy.begin(); it != bridges_copy.end(); ++it) {
         ISrsStreamBridge* bridge = *it;
         if ((err = bridge->initialize(r)) != srs_success) {
             return err;
@@ -187,7 +190,10 @@ srs_error_t SrsCompositeBridge::on_publish()
 {
     srs_error_t err = srs_success;
 
-    for (vector<ISrsStreamBridge*>::iterator it = bridges_.begin(); it != bridges_.end(); ++it) {
+    // Make a copy of bridges to avoid iterator invalidation if bridges_ is modified during iteration.
+    // See https://github.com/ossrs/srs/issues/4535
+    vector<ISrsStreamBridge*> bridges_copy = bridges_;
+    for (vector<ISrsStreamBridge*>::iterator it = bridges_copy.begin(); it != bridges_copy.end(); ++it) {
         ISrsStreamBridge* bridge = *it;
         if ((err = bridge->on_publish()) != srs_success) {
             return err;
@@ -199,7 +205,10 @@ srs_error_t SrsCompositeBridge::on_publish()
 
 void SrsCompositeBridge::on_unpublish()
 {
-    for (vector<ISrsStreamBridge*>::iterator it = bridges_.begin(); it != bridges_.end(); ++it) {
+    // Make a copy of bridges to avoid iterator invalidation if bridges_ is modified during iteration.
+    // See https://github.com/ossrs/srs/issues/4535
+    vector<ISrsStreamBridge*> bridges_copy = bridges_;
+    for (vector<ISrsStreamBridge*>::iterator it = bridges_copy.begin(); it != bridges_copy.end(); ++it) {
         ISrsStreamBridge* bridge = *it;
         bridge->on_unpublish();
     }
