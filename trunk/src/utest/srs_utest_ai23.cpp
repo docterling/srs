@@ -1164,87 +1164,6 @@ VOID TEST(MpegpsQueueTest, DequeueMediaPackets)
     srs_freep(msg);
 }
 
-// Mock ISrsBasicRtmpClient implementation
-MockGbRtmpClient::MockGbRtmpClient()
-{
-    connect_called_ = false;
-    publish_called_ = false;
-    close_called_ = false;
-    connect_error_ = srs_success;
-    publish_error_ = srs_success;
-    stream_id_ = 1;
-}
-
-MockGbRtmpClient::~MockGbRtmpClient()
-{
-    srs_freep(connect_error_);
-    srs_freep(publish_error_);
-}
-
-srs_error_t MockGbRtmpClient::connect()
-{
-    connect_called_ = true;
-    return srs_error_copy(connect_error_);
-}
-
-void MockGbRtmpClient::close()
-{
-    close_called_ = true;
-}
-
-srs_error_t MockGbRtmpClient::publish(int chunk_size, bool with_vhost, std::string *pstream)
-{
-    publish_called_ = true;
-    return srs_error_copy(publish_error_);
-}
-
-srs_error_t MockGbRtmpClient::play(int chunk_size, bool with_vhost, std::string *pstream)
-{
-    return srs_success;
-}
-
-void MockGbRtmpClient::kbps_sample(const char *label, srs_utime_t age)
-{
-}
-
-int MockGbRtmpClient::sid()
-{
-    return stream_id_;
-}
-
-srs_error_t MockGbRtmpClient::recv_message(SrsRtmpCommonMessage **pmsg)
-{
-    return srs_success;
-}
-
-srs_error_t MockGbRtmpClient::decode_message(SrsRtmpCommonMessage *msg, SrsRtmpCommand **ppacket)
-{
-    return srs_success;
-}
-
-srs_error_t MockGbRtmpClient::send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs)
-{
-    return srs_success;
-}
-
-srs_error_t MockGbRtmpClient::send_and_free_message(SrsMediaPacket *msg)
-{
-    return srs_success;
-}
-
-void MockGbRtmpClient::set_recv_timeout(srs_utime_t timeout)
-{
-}
-
-void MockGbRtmpClient::reset()
-{
-    connect_called_ = false;
-    publish_called_ = false;
-    close_called_ = false;
-    srs_freep(connect_error_);
-    srs_freep(publish_error_);
-}
-
 // Mock ISrsRawAacStream implementation
 MockGbRawAacStream::MockGbRawAacStream()
 {
@@ -1720,7 +1639,7 @@ VOID TEST(GbMuxerTest, OnTsMessageAudio)
     // We need to mock the app_factory to return our mock SDK
     // For now, let's just test without RTMP connection by setting sdk_ to a mock
     // that's already "connected"
-    MockGbRtmpClient *mock_sdk = new MockGbRtmpClient();
+    MockRtmpClient *mock_sdk = new MockRtmpClient();
     muxer->sdk_ = mock_sdk; // Simulate already connected
 
     // Create TS message with audio data (AAC ADTS format)

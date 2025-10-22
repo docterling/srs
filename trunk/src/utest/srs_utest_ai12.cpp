@@ -420,9 +420,6 @@ VOID TEST(SrsRtcPublishStreamTest, SendPeriodicTwccTypicalScenario)
 
     // send_periodic_twcc should fail due to receiver error
     HELPER_EXPECT_FAILED(publish_stream->send_periodic_twcc());
-
-    // Reset receiver error for cleanup
-    mock_receiver.reset();
 }
 
 VOID TEST(SrsRtcPublishStreamTest, OnRtcpTypicalScenario)
@@ -608,9 +605,6 @@ VOID TEST(SrsRtcPublishStreamTest, RequestKeyframeTypicalScenario)
 
     // Verify that PLI packet send was attempted again
     EXPECT_EQ(2, mock_receiver.send_rtcp_fb_pli_count_);
-
-    // Reset receiver for cleanup
-    mock_receiver.reset();
 }
 
 VOID TEST(SrsRtcPublishStreamTest, UpdateRttTypicalScenario)

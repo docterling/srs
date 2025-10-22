@@ -1907,9 +1907,6 @@ VOID TEST(RtcPublishStreamTest, SendRtcpRrSuccess)
     publish_stream->video_tracks_.push_back(video_track);
     publish_stream->audio_tracks_.push_back(audio_track);
 
-    // Reset receiver count before test
-    mock_receiver.reset();
-
     // Test send_rtcp_rr - should succeed when all tracks succeed
     HELPER_EXPECT_SUCCESS(publish_stream->send_rtcp_rr());
 
@@ -1941,9 +1938,6 @@ VOID TEST(RtcPublishStreamTest, SendRtcpRrVideoTrackError)
 
     // Add track to publish stream (only video track to simplify)
     publish_stream->video_tracks_.push_back(video_track);
-
-    // Reset receiver count before test
-    mock_receiver.reset();
 
     // Set receiver to return error after reset
     srs_error_t mock_error = srs_error_new(ERROR_RTC_RTCP, "mock rtcp rr error");
@@ -2019,9 +2013,6 @@ VOID TEST(RtcPublishStreamTest, SendRtcpRrMultipleTracks)
     publish_stream->video_tracks_.push_back(video_track2);
     publish_stream->audio_tracks_.push_back(audio_track1);
     publish_stream->audio_tracks_.push_back(audio_track2);
-
-    // Reset receiver count before test
-    mock_receiver.reset();
 
     // Test send_rtcp_rr - should succeed when all tracks succeed
     HELPER_EXPECT_SUCCESS(publish_stream->send_rtcp_rr());
@@ -3723,17 +3714,6 @@ VOID TEST(RtcAsyncCallOnUnpublishTest, CallWithContextSwitching)
 
     // Note: Context switching verification is not as straightforward for SrsRtcAsyncCallOnUnpublish
     // because it uses _srs_context directly instead of a member variable like SrsRtcAsyncCallOnStop
-}
-
-void MockSrtSourceManager::reset()
-{
-    srs_freep(initialize_error_);
-    srs_freep(fetch_or_create_error_);
-    initialize_error_ = srs_success;
-    fetch_or_create_error_ = srs_success;
-    initialize_count_ = 0;
-    fetch_or_create_count_ = 0;
-    can_publish_ = true;
 }
 
 VOID TEST(RtcPublishStreamTest, Initialize)

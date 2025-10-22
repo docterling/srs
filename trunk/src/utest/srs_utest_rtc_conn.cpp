@@ -104,7 +104,7 @@ srs_error_t MockRtcSourceForRtcConn::on_rtp(SrsRtpPacket *pkt)
 // This test is used to verify the basic workflow of the RTC connection.
 // It's finished with the help of AI, but each step is manually designed
 // and verified. So this is not dominated by AI, but by humanbeing.
-VOID TEST(RtcConnTest, ManuallyVerifyBasicWorkflowForPlayer)
+VOID TEST(BasicWorkflowRtcConnTest, ManuallyVerifyForPlayer)
 {
     srs_error_t err;
 
@@ -254,7 +254,7 @@ VOID TEST(RtcConnTest, ManuallyVerifyBasicWorkflowForPlayer)
 // This test is used to verify the basic workflow of the RTC connection.
 // It's finished with the help of AI, but each step is manually designed
 // and verified. So this is not dominated by AI, but by humanbeing.
-VOID TEST(RtcConnTest, ManuallyVerifyBasicWorkflowForPublisher)
+VOID TEST(BasicWorkflowRtcConnTest, ManuallyVerifyForPublisher)
 {
     srs_error_t err;
 

@@ -18,10 +18,13 @@ using namespace std;
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_hourglass.hpp>
 #include <srs_kernel_packet.hpp>
+#include <srs_kernel_utility.hpp>
 #include <srs_protocol_amf0.hpp>
 #include <srs_protocol_rtmp_msg_array.hpp>
+#include <srs_protocol_utility.hpp>
 #include <srs_utest_ai11.hpp>
 #include <srs_utest_ai13.hpp>
+#include <srs_utest_ai22.hpp>
 #include <srs_utest_config.hpp>
 #include <srs_utest_coworkers.hpp>
 #include <srs_utest_protocol2.hpp>
@@ -1350,7 +1353,7 @@ MockHlsForOriginHub::~MockHlsForOriginHub()
     srs_freep(initialize_error_);
 }
 
-srs_error_t MockHlsForOriginHub::initialize(SrsOriginHub *h, ISrsRequest *r)
+srs_error_t MockHlsForOriginHub::initialize(ISrsOriginHub *h, ISrsRequest *r)
 {
     initialize_count_++;
     return srs_error_copy(initialize_error_);
@@ -2196,55 +2199,6 @@ VOID TEST(AppOriginHubTest, OnVideoTypicalScenario)
     srs_freep(mock_source);
 }
 
-MockAppConfigForForwarder::MockAppConfigForForwarder()
-{
-    forwards_directive_ = NULL;
-    backend_directive_ = NULL;
-}
-
-MockAppConfigForForwarder::~MockAppConfigForForwarder()
-{
-    srs_freep(forwards_directive_);
-    srs_freep(backend_directive_);
-}
-
-bool MockAppConfigForForwarder::get_forward_enabled(std::string vhost)
-{
-    return forwards_directive_ != NULL || backend_directive_ != NULL;
-}
-
-SrsConfDirective *MockAppConfigForForwarder::get_forwards(std::string vhost)
-{
-    return forwards_directive_;
-}
-
-SrsConfDirective *MockAppConfigForForwarder::get_forward_backend(std::string vhost)
-{
-    return backend_directive_;
-}
-
-void MockAppConfigForForwarder::set_forward_destinations(const std::vector<std::string> &destinations)
-{
-    srs_freep(forwards_directive_);
-
-    if (!destinations.empty()) {
-        forwards_directive_ = new SrsConfDirective();
-        forwards_directive_->name_ = "destination";
-        forwards_directive_->args_ = destinations;
-    }
-}
-
-void MockAppConfigForForwarder::set_forward_backend(const std::string &backend_url)
-{
-    srs_freep(backend_directive_);
-
-    if (!backend_url.empty()) {
-        backend_directive_ = new SrsConfDirective();
-        backend_directive_->name_ = "backend";
-        backend_directive_->args_.push_back(backend_url);
-    }
-}
-
 MockHttpHooksForBackend::MockHttpHooksForBackend()
 {
     on_forward_backend_count_ = 0;
@@ -2272,7 +2226,7 @@ VOID TEST(AppOriginHubTest, CreateForwardersTypicalScenario)
     srs_error_t err;
 
     // Create mock config that will outlive the hub
-    MockAppConfigForForwarder *mock_config = new MockAppConfigForForwarder();
+    MockAppConfig *mock_config = new MockAppConfig();
     MockStatisticForOriginHub *mock_stat = new MockStatisticForOriginHub();
     MockLiveSourceForOriginHub *mock_source = new MockLiveSourceForOriginHub();
 
@@ -2808,7 +2762,7 @@ VOID TEST(AppOriginHubTest, CreateBackendForwardersTypicalScenario)
     srs_error_t err;
 
     // Create mock config that will outlive the hub
-    MockAppConfigForForwarder *mock_config = new MockAppConfigForForwarder();
+    MockAppConfig *mock_config = new MockAppConfig();
     MockStatisticForOriginHub *mock_stat = new MockStatisticForOriginHub();
     MockLiveSourceForOriginHub *mock_source = new MockLiveSourceForOriginHub();
     MockHttpHooksForBackend *mock_hooks = new MockHttpHooksForBackend();
@@ -2997,74 +2951,9 @@ VOID TEST(SrsLiveSourceTest, OnAggregateSelectionTypical)
     delete[] payload;
 }
 
-MockOriginHubForLiveSource::MockOriginHubForLiveSource()
-{
-    initialize_count_ = 0;
-    initialize_error_ = srs_success;
-}
-
-MockOriginHubForLiveSource::~MockOriginHubForLiveSource()
-{
-    srs_freep(initialize_error_);
-}
-
-srs_error_t MockOriginHubForLiveSource::initialize(SrsSharedPtr<SrsLiveSource> s, ISrsRequest *r)
-{
-    initialize_count_++;
-    return srs_error_copy(initialize_error_);
-}
-
-void MockOriginHubForLiveSource::dispose()
-{
-}
-
-srs_error_t MockOriginHubForLiveSource::cycle()
-{
-    return srs_success;
-}
-
-bool MockOriginHubForLiveSource::active()
-{
-    return false;
-}
-
-srs_utime_t MockOriginHubForLiveSource::cleanup_delay()
-{
-    return 0;
-}
-
-srs_error_t MockOriginHubForLiveSource::on_meta_data(SrsMediaPacket *shared_metadata, SrsOnMetaDataPacket *packet)
-{
-    return srs_success;
-}
-
-srs_error_t MockOriginHubForLiveSource::on_audio(SrsMediaPacket *shared_audio)
-{
-    return srs_success;
-}
-
-srs_error_t MockOriginHubForLiveSource::on_video(SrsMediaPacket *shared_video, bool is_sequence_header)
-{
-    return srs_success;
-}
-
-srs_error_t MockOriginHubForLiveSource::on_publish()
-{
-    return srs_success;
-}
-
-void MockOriginHubForLiveSource::on_unpublish()
-{
-}
-
-srs_error_t MockOriginHubForLiveSource::on_dvr_request_sh()
-{
-    return srs_success;
-}
-
 MockAppFactoryForLiveSource::MockAppFactoryForLiveSource()
 {
-    mock_hub_ = new MockOriginHubForLiveSource();
+    mock_hub_ = new MockOriginHub();
     create_origin_hub_count_ = 0;
 }
 
@@ -3148,7 +3037,7 @@ VOID TEST(SrsLiveSourceTest, ConsumerDumpsTypicalScenario)
         SrsSharedPtr<SrsLiveSource> wrapper(source);
 
         // Set hub to active state to test the typical publishing scenario
-        mock_factory->mock_hub_ = new MockOriginHubForLiveSource();
+        mock_factory->mock_hub_ = new MockOriginHub();
         source->hub_ = mock_factory->mock_hub_;
         mock_factory->mock_hub_ = NULL;
 
@@ -3196,7 +3085,7 @@ VOID TEST(SrsLiveSourceTest, OnMetaDataTypicalScenario)
         SrsSharedPtr<SrsLiveSource> wrapper(source);
 
         // Set hub to active state to test the typical publishing scenario
-        mock_factory->mock_hub_ = new MockOriginHubForLiveSource();
+        mock_factory->mock_hub_ = new MockOriginHub();
         source->hub_ = mock_factory->mock_hub_;
         mock_factory->mock_hub_ = NULL;
 

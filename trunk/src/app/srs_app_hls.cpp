@@ -2616,7 +2616,7 @@ srs_utime_t SrsHls::cleanup_delay()
 // IMPORTANT: All field initialization in this method MUST NOT cause coroutine context switches.
 // This prevents the race condition where multiple coroutines could create duplicate sources
 // for the same stream when context switches occurred during initialization.
-srs_error_t SrsHls::initialize(SrsOriginHub *h, ISrsRequest *r)
+srs_error_t SrsHls::initialize(ISrsOriginHub *h, ISrsRequest *r)
 {
     srs_error_t err = srs_success;
 

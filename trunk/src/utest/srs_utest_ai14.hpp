@@ -92,7 +92,7 @@ public:
 public:
     MockHlsForOriginHub();
     virtual ~MockHlsForOriginHub();
-    virtual srs_error_t initialize(SrsOriginHub *h, ISrsRequest *r);
+    virtual srs_error_t initialize(ISrsOriginHub *h, ISrsRequest *r);
     virtual srs_error_t on_audio(SrsMediaPacket *shared_audio, SrsFormat *format);
     virtual srs_error_t on_video(SrsMediaPacket *shared_video, SrsFormat *format);
     virtual srs_error_t on_publish();
@@ -256,22 +256,6 @@ public:
 #endif
 
 // Mock config for testing SrsOriginHub::create_forwarders
-class MockAppConfigForForwarder : public MockAppConfig
-{
-public:
-    SrsConfDirective *forwards_directive_;
-    SrsConfDirective *backend_directive_;
-
-public:
-    MockAppConfigForForwarder();
-    virtual ~MockAppConfigForForwarder();
-    virtual bool get_forward_enabled(std::string vhost);
-    virtual SrsConfDirective *get_forwards(std::string vhost);
-    virtual SrsConfDirective *get_forward_backend(std::string vhost);
-    void set_forward_destinations(const std::vector<std::string> &destinations);
-    void set_forward_backend(const std::string &backend_url);
-};
-
 // Mock HTTP hooks for testing SrsOriginHub::create_backend_forwarders
 class MockHttpHooksForBackend : public MockHttpHooks
 {
@@ -319,34 +303,11 @@ public:
     virtual SrsLiveSource *create_live_source();
 };
 
-// Mock ISrsOriginHub for testing SrsLiveSource::initialize
-class MockOriginHubForLiveSource : public ISrsOriginHub
-{
-public:
-    int initialize_count_;
-    srs_error_t initialize_error_;
-
-public:
-    MockOriginHubForLiveSource();
-    virtual ~MockOriginHubForLiveSource();
-    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> s, ISrsRequest *r);
-    virtual void dispose();
-    virtual srs_error_t cycle();
-    virtual bool active();
-    virtual srs_utime_t cleanup_delay();
-    virtual srs_error_t on_meta_data(SrsMediaPacket *shared_metadata, SrsOnMetaDataPacket *packet);
-    virtual srs_error_t on_audio(SrsMediaPacket *shared_audio);
-    virtual srs_error_t on_video(SrsMediaPacket *shared_video, bool is_sequence_header);
-    virtual srs_error_t on_publish();
-    virtual void on_unpublish();
-    virtual srs_error_t on_dvr_request_sh();
-};
-
 // Mock ISrsAppFactory for testing SrsLiveSource::initialize
 class MockAppFactoryForLiveSource : public SrsAppFactory
 {
 public:
-    MockOriginHubForLiveSource *mock_hub_;
+    MockOriginHub *mock_hub_;
     int create_origin_hub_count_;
 
 public:

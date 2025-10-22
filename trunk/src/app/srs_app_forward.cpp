@@ -14,6 +14,7 @@
 using namespace std;
 
 #include <srs_app_config.hpp>
+#include <srs_app_factory.hpp>
 #include <srs_app_rtmp_conn.hpp>
 #include <srs_app_rtmp_source.hpp>
 #include <srs_app_st.hpp>
@@ -38,7 +39,7 @@ ISrsForwarder::~ISrsForwarder()
 {
 }
 
-SrsForwarder::SrsForwarder(SrsOriginHub *h)
+SrsForwarder::SrsForwarder(ISrsOriginHub *h)
 {
     hub_ = h;
 
@@ -49,6 +50,9 @@ SrsForwarder::SrsForwarder(SrsOriginHub *h)
     trd_ = new SrsDummyCoroutine();
     queue_ = new SrsMessageQueue();
     jitter_ = new SrsRtmpJitter();
+
+    app_factory_ = _srs_app_factory;
+    config_ = _srs_config;
 }
 
 SrsForwarder::~SrsForwarder()
@@ -62,6 +66,9 @@ SrsForwarder::~SrsForwarder()
     srs_freep(sh_audio_);
 
     srs_freep(req_);
+
+    app_factory_ = NULL;
+    config_ = NULL;
 }
 
 srs_error_t SrsForwarder::initialize(ISrsRequest *r, string ep)
@@ -229,7 +236,7 @@ srs_error_t SrsForwarder::do_cycle()
     srs_freep(sdk_);
     srs_utime_t cto = SRS_FORWARDER_CIMS;
     srs_utime_t sto = SRS_CONSTS_RTMP_TIMEOUT;
-    sdk_ = new SrsSimpleRtmpClient(url, cto, sto);
+    sdk_ = app_factory_->create_rtmp_client(url, cto, sto);
 
     if ((err = sdk_->connect()) != srs_success) {
         return srs_error_wrap(err, "sdk connect url=%s, cto=%dms, sto=%dms.", url.c_str(), srsu2msi(cto), srsu2msi(sto));
@@ -238,7 +245,7 @@ srs_error_t SrsForwarder::do_cycle()
     // For RTMP client, we pass the vhost in tcUrl when connecting,
     // so we publish without vhost in stream.
     string stream;
-    if ((err = sdk_->publish(_srs_config->get_chunk_size(req_->vhost_), false, &stream)) != srs_success) {
+    if ((err = sdk_->publish(config_->get_chunk_size(req_->vhost_), false, &stream)) != srs_success) {
         return srs_error_wrap(err, "sdk publish");
     }
 

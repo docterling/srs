@@ -1818,36 +1818,6 @@ void MockHlsController::set_on_unpublish_error(srs_error_t err)
     on_unpublish_error_ = srs_error_copy(err);
 }
 
-// Mock origin hub implementation
-MockOriginHub::MockOriginHub()
-{
-    on_hls_request_sh_count_ = 0;
-    on_hls_request_sh_error_ = srs_success;
-}
-
-MockOriginHub::~MockOriginHub()
-{
-    srs_freep(on_hls_request_sh_error_);
-}
-
-srs_error_t MockOriginHub::on_hls_request_sh()
-{
-    on_hls_request_sh_count_++;
-    return srs_error_copy(on_hls_request_sh_error_);
-}
-
-void MockOriginHub::reset()
-{
-    on_hls_request_sh_count_ = 0;
-    srs_freep(on_hls_request_sh_error_);
-}
-
-void MockOriginHub::set_on_hls_request_sh_error(srs_error_t err)
-{
-    srs_freep(on_hls_request_sh_error_);
-    on_hls_request_sh_error_ = srs_error_copy(err);
-}
-
 // Unit test for SrsHls::reload typical scenario
 VOID TEST(AppHlsTest, HlsReloadTypicalScenario)
 {

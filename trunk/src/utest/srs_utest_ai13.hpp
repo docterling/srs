@@ -179,19 +179,4 @@ public:
     void set_on_unpublish_error(srs_error_t err);
 };
 
-// Mock origin hub for testing SrsHls::reload
-class MockOriginHub : public SrsOriginHub
-{
-public:
-    int on_hls_request_sh_count_;
-    srs_error_t on_hls_request_sh_error_;
-
-public:
-    MockOriginHub();
-    virtual ~MockOriginHub();
-    virtual srs_error_t on_hls_request_sh();
-    void reset();
-    void set_on_hls_request_sh_error(srs_error_t err);
-};
-
 #endif

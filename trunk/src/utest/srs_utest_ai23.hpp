@@ -293,36 +293,6 @@ public:
     void reset();
 };
 
-// Mock ISrsBasicRtmpClient for testing SrsGbMuxer
-class MockGbRtmpClient : public ISrsBasicRtmpClient
-{
-public:
-    bool connect_called_;
-    bool publish_called_;
-    bool close_called_;
-    srs_error_t connect_error_;
-    srs_error_t publish_error_;
-    int stream_id_;
-
-public:
-    MockGbRtmpClient();
-    virtual ~MockGbRtmpClient();
-
-public:
-    virtual srs_error_t connect();
-    virtual void close();
-    virtual srs_error_t publish(int chunk_size, bool with_vhost = true, std::string *pstream = NULL);
-    virtual srs_error_t play(int chunk_size, bool with_vhost = true, std::string *pstream = NULL);
-    virtual void kbps_sample(const char *label, srs_utime_t age);
-    virtual int sid();
-    virtual srs_error_t recv_message(SrsRtmpCommonMessage **pmsg);
-    virtual srs_error_t decode_message(SrsRtmpCommonMessage *msg, SrsRtmpCommand **ppacket);
-    virtual srs_error_t send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs);
-    virtual srs_error_t send_and_free_message(SrsMediaPacket *msg);
-    virtual void set_recv_timeout(srs_utime_t timeout);
-    void reset();
-};
-
 // Mock ISrsRawAacStream for testing SrsGbMuxer
 class MockGbRawAacStream : public ISrsRawAacStream
 {

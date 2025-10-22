@@ -41,6 +41,7 @@ public:
     virtual srs_error_t play(int chunk_size, bool with_vhost = true, std::string *pstream = NULL) = 0;
     // Sample kbps for statistics.
     virtual void kbps_sample(const char *label, srs_utime_t age) = 0;
+    virtual void kbps_sample(const char *label, srs_utime_t age, int msgs) = 0;
     // Get stream ID.
     virtual int sid() = 0;
 

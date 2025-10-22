@@ -22,8 +22,12 @@ class SrsRtmpClient;
 class ISrsRequest;
 class SrsLiveSource;
 class SrsOriginHub;
+class ISrsOriginHub;
 class SrsKbps;
 class SrsSimpleRtmpClient;
+class ISrsBasicRtmpClient;
+class ISrsAppFactory;
+class ISrsAppConfig;
 
 // The forward interface.
 class ISrsForwarder
@@ -47,6 +51,11 @@ class SrsForwarder : public ISrsCoroutineHandler, public ISrsForwarder
 {
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
+    ISrsAppFactory *app_factory_;
+    ISrsAppConfig *config_;
+
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
     // The ep to forward, server[:port].
     std::string ep_forward_;
     ISrsRequest *req_;
@@ -62,8 +71,8 @@ SRS_DECLARE_PRIVATE: // clang-format on
 
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
-    SrsOriginHub *hub_;
-    SrsSimpleRtmpClient *sdk_;
+    ISrsOriginHub *hub_;
+    ISrsBasicRtmpClient *sdk_;
     SrsRtmpJitter *jitter_;
     SrsMessageQueue *queue_;
     // Cache the sequence header for retry when slave is failed.
@@ -71,7 +80,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
     SrsMediaPacket *sh_video_;
 
 public:
-    SrsForwarder(SrsOriginHub *h);
+    SrsForwarder(ISrsOriginHub *h);
     virtual ~SrsForwarder();
 
 public:

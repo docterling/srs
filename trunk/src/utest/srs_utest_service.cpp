@@ -100,6 +100,7 @@ VOID TEST(TCPServerTest, PingPong)
         SrsTcpListener l(&h);
         l.set_endpoint(_srs_tmp_host, _srs_tmp_port);
         HELPER_EXPECT_SUCCESS(l.listen());
+        srs_usleep(1 * SRS_UTIME_MILLISECONDS);
 
         SrsTcpClient c(_srs_tmp_host, _srs_tmp_port, _srs_tmp_timeout);
         HELPER_EXPECT_SUCCESS(c.connect());
@@ -113,6 +114,7 @@ VOID TEST(TCPServerTest, PingPong)
         SrsTcpListener l(&h);
         l.set_endpoint(_srs_tmp_host, _srs_tmp_port);
         HELPER_EXPECT_SUCCESS(l.listen());
+        srs_usleep(1 * SRS_UTIME_MILLISECONDS);
 
         SrsTcpClient c(_srs_tmp_host, _srs_tmp_port, _srs_tmp_timeout);
         HELPER_EXPECT_SUCCESS(c.connect());
@@ -135,6 +137,7 @@ VOID TEST(TCPServerTest, PingPong)
         SrsTcpListener l(&h);
         l.set_endpoint(_srs_tmp_host, _srs_tmp_port);
         HELPER_EXPECT_SUCCESS(l.listen());
+        srs_usleep(1 * SRS_UTIME_MILLISECONDS);
 
         SrsTcpClient c(_srs_tmp_host, _srs_tmp_port, _srs_tmp_timeout);
         HELPER_EXPECT_SUCCESS(c.connect());
@@ -159,6 +162,7 @@ VOID TEST(TCPServerTest, PingPong)
         SrsTcpListener l(&h);
         l.set_endpoint(_srs_tmp_host, _srs_tmp_port);
         HELPER_EXPECT_SUCCESS(l.listen());
+        srs_usleep(1 * SRS_UTIME_MILLISECONDS);
 
         SrsTcpClient c(_srs_tmp_host, _srs_tmp_port, _srs_tmp_timeout);
         HELPER_EXPECT_SUCCESS(c.connect());
@@ -194,6 +198,7 @@ VOID TEST(TCPServerTest, PingPongWithTimeout)
         SrsTcpListener l(&h);
         l.set_endpoint(_srs_tmp_host, _srs_tmp_port);
         HELPER_EXPECT_SUCCESS(l.listen());
+        srs_usleep(1 * SRS_UTIME_MILLISECONDS);
 
         SrsTcpClient c(_srs_tmp_host, _srs_tmp_port, _srs_tmp_timeout);
         HELPER_EXPECT_SUCCESS(c.connect());
@@ -216,6 +221,7 @@ VOID TEST(TCPServerTest, PingPongWithTimeout)
         SrsTcpListener l(&h);
         l.set_endpoint(_srs_tmp_host, _srs_tmp_port);
         HELPER_EXPECT_SUCCESS(l.listen());
+        srs_usleep(1 * SRS_UTIME_MILLISECONDS);
 
         SrsTcpClient c(_srs_tmp_host, _srs_tmp_port, _srs_tmp_timeout);
         HELPER_EXPECT_SUCCESS(c.connect());
@@ -238,6 +244,7 @@ VOID TEST(TCPServerTest, PingPongWithTimeout)
         SrsTcpListener l(&h);
         l.set_endpoint(_srs_tmp_host, _srs_tmp_port);
         HELPER_EXPECT_SUCCESS(l.listen());
+        srs_usleep(1 * SRS_UTIME_MILLISECONDS);
 
         SrsTcpClient c(_srs_tmp_host, _srs_tmp_port, _srs_tmp_timeout);
         HELPER_EXPECT_SUCCESS(c.connect());

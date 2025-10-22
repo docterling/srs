@@ -27,6 +27,7 @@ class ISrsRequest;
 class SrsPithyPrint;
 class SrsLiveSource;
 class SrsOriginHub;
+class ISrsOriginHub;
 class ISrsFileWriter;
 class ISrsAppConfig;
 class ISrsHttpHooks;
@@ -657,7 +658,7 @@ public:
     virtual ~ISrsHls();
 
 public:
-    virtual srs_error_t initialize(SrsOriginHub *h, ISrsRequest *r) = 0;
+    virtual srs_error_t initialize(ISrsOriginHub *h, ISrsRequest *r) = 0;
     virtual srs_error_t on_audio(SrsMediaPacket *shared_audio, SrsFormat *format) = 0;
     virtual srs_error_t on_video(SrsMediaPacket *shared_video, SrsFormat *format) = 0;
     virtual srs_error_t on_publish() = 0;
@@ -698,7 +699,7 @@ SRS_DECLARE_PRIVATE: // clang-format on
 
 // clang-format off
 SRS_DECLARE_PRIVATE: // clang-format on
-    SrsOriginHub *hub_;
+    ISrsOriginHub *hub_;
     SrsRtmpJitter *jitter_;
     SrsPithyPrint *pprint_;
 
@@ -721,7 +722,7 @@ public:
 
 public:
     // Initialize the hls by handler and source.
-    virtual srs_error_t initialize(SrsOriginHub *h, ISrsRequest *r);
+    virtual srs_error_t initialize(ISrsOriginHub *h, ISrsRequest *r);
     // Publish stream event, continue to write the m3u8,
     // for the muxer object not destroyed.
     // @param fetch_sequence_header whether fetch sequence from source.

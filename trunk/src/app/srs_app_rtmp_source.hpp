@@ -413,6 +413,10 @@ public:
     virtual void on_unpublish() = 0;
     // When DVR requests sequence header.
     virtual srs_error_t on_dvr_request_sh() = 0;
+    // When HLS requests sequence header.
+    virtual srs_error_t on_hls_request_sh() = 0;
+    // When forwarder requests sequence header.
+    virtual srs_error_t on_forwarder_start(SrsForwarder *forwarder) = 0;
 };
 
 // The hub for origin is a collection of utilities for origin only,

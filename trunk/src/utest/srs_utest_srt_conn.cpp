@@ -38,7 +38,7 @@
 // This test is used to verify the basic workflow of the SRT connection.
 // It's finished with the help of AI, but each step is manually designed
 // and verified. So this is not dominated by AI, but by humanbeing.
-VOID TEST(SrtConnTest, ManuallyVerifyBasicWorkflowForPublisher)
+VOID TEST(BasicWorkflowSrtConnTest, ManuallyVerifyForPublisher)
 {
     srs_error_t err;
 
@@ -138,7 +138,7 @@ VOID TEST(SrtConnTest, ManuallyVerifyBasicWorkflowForPublisher)
 // This test is used to verify the basic workflow of the SRT connection.
 // It's finished with the help of AI, but each step is manually designed
 // and verified. So this is not dominated by AI, but by humanbeing.
-VOID TEST(SrtConnTest, ManuallyVerifyBasicWorkflowForPlayer)
+VOID TEST(BasicWorkflowSrtConnTest, ManuallyVerifyForPlayer)
 {
     srs_error_t err;
 

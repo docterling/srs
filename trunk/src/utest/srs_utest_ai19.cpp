@@ -513,92 +513,6 @@ void MockMpegtsRawH264Stream::reset()
     is_pps_result_ = false;
 }
 
-// Mock ISrsBasicRtmpClient implementation
-MockMpegtsRtmpClient::MockMpegtsRtmpClient()
-{
-    connect_called_ = false;
-    publish_called_ = false;
-    close_called_ = false;
-    connect_error_ = srs_success;
-    publish_error_ = srs_success;
-    stream_id_ = 1;
-}
-
-MockMpegtsRtmpClient::~MockMpegtsRtmpClient()
-{
-    srs_freep(connect_error_);
-    srs_freep(publish_error_);
-}
-
-srs_error_t MockMpegtsRtmpClient::connect()
-{
-    connect_called_ = true;
-    return srs_error_copy(connect_error_);
-}
-
-void MockMpegtsRtmpClient::close()
-{
-    close_called_ = true;
-}
-
-srs_error_t MockMpegtsRtmpClient::publish(int chunk_size, bool with_vhost, std::string *pstream)
-{
-    publish_called_ = true;
-    return srs_error_copy(publish_error_);
-}
-
-srs_error_t MockMpegtsRtmpClient::play(int chunk_size, bool with_vhost, std::string *pstream)
-{
-    return srs_success;
-}
-
-void MockMpegtsRtmpClient::kbps_sample(const char *label, srs_utime_t age)
-{
-}
-
-srs_error_t MockMpegtsRtmpClient::recv_message(SrsRtmpCommonMessage **pmsg)
-{
-    return srs_success;
-}
-
-srs_error_t MockMpegtsRtmpClient::decode_message(SrsRtmpCommonMessage *msg, SrsRtmpCommand **ppacket)
-{
-    return srs_success;
-}
-
-srs_error_t MockMpegtsRtmpClient::send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs)
-{
-    for (int i = 0; i < nb_msgs; i++) {
-        srs_freep(msgs[i]);
-    }
-    return srs_success;
-}
-
-srs_error_t MockMpegtsRtmpClient::send_and_free_message(SrsMediaPacket *msg)
-{
-    srs_freep(msg);
-    return srs_success;
-}
-
-void MockMpegtsRtmpClient::set_recv_timeout(srs_utime_t timeout)
-{
-}
-
-int MockMpegtsRtmpClient::sid()
-{
-    return stream_id_;
-}
-
-void MockMpegtsRtmpClient::reset()
-{
-    connect_called_ = false;
-    publish_called_ = false;
-    close_called_ = false;
-    srs_freep(connect_error_);
-    srs_freep(publish_error_);
-    stream_id_ = 1;
-}
-
 // Test SrsMpegtsOverUdp::on_ts_video - major use scenario
 // This test covers the complete video processing flow:
 // 1. Receive TS video message with H.264 annexb data (SPS, PPS, IDR frame)
@@ -615,7 +529,7 @@ VOID TEST(MpegtsOverUdpTest, OnTsVideoWithSpsPpsIdrFrame)
 
     // Create mock dependencies
     MockMpegtsRawH264Stream *mock_avc = new MockMpegtsRawH264Stream();
-    MockMpegtsRtmpClient *mock_sdk = new MockMpegtsRtmpClient();
+    MockRtmpClient *mock_sdk = new MockRtmpClient();
 
     // Inject mock dependencies
     udp_handler->avc_ = mock_avc;
@@ -702,7 +616,7 @@ VOID TEST(MpegtsOverUdpTest, WriteH264SpsPps)
 
     // Create mock dependencies
     MockMpegtsRawH264Stream *mock_avc = new MockMpegtsRawH264Stream();
-    MockMpegtsRtmpClient *mock_sdk = new MockMpegtsRtmpClient();
+    MockRtmpClient *mock_sdk = new MockRtmpClient();
     SrsUniquePtr<SrsMpegtsQueue> mock_queue(new SrsMpegtsQueue());
 
     // Inject mock dependencies
@@ -756,7 +670,7 @@ VOID TEST(MpegtsOverUdpTest, WriteH264IpbFrameWithIdrFrame)
 
     // Create mock dependencies
     MockMpegtsRawH264Stream *mock_avc = new MockMpegtsRawH264Stream();
-    MockMpegtsRtmpClient *mock_sdk = new MockMpegtsRtmpClient();
+    MockRtmpClient *mock_sdk = new MockRtmpClient();
     SrsUniquePtr<SrsMpegtsQueue> mock_queue(new SrsMpegtsQueue());
 
     // Inject mock dependencies
@@ -999,7 +913,7 @@ VOID TEST(MpegtsOverUdpTest, RtmpWritePacketWithVideoData)
     SrsUniquePtr<SrsMpegtsOverUdp> udp_handler(new SrsMpegtsOverUdp());
 
     // Create mock dependencies
-    MockMpegtsRtmpClient *mock_sdk = new MockMpegtsRtmpClient();
+    MockRtmpClient *mock_sdk = new MockRtmpClient();
     SrsUniquePtr<MockAppFactoryForMpegtsOverUdp> mock_factory(new MockAppFactoryForMpegtsOverUdp());
     SrsUniquePtr<SrsMpegtsQueue> mock_queue(new SrsMpegtsQueue());
 
@@ -1723,107 +1637,6 @@ void MockFlvDecoderForDynamicConn::reset()
     tag_data_size_ = 0;
 }
 
-// Mock ISrsBasicRtmpClient implementation for SrsDynamicHttpConn::do_proxy
-MockRtmpClientForDynamicConn::MockRtmpClientForDynamicConn()
-{
-    connect_called_ = false;
-    publish_called_ = false;
-    close_called_ = false;
-    send_and_free_message_called_ = false;
-    connect_error_ = srs_success;
-    publish_error_ = srs_success;
-    send_and_free_message_error_ = srs_success;
-    stream_id_ = 1;
-    send_message_count_ = 0;
-}
-
-MockRtmpClientForDynamicConn::~MockRtmpClientForDynamicConn()
-{
-    srs_freep(connect_error_);
-    srs_freep(publish_error_);
-    srs_freep(send_and_free_message_error_);
-}
-
-srs_error_t MockRtmpClientForDynamicConn::connect()
-{
-    connect_called_ = true;
-    return srs_error_copy(connect_error_);
-}
-
-void MockRtmpClientForDynamicConn::close()
-{
-    close_called_ = true;
-}
-
-srs_error_t MockRtmpClientForDynamicConn::publish(int chunk_size, bool with_vhost, std::string *pstream)
-{
-    publish_called_ = true;
-    return srs_error_copy(publish_error_);
-}
-
-srs_error_t MockRtmpClientForDynamicConn::play(int chunk_size, bool with_vhost, std::string *pstream)
-{
-    return srs_success;
-}
-
-void MockRtmpClientForDynamicConn::kbps_sample(const char *label, srs_utime_t age)
-{
-}
-
-srs_error_t MockRtmpClientForDynamicConn::recv_message(SrsRtmpCommonMessage **pmsg)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpClientForDynamicConn::decode_message(SrsRtmpCommonMessage *msg, SrsRtmpCommand **ppacket)
-{
-    return srs_success;
-}
-
-srs_error_t MockRtmpClientForDynamicConn::send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs)
-{
-    for (int i = 0; i < nb_msgs; i++) {
-        srs_freep(msgs[i]);
-    }
-    return srs_success;
-}
-
-srs_error_t MockRtmpClientForDynamicConn::send_and_free_message(SrsMediaPacket *msg)
-{
-    send_and_free_message_called_ = true;
-    send_message_count_++;
-
-    if (send_and_free_message_error_ != srs_success) {
-        srs_freep(msg);
-        return srs_error_copy(send_and_free_message_error_);
-    }
-
-    srs_freep(msg);
-    return srs_success;
-}
-
-void MockRtmpClientForDynamicConn::set_recv_timeout(srs_utime_t timeout)
-{
-}
-
-int MockRtmpClientForDynamicConn::sid()
-{
-    return stream_id_;
-}
-
-void MockRtmpClientForDynamicConn::reset()
-{
-    connect_called_ = false;
-    publish_called_ = false;
-    close_called_ = false;
-    send_and_free_message_called_ = false;
-    srs_freep(connect_error_);
-    srs_freep(publish_error_);
-    srs_freep(send_and_free_message_error_);
-    stream_id_ = 1;
-    send_message_count_ = 0;
-}
-
 // Mock ISrsAppFactory implementation for SrsDynamicHttpConn::do_proxy
 MockAppFactoryForDynamicConn::MockAppFactoryForDynamicConn()
 {
@@ -1902,7 +1715,7 @@ VOID TEST(DynamicHttpConnTest, DoProxyWithVideoAndAudioTags)
     // Create mock dependencies
     MockHttpResponseReaderForDynamicConn mock_reader;
     MockFlvDecoderForDynamicConn mock_decoder;
-    MockRtmpClientForDynamicConn *mock_rtmp_client = new MockRtmpClientForDynamicConn();
+    MockRtmpClient *mock_rtmp_client = new MockRtmpClient();
     SrsUniquePtr<MockAppFactoryForDynamicConn> mock_factory(new MockAppFactoryForDynamicConn());
     MockPithyPrintForDynamicConn *mock_pprint = new MockPithyPrintForDynamicConn();
 
@@ -2772,7 +2585,6 @@ VOID TEST(QueueRecvThreadTest, BasicQueueOperations)
     EXPECT_TRUE(mock_rtmp->set_auto_response_called_);
     EXPECT_FALSE(mock_rtmp->auto_response_value_); // Should be set to false
 
-    mock_rtmp->reset();
     queue_thread->on_stop();
     EXPECT_TRUE(mock_rtmp->set_auto_response_called_);
     EXPECT_TRUE(mock_rtmp->auto_response_value_); // Should be set to true

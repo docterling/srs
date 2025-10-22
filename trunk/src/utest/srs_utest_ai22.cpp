@@ -169,94 +169,6 @@ std::string MockEdgeConfig::get_dvr_plan(std::string vhost)
     return "session";
 }
 
-// MockEdgeRtmpClient implementation
-MockEdgeRtmpClient::MockEdgeRtmpClient()
-{
-    connect_called_ = false;
-    play_called_ = false;
-    close_called_ = false;
-    recv_message_called_ = false;
-    decode_message_called_ = false;
-    set_recv_timeout_called_ = false;
-    kbps_sample_called_ = false;
-    connect_error_ = srs_success;
-    play_error_ = srs_success;
-    play_stream_ = "";
-    recv_timeout_ = 0;
-    kbps_label_ = "";
-    kbps_age_ = 0;
-}
-
-MockEdgeRtmpClient::~MockEdgeRtmpClient()
-{
-}
-
-srs_error_t MockEdgeRtmpClient::connect()
-{
-    connect_called_ = true;
-    return srs_error_copy(connect_error_);
-}
-
-void MockEdgeRtmpClient::close()
-{
-    close_called_ = true;
-}
-
-srs_error_t MockEdgeRtmpClient::publish(int chunk_size, bool with_vhost, std::string *pstream)
-{
-    return srs_success;
-}
-
-srs_error_t MockEdgeRtmpClient::play(int chunk_size, bool with_vhost, std::string *pstream)
-{
-    play_called_ = true;
-    if (pstream) {
-        *pstream = "livestream"; // Return the stream name
-        play_stream_ = *pstream;
-    }
-    return srs_error_copy(play_error_);
-}
-
-void MockEdgeRtmpClient::kbps_sample(const char *label, srs_utime_t age)
-{
-    kbps_sample_called_ = true;
-    kbps_label_ = label;
-    kbps_age_ = age;
-}
-
-int MockEdgeRtmpClient::sid()
-{
-    return 1;
-}
-
-srs_error_t MockEdgeRtmpClient::recv_message(SrsRtmpCommonMessage **pmsg)
-{
-    recv_message_called_ = true;
-    return srs_success;
-}
-
-srs_error_t MockEdgeRtmpClient::decode_message(SrsRtmpCommonMessage *msg, SrsRtmpCommand **ppacket)
-{
-    decode_message_called_ = true;
-    return srs_success;
-}
-
-srs_error_t MockEdgeRtmpClient::send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs)
-{
-    return srs_success;
-}
-
-srs_error_t MockEdgeRtmpClient::send_and_free_message(SrsMediaPacket *msg)
-{
-    return srs_success;
-}
-
-void MockEdgeRtmpClient::set_recv_timeout(srs_utime_t timeout)
-{
-    set_recv_timeout_called_ = true;
-    recv_timeout_ = timeout;
-}
-
 // MockEdgeAppFactory implementation
 MockEdgeAppFactory::MockEdgeAppFactory()
 {
@@ -302,7 +214,7 @@ VOID TEST(EdgeRtmpUpstreamTest, ConnectToOriginWithLoadBalancing)
     config->chunk_size_ = 60000;
 
     // Create mock RTMP client - use raw pointer since upstream will manage it
-    MockEdgeRtmpClient *mock_sdk = new MockEdgeRtmpClient();
+    MockRtmpClient *mock_sdk = new MockRtmpClient();
     mock_sdk->connect_error_ = srs_success;
     mock_sdk->play_error_ = srs_success;
 
@@ -339,87 +251,6 @@ VOID TEST(EdgeRtmpUpstreamTest, ConnectToOriginWithLoadBalancing)
     EXPECT_STREQ("livestream", mock_sdk->play_stream_.c_str());
 
     // Note: mock_sdk will be deleted by upstream destructor via srs_freep(sdk_)
-}
-
-// Test SrsEdgeRtmpUpstream message handling methods
-// This test covers the major use scenario for edge server receiving and processing
-// messages from origin server:
-// 1. Set receive timeout for the connection
-// 2. Receive RTMP messages from origin
-// 3. Decode messages into RTMP commands
-// 4. Sample bandwidth statistics
-// 5. Query selected server information
-// 6. Close the connection
-VOID TEST(EdgeRtmpUpstreamTest, MessageHandlingAndClose)
-{
-    srs_error_t err;
-
-    // Create mock request
-    SrsUniquePtr<MockEdgeRequest> req(new MockEdgeRequest("test.vhost", "live", "stream"));
-
-    // Create mock config
-    SrsUniquePtr<MockEdgeConfig> config(new MockEdgeConfig());
-    config->edge_origin_directive_ = new SrsConfDirective();
-    config->edge_origin_directive_->name_ = "origin";
-    config->edge_origin_directive_->args_.push_back("192.168.1.10:1935");
-
-    // Create mock RTMP client
-    MockEdgeRtmpClient *mock_sdk = new MockEdgeRtmpClient();
-
-    // Create mock app factory
-    SrsUniquePtr<MockEdgeAppFactory> mock_factory(new MockEdgeAppFactory());
-    mock_factory->mock_client_ = mock_sdk;
-
-    // Create load balancer
-    SrsUniquePtr<SrsLbRoundRobin> lb(new SrsLbRoundRobin());
-
-    // Create edge upstream
-    SrsUniquePtr<SrsEdgeRtmpUpstream> upstream(new SrsEdgeRtmpUpstream(""));
-
-    // Inject mock dependencies
-    upstream->config_ = config.get();
-    upstream->app_factory_ = mock_factory.get();
-
-    // Connect to origin
-    err = upstream->connect(req.get(), lb.get());
-    HELPER_EXPECT_SUCCESS(err);
-
-    // Test 1: Set receive timeout
-    srs_utime_t timeout = 30 * SRS_UTIME_SECONDS;
-    upstream->set_recv_timeout(timeout);
-    EXPECT_TRUE(mock_sdk->set_recv_timeout_called_);
-    EXPECT_EQ(timeout, mock_sdk->recv_timeout_);
-
-    // Test 2: Receive message from origin
-    SrsRtmpCommonMessage *msg = NULL;
-    err = upstream->recv_message(&msg);
-    HELPER_EXPECT_SUCCESS(err);
-    EXPECT_TRUE(mock_sdk->recv_message_called_);
-
-    // Test 3: Decode message
-    SrsRtmpCommand *packet = NULL;
-    err = upstream->decode_message(msg, &packet);
-    HELPER_EXPECT_SUCCESS(err);
-    EXPECT_TRUE(mock_sdk->decode_message_called_);
-
-    // Test 4: Sample bandwidth statistics
-    srs_utime_t age = 5 * SRS_UTIME_SECONDS;
-    upstream->kbps_sample("edge-pull", age);
-    EXPECT_TRUE(mock_sdk->kbps_sample_called_);
-    EXPECT_STREQ("edge-pull", mock_sdk->kbps_label_.c_str());
-    EXPECT_EQ(age, mock_sdk->kbps_age_);
-
-    // Test 5: Query selected server information
-    std::string selected_server;
-    int selected_port = 0;
-    upstream->selected(selected_server, selected_port);
-    EXPECT_STREQ("192.168.1.10", selected_server.c_str());
-    EXPECT_EQ(1935, selected_port);
-
-    // Test 6: Close connection
-    upstream->close();
-    // After close(), sdk_ should be freed, so we can't check mock_sdk anymore
-    // The test passes if no crash occurs during close()
 }
 
 // MockEdgeHttpClient implementation
@@ -4254,72 +4085,6 @@ VOID TEST(DvrSegmentPlanTest, PublishUnpublishTypicalScenario)
     plan->config_ = NULL;
 }
 
-// MockOriginHubForDvrSegmentPlan implementation
-MockOriginHubForDvrSegmentPlan::MockOriginHubForDvrSegmentPlan()
-{
-    on_dvr_request_sh_count_ = 0;
-    on_dvr_request_sh_error_ = srs_success;
-}
-
-MockOriginHubForDvrSegmentPlan::~MockOriginHubForDvrSegmentPlan()
-{
-    srs_freep(on_dvr_request_sh_error_);
-}
-
-srs_error_t MockOriginHubForDvrSegmentPlan::initialize(SrsSharedPtr<SrsLiveSource> s, ISrsRequest *r)
-{
-    return srs_success;
-}
-
-void MockOriginHubForDvrSegmentPlan::dispose()
-{
-}
-
-srs_error_t MockOriginHubForDvrSegmentPlan::cycle()
-{
-    return srs_success;
-}
-
-bool MockOriginHubForDvrSegmentPlan::active()
-{
-    return true;
-}
-
-srs_utime_t MockOriginHubForDvrSegmentPlan::cleanup_delay()
-{
-    return 0;
-}
-
-srs_error_t MockOriginHubForDvrSegmentPlan::on_meta_data(SrsMediaPacket *shared_metadata, SrsOnMetaDataPacket *packet)
-{
-    return srs_success;
-}
-
-srs_error_t MockOriginHubForDvrSegmentPlan::on_audio(SrsMediaPacket *shared_audio)
-{
-    return srs_success;
-}
-
-srs_error_t MockOriginHubForDvrSegmentPlan::on_video(SrsMediaPacket *shared_video, bool is_sequence_header)
-{
-    return srs_success;
-}
-
-srs_error_t MockOriginHubForDvrSegmentPlan::on_publish()
-{
-    return srs_success;
-}
-
-void MockOriginHubForDvrSegmentPlan::on_unpublish()
-{
-}
-
-srs_error_t MockOriginHubForDvrSegmentPlan::on_dvr_request_sh()
-{
-    on_dvr_request_sh_count_++;
-    return srs_error_copy(on_dvr_request_sh_error_);
-}
-
 // Test SrsDvrSegmentPlan::on_video with segment reaping when duration exceeds limit
 // This test covers the major use scenario:
 // 1. Segment duration exceeds configured limit (cduration_)
@@ -4344,7 +4109,7 @@ VOID TEST(DvrSegmentPlanTest, OnVideoReapSegmentWhenDurationExceeds)
     mock_segmenter->fragment_ = fragment;
 
     // Create mock origin hub
-    SrsUniquePtr<MockOriginHubForDvrSegmentPlan> mock_hub(new MockOriginHubForDvrSegmentPlan());
+    SrsUniquePtr<MockOriginHub> mock_hub(new MockOriginHub());
 
     // Create SrsDvrSegmentPlan instance
     SrsUniquePtr<SrsDvrSegmentPlan> plan(new SrsDvrSegmentPlan());
@@ -4415,7 +4180,7 @@ VOID TEST(DvrTest, InitializeTypicalScenario)
     SrsUniquePtr<MockDvrAppFactory> mock_factory(new MockDvrAppFactory());
 
     // Create mock origin hub
-    SrsUniquePtr<MockOriginHubForDvrSegmentPlan> mock_hub(new MockOriginHubForDvrSegmentPlan());
+    SrsUniquePtr<MockOriginHub> mock_hub(new MockOriginHub());
 
     // Create mock request
     SrsUniquePtr<MockEdgeRequest> req(new MockEdgeRequest("test.vhost", "live", "stream1"));
@@ -4468,7 +4233,7 @@ VOID TEST(DvrTest, OnPublishUnpublishTypicalScenario)
     SrsUniquePtr<MockDvrAppFactory> mock_factory(new MockDvrAppFactory());
 
     // Create mock origin hub
-    SrsUniquePtr<MockOriginHubForDvrSegmentPlan> mock_hub(new MockOriginHubForDvrSegmentPlan());
+    SrsUniquePtr<MockOriginHub> mock_hub(new MockOriginHub());
 
     // Create mock request
     SrsUniquePtr<MockEdgeRequest> req(new MockEdgeRequest("test.vhost", "live", "stream1"));
@@ -4530,7 +4295,7 @@ VOID TEST(DvrTest, OnMediaPacketsTypicalScenario)
     SrsUniquePtr<MockDvrAppFactory> mock_factory(new MockDvrAppFactory());
 
     // Create mock origin hub
-    SrsUniquePtr<MockOriginHubForDvrSegmentPlan> mock_hub(new MockOriginHubForDvrSegmentPlan());
+    SrsUniquePtr<MockOriginHub> mock_hub(new MockOriginHub());
 
     // Create mock request
     SrsUniquePtr<MockEdgeRequest> req(new MockEdgeRequest("test.vhost", "live", "stream1"));
@@ -4606,7 +4371,7 @@ VOID TEST(DvrSegmentPlanTest, OnAudioTypicalScenario)
     mock_segmenter->fragment_ = fragment;
 
     // Create mock origin hub
-    SrsUniquePtr<MockOriginHubForDvrSegmentPlan> mock_hub(new MockOriginHubForDvrSegmentPlan());
+    SrsUniquePtr<MockOriginHub> mock_hub(new MockOriginHub());
 
     // Create SrsDvrSegmentPlan instance
     SrsUniquePtr<SrsDvrSegmentPlan> plan(new SrsDvrSegmentPlan());

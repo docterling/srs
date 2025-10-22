@@ -138,41 +138,11 @@ public:
     void reset();
 };
 
-// Mock ISrsBasicRtmpClient for testing SrsMpegtsOverUdp::on_ts_video
-class MockMpegtsRtmpClient : public ISrsBasicRtmpClient
-{
-public:
-    bool connect_called_;
-    bool publish_called_;
-    bool close_called_;
-    srs_error_t connect_error_;
-    srs_error_t publish_error_;
-    int stream_id_;
-
-public:
-    MockMpegtsRtmpClient();
-    virtual ~MockMpegtsRtmpClient();
-
-public:
-    virtual srs_error_t connect();
-    virtual void close();
-    virtual srs_error_t publish(int chunk_size, bool with_vhost = true, std::string *pstream = NULL);
-    virtual srs_error_t play(int chunk_size, bool with_vhost = true, std::string *pstream = NULL);
-    virtual void kbps_sample(const char *label, srs_utime_t age);
-    virtual srs_error_t recv_message(SrsRtmpCommonMessage **pmsg);
-    virtual srs_error_t decode_message(SrsRtmpCommonMessage *msg, SrsRtmpCommand **ppacket);
-    virtual srs_error_t send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs);
-    virtual srs_error_t send_and_free_message(SrsMediaPacket *msg);
-    virtual void set_recv_timeout(srs_utime_t timeout);
-    virtual int sid();
-    void reset();
-};
-
 // Mock ISrsAppFactory for testing SrsMpegtsOverUdp::rtmp_write_packet
 class MockAppFactoryForMpegtsOverUdp : public SrsAppFactory
 {
 public:
-    MockMpegtsRtmpClient *mock_rtmp_client_;
+    MockRtmpClient *mock_rtmp_client_;
     bool create_rtmp_client_called_;
 
 public:
@@ -355,44 +325,11 @@ public:
     void reset();
 };
 
-// Mock ISrsBasicRtmpClient for testing SrsDynamicHttpConn::do_proxy
-class MockRtmpClientForDynamicConn : public ISrsBasicRtmpClient
-{
-public:
-    bool connect_called_;
-    bool publish_called_;
-    bool close_called_;
-    bool send_and_free_message_called_;
-    srs_error_t connect_error_;
-    srs_error_t publish_error_;
-    srs_error_t send_and_free_message_error_;
-    int stream_id_;
-    int send_message_count_;
-
-public:
-    MockRtmpClientForDynamicConn();
-    virtual ~MockRtmpClientForDynamicConn();
-
-public:
-    virtual srs_error_t connect();
-    virtual void close();
-    virtual srs_error_t publish(int chunk_size, bool with_vhost = true, std::string *pstream = NULL);
-    virtual srs_error_t play(int chunk_size, bool with_vhost = true, std::string *pstream = NULL);
-    virtual void kbps_sample(const char *label, srs_utime_t age);
-    virtual srs_error_t recv_message(SrsRtmpCommonMessage **pmsg);
-    virtual srs_error_t decode_message(SrsRtmpCommonMessage *msg, SrsRtmpCommand **ppacket);
-    virtual srs_error_t send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs);
-    virtual srs_error_t send_and_free_message(SrsMediaPacket *msg);
-    virtual void set_recv_timeout(srs_utime_t timeout);
-    virtual int sid();
-    void reset();
-};
-
 // Mock ISrsAppFactory for testing SrsDynamicHttpConn::do_proxy
 class MockAppFactoryForDynamicConn : public SrsAppFactory
 {
 public:
-    MockRtmpClientForDynamicConn *mock_rtmp_client_;
+    MockRtmpClient *mock_rtmp_client_;
     bool create_rtmp_client_called_;
 
 public:

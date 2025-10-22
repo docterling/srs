@@ -80,47 +80,11 @@ public:
     virtual std::string get_dvr_plan(std::string vhost);
 };
 
-// Mock RTMP client for testing edge upstream
-class MockEdgeRtmpClient : public ISrsBasicRtmpClient
-{
-public:
-    bool connect_called_;
-    bool play_called_;
-    bool close_called_;
-    bool recv_message_called_;
-    bool decode_message_called_;
-    bool set_recv_timeout_called_;
-    bool kbps_sample_called_;
-    srs_error_t connect_error_;
-    srs_error_t play_error_;
-    std::string play_stream_;
-    srs_utime_t recv_timeout_;
-    std::string kbps_label_;
-    srs_utime_t kbps_age_;
-
-public:
-    MockEdgeRtmpClient();
-    virtual ~MockEdgeRtmpClient();
-
-public:
-    virtual srs_error_t connect();
-    virtual void close();
-    virtual srs_error_t publish(int chunk_size, bool with_vhost = true, std::string *pstream = NULL);
-    virtual srs_error_t play(int chunk_size, bool with_vhost = true, std::string *pstream = NULL);
-    virtual void kbps_sample(const char *label, srs_utime_t age);
-    virtual int sid();
-    virtual srs_error_t recv_message(SrsRtmpCommonMessage **pmsg);
-    virtual srs_error_t decode_message(SrsRtmpCommonMessage *msg, SrsRtmpCommand **ppacket);
-    virtual srs_error_t send_and_free_messages(SrsMediaPacket **msgs, int nb_msgs);
-    virtual srs_error_t send_and_free_message(SrsMediaPacket *msg);
-    virtual void set_recv_timeout(srs_utime_t timeout);
-};
-
 // Mock app factory for testing edge upstream
 class MockEdgeAppFactory : public SrsAppFactory
 {
 public:
-    MockEdgeRtmpClient *mock_client_;
+    MockRtmpClient *mock_client_;
 
 public:
     MockEdgeAppFactory();
@@ -646,31 +610,6 @@ public:
     virtual srs_error_t write_audio(SrsMediaPacket *shared_audio, SrsFormat *format);
     virtual srs_error_t write_video(SrsMediaPacket *shared_video, SrsFormat *format);
     virtual srs_error_t close();
-};
-
-// Mock ISrsOriginHub for testing SrsDvrSegmentPlan
-class MockOriginHubForDvrSegmentPlan : public ISrsOriginHub
-{
-public:
-    int on_dvr_request_sh_count_;
-    srs_error_t on_dvr_request_sh_error_;
-
-public:
-    MockOriginHubForDvrSegmentPlan();
-    virtual ~MockOriginHubForDvrSegmentPlan();
-
-public:
-    virtual srs_error_t initialize(SrsSharedPtr<SrsLiveSource> s, ISrsRequest *r);
-    virtual void dispose();
-    virtual srs_error_t cycle();
-    virtual bool active();
-    virtual srs_utime_t cleanup_delay();
-    virtual srs_error_t on_meta_data(SrsMediaPacket *shared_metadata, SrsOnMetaDataPacket *packet);
-    virtual srs_error_t on_audio(SrsMediaPacket *shared_audio);
-    virtual srs_error_t on_video(SrsMediaPacket *shared_video, bool is_sequence_header);
-    virtual srs_error_t on_publish();
-    virtual void on_unpublish();
-    virtual srs_error_t on_dvr_request_sh();
 };
 
 #endif

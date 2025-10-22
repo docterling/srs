@@ -40,7 +40,7 @@
 // This test is used to verify the basic workflow of the HTTP connection.
 // It's finished with the help of AI, but each step is manually designed
 // and verified. So this is not dominated by AI, but by humanbeing.
-VOID TEST(HttpConnTest, ManuallyVerifyBasicWorkflowForHttpRequest)
+VOID TEST(BasicWorkflowHttpConnTest, ManuallyVerifyForHttpRequest)
 {
     srs_error_t err;
 
@@ -89,7 +89,7 @@ VOID TEST(HttpConnTest, ManuallyVerifyBasicWorkflowForHttpRequest)
 // This test is used to verify the basic workflow of the HTTPx connection.
 // It's finished with the help of AI, but each step is manually designed
 // and verified. So this is not dominated by AI, but by humanbeing.
-VOID TEST(HttpConnTest, ManuallyVerifyBasicWorkflowForHttpxRequest)
+VOID TEST(BasicWorkflowHttpConnTest, ManuallyVerifyForHttpxRequest)
 {
     srs_error_t err;
 
@@ -152,7 +152,7 @@ VOID TEST(HttpConnTest, ManuallyVerifyBasicWorkflowForHttpxRequest)
 // This test is used to verify the basic workflow of the HTTP FLV streaming.
 // It's finished with the help of AI, but each step is manually designed
 // and verified. So this is not dominated by AI, but by humanbeing.
-VOID TEST(HttpConnTest, ManuallyVerifyBasicWorkflowForHttpStream)
+VOID TEST(BasicWorkflowHttpConnTest, ManuallyVerifyForHttpStream)
 {
     srs_error_t err;
 

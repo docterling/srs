@@ -32,7 +32,7 @@
 // This test is used to verify the basic workflow of the RTC publish stream.
 // It's finished with the help of AI, but each step is manually designed
 // and verified. So this is not dominated by AI, but by humanbeing.
-VOID TEST(RtcPublishStreamTest, ManuallyVerifyBasicWorkflow)
+VOID TEST(BasicWorkflowRtcPublishStreamTest, ManuallyVerify)
 {
     srs_error_t err;
 
