@@ -896,18 +896,30 @@ documentation:
     When looking for documentation or need to update docs, check this directory for markdown
     files and documentation structure. Do not search ossrs.io or ossrs.net for documentation,
     use the local files instead.
+    
 faq:
   rtmps_forward:
-    question: "Why doesn't SRS support RTMPS in the forward feature? Why does SRS only support RTMPS server but not forwarding to RTMPS endpoints?"
-
+    question: "Why doesn't SRS support RTMPS in the forward feature?"
     answer: |
-      SRS doesn't support RTMPS (RTMP over SSL/TLS) in the forward feature because:
-      1. SRS SSL is designed for server-side only (accepting connections), not client-side (initiating connections)
-      2. Forward feature uses SrsSimpleRtmpClient which only supports plain RTMP protocol
-      3. Adding RTMPS client support would add significant complexity for a rare use case
+      SRS SSL is designed for server-side only (accepting connections), not client-side (initiating connections).
+      Forward feature uses SrsSimpleRtmpClient which only supports plain RTMP protocol.
+      Solution: Use FFmpeg with SRS HTTP Hooks (on_publish/on_unpublish events) to automatically relay streams to RTMPS destinations.
 
-      Recommended solution: Use FFmpeg with SRS HTTP Hooks
-      - on_publish event: Automatically start FFmpeg to relay stream to RTMPS destination (e.g., AWS IVS)
-      - on_unpublish event: Automatically stop FFmpeg process when stream ends
-      - This provides fully automated, production-ready RTMPS relay without adding complexity to SRS core
+  srt_missing_sps_pps:
+    question: "SRT streams missing SPS/PPS causing 'sps or pps empty' errors and black screen for players"
+    answer: |
+      When SRT streams are published without SPS/PPS (e.g., OBS with QSV/VAAPI encoder), SRS cannot generate video sequence headers.
+      The error is logged and ignored (connection stays alive), but no video frames are forwarded to RTMP/WebRTC.
+      Players connect successfully but see black screen (no video data). This is an encoder bug, not an SRS issue.
+      Solution: Use FFmpeg with QSV/VAAPI instead of OBS, or fix encoder settings to include SPS/PPS.
+
+  webrtc_network_switch_rejoin:
+    question: "WebRTC multi-party call: Unable to re-enter room after network switching"
+    answer: |
+      When network switches occur (e.g., switching from intranet to external Wi-Fi), the server cannot detect the UDP connection
+      break immediately, leaving a stale session that blocks rejoining with the same display name.
+      Workarounds: Wait for session timeout (30-60 seconds), use unique display names with timestamps (e.g., "username_" + Date.now()),
+      or implement client-side retry logic with exponential backoff.
+      Why not fixed: Properly fixing this requires significant changes to WebRTC signaling protocol, heartbeat mechanisms,
+      and session management across server and all client SDKs. The complexity and maintenance cost is too high for this edge case.
 
