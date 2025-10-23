@@ -3012,6 +3012,45 @@ VOID TEST(StatisticTest, StreamMediaInfo)
     EXPECT_EQ(55, stream->frames_->sugar_);
 }
 
+// Test SrsStatistic audio sample rate handling for AAC 48000 Hz
+// This test verifies the fix for issue #4518 - API should report correct sample rate for AAC streams
+VOID TEST(StatisticTest, AudioSampleRateAAC48000Hz)
+{
+    srs_error_t err = srs_success;
+
+    // Create SrsStatistic instance
+    SrsUniquePtr<SrsStatistic> stat(new SrsStatistic());
+
+    // Create mock request for testing
+    SrsUniquePtr<MockSrsRequest> req(new MockSrsRequest("test.vhost", "live", "stream_48k"));
+
+    // Test on_audio_info() with AAC 48000 Hz sample rate
+    HELPER_EXPECT_SUCCESS(stat->on_audio_info(req.get(), SrsAudioCodecIdAAC, SrsAudioSampleRate48000, SrsAudioChannelsStereo, SrsAacObjectTypeAacLC));
+
+    // Verify audio info was set correctly
+    SrsStatisticStream *stream = stat->find_stream_by_url(req->get_stream_url());
+    EXPECT_TRUE(stream != NULL);
+    EXPECT_TRUE(stream->has_audio_);
+    EXPECT_EQ(SrsAudioCodecIdAAC, stream->acodec_);
+    EXPECT_EQ(SrsAudioSampleRate48000, stream->asample_rate_);
+    EXPECT_EQ(SrsAudioChannelsStereo, stream->asound_type_);
+    EXPECT_EQ(SrsAacObjectTypeAacLC, stream->aac_object_);
+
+    // Verify JSON dumps reports correct sample rate (48000 Hz, not 44100 Hz)
+    SrsUniquePtr<SrsJsonObject> obj(SrsJsonAny::object());
+    HELPER_EXPECT_SUCCESS(stream->dumps(obj.get()));
+
+    // Check that audio object exists and has correct sample_rate
+    SrsJsonAny *audio_any = obj->get_property("audio");
+    EXPECT_TRUE(audio_any != NULL);
+    EXPECT_TRUE(audio_any->is_object());
+
+    SrsJsonObject *audio = audio_any->to_object();
+    SrsJsonAny *sample_rate_any = audio->get_property("sample_rate");
+    EXPECT_TRUE(sample_rate_any != NULL);
+    EXPECT_EQ(48000, sample_rate_any->to_integer());
+}
+
 // Test SrsStatistic dumps methods: dumps_streams, dumps_clients, and dumps_hints_kv
 // This test covers the major use scenario for dumping statistics to JSON and hints
 VOID TEST(StatisticTest, DumpsStreamsClientsAndHints)

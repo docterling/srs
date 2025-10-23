@@ -166,7 +166,7 @@ srs_error_t SrsStatisticStream::dumps(SrsJsonObject *obj)
         obj->set("audio", audio);
 
         audio->set("codec", SrsJsonAny::str(srs_audio_codec_id2str(acodec_).c_str()));
-        audio->set("sample_rate", SrsJsonAny::integer(srs_flv_srates[asample_rate_]));
+        audio->set("sample_rate", SrsJsonAny::integer(srs_audio_sample_rate2number(asample_rate_)));
         audio->set("channel", SrsJsonAny::integer(asound_type_ + 1));
         audio->set("profile", SrsJsonAny::str(srs_aac_object2str(aac_object_).c_str()));
     }

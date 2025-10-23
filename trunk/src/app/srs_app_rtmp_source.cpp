@@ -997,7 +997,14 @@ srs_error_t SrsOriginHub::on_audio(SrsMediaPacket *shared_audio)
         static int flv_sound_types[] = {1, 2, 0};
 
         // when got audio stream info.
-        if ((err = stat_->on_audio_info(req_, format->acodec_->id_, c->sound_rate_, c->sound_type_, c->aac_object_)) != srs_success) {
+        // For AAC, convert aac_sample_rate_ index to SrsAudioSampleRate enum
+        // For MP3 and other codecs, use sound_rate_ directly (FLV enum)
+        SrsAudioSampleRate sample_rate = c->sound_rate_;
+        if (format->acodec_->id_ == SrsAudioCodecIdAAC && c->aac_sample_rate_ < SrsAAcSampleRateNumbers) {
+            sample_rate = srs_audio_sample_rate_from_number(srs_aac_srates[c->aac_sample_rate_]);
+        }
+
+        if ((err = stat_->on_audio_info(req_, format->acodec_->id_, sample_rate, c->sound_type_, c->aac_object_)) != srs_success) {
             return srs_error_wrap(err, "stat audio");
         }
 
