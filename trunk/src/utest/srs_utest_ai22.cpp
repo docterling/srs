@@ -22,10 +22,10 @@ using namespace std;
 #include <srs_protocol_utility.hpp>
 #include <srs_utest_ai15.hpp>
 #include <srs_utest_ai16.hpp>
-#include <srs_utest_config.hpp>
-#include <srs_utest_fmp4.hpp>
-#include <srs_utest_kernel.hpp>
-#include <srs_utest_protocol.hpp>
+#include <srs_utest_manual_config.hpp>
+#include <srs_utest_manual_fmp4.hpp>
+#include <srs_utest_manual_kernel.hpp>
+#include <srs_utest_manual_protocol.hpp>
 
 // Mock request implementation
 MockEdgeRequest::MockEdgeRequest(std::string vhost, std::string app, std::string stream)

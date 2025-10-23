@@ -10,7 +10,7 @@
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_rtc_rtp.hpp>
 #include <srs_protocol_st.hpp>
-#include <srs_utest_kernel.hpp>
+#include <srs_utest_manual_kernel.hpp>
 
 // Helper function to create a mock RTP packet for testing
 SrsRtpPacket *mock_create_audio_rtp_packet(uint16_t sequence, uint32_t timestamp, const char *payload_data = NULL, int payload_size = 10)
