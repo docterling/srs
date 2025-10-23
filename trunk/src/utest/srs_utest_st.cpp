@@ -83,8 +83,13 @@ VOID TEST(StTest, StUtimePerformance)
         EXPECT_GE(gettimeofday_elapsed_time, 0);
         EXPECT_GE(st_utime_elapsed_time, 0);
 
-        // pass the test, if
-        EXPECT_LT(gettimeofday_elapsed_time > st_utime_elapsed_time ? gettimeofday_elapsed_time - st_utime_elapsed_time : st_utime_elapsed_time - gettimeofday_elapsed_time, 30);
+        // Calculate absolute difference between the two elapsed times
+        int time_diff = gettimeofday_elapsed_time > st_utime_elapsed_time
+            ? gettimeofday_elapsed_time - st_utime_elapsed_time
+            : st_utime_elapsed_time - gettimeofday_elapsed_time;
+
+        // The difference should be less than N clock ticks (microseconds)
+        EXPECT_LT(time_diff, 100);
     }
 
     // check gettimeofday first, then st_utime
@@ -104,7 +109,13 @@ VOID TEST(StTest, StUtimePerformance)
         EXPECT_GE(gettimeofday_elapsed_time, 0);
         EXPECT_GE(st_utime_elapsed_time, 0);
 
-        EXPECT_LT(gettimeofday_elapsed_time > st_utime_elapsed_time ? gettimeofday_elapsed_time - st_utime_elapsed_time : st_utime_elapsed_time - gettimeofday_elapsed_time, 30);
+        // Calculate absolute difference between the two elapsed times
+        int time_diff = gettimeofday_elapsed_time > st_utime_elapsed_time
+            ? gettimeofday_elapsed_time - st_utime_elapsed_time
+            : st_utime_elapsed_time - gettimeofday_elapsed_time;
+
+        // The difference should be less than N clock ticks (microseconds)
+        EXPECT_LT(time_diff, 100);
     }
 
     // compare st_utime & gettimeofday in a loop
@@ -126,7 +137,13 @@ VOID TEST(StTest, StUtimePerformance)
         EXPECT_GE(gettimeofday_elapsed_time, 0);
         EXPECT_GE(st_utime_elapsed_time, 0);
 
-        EXPECT_LT(gettimeofday_elapsed_time > st_utime_elapsed_time ? gettimeofday_elapsed_time - st_utime_elapsed_time : st_utime_elapsed_time - gettimeofday_elapsed_time, 100);
+        // Calculate absolute difference between the two elapsed times
+        int time_diff = gettimeofday_elapsed_time > st_utime_elapsed_time
+            ? gettimeofday_elapsed_time - st_utime_elapsed_time
+            : st_utime_elapsed_time - gettimeofday_elapsed_time;
+
+        // The difference should be less than N clock ticks (microseconds)
+        EXPECT_LT(time_diff, 100);
     }
 }
 
