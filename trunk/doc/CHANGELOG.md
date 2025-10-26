@@ -7,6 +7,7 @@ The changelog for SRS.
 <a name="v7-changes"></a>
 
 ## SRS 7.0 Changelog
+* v7.0, 2025-10-26, AI: API: Add clients field to on_play/on_stop webhooks and total field to HTTP API. v7.0.107 (#4147)
 * v7.0, 2025-10-26, AI: WebRTC: Fix camera/microphone not released after closing publisher. v7.0.106 (#4261)
 * v7.0, 2025-10-26, AI: Build: Improve dependency checking to report all missing dependencies at once. v7.0.105 (#4293)
 * v7.0, 2025-10-26, AI: HLS: Support hls_master_m3u8_path_relative for reverse proxy compatibility. v7.0.104 (#4338)
