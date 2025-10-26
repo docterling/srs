@@ -7,6 +7,7 @@ The changelog for SRS.
 <a name="v7-changes"></a>
 
 ## SRS 7.0 Changelog
+* v7.0, 2025-10-26, AI: Edge: Fix stream names with dots being incorrectly truncated in source URL generation. v7.0.109 (#4011)
 * v7.0, 2025-10-26, AI: HTTPS: Handle SSL_ERROR_ZERO_RETURN as graceful connection closure. v7.0.108 (#4036)
 * v7.0, 2025-10-26, AI: API: Add clients field to on_play/on_stop webhooks and total field to HTTP API. v7.0.107 (#4147)
 * v7.0, 2025-10-26, AI: WebRTC: Fix camera/microphone not released after closing publisher. v7.0.106 (#4261)
