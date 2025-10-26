@@ -28,6 +28,9 @@ function SrsRtcPublisherAsync() {
         }
     };
 
+    // Store media stream to stop tracks when closing.
+    self.userStream = null;
+
     // @see https://github.com/rtcdn/rtcdn-draft
     // @url The WebRTC url to play with, for example:
     //      webrtc://r.ossrs.net/live/livestream
@@ -60,10 +63,10 @@ function SrsRtcPublisherAsync() {
         if (!navigator.mediaDevices && window.location.protocol === 'http:' && window.location.hostname !== 'localhost') {
             throw new SrsError('HttpsRequiredError', `Please use HTTPS or localhost to publish, read https://github.com/ossrs/srs/issues/2762#issuecomment-983147576`);
         }
-        var stream = await navigator.mediaDevices.getUserMedia(self.constraints);
+        self.userStream = await navigator.mediaDevices.getUserMedia(self.constraints);
 
         // @see https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/addStream#Migrating_to_addTrack
-        stream.getTracks().forEach(function (track) {
+        self.userStream.getTracks().forEach(function (track) {
             self.pc.addTrack(track);
 
             // Notify about local track when stream is ok.
@@ -104,6 +107,14 @@ function SrsRtcPublisherAsync() {
     self.close = function () {
         self.pc && self.pc.close();
         self.pc = null;
+
+        // Stop all media tracks to release camera/microphone.
+        if (self.userStream) {
+            self.userStream.getTracks().forEach(function (track) {
+                track.stop();
+            });
+            self.userStream = null;
+        }
     };
 
     // The callback when got local stream.
@@ -523,6 +534,10 @@ function SrsRtcWhipWhepAsync() {
         }
     };
 
+    // Store media streams to stop tracks when closing.
+    self.displayStream = null;
+    self.userStream = null;
+
     // See https://datatracker.ietf.org/doc/draft-ietf-wish-whip/
     // @url The WebRTC url to publish with, for example:
     //      http://localhost:1985/rtc/v1/whip/?app=live&stream=livestream
@@ -557,11 +572,11 @@ function SrsRtcWhipWhepAsync() {
         }
 
         if (useScreen) {
-            const displayStream = await navigator.mediaDevices.getDisplayMedia({
+            self.displayStream = await navigator.mediaDevices.getDisplayMedia({
                 video: true
             });
             // @see https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/addStream#Migrating_to_addTrack
-            displayStream.getTracks().forEach(function (track) {
+            self.displayStream.getTracks().forEach(function (track) {
                 self.pc.addTrack(track);
 				// Notify about local track when stream is ok.
                 self.ontrack && self.ontrack({track: track});
@@ -569,9 +584,9 @@ function SrsRtcWhipWhepAsync() {
         }
 
        if (useCamera || hasAudio) {
-            const userStream = await navigator.mediaDevices.getUserMedia(self.constraints);
+            self.userStream = await navigator.mediaDevices.getUserMedia(self.constraints);
 
-            userStream.getTracks().forEach(function (track) {
+            self.userStream.getTracks().forEach(function (track) {
                 self.pc.addTrack(track);
                 // Notify about local track when stream is ok.
                 self.ontrack && self.ontrack({track: track});
@@ -643,6 +658,20 @@ function SrsRtcWhipWhepAsync() {
     self.close = function () {
         self.pc && self.pc.close();
         self.pc = null;
+
+        // Stop all media tracks to release camera/microphone.
+        if (self.displayStream) {
+            self.displayStream.getTracks().forEach(function (track) {
+                track.stop();
+            });
+            self.displayStream = null;
+        }
+        if (self.userStream) {
+            self.userStream.getTracks().forEach(function (track) {
+                track.stop();
+            });
+            self.userStream = null;
+        }
     };
 
     // The callback when got local stream.

@@ -7,9 +7,10 @@ The changelog for SRS.
 <a name="v7-changes"></a>
 
 ## SRS 7.0 Changelog
-* v7.0, 2025-10-26, Build: Improve dependency checking to report all missing dependencies at once. v7.0.105 (#4293)
-* v7.0, 2025-10-26, HLS: Support hls_master_m3u8_path_relative for reverse proxy compatibility. v7.0.104 (#4338)
-* v7.0, 2025-10-25, API: Remove minimum limit of 10 for count parameter in /api/v1/streams and /api/v1/clients. v7.0.103 (#4358)
+* v7.0, 2025-10-26, AI: WebRTC: Fix camera/microphone not released after closing publisher. v7.0.106 (#4261)
+* v7.0, 2025-10-26, AI: Build: Improve dependency checking to report all missing dependencies at once. v7.0.105 (#4293)
+* v7.0, 2025-10-26, AI: HLS: Support hls_master_m3u8_path_relative for reverse proxy compatibility. v7.0.104 (#4338)
+* v7.0, 2025-10-25, AI: API: Remove minimum limit of 10 for count parameter in /api/v1/streams and /api/v1/clients. v7.0.103 (#4358)
 * v7.0, 2025-10-22, AI: Only support AAC/MP3/Opus audio codec. v7.0.102 (#4516)
 * v7.0, 2025-10-22, AI: Fix AAC audio sample rate reporting in API. v7.0.101 (#4518)
 * v7.0, 2025-10-20, Merge [#4537](https://github.com/ossrs/srs/pull/4537): Forward: Reject RTMPS destinations with clear error message. v7.0.100 (#4537)
