@@ -7,6 +7,7 @@ The changelog for SRS.
 <a name="v7-changes"></a>
 
 ## SRS 7.0 Changelog
+* v7.0, 2025-10-26, Build: Improve dependency checking to report all missing dependencies at once. v7.0.105 (#4293)
 * v7.0, 2025-10-26, HLS: Support hls_master_m3u8_path_relative for reverse proxy compatibility. v7.0.104 (#4338)
 * v7.0, 2025-10-25, API: Remove minimum limit of 10 for count parameter in /api/v1/streams and /api/v1/clients. v7.0.103 (#4358)
 * v7.0, 2025-10-22, AI: Only support AAC/MP3/Opus audio codec. v7.0.102 (#4516)
