@@ -5009,7 +5009,7 @@ VOID TEST(ProtocolKbpsTest, StreamIdentifyWithDotsInName_Issue4011)
     // Case 3: Different streams with same prefix should be different
     std::string backup1 = srs_net_url_encode_sid("", "live", "test.backup.stream");
     std::string backup2 = srs_net_url_encode_sid("", "live", "test.backup.stream2");
-    EXPECT_STRNE(backup1.c_str(), backup2.c_str());  // Should be different
+    EXPECT_STRNE(backup1.c_str(), backup2.c_str()); // Should be different
 
     // Case 4: The intended behavior - stripping ONLY known extensions
     // These should work correctly (strip .flv and .m3u8)
