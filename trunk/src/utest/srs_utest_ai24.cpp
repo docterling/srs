@@ -9,6 +9,20 @@
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_rtc_rtcp.hpp>
 #include <srs_protocol_sdp.hpp>
+#include <srs_kernel_packet.hpp>
+#include <srs_kernel_codec.hpp>
+
+#ifdef SRS_FFMPEG_FIT
+#include <srs_app_rtc_codec.hpp>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include <libavutil/log.h>
+#ifdef __cplusplus
+}
+#endif
+#endif
 
 using namespace std;
 
@@ -303,3 +317,155 @@ VOID TEST(RtcAVSyncTest, ZeroTimeElapsedBetweenSRs)
     // Rate should remain unchanged (SDP rate)
     EXPECT_DOUBLE_EQ(rate_before, track.get_rate());
 }
+
+// Test: SrsParsedPacket::copy() method
+VOID TEST(ParsedPacketTest, CopyParsedPacket)
+{
+    srs_error_t err;
+
+    // Create a parsed packet with sample data
+    SrsParsedPacket packet;
+    SrsVideoCodecConfig codec;
+    HELPER_EXPECT_SUCCESS(packet.initialize(&codec));
+
+    // Set packet properties
+    packet.dts_ = 1000;
+    packet.cts_ = 100;
+
+    // Add sample data
+    char sample_data1[] = {0x01, 0x02, 0x03};
+    char sample_data2[] = {0x04, 0x05, 0x06, 0x07};
+    HELPER_EXPECT_SUCCESS(packet.add_sample(sample_data1, sizeof(sample_data1)));
+    HELPER_EXPECT_SUCCESS(packet.add_sample(sample_data2, sizeof(sample_data2)));
+
+    // Copy the packet
+    SrsParsedPacket *copied = packet.copy();
+    ASSERT_TRUE(copied != NULL);
+
+    // Verify all fields are copied correctly
+    EXPECT_EQ(packet.dts_, copied->dts_);
+    EXPECT_EQ(packet.cts_, copied->cts_);
+    EXPECT_EQ(packet.codec_, copied->codec_);
+    EXPECT_EQ(packet.nb_samples_, copied->nb_samples_);
+
+    // Verify samples are copied (shared pointers)
+    for (int i = 0; i < packet.nb_samples_; i++) {
+        EXPECT_EQ(packet.samples_[i].bytes_, copied->samples_[i].bytes_);
+        EXPECT_EQ(packet.samples_[i].size_, copied->samples_[i].size_);
+    }
+
+    srs_freep(copied);
+}
+
+// Test: SrsParsedVideoPacket::copy() method
+VOID TEST(ParsedPacketTest, CopyParsedVideoPacket)
+{
+    srs_error_t err;
+
+    // Create a parsed video packet with sample data
+    SrsParsedVideoPacket packet;
+    SrsVideoCodecConfig codec;
+    HELPER_EXPECT_SUCCESS(packet.initialize(&codec));
+
+    // Set packet properties
+    packet.dts_ = 2000;
+    packet.cts_ = 200;
+    packet.frame_type_ = SrsVideoAvcFrameTypeKeyFrame;
+    packet.avc_packet_type_ = SrsVideoAvcFrameTraitNALU;
+    packet.has_idr_ = true;
+    packet.has_aud_ = false;
+    packet.has_sps_pps_ = true;
+    packet.first_nalu_type_ = SrsAvcNaluTypeIDR;
+
+    // Add sample data
+    uint8_t sample_data[] = {0x65, 0x88, 0x84, 0x00};
+    HELPER_EXPECT_SUCCESS(packet.add_sample((char*)sample_data, sizeof(sample_data)));
+
+    // Copy the packet
+    SrsParsedVideoPacket *copied = packet.copy();
+    ASSERT_TRUE(copied != NULL);
+
+    // Verify base class fields are copied
+    EXPECT_EQ(packet.dts_, copied->dts_);
+    EXPECT_EQ(packet.cts_, copied->cts_);
+    EXPECT_EQ(packet.codec_, copied->codec_);
+    EXPECT_EQ(packet.nb_samples_, copied->nb_samples_);
+
+    // Verify video-specific fields are copied
+    EXPECT_EQ(packet.frame_type_, copied->frame_type_);
+    EXPECT_EQ(packet.avc_packet_type_, copied->avc_packet_type_);
+    EXPECT_EQ(packet.has_idr_, copied->has_idr_);
+    EXPECT_EQ(packet.has_aud_, copied->has_aud_);
+    EXPECT_EQ(packet.has_sps_pps_, copied->has_sps_pps_);
+    EXPECT_EQ(packet.first_nalu_type_, copied->first_nalu_type_);
+
+    // Verify samples are copied (shared pointers)
+    for (int i = 0; i < packet.nb_samples_; i++) {
+        EXPECT_EQ(packet.samples_[i].bytes_, copied->samples_[i].bytes_);
+        EXPECT_EQ(packet.samples_[i].size_, copied->samples_[i].size_);
+    }
+
+    srs_freep(copied);
+}
+
+#ifdef SRS_FFMPEG_FIT
+// Helper function to call ffmpeg_log_callback with formatted string
+static void call_ffmpeg_log(int level, const char *fmt, ...)
+{
+    va_list vl;
+    va_start(vl, fmt);
+    SrsFFmpegLogHelper::ffmpeg_log_callback(NULL, level, fmt, vl);
+    va_end(vl);
+}
+
+// Test: SrsFFmpegLogHelper::ffmpeg_log_callback() method
+VOID TEST(FFmpegLogHelperTest, LogCallback)
+{
+    // Save original disabled state
+    bool original_disabled = SrsFFmpegLogHelper::disabled_;
+
+    // Test 1: Callback should work when not disabled
+    SrsFFmpegLogHelper::disabled_ = false;
+
+    // AV_LOG_WARNING level
+    call_ffmpeg_log(AV_LOG_WARNING, "Test warning message\n");
+
+    // AV_LOG_INFO level
+    call_ffmpeg_log(AV_LOG_INFO, "Test info message\n");
+
+    // AV_LOG_VERBOSE/DEBUG/TRACE levels
+    call_ffmpeg_log(AV_LOG_VERBOSE, "Test verbose message\n");
+    call_ffmpeg_log(AV_LOG_DEBUG, "Test debug message\n");
+    call_ffmpeg_log(AV_LOG_TRACE, "Test trace message\n");
+
+    // Test message without newline (should not strip last character)
+    call_ffmpeg_log(AV_LOG_INFO, "Test message without newline");
+
+    // Test message with newline (should strip newline)
+    call_ffmpeg_log(AV_LOG_INFO, "Test message with newline\n");
+
+    // Test 2: Callback should return early when disabled
+    SrsFFmpegLogHelper::disabled_ = true;
+
+    // These calls should return immediately without processing
+    call_ffmpeg_log(AV_LOG_ERROR, "This should not be logged\n");
+    call_ffmpeg_log(AV_LOG_WARNING, "This should not be logged\n");
+    call_ffmpeg_log(AV_LOG_INFO, "This should not be logged\n");
+
+    // Test 3: Test edge cases
+    SrsFFmpegLogHelper::disabled_ = false;
+
+    // Empty message
+    call_ffmpeg_log(AV_LOG_INFO, "");
+
+    // Very long message (should be truncated to buffer size)
+    std::string long_msg(5000, 'x');
+    call_ffmpeg_log(AV_LOG_INFO, "%s", long_msg.c_str());
+
+    // Restore original disabled state
+    SrsFFmpegLogHelper::disabled_ = original_disabled;
+
+    // If we reach here without crashing, the test passes
+    EXPECT_TRUE(true);
+}
+#endif

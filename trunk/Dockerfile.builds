@@ -42,6 +42,12 @@ FROM ossrs/srs:ubuntu20-cache AS ubuntu20-baseline
 COPY . /srs
 RUN cd /srs/trunk && ./configure --sanitizer=on --srt=off --gb28181=off && make
 
+FROM ossrs/srs:ubuntu20-cache AS ubuntu20-default
+COPY . /srs
+# Remove the ST from cache, which build with sanitizer, but we are not by default.
+RUN cd /usr/local/srs-cache/srs/trunk && rm -rf objs/Platform-*/3rdparty/st && du -sh objs/Platform-*/3rdparty/*
+RUN cd /srs/trunk && ./configure && make
+
 FROM ossrs/srs:ubuntu20-cache AS ubuntu20-all
 COPY . /srs
 RUN cd /srs/trunk && ./configure --sanitizer=on --srt=on --gb28181=on --apm=on --h265=on && make
