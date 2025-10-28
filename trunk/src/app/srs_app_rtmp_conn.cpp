@@ -16,6 +16,7 @@ using namespace std;
 
 #include <srs_app_config.hpp>
 #include <srs_app_edge.hpp>
+#include <srs_app_factory.hpp>
 #include <srs_app_hls.hpp>
 #include <srs_app_http_hooks.hpp>
 #include <srs_app_recv_thread.hpp>
@@ -229,6 +230,7 @@ SrsRtmpConn::SrsRtmpConn(ISrsRtmpTransport *transport, string cip, int cport)
     publish_1stpkt_timeout_ = 0;
     publish_normal_timeout_ = 0;
 
+    app_factory_ = _srs_app_factory;
     config_ = _srs_config;
     manager_ = _srs_conn_manager;
     stream_publish_tokens_ = _srs_stream_publish_tokens;
@@ -269,6 +271,7 @@ SrsRtmpConn::~SrsRtmpConn()
     srs_freep(refer_);
     srs_freep(security_);
 
+    app_factory_ = NULL;
     config_ = NULL;
     manager_ = NULL;
     stream_publish_tokens_ = NULL;
@@ -1064,7 +1067,7 @@ srs_error_t SrsRtmpConn::acquire_publish(SrsSharedPtr<SrsLiveSource> source)
 
     // Bridge to RTC streaming.
     // TODO: FIXME: Need to convert RTMP to SRT.
-    SrsRtmpBridge *bridge = new SrsRtmpBridge();
+    SrsRtmpBridge *bridge = new SrsRtmpBridge(app_factory_);
 
 #if defined(SRS_FFMPEG_FIT)
     bool rtmp_to_rtc = config_->get_rtc_from_rtmp(req->vhost_);
