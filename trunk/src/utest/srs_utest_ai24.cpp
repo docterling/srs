@@ -11,6 +11,15 @@
 #include <srs_protocol_sdp.hpp>
 #include <srs_kernel_packet.hpp>
 #include <srs_kernel_codec.hpp>
+#include <srs_app_hls.hpp>
+#include <srs_utest_manual_mock.hpp>
+#include <srs_utest_manual_kernel.hpp>
+#include <srs_app_config.hpp>
+#include <srs_app_http_hooks.hpp>
+#include <srs_app_utility.hpp>
+#include <srs_kernel_utility.hpp>
+#include <srs_protocol_utility.hpp>
+#include <srs_app_fragment.hpp>
 
 #ifdef SRS_FFMPEG_FIT
 #include <srs_app_rtc_codec.hpp>
@@ -469,3 +478,554 @@ VOID TEST(FFmpegLogHelperTest, LogCallback)
     EXPECT_TRUE(true);
 }
 #endif
+
+// Test SrsDvrAsyncCallOnHls::call() method
+VOID TEST(DvrAsyncCallOnHlsTest, CallWithMultipleHooks)
+{
+    srs_error_t err;
+
+    // Create mock config with HTTP hooks enabled
+    MockAppConfig mock_config;
+    mock_config.http_hooks_enabled_ = true;
+
+    // Create on_hls directive with multiple hook URLs
+    mock_config.on_hls_directive_ = new SrsConfDirective();
+    mock_config.on_hls_directive_->name_ = "on_hls";
+    mock_config.on_hls_directive_->args_.push_back("http://example.com/hook1");
+    mock_config.on_hls_directive_->args_.push_back("http://example.com/hook2");
+
+    // Create mock hooks
+    MockHttpHooks mock_hooks;
+
+    // Create mock request
+    MockRequest mock_req("test_vhost", "live", "stream");
+
+    // Create SrsDvrAsyncCallOnHls instance
+    SrsContextId cid;
+    SrsDvrAsyncCallOnHls call(cid, &mock_req, "/path/to/file.ts", "http://example.com/file.ts",
+                              "m3u8_content", "http://example.com/playlist.m3u8", 1, 10 * SRS_UTIME_SECONDS);
+
+    // Replace global config and hooks with mocks
+    call.config_ = &mock_config;
+    call.hooks_ = &mock_hooks;
+
+    // Call should succeed and invoke hooks for each URL
+    HELPER_EXPECT_SUCCESS(call.call());
+}
+
+// Mock HLS muxer for testing SrsHlsController::reap_segment
+class MockHlsMuxerForReapSegment : public ISrsHlsMuxer
+{
+SRS_DECLARE_PRIVATE:
+    int segment_close_count_;
+    int segment_open_count_;
+    int flush_video_count_;
+    int flush_audio_count_;
+    srs_error_t segment_close_error_;
+    srs_error_t segment_open_error_;
+    srs_error_t flush_video_error_;
+    srs_error_t flush_audio_error_;
+
+public:
+    MockHlsMuxerForReapSegment()
+    {
+        segment_close_count_ = 0;
+        segment_open_count_ = 0;
+        flush_video_count_ = 0;
+        flush_audio_count_ = 0;
+        segment_close_error_ = srs_success;
+        segment_open_error_ = srs_success;
+        flush_video_error_ = srs_success;
+        flush_audio_error_ = srs_success;
+    }
+
+    virtual ~MockHlsMuxerForReapSegment()
+    {
+        srs_freep(segment_close_error_);
+        srs_freep(segment_open_error_);
+        srs_freep(flush_video_error_);
+        srs_freep(flush_audio_error_);
+    }
+
+    // ISrsHlsMuxer interface - only implement methods used by reap_segment
+    virtual srs_error_t initialize() { return srs_success; }
+    virtual void dispose() {}
+    virtual int sequence_no() { return 0; }
+    virtual std::string ts_url() { return ""; }
+    virtual srs_utime_t duration() { return 0; }
+    virtual int deviation() { return 0; }
+    virtual SrsAudioCodecId latest_acodec() { return SrsAudioCodecIdForbidden; }
+    virtual void set_latest_acodec(SrsAudioCodecId v) {}
+    virtual SrsVideoCodecId latest_vcodec() { return SrsVideoCodecIdForbidden; }
+    virtual void set_latest_vcodec(SrsVideoCodecId v) {}
+    virtual bool pure_audio() { return false; }
+    virtual bool is_segment_overflow() { return false; }
+    virtual bool is_segment_absolutely_overflow() { return false; }
+    virtual bool wait_keyframe() { return false; }
+    virtual srs_error_t on_publish(ISrsRequest *req) { return srs_success; }
+    virtual srs_error_t on_unpublish() { return srs_success; }
+    virtual srs_error_t update_config(ISrsRequest *r, std::string entry_prefix,
+                                      std::string path, std::string m3u8_file, std::string ts_file,
+                                      srs_utime_t fragment, srs_utime_t window, bool ts_floor, double aof_ratio,
+                                      bool cleanup, bool wait_keyframe, bool keys, int fragments_per_key,
+                                      std::string key_file, std::string key_file_path, std::string key_url)
+    {
+        return srs_success;
+    }
+    virtual srs_error_t on_sequence_header() { return srs_success; }
+    virtual void update_duration(uint64_t dts) {}
+    virtual srs_error_t recover_hls() { return srs_success; }
+
+    // Methods used by reap_segment
+    virtual srs_error_t segment_close()
+    {
+        segment_close_count_++;
+        return srs_error_copy(segment_close_error_);
+    }
+
+    virtual srs_error_t segment_open()
+    {
+        segment_open_count_++;
+        return srs_error_copy(segment_open_error_);
+    }
+
+    virtual srs_error_t flush_video(SrsTsMessageCache *cache)
+    {
+        flush_video_count_++;
+        return srs_error_copy(flush_video_error_);
+    }
+
+    virtual srs_error_t flush_audio(SrsTsMessageCache *cache)
+    {
+        flush_audio_count_++;
+        return srs_error_copy(flush_audio_error_);
+    }
+
+    // Test helpers
+    void set_segment_close_error(srs_error_t err)
+    {
+        srs_freep(segment_close_error_);
+        segment_close_error_ = srs_error_copy(err);
+    }
+
+    void set_segment_open_error(srs_error_t err)
+    {
+        srs_freep(segment_open_error_);
+        segment_open_error_ = srs_error_copy(err);
+    }
+
+    void set_flush_video_error(srs_error_t err)
+    {
+        srs_freep(flush_video_error_);
+        flush_video_error_ = srs_error_copy(err);
+    }
+
+    void set_flush_audio_error(srs_error_t err)
+    {
+        srs_freep(flush_audio_error_);
+        flush_audio_error_ = srs_error_copy(err);
+    }
+
+    int get_segment_close_count() const { return segment_close_count_; }
+    int get_segment_open_count() const { return segment_open_count_; }
+    int get_flush_video_count() const { return flush_video_count_; }
+    int get_flush_audio_count() const { return flush_audio_count_; }
+};
+
+// Test: SrsHlsController::reap_segment success path
+VOID TEST(HlsControllerTest, ReapSegmentSuccess)
+{
+    srs_error_t err;
+
+    // Create controller
+    SrsHlsController controller;
+
+    // Replace muxer with mock
+    MockHlsMuxerForReapSegment *mock_muxer = new MockHlsMuxerForReapSegment();
+    srs_freep(controller.muxer_);
+    controller.muxer_ = mock_muxer;
+
+    // Call reap_segment - should succeed
+    HELPER_EXPECT_SUCCESS(controller.reap_segment());
+
+    // Verify the sequence of operations
+    EXPECT_EQ(1, mock_muxer->get_segment_close_count());
+    EXPECT_EQ(1, mock_muxer->get_segment_open_count());
+    EXPECT_EQ(1, mock_muxer->get_flush_video_count());
+    EXPECT_EQ(1, mock_muxer->get_flush_audio_count());
+}
+
+// Mock HLS segment for testing do_segment_close
+class MockHlsSegmentForSegmentClose : public SrsHlsSegment
+{
+SRS_DECLARE_PRIVATE:
+    srs_error_t rename_error_;
+    srs_utime_t mock_duration_;
+    bool rename_called_;
+
+public:
+    MockHlsSegmentForSegmentClose() : SrsHlsSegment(NULL, SrsAudioCodecIdAAC, SrsVideoCodecIdAVC, NULL)
+    {
+        rename_error_ = srs_success;
+        mock_duration_ = 10 * SRS_UTIME_SECONDS; // Default 10 seconds
+        rename_called_ = false;
+        sequence_no_ = 1;
+        uri_ = "segment-1.ts";
+        // tscw_ is already NULL from base class, leave it NULL
+    }
+
+    virtual ~MockHlsSegmentForSegmentClose()
+    {
+        srs_freep(rename_error_);
+    }
+
+    virtual srs_error_t rename()
+    {
+        rename_called_ = true;
+        return srs_error_copy(rename_error_);
+    }
+
+    virtual srs_utime_t duration()
+    {
+        return mock_duration_;
+    }
+
+    void set_rename_error(srs_error_t err)
+    {
+        srs_freep(rename_error_);
+        rename_error_ = srs_error_copy(err);
+    }
+
+    void set_duration(srs_utime_t dur)
+    {
+        mock_duration_ = dur;
+    }
+
+    bool is_rename_called() const
+    {
+        return rename_called_;
+    }
+};
+
+// Test: SrsHlsMuxer::do_segment_close2 success path with valid duration
+VOID TEST(HlsMuxerTest, DoSegmentCloseSuccess)
+{
+    srs_error_t err;
+
+    // Create HLS muxer
+    SrsHlsMuxer muxer;
+    HELPER_EXPECT_SUCCESS(muxer.initialize());
+
+    // Create mock request
+    MockRequest req("test_vhost", "live", "stream");
+    muxer.req_ = &req;
+
+    // Create mock segment with valid duration (10 seconds)
+    MockHlsSegmentForSegmentClose *mock_segment = new MockHlsSegmentForSegmentClose();
+    mock_segment->set_duration(10 * SRS_UTIME_SECONDS);
+    muxer.current_ = mock_segment;
+
+    // Set max_td_ to 10 seconds (fragment duration)
+    muxer.max_td_ = 10 * SRS_UTIME_SECONDS;
+
+    // Call do_segment_close2 - should succeed
+    HELPER_EXPECT_SUCCESS(muxer.do_segment_close2());
+
+    // Verify segment was renamed
+    EXPECT_TRUE(mock_segment->is_rename_called());
+
+    // Verify segment was added to segments window
+    EXPECT_EQ(1, muxer.segments_->size());
+
+    // Verify current_ is set to NULL
+    EXPECT_TRUE(muxer.current_ == NULL);
+
+    // Cleanup
+    muxer.req_ = NULL;
+}
+
+// Test: SrsHlsMuxer::generate_ts_filename with hls_ts_floor enabled
+VOID TEST(HlsMuxerTest, GenerateTsFilenameWithFloor)
+{
+    // Create HLS muxer
+    SrsHlsMuxer muxer;
+
+    // Create mock request
+    MockRequest req("test_vhost", "live", "stream");
+    muxer.req_ = &req;
+
+    // Set up muxer configuration with ts_floor enabled
+    muxer.hls_ts_file_ = "[vhost]/[app]/[stream]-[timestamp]-[seq].ts";
+    muxer.hls_ts_floor_ = true;
+    muxer.hls_fragment_ = 10 * SRS_UTIME_SECONDS;
+    muxer.accept_floor_ts_ = 0;
+    muxer.previous_floor_ts_ = 0;
+    muxer.deviation_ts_ = 0;
+
+    // Create a mock segment with sequence number
+    SrsHlsSegment *segment = new SrsHlsSegment(muxer.context_, SrsAudioCodecIdAAC, SrsVideoCodecIdDisabled, new MockSrsFileWriter());
+    segment->sequence_no_ = 100;
+    muxer.current_ = segment;
+
+    // Call generate_ts_filename
+    std::string ts_filename = muxer.generate_ts_filename();
+
+    // Verify the filename contains replaced variables
+    EXPECT_TRUE(ts_filename.find("test_vhost") != std::string::npos);
+    EXPECT_TRUE(ts_filename.find("live") != std::string::npos);
+    EXPECT_TRUE(ts_filename.find("stream") != std::string::npos);
+    EXPECT_TRUE(ts_filename.find("100") != std::string::npos); // sequence number
+
+    // Verify accept_floor_ts_ was initialized (should be current_floor_ts - 1 on first call)
+    EXPECT_TRUE(muxer.accept_floor_ts_ > 0);
+
+    // Verify previous_floor_ts_ was set
+    EXPECT_TRUE(muxer.previous_floor_ts_ > 0);
+
+    // Verify deviation_ts_ was calculated
+    EXPECT_TRUE(muxer.deviation_ts_ <= 0); // Should be negative or zero since accept_floor_ts_ starts at current_floor_ts - 1
+
+    // Call again to test the increment logic
+    int64_t first_accept_floor_ts = muxer.accept_floor_ts_;
+    segment->sequence_no_ = 101;
+    std::string ts_filename2 = muxer.generate_ts_filename();
+
+    // Verify accept_floor_ts_ was incremented
+    EXPECT_EQ(first_accept_floor_ts + 1, muxer.accept_floor_ts_);
+
+    // Verify sequence number was replaced
+    EXPECT_TRUE(ts_filename2.find("101") != std::string::npos);
+
+    // Cleanup
+    muxer.req_ = NULL;
+    muxer.current_ = NULL;
+    srs_freep(segment);
+}
+
+// Mock segment for testing do_refresh_m3u8_segment
+class MockHlsM4sSegment : public SrsHlsM4sSegment
+{
+public:
+    bool is_sequence_header_;
+    srs_utime_t duration_;
+    std::string fullpath_;
+
+    MockHlsM4sSegment() : SrsHlsM4sSegment(NULL)
+    {
+        is_sequence_header_ = false;
+        duration_ = 5000 * SRS_UTIME_MILLISECONDS; // 5 seconds
+        fullpath_ = "/path/to/segment-[duration].m4s";
+        sequence_no_ = 0;
+        memset(iv_, 0, 16);
+        // Set a test IV value
+        for (int i = 0; i < 16; i++) {
+            iv_[i] = i;
+        }
+    }
+
+    virtual ~MockHlsM4sSegment() {}
+
+    virtual bool is_sequence_header() { return is_sequence_header_; }
+    virtual srs_utime_t duration() { return duration_; }
+    virtual std::string fullpath() { return fullpath_; }
+};
+
+// Test: do_refresh_m3u8_segment with encryption enabled
+VOID TEST(HlsFmp4MuxerTest, DoRefreshM3u8SegmentWithEncryption)
+{
+    srs_error_t err;
+
+    // Create muxer and set up encryption
+    SrsHlsFmp4Muxer muxer;
+
+    // Set up request
+    MockRequest req("test_vhost", "test_app", "test_stream");
+    muxer.req_ = &req;
+
+    // Enable encryption
+    muxer.hls_keys_ = true;
+    muxer.hls_fragments_per_key_ = 5;
+    muxer.hls_key_file_ = "key-[seq].key";
+    muxer.hls_key_url_ = "https://example.com/keys/";
+
+    // Create mock segment
+    MockHlsM4sSegment segment;
+    segment.sequence_no_ = 10; // 10 % 5 == 0, so key should be written
+    segment.is_sequence_header_ = true; // Should write discontinuity
+    segment.duration_ = 5000 * SRS_UTIME_MILLISECONDS; // 5 seconds
+    segment.fullpath_ = "/path/to/segment-[duration].m4s";
+
+    // Call do_refresh_m3u8_segment
+    std::stringstream ss;
+    HELPER_EXPECT_SUCCESS(muxer.do_refresh_m3u8_segment(&segment, ss));
+
+    // Verify output
+    std::string output = ss.str();
+
+    // Should contain discontinuity tag
+    EXPECT_TRUE(output.find("#EXT-X-DISCONTINUITY") != std::string::npos);
+
+    // Should contain encryption key tag
+    EXPECT_TRUE(output.find("#EXT-X-KEY:METHOD=SAMPLE-AES") != std::string::npos);
+    EXPECT_TRUE(output.find("https://example.com/keys/") != std::string::npos);
+    EXPECT_TRUE(output.find("key-10.key") != std::string::npos);
+    EXPECT_TRUE(output.find("IV=0x") != std::string::npos);
+
+    // Should contain EXTINF tag with duration
+    EXPECT_TRUE(output.find("#EXTINF:5.000") != std::string::npos);
+
+    // Should contain segment filename
+    EXPECT_TRUE(output.find("segment-5000.m4s") != std::string::npos);
+
+    // Cleanup
+    muxer.req_ = NULL;
+}
+
+// Mock HLS segment for testing SrsHlsMuxer::do_refresh_m3u8_segment
+class MockHlsSegmentForRefreshM3u8 : public SrsHlsSegment
+{
+SRS_DECLARE_PRIVATE:
+    bool is_sequence_header_;
+    srs_utime_t duration_;
+
+public:
+    MockHlsSegmentForRefreshM3u8() : SrsHlsSegment(NULL, SrsAudioCodecIdAAC, SrsVideoCodecIdAVC, NULL)
+    {
+        is_sequence_header_ = false;
+        duration_ = 5000 * SRS_UTIME_MILLISECONDS; // 5 seconds
+        sequence_no_ = 0;
+        uri_ = "segment-[duration].ts";
+        // Set a test IV value
+        for (int i = 0; i < 16; i++) {
+            iv_[i] = i;
+        }
+    }
+
+    virtual ~MockHlsSegmentForRefreshM3u8() {}
+
+    virtual bool is_sequence_header() { return is_sequence_header_; }
+    virtual srs_utime_t duration() { return duration_; }
+
+    void set_is_sequence_header(bool v) { is_sequence_header_ = v; }
+    void set_duration(srs_utime_t dur) { duration_ = dur; }
+};
+
+// Test: SrsHlsMuxer::do_refresh_m3u8_segment with encryption enabled
+VOID TEST(HlsMuxerTest, DoRefreshM3u8SegmentWithEncryption)
+{
+    srs_error_t err;
+
+    // Create muxer
+    SrsHlsMuxer muxer;
+
+    // Set up request
+    MockRequest req("test_vhost", "test_app", "test_stream");
+    muxer.req_ = &req;
+
+    // Enable encryption
+    muxer.hls_keys_ = true;
+    muxer.hls_fragments_per_key_ = 5;
+    muxer.hls_key_file_ = "key-[seq].key";
+    muxer.hls_key_url_ = "https://example.com/keys/";
+
+    // Create mock segment
+    MockHlsSegmentForRefreshM3u8 segment;
+    segment.sequence_no_ = 10; // 10 % 5 == 0, so key should be written
+    segment.set_is_sequence_header(true); // Should write discontinuity
+    segment.set_duration(5000 * SRS_UTIME_MILLISECONDS); // 5 seconds
+
+    // Call do_refresh_m3u8_segment
+    std::stringstream ss;
+    HELPER_EXPECT_SUCCESS(muxer.do_refresh_m3u8_segment(&segment, ss));
+
+    // Verify output
+    std::string output = ss.str();
+
+    // Should contain discontinuity tag
+    EXPECT_TRUE(output.find("#EXT-X-DISCONTINUITY") != std::string::npos);
+
+    // Should contain encryption key tag with AES-128 method
+    EXPECT_TRUE(output.find("#EXT-X-KEY:METHOD=AES-128") != std::string::npos);
+    EXPECT_TRUE(output.find("https://example.com/keys/") != std::string::npos);
+    EXPECT_TRUE(output.find("key-10.key") != std::string::npos);
+    EXPECT_TRUE(output.find("IV=0x") != std::string::npos);
+
+    // Should contain EXTINF tag with duration
+    EXPECT_TRUE(output.find("#EXTINF:5.000") != std::string::npos);
+
+    // Should contain segment filename with duration replaced
+    EXPECT_TRUE(output.find("segment-5000.ts") != std::string::npos);
+
+    // Cleanup
+    muxer.req_ = NULL;
+}
+
+// Mock segment for testing SrsHlsFmp4Muxer::generate_m4s_filename
+class MockHlsM4sSegmentForFilename : public SrsHlsM4sSegment
+{
+public:
+    MockHlsM4sSegmentForFilename() : SrsHlsM4sSegment(NULL)
+    {
+        sequence_no_ = 0;
+    }
+
+    virtual ~MockHlsM4sSegmentForFilename() {}
+};
+
+// Test: SrsHlsFmp4Muxer::generate_m4s_filename with hls_ts_floor enabled
+VOID TEST(HlsFmp4MuxerTest, GenerateM4sFilenameWithFloor)
+{
+    // Create HLS fmp4 muxer
+    SrsHlsFmp4Muxer muxer;
+
+    // Create mock request
+    MockRequest req("test_vhost", "live", "stream");
+    muxer.req_ = &req;
+
+    // Set up muxer configuration with ts_floor enabled
+    muxer.hls_m4s_file_ = "[vhost]/[app]/[stream]-[timestamp]-[seq].m4s";
+    muxer.hls_ts_floor_ = true;
+    muxer.hls_fragment_ = 10 * SRS_UTIME_SECONDS;
+    muxer.accept_floor_ts_ = 0;
+    muxer.previous_floor_ts_ = 0;
+    muxer.deviation_ts_ = 0;
+
+    // Create a mock segment with sequence number
+    MockHlsM4sSegmentForFilename *segment = new MockHlsM4sSegmentForFilename();
+    segment->sequence_no_ = 100;
+    muxer.current_ = segment;
+
+    // Call generate_m4s_filename
+    std::string m4s_filename = muxer.generate_m4s_filename();
+
+    // Verify the filename contains replaced variables
+    EXPECT_TRUE(m4s_filename.find("test_vhost") != std::string::npos);
+    EXPECT_TRUE(m4s_filename.find("live") != std::string::npos);
+    EXPECT_TRUE(m4s_filename.find("stream") != std::string::npos);
+    EXPECT_TRUE(m4s_filename.find("100") != std::string::npos); // sequence number
+
+    // Verify accept_floor_ts_ was initialized (should be current_floor_ts - 1 on first call)
+    EXPECT_TRUE(muxer.accept_floor_ts_ > 0);
+
+    // Verify previous_floor_ts_ was set
+    EXPECT_TRUE(muxer.previous_floor_ts_ > 0);
+
+    // Verify deviation_ts_ was calculated
+    EXPECT_TRUE(muxer.deviation_ts_ <= 0); // Should be negative or zero since accept_floor_ts_ starts at current_floor_ts - 1
+
+    // Call again to test the increment logic
+    int64_t first_accept_floor_ts = muxer.accept_floor_ts_;
+    segment->sequence_no_ = 101;
+    std::string m4s_filename2 = muxer.generate_m4s_filename();
+
+    // Verify accept_floor_ts_ was incremented
+    EXPECT_EQ(first_accept_floor_ts + 1, muxer.accept_floor_ts_);
+
+    // Verify sequence number was replaced
+    EXPECT_TRUE(m4s_filename2.find("101") != std::string::npos);
+
+    // Cleanup
+    muxer.req_ = NULL;
+    muxer.current_ = NULL;
+    srs_freep(segment);
+}

@@ -270,6 +270,7 @@ public:
     bool http_hooks_enabled_;
     SrsConfDirective *on_stop_directive_;
     SrsConfDirective *on_unpublish_directive_;
+    SrsConfDirective *on_hls_directive_;
     bool rtc_nack_enabled_;
     bool rtc_nack_no_copy_;
     int rtc_drop_for_pt_;
@@ -299,6 +300,7 @@ public:
         http_hooks_enabled_ = true;
         on_stop_directive_ = NULL;
         on_unpublish_directive_ = NULL;
+        on_hls_directive_ = NULL;
         rtc_nack_enabled_ = true;
         rtc_nack_no_copy_ = false;
         rtc_drop_for_pt_ = 0;
@@ -330,6 +332,7 @@ public:
         srs_freep(default_vhost_);
         srs_freep(forwards_directive_);
         srs_freep(backend_directive_);
+        srs_freep(on_hls_directive_);
     }
 
 public:
@@ -501,7 +504,7 @@ public:
     virtual bool get_rtc_stun_strict_check(std::string vhost) { return false; }
     virtual std::string get_rtc_dtls_role(std::string vhost) { return rtc_dtls_role_; }
     virtual std::string get_rtc_dtls_version(std::string vhost) { return "auto"; }
-    virtual SrsConfDirective *get_vhost_on_hls(std::string vhost) { return NULL; }
+    virtual SrsConfDirective *get_vhost_on_hls(std::string vhost) { return on_hls_directive_; }
     virtual SrsConfDirective *get_vhost_on_hls_notify(std::string vhost) { return NULL; }
     // HLS methods
     virtual bool get_hls_enabled(std::string vhost) { return false; }
