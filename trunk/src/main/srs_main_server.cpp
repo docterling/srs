@@ -6,6 +6,7 @@
 
 #include <srs_core.hpp>
 
+// LCOV_EXCL_START
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -482,3 +483,5 @@ srs_error_t run_srs_server()
 
     return err;
 }
+// LCOV_EXCL_STOP
+

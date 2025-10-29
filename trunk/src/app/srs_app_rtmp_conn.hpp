@@ -256,6 +256,12 @@ SRS_DECLARE_PRIVATE: // clang-format on
     virtual srs_error_t stream_service_cycle();
     virtual srs_error_t check_vhost(bool try_default_vhost);
     virtual srs_error_t playing(SrsSharedPtr<SrsLiveSource> source);
+
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
+    virtual srs_error_t redirect_to_origin_cluster(SrsSharedPtr<SrsLiveSource> source);
+
+public:
     virtual srs_error_t do_playing(SrsSharedPtr<SrsLiveSource> source, SrsLiveConsumer *consumer, SrsQueueRecvThread *trd);
     virtual srs_error_t publishing(SrsSharedPtr<SrsLiveSource> source);
     virtual srs_error_t do_publishing(SrsSharedPtr<SrsLiveSource> source, SrsPublishRecvThread *trd);

@@ -20,6 +20,7 @@
 #include <srs_kernel_utility.hpp>
 #include <srs_protocol_utility.hpp>
 #include <srs_app_fragment.hpp>
+#include <srs_app_server.hpp>
 
 #ifdef SRS_FFMPEG_FIT
 #include <srs_app_rtc_codec.hpp>
@@ -1028,4 +1029,26 @@ VOID TEST(HlsFmp4MuxerTest, GenerateM4sFilenameWithFloor)
     muxer.req_ = NULL;
     muxer.current_ = NULL;
     srs_freep(segment);
+}
+
+// Test: SrsServer::initialize_st with asprocess enabled and ppid == 1 (should fail)
+VOID TEST(ServerTest, InitializeStAsprocessWithPpid1)
+{
+    srs_error_t err;
+
+    // Create server
+    SrsServer server;
+
+    // Create mock config with asprocess enabled
+    MockAppConfig mock_config;
+    mock_config.asprocess_ = true;
+
+    // Replace config with mock
+    server.config_ = &mock_config;
+
+    // Set ppid to 1 (init process)
+    server.ppid_ = 1;
+
+    // Call initialize_st - should fail because asprocess is true and ppid is 1
+    HELPER_EXPECT_FAILED(server.initialize_st());
 }

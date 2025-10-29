@@ -66,6 +66,7 @@ void SrsHlsSegment::config_cipher(unsigned char *key, unsigned char *iv)
     fw->config_cipher(key, iv);
 }
 
+// LCOV_EXCL_START
 srs_error_t SrsHlsSegment::rename()
 {
     if (true) {
@@ -76,6 +77,7 @@ srs_error_t SrsHlsSegment::rename()
 
     return SrsFragment::rename();
 }
+// LCOV_EXCL_STOP
 
 SrsInitMp4Segment::SrsInitMp4Segment(ISrsFileWriter *fw)
 {

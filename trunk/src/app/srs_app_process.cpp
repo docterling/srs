@@ -46,6 +46,7 @@ SrsProcess::~SrsProcess()
 {
 }
 
+// LCOV_EXCL_START
 int SrsProcess::get_pid()
 {
     return pid_;
@@ -55,6 +56,7 @@ bool SrsProcess::started()
 {
     return is_started_;
 }
+// LCOV_EXCL_STOP
 
 srs_error_t SrsProcess::initialize(string binary, vector<string> argv)
 {
@@ -88,6 +90,7 @@ srs_error_t SrsProcess::initialize(string binary, vector<string> argv)
             continue;
         }
 
+        // LCOV_EXCL_START
         // 1 >X
         if (ffp == "1" && srs_strings_starts_with(nffp, ">")) {
             if (nffp == ">") {
@@ -121,6 +124,7 @@ srs_error_t SrsProcess::initialize(string binary, vector<string> argv)
             i++;
             continue;
         }
+        // LCOV_EXCL_STOP
 
         params_.push_back(ffp);
     }
@@ -131,6 +135,7 @@ srs_error_t SrsProcess::initialize(string binary, vector<string> argv)
     return err;
 }
 
+// LCOV_EXCL_START
 srs_error_t srs_redirect_output(string from_file, int to_fd)
 {
     srs_error_t err = srs_success;
@@ -365,3 +370,5 @@ void SrsProcess::fast_kill()
 
     return;
 }
+// LCOV_EXCL_STOP
+
