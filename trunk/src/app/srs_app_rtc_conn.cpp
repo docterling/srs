@@ -1532,7 +1532,10 @@ srs_error_t SrsRtcPublishStream::on_twcc(uint16_t sn)
 {
     srs_error_t err = srs_success;
 
-    srs_utime_t now = srs_time_now_cached();
+    // To get more accurate timestamp, and avoid deviation caused by coroutine scheduler, 
+    // we use realtime for TWCC.
+    srs_utime_t now = srs_time_now_realtime();
+    
     err = rtcp_twcc_->recv_packet(sn, now);
 
     return err;
@@ -1583,10 +1586,6 @@ srs_error_t SrsRtcPublishStream::on_rtp_cipher(char *data, int nb_data)
 srs_error_t SrsRtcPublishStream::on_rtp_plaintext(char *plaintext, int nb_plaintext)
 {
     srs_error_t err = srs_success;
-
-    if (_srs_blackhole->blackhole_) {
-        _srs_blackhole->sendto(plaintext, nb_plaintext);
-    }
 
     // Allocate packet form cache.
     SrsRtpPacket *pkt = new SrsRtpPacket();
