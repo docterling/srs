@@ -1008,7 +1008,17 @@ srs_error_t SrsOriginHub::on_audio(SrsMediaPacket *shared_audio)
             sample_rate = srs_audio_sample_rate_from_number(srs_aac_srates[c->aac_sample_rate_]);
         }
 
-        if ((err = stat_->on_audio_info(req_, format->acodec_->id_, sample_rate, c->sound_type_, c->aac_object_)) != srs_success) {
+        // For AAC, use aac_channels_ from AudioSpecificConfig instead of sound_type_ from FLV tag.
+        // The FLV sound_type field is often incorrect for AAC streams (e.g., FFmpeg sets it to stereo
+        // even for mono streams). The AAC AudioSpecificConfig channelConfiguration is the authoritative
+        // source: 1=mono, 2=stereo. Map to SrsAudioChannels: 0=mono, 1=stereo.
+        // For MP3 and other codecs, use sound_type_ from FLV tag.
+        SrsAudioChannels channels = c->sound_type_;
+        if (format->acodec_->id_ == SrsAudioCodecIdAAC) {
+            channels = (c->aac_channels_ == 1) ? SrsAudioChannelsMono : SrsAudioChannelsStereo;
+        }
+
+        if ((err = stat_->on_audio_info(req_, format->acodec_->id_, sample_rate, channels, c->aac_object_)) != srs_success) {
             return srs_error_wrap(err, "stat audio");
         }
 
