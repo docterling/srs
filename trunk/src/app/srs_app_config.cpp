@@ -7696,10 +7696,10 @@ bool SrsConfig::get_srt_enabled(std::string vhost)
 
 bool SrsConfig::get_srt_to_rtmp(std::string vhost)
 {
-    SRS_OVERWRITE_BY_ENV_BOOL("srs.vhost.srt.srt_to_rtmp"); // SRS_VHOST_SRT_SRT_TO_RTMP
-    SRS_OVERWRITE_BY_ENV_BOOL("srs.vhost.srt.to_rtmp");     // SRS_VHOST_SRT_TO_RTMP
+    SRS_OVERWRITE_BY_ENV_BOOL2("srs.vhost.srt.srt_to_rtmp"); // SRS_VHOST_SRT_SRT_TO_RTMP
+    SRS_OVERWRITE_BY_ENV_BOOL2("srs.vhost.srt.to_rtmp");     // SRS_VHOST_SRT_TO_RTMP
 
-    static bool DEFAULT = true;
+    static bool DEFAULT = false;
 
     SrsConfDirective *conf = get_srt(vhost);
     if (!conf) {

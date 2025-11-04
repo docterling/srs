@@ -87,7 +87,7 @@ public:
     virtual srs_error_t initialize(ISrsRequest *r);
     virtual srs_error_t on_publish();
     virtual void on_unpublish();
-    virtual srs_error_t on_packet(SrsSrtPacket *packet);
+    virtual srs_error_t on_srt_packet(SrsSrtPacket *packet);
     void set_on_publish_error(srs_error_t err);
     void set_on_packet_error(srs_error_t err);
     void reset();

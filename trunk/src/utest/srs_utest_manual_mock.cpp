@@ -784,15 +784,42 @@ srs_error_t MockSrtSource::on_publish()
     return SrsSrtSource::on_publish();
 }
 
-srs_error_t MockSrtSource::on_packet(SrsSrtPacket *packet)
+srs_error_t MockSrtSource::on_srt_packet(SrsSrtPacket *packet)
 {
     on_packet_count_++;
-    return SrsSrtSource::on_packet(packet);
+    return SrsSrtSource::on_srt_packet(packet);
 }
 
 void MockSrtSource::set_can_publish(bool can_publish)
 {
     can_publish_result_ = can_publish;
+}
+
+// Mock SRT format implementation
+MockSrtFormat::MockSrtFormat()
+{
+    initialize_count_ = 0;
+    on_srt_packet_count_ = 0;
+    initialize_error_ = srs_success;
+    on_srt_packet_error_ = srs_success;
+}
+
+MockSrtFormat::~MockSrtFormat()
+{
+    srs_freep(initialize_error_);
+    srs_freep(on_srt_packet_error_);
+}
+
+srs_error_t MockSrtFormat::initialize(ISrsRequest *req)
+{
+    initialize_count_++;
+    return srs_error_copy(initialize_error_);
+}
+
+srs_error_t MockSrtFormat::on_srt_packet(SrsSrtPacket *pkt)
+{
+    on_srt_packet_count_++;
+    return srs_error_copy(on_srt_packet_error_);
 }
 
 // Mock SRT source manager implementation

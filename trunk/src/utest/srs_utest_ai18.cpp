@@ -845,7 +845,7 @@ MockSrtSourceForPacket::~MockSrtSourceForPacket()
     srs_freep(last_packet_);
 }
 
-srs_error_t MockSrtSourceForPacket::on_packet(SrsSrtPacket *packet)
+srs_error_t MockSrtSourceForPacket::on_srt_packet(SrsSrtPacket *packet)
 {
     on_packet_called_count_++;
 

@@ -762,10 +762,28 @@ public:
 public:
     virtual bool can_publish();
     virtual srs_error_t on_publish();
-    virtual srs_error_t on_packet(SrsSrtPacket *packet);
+    virtual srs_error_t on_srt_packet(SrsSrtPacket *packet);
 
 public:
     virtual void set_can_publish(bool can_publish);
+};
+
+// Mock SRT format for testing
+class MockSrtFormat : public ISrsSrtFormat
+{
+public:
+    int initialize_count_;
+    int on_srt_packet_count_;
+    srs_error_t initialize_error_;
+    srs_error_t on_srt_packet_error_;
+
+public:
+    MockSrtFormat();
+    virtual ~MockSrtFormat();
+
+public:
+    virtual srs_error_t initialize(ISrsRequest *req);
+    virtual srs_error_t on_srt_packet(SrsSrtPacket *pkt);
 };
 
 // Mock SRT source manager for testing SrsRtcPublishStream

@@ -121,7 +121,7 @@ public:
 public:
     MockSrtSourceForPacket();
     virtual ~MockSrtSourceForPacket();
-    virtual srs_error_t on_packet(SrsSrtPacket *packet);
+    virtual srs_error_t on_srt_packet(SrsSrtPacket *packet);
 };
 
 // Mock ISrsAppConfig for testing SrsMpegtsSrtConn HTTP hooks
