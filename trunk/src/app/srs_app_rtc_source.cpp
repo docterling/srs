@@ -3279,6 +3279,11 @@ std::string SrsRtcRecvTrack::get_track_id()
     return track_desc_->id_;
 }
 
+SrsRtcTrackDescription *SrsRtcRecvTrack::get_track_desc()
+{
+    return track_desc_;
+}
+
 srs_error_t SrsRtcRecvTrack::on_nack(SrsRtpPacket **ppkt)
 {
     srs_error_t err = srs_success;
@@ -3773,4 +3778,148 @@ uint32_t SrsRtcSSRCGenerator::generate_ssrc()
     }
 
     return ++ssrc_num_;
+}
+
+ISrsRtcFormat::ISrsRtcFormat()
+{
+}
+
+ISrsRtcFormat::~ISrsRtcFormat()
+{
+}
+
+SrsRtcFormat::SrsRtcFormat()
+{
+    req_ = NULL;
+    video_codec_reported_ = false;
+    audio_codec_reported_ = false;
+
+    stat_ = _srs_stat;
+}
+
+SrsRtcFormat::~SrsRtcFormat()
+{
+    req_ = NULL;
+
+    stat_ = NULL;
+}
+
+srs_error_t SrsRtcFormat::initialize(ISrsRequest *req)
+{
+    req_ = req;
+    return srs_success;
+}
+
+srs_error_t SrsRtcFormat::on_rtp_packet(SrsRtcRecvTrack *track, bool is_audio)
+{
+    srs_error_t err = srs_success;
+
+    SrsRtcTrackDescription *track_desc = track ? track->get_track_desc() : NULL;
+    if (!req_ || !track_desc || !track_desc->media_) {
+        return err;
+    }
+
+    if (is_audio) {
+        // Only report once
+        if (audio_codec_reported_) {
+            return err;
+        }
+        audio_codec_reported_ = true;
+
+        SrsCodecPayload *media = track_desc->media_;
+        SrsAudioCodecId codec_id = (SrsAudioCodecId)media->codec(false);
+
+        // Parse channels and sample rate from track description
+        if (codec_id == SrsAudioCodecIdOpus) {
+            SrsAudioPayload *audio_media = dynamic_cast<SrsAudioPayload *>(media);
+            if (!audio_media) {
+                return err;
+            }
+
+            // Get sample rate from media payload
+            SrsAudioSampleRate sample_rate = (SrsAudioSampleRate)audio_media->sample_;
+
+            // Get channels from audio payload
+            SrsAudioChannels channels = (SrsAudioChannels)audio_media->channel_;
+
+            if ((err = stat_->on_audio_info(req_, codec_id, sample_rate, channels,
+                                             SrsAacObjectTypeReserved)) != srs_success) {
+                return srs_error_wrap(err, "stat audio info");
+            }
+            srs_trace("RTC: parsed %s codec, sample_rate=%dHz, channels=%d",
+                      srs_audio_codec_id2str(codec_id).c_str(), sample_rate, channels);
+        }
+    } else {
+        // Only report once
+        if (video_codec_reported_) {
+            return err;
+        }
+        video_codec_reported_ = true;
+
+        SrsCodecPayload *media = track_desc->media_;
+        SrsVideoCodecId codec_id = (SrsVideoCodecId)media->codec(true);
+
+        // Parse profile and level from track description
+        if (codec_id == SrsVideoCodecIdAVC) {
+            SrsVideoPayload *video_media = dynamic_cast<SrsVideoPayload *>(media);
+            if (!video_media || video_media->h264_param_.profile_level_id_.empty()) {
+                return err;
+            }
+
+            // Parse profile_level_id hex string (e.g., "42e01f")
+            // Format: PPCCLL where PP=profile_idc, CC=constraint_set, LL=level_idc
+            std::string profile_level_id = video_media->h264_param_.profile_level_id_;
+            if (profile_level_id.length() != 6) {
+                return err;
+            }
+
+            // Decode hex string to bytes
+            // srs_hex_decode_string expects size to be the hex string length (6 chars = 3 bytes)
+            uint8_t bytes[3];
+            int hex_len = (int)profile_level_id.length();
+            int r0 = srs_hex_decode_string(bytes, profile_level_id.c_str(), hex_len);
+            if (r0 != (int)sizeof(bytes)) {
+                srs_trace("RTC: failed to decode profile_level_id hex string: %s, r0=%d", profile_level_id.c_str(), r0);
+                video_codec_reported_ = true;
+                return err;
+            }
+
+            // Extract profile and level from the decoded bytes
+            SrsAvcProfile profile = (SrsAvcProfile)bytes[0];
+            SrsAvcLevel level = (SrsAvcLevel)bytes[2];
+
+            if ((err = stat_->on_video_info(req_, codec_id, profile, level, 0, 0)) != srs_success) {
+                return srs_error_wrap(err, "stat video info");
+            }
+            srs_trace("RTC: parsed %s codec, profile=%s, level=%s",
+                      srs_video_codec_id2str(codec_id).c_str(),
+                      srs_avc_profile2str(profile).c_str(),
+                      srs_avc_level2str(level).c_str());
+        } else if (codec_id == SrsVideoCodecIdHEVC) {
+            SrsVideoPayload *video_media = dynamic_cast<SrsVideoPayload *>(media);
+            if (!video_media || video_media->h265_param_.profile_id_.empty() ||
+                video_media->h265_param_.level_id_.empty()) {
+                return err;
+            }
+
+            // Parse HEVC profile_id and level_id from SDP parameters
+            // profile_id is a decimal string (e.g., "1" for Main profile)
+            // level_id is a decimal string (e.g., "93" for Level 3.1)
+            int profile_id = atoi(video_media->h265_param_.profile_id_.c_str());
+            int level_id = atoi(video_media->h265_param_.level_id_.c_str());
+
+            SrsHevcProfile profile = (SrsHevcProfile)profile_id;
+            SrsHevcLevel level = (SrsHevcLevel)level_id;
+
+            if ((err = stat_->on_video_info(req_, codec_id, profile, level, 0, 0)) != srs_success) {
+                return srs_error_wrap(err, "stat video info");
+            }
+            srs_trace("RTC: parsed %s codec, profile=%s, level=%d",
+                      srs_video_codec_id2str(codec_id).c_str(),
+                      srs_hevc_profile2str(profile).c_str(),
+                      level_id);
+        }
+    }
+
+    return err;
 }

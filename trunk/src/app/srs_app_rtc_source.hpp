@@ -45,6 +45,7 @@ class ISrsRtcConsumer;
 class ISrsCircuitBreaker;
 class ISrsRtcPublishStream;
 class ISrsAppFactory;
+class ISrsStatistic;
 
 // Firefox defaults as 109, Chrome is 111.
 const int kAudioPayloadType = 111;
@@ -899,6 +900,7 @@ public:
     bool set_track_status(bool active);
     bool get_track_status();
     std::string get_track_id();
+    SrsRtcTrackDescription *get_track_desc();
 
 public:
     // Note that we can set the pkt to NULL to avoid copy, for example, if the NACK cache the pkt and
@@ -1142,6 +1144,39 @@ SRS_DECLARE_PRIVATE: // clang-format on
 public:
     static SrsRtcSSRCGenerator *instance();
     uint32_t generate_ssrc();
+};
+
+// The interface for RTC format.
+class ISrsRtcFormat
+{
+public:
+    ISrsRtcFormat();
+    virtual ~ISrsRtcFormat();
+
+public:
+    virtual srs_error_t initialize(ISrsRequest *req) = 0;
+    virtual srs_error_t on_rtp_packet(SrsRtcRecvTrack *track, bool is_audio) = 0;
+};
+
+// Lightweight format parser for RTC streams to extract codec information
+// from RTP packets and update statistics.
+class SrsRtcFormat : public ISrsRtcFormat
+{
+public:
+    SrsRtcFormat();
+    virtual ~SrsRtcFormat();
+
+public:
+    virtual srs_error_t initialize(ISrsRequest *req);
+    virtual srs_error_t on_rtp_packet(SrsRtcRecvTrack *track, bool is_audio);
+
+// clang-format off
+SRS_DECLARE_PRIVATE: // clang-format on
+    ISrsRequest *req_;
+    ISrsStatistic *stat_;
+    // Track whether we've already reported codec info to avoid duplicate updates
+    bool video_codec_reported_;
+    bool audio_codec_reported_;
 };
 
 #endif

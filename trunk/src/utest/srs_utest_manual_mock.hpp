@@ -263,6 +263,26 @@ public:
     void set_send_packet_error(srs_error_t err);
 };
 
+// Mock RTC format for testing
+class MockRtcFormat : public ISrsRtcFormat
+{
+public:
+    srs_error_t initialize_error_;
+    srs_error_t on_rtp_packet_error_;
+    int initialize_count_;
+    int on_rtp_packet_count_;
+
+public:
+    MockRtcFormat();
+    virtual ~MockRtcFormat();
+
+public:
+    virtual srs_error_t initialize(ISrsRequest *req);
+    virtual srs_error_t on_rtp_packet(SrsRtcRecvTrack *track, bool is_audio);
+    void set_initialize_error(srs_error_t err);
+    void set_on_rtp_packet_error(srs_error_t err);
+};
+
 // Mock app config for testing
 class MockAppConfig : public ISrsAppConfig
 {

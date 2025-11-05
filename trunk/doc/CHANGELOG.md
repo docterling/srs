@@ -7,6 +7,7 @@ The changelog for SRS.
 <a name="v7-changes"></a>
 
 ## SRS 7.0 Changelog
+* v7.0, 2025-11-05, AI: WebRTC: Report video/audio codec info and frame stats in HTTP API. v7.0.118 (#4554)
 * v7.0, 2025-11-04, AI: SRT: Report video/audio codec info and frame stats in HTTP API. v7.0.117 (#4554)
 * v7.0, 2025-11-03, Merge [#4556](https://github.com/ossrs/srs/pull/4556): Fill missing defs for H264/AVC video levels. v7.0.116 (#4556)
 * v7.0, 2025-10-31, Merge [#4547](https://github.com/ossrs/srs/pull/4547): Add ignore configuration for cursor. v7.0.115 (#4547)

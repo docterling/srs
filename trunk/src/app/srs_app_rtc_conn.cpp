@@ -1208,6 +1208,8 @@ SrsRtcPublishStream::SrsRtcPublishStream(ISrsExecRtcAsyncTask *exec, ISrsExpire 
     pt_to_drop_ = 0;
 
     nn_audio_frames_ = 0;
+    nn_rtp_pkts_ = 0;
+    format_ = new SrsRtcFormat();
     twcc_enabled_ = false;
     twcc_id_ = 0;
     twcc_fb_count_ = 0;
@@ -1260,6 +1262,7 @@ SrsRtcPublishStream::~SrsRtcPublishStream()
     srs_freep(pli_worker_);
     srs_freep(twcc_epp_);
     srs_freep(pli_epp_);
+    srs_freep(format_);
     srs_freep(req_);
 
     // update the statistic when client coveried.
@@ -1283,6 +1286,10 @@ srs_error_t SrsRtcPublishStream::initialize(ISrsRequest *r, SrsRtcSourceDescript
     srs_error_t err = srs_success;
 
     req_ = r->copy();
+
+    if ((err = format_->initialize(req_)) != srs_success) {
+        return srs_error_wrap(err, "initialize format");
+    }
 
     if ((err = timer_rtcp_->initialize()) != srs_success) {
         return srs_error_wrap(err, "initialize timer rtcp");
@@ -1670,6 +1677,15 @@ srs_error_t SrsRtcPublishStream::do_on_rtp_plaintext(SrsRtpPacket *&pkt, SrsBuff
         return srs_error_new(ERROR_RTC_RTP, "unknown ssrc=%u", ssrc);
     }
 
+    // Report codec information to statistics on first RTP packet.
+    if ((err = format_->on_rtp_packet(track, is_audio)) != srs_success) {
+        srs_warn("RTC: format packet err %s", srs_error_desc(err).c_str());
+        srs_freep(err);
+    }
+
+    // Update RTP packet statistics.
+    update_rtp_packet_stats(is_audio);
+
     // Consume packet by track.
     if ((err = track->on_rtp(source_, pkt)) != srs_success) {
         return srs_error_wrap(err, "audio track, SSRC=%u, SEQ=%u", ssrc, pkt->header_.get_sequence());
@@ -1688,6 +1704,26 @@ srs_error_t SrsRtcPublishStream::do_on_rtp_plaintext(SrsRtpPacket *&pkt, SrsBuff
     }
 
     return err;
+}
+
+void SrsRtcPublishStream::update_rtp_packet_stats(bool is_audio)
+{
+    srs_error_t err = srs_success;
+
+    // Count RTP packets for statistics.
+    ++nn_rtp_pkts_;
+    if (is_audio) {
+        ++nn_audio_frames_;
+    }
+
+    // Update the stat for frames, counting RTP packets as frames.
+    if (nn_rtp_pkts_ > 288) {
+        if ((err = stat_->on_video_frames(req_, (int)nn_rtp_pkts_)) != srs_success) {
+            srs_warn("RTC: stat frames err %s", srs_error_desc(err).c_str());
+            srs_freep(err);
+        }
+        nn_rtp_pkts_ = 0;
+    }
 }
 
 srs_error_t SrsRtcPublishStream::check_send_nacks()

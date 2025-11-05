@@ -547,6 +547,45 @@ void MockRtcPacketSender::set_send_packet_error(srs_error_t err)
     send_packet_error_ = err;
 }
 
+// MockRtcFormat implementation
+MockRtcFormat::MockRtcFormat()
+{
+    initialize_error_ = srs_success;
+    on_rtp_packet_error_ = srs_success;
+    initialize_count_ = 0;
+    on_rtp_packet_count_ = 0;
+}
+
+MockRtcFormat::~MockRtcFormat()
+{
+    srs_freep(initialize_error_);
+    srs_freep(on_rtp_packet_error_);
+}
+
+srs_error_t MockRtcFormat::initialize(ISrsRequest *req)
+{
+    initialize_count_++;
+    return srs_error_copy(initialize_error_);
+}
+
+srs_error_t MockRtcFormat::on_rtp_packet(SrsRtcRecvTrack *track, bool is_audio)
+{
+    on_rtp_packet_count_++;
+    return srs_error_copy(on_rtp_packet_error_);
+}
+
+void MockRtcFormat::set_initialize_error(srs_error_t err)
+{
+    srs_freep(initialize_error_);
+    initialize_error_ = srs_error_copy(err);
+}
+
+void MockRtcFormat::set_on_rtp_packet_error(srs_error_t err)
+{
+    srs_freep(on_rtp_packet_error_);
+    on_rtp_packet_error_ = srs_error_copy(err);
+}
+
 // Mock RTC packet receiver implementation
 MockRtcPacketReceiver::MockRtcPacketReceiver()
 {
