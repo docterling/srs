@@ -1073,6 +1073,8 @@ SRS_DECLARE_PROTECTED: // clang-format on
 SRS_DECLARE_PRIVATE: // clang-format on
     // By config, whether no copy.
     bool nack_no_copy_;
+    // By config, whether keep original SSRC and timestamp.
+    bool keep_original_ssrc_;
     // The pithy print for special stage.
     SrsErrorPithyPrint *nack_epp;
 
@@ -1083,6 +1085,8 @@ public:
 public:
     // SrsRtcSendTrack::set_nack_no_copy
     void set_nack_no_copy(bool v) { nack_no_copy_ = v; }
+    // SrsRtcSendTrack::set_keep_original_ssrc
+    void set_keep_original_ssrc(bool v) { keep_original_ssrc_ = v; }
     bool has_ssrc(uint32_t ssrc);
     SrsRtpPacket *fetch_rtp_packet(uint16_t seq);
     bool set_track_status(bool active);

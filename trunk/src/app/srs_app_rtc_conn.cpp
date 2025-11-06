@@ -553,17 +553,20 @@ srs_error_t SrsRtcPlayStream::initialize(ISrsRequest *req, std::map<uint32_t, Sr
     // TODO: FIXME: Support reload.
     nack_enabled_ = config_->get_rtc_nack_enabled(req->vhost_);
     nack_no_copy_ = config_->get_rtc_nack_no_copy(req->vhost_);
-    srs_trace("RTC player nack=%d, nnc=%d", nack_enabled_, nack_no_copy_);
+    bool keep_original_ssrc = config_->get_rtc_keep_original_ssrc(req->vhost_);
+    srs_trace("RTC player nack=%d, nnc=%d, keep_original_ssrc=%d", nack_enabled_, nack_no_copy_, keep_original_ssrc);
 
     // Setup tracks.
     for (map<uint32_t, SrsRtcAudioSendTrack *>::iterator it = audio_tracks_.begin(); it != audio_tracks_.end(); ++it) {
         SrsRtcAudioSendTrack *track = it->second;
         track->set_nack_no_copy(nack_no_copy_);
+        track->set_keep_original_ssrc(keep_original_ssrc);
     }
 
     for (map<uint32_t, SrsRtcVideoSendTrack *>::iterator it = video_tracks_.begin(); it != video_tracks_.end(); ++it) {
         SrsRtcVideoSendTrack *track = it->second;
         track->set_nack_no_copy(nack_no_copy_);
+        track->set_keep_original_ssrc(keep_original_ssrc);
     }
 
     return err;
@@ -3718,6 +3721,7 @@ srs_error_t SrsRtcPlayerNegotiator::negotiate_play_capability(SrsRtcUserConfig *
 
     bool nack_enabled = config_->get_rtc_nack_enabled(req->vhost_);
     bool twcc_enabled = config_->get_rtc_twcc_enabled(req->vhost_);
+    bool keep_original_ssrc = config_->get_rtc_keep_original_ssrc(req->vhost_);
 
     SrsSharedPtr<SrsRtcSource> source;
     if ((err = rtc_sources_->fetch_or_create(req, source)) != srs_success) {
@@ -3879,7 +3883,12 @@ srs_error_t SrsRtcPlayerNegotiator::negotiate_play_capability(SrsRtcUserConfig *
                 }
             }
 
-            track->ssrc_ = SrsRtcSSRCGenerator::instance()->generate_ssrc();
+            // When keep_original_ssrc is enabled, preserve the original SSRC from publisher.
+            // Otherwise, generate a new SSRC for each player.
+            // @see https://github.com/ossrs/srs/issues/3850
+            if (!keep_original_ssrc) {
+                track->ssrc_ = SrsRtcSSRCGenerator::instance()->generate_ssrc();
+            }
 
             // TODO: FIXME: set audio_payload rtcp_fbs_,
             // according by whether downlink is support transport algorithms.

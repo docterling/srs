@@ -3521,6 +3521,7 @@ SrsRtcSendTrack::SrsRtcSendTrack(ISrsRtcPacketSender *sender, SrsRtcTrackDescrip
     sender_ = sender;
     track_desc_ = track_desc->copy();
     nack_no_copy_ = false;
+    keep_original_ssrc_ = false;
 
     // Make a different start of sequence number, for debugging.
     jitter_ts_ = new SrsRtcTsJitter(track_desc_->type_ == "audio" ? 10000 : 20000);
@@ -3594,6 +3595,13 @@ std::string SrsRtcSendTrack::get_track_id()
 
 void SrsRtcSendTrack::rebuild_packet(SrsRtpPacket *pkt)
 {
+    // If keep_original_ssrc is enabled, skip rebuilding sequence number and timestamp.
+    // This preserves the original SSRC and timestamps for end-to-end debugging.
+    // @see https://github.com/ossrs/srs/issues/3850
+    if (keep_original_ssrc_) {
+        return;
+    }
+
     // Rebuild the sequence number.
     int16_t seq = pkt->header_.get_sequence();
     pkt->header_.set_sequence(jitter_seq_->correct(seq));
