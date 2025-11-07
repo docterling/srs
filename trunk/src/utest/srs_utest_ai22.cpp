@@ -1549,6 +1549,7 @@ void MockStatisticForRtspPlayStream::reset()
     srs_freep(on_client_error_);
 }
 
+#ifdef SRS_RTSP
 // MockRtspSourceManager implementation
 MockRtspSourceManager::MockRtspSourceManager()
 {
@@ -2750,6 +2751,7 @@ VOID TEST(RtspTcpNetworkTest, WriteRtpPacket)
     // Verify the payload data (starts at offset 4)
     EXPECT_EQ(0, memcmp(rtp_packet, output + 4, kRtpPacketSize));
 }
+#endif
 
 // MockDvrPlan implementation
 MockDvrPlan::MockDvrPlan()

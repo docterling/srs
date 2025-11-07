@@ -111,6 +111,7 @@ public:
     void reset();
 };
 
+#ifdef SRS_RTSP
 // Forward declaration
 class SrsRtspConsumer;
 
@@ -159,5 +160,6 @@ public:
     void set_send_error(srs_error_t err);
     void reset();
 };
+#endif
 
 #endif

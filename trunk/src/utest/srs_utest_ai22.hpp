@@ -354,6 +354,7 @@ public:
     void reset();
 };
 
+#ifdef SRS_RTSP
 // Mock ISrsRtspSourceManager for testing SrsRtspPlayStream
 class MockRtspSourceManager : public ISrsRtspSourceManager
 {
@@ -456,6 +457,7 @@ public:
     virtual void set_all_tracks_status(bool status);
     void reset();
 };
+#endif
 
 // Mock ISrsDvrPlan for testing SrsDvrSegmenter
 class MockDvrPlan : public ISrsDvrPlan
